@@ -43,14 +43,16 @@ service cloud.firestore {
       allow create, delete: if isAdmin();
       allow update: if isAdmin()
         || (isAllowedUser() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloads'])
+            && resource.data.get('upcoming', false) != true
             && request.resource.data.downloads == resource.data.get('downloads', 0) + 1);
     }
 
     // 전자책 파일 조각 — 파일 저장소 대신 글 여러 개에 나눠 담은 책 파일. 운영자만 쓰고,
-    // 회원은 올린 무료 책(price 0)의 조각만 읽는다
+    // 회원은 올린 무료 책(price 0)의 조각만 읽는다 — 출시예정(upcoming) 책은 못 읽는다
     match /ebookParts/{pid} {
       allow read: if isAdmin() || (isAllowedUser()
         && get(/databases/$(database)/documents/ebooks/$(resource.data.book)).data.published == true
+        && get(/databases/$(database)/documents/ebooks/$(resource.data.book)).data.get('upcoming', false) != true
         && get(/databases/$(database)/documents/ebooks/$(resource.data.book)).data.get('price', 0) == 0);
       allow write: if isAdmin();
     }
@@ -61,8 +63,9 @@ service cloud.firestore {
       allow create, update: if isAllowedUser()
         && request.resource.data.uid == request.auth.uid
         && rid == request.auth.uid + '_' + request.resource.data.ebookId
-        // 무료 책만 — 유료(price 1 이상)는 결제를 붙인 뒤 연다
-        && get(/databases/$(database)/documents/ebooks/$(request.resource.data.ebookId)).data.get('price', 0) == 0;
+        // 무료 책만 — 유료(price 1 이상)는 결제를 붙인 뒤 연다. 출시예정 책은 아직 못 받는다
+        && get(/databases/$(database)/documents/ebooks/$(request.resource.data.ebookId)).data.get('price', 0) == 0
+        && get(/databases/$(database)/documents/ebooks/$(request.resource.data.ebookId)).data.get('upcoming', false) != true;
     }
 
     // 오류및제안 게시판(웹 커뮤니티) — 회원이 쓰고 모두 읽는다. 내 글만 고치고 지운다, 조회수는 1씩만, 운영자는 모두 지운다

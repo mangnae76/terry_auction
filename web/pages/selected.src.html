@@ -3351,7 +3351,9 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .st-cover[data-act], .st-body h3[data-act] { cursor: pointer; } .st-body h3[data-act]:hover { color: var(--blue); }
 .st-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .st-meta .st-free, .st-meta .st-price { align-self: auto; }
-.st-tags { display: inline-flex; align-items: center; gap: 6px; }   /* 가격 칩 · 종류 칩 나란히 */
+.st-tags { display: inline-flex; align-items: center; gap: 6px; }
+.st-soon { padding: 1px 8px; border-radius: 4px; background: #fdecec; color: #b42318; font-size: 12px; font-weight: 700; }   /* 출시예정 칩 */
+.st-buy.soon, .st-buy.soon:hover { border-color: var(--line); background: var(--surface-2); color: var(--muted); opacity: 1; cursor: not-allowed; }   /* 출시예정 — 받기 막음 */   /* 가격 칩 · 종류 칩 나란히 */
 .st-more svg { width: 14px; height: 14px; margin-left: 2px; pointer-events: none; }
 .st-more { display: inline-flex; align-items: center; margin: 0; padding: 0; border: 0; background: none; color: var(--blue); font-size: 13px; font-weight: 700; cursor: pointer; } .st-more:hover { text-decoration: underline; }
 /* 콘텐츠 자세히보기 창 */
@@ -5240,7 +5242,7 @@ span.cal-day.has { cursor: help; }
     ['m3f', [['자금입출금', 'go-finance'], ['필요경비', 'go-finance'], ['사업경비', 'go-finance'], ['세금신고', 'go-finance']]],
     ['m3', [['실거래분석', 'go-market'], ['시세예측', 'go-market'], ['랭킹분석', 'go-market'], ['매각분석', 'go-market']]],   /* 경매사례 → 매각분석(2026-11-08) */
     ['m3m', [['경매기초'], ['물건고르기'], ['낙찰이후', 'go-manual']]],   /* 경매기초 · 물건고르기는 준비 중 */
-    ['m4s', [['전체', 'go-store'], ['전자책', 'go-store'], ['리포트', 'go-store'], ['모바일앱', 'go-store'], ['내콘텐츠', 'go-store']]],
+    ['m4s', [['전체', 'go-store'], ['전자책', 'go-store'], ['리포트', 'go-store'], ['매뉴얼', 'go-store'], ['모바일앱', 'go-store'], ['내콘텐츠', 'go-store']]],
     ['m5', [['내정보', 'go-more'], ['알림', 'go-more'], ['결제하기', 'go-more'], ...(SHOW_POINTS ? [['포인트', 'go-more']] : []), ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
   ];
   /* 지금 보고 있는 자리 — 펼칠 때마다 다시 그려 표시가 어긋나지 않게 한다 */
@@ -6387,9 +6389,9 @@ span.cal-day.has { cursor: help; }
       /* 콘텐츠 자세히보기 — 표지 · 종류 · 가격 · 한줄설명 · 내용(줄바꿈 · 빈 줄 그대로, **굵게**) · 받기 단추 */
       const eb = EB.list.find((b) => b.id === m.ebook);
       if (!eb) { S.modal = null; root.innerHTML = ''; return; }
-      const kind = { report: '리포트', mobile: '모바일앱' }[eb.kind] || '전자책';
+      const kind = { report: '리포트', manual: '매뉴얼', mobile: '모바일앱' }[eb.kind] || '전자책';
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog eb-dlg" role="dialog" aria-modal="true" aria-labelledby="ebT">
-        <div class="buy-head"><div><h2 id="ebT">${eb.tag ? `<em>[${esc(eb.tag)}]</em> ` : ''}${esc(eb.title)}</h2><p><span class="st-kind-in">${kind}</span>${ebPriceTag(eb)}</p></div><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
+        <div class="buy-head"><div><h2 id="ebT">${eb.tag ? `<em>[${esc(eb.tag)}]</em> ` : ''}${esc(eb.title)}</h2><p><span class="st-kind-in">${kind}</span>${ebPriceTag(eb)}${ebSoon(eb) ? '<span class="st-soon">출시예정</span>' : ''}</p></div><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
         <div class="eb-top"><div class="eb-left">${eb.coverUrl ? `<img class="eb-cv" src="${esc(eb.coverUrl)}" alt="">` : `<div class="eb-cv navy"><strong>${esc(eb.title)}</strong></div>`}${ebAction(eb)}</div>
           <div class="eb-side">${ebSummary(eb) ? `<p class="eb-sum">${esc(ebSummary(eb))}</p>` : ''}${(eb.desc || '').trim() ? `<div class="eb-body">${ebBodyHtml(eb.desc)}</div>` : ''}<small class="eb-note">회원가입 후 로그인한 회원만 받을 수 있습니다.</small></div></div>
       </div></div>`;
@@ -8786,7 +8788,7 @@ span.cal-day.has { cursor: help; }
      상품은 운영자가 콘텐츠 › 관리에서 올린 것(DB ebooks)만 — 코드에 적어 두던 자리표시 상품(STORE_ITEMS)은 지웠다(2026-11-08).
      모바일앱 소개는 우리 앱에 실제로 있는 기능만 적는다(숫자 · 남의 글을 지어내지 않는다) */
   if (!S.storeTab) S.storeTab = store.get('wlp.web.storeTab2', 'mobile');   /* 기본은 모바일앱(2026-11-02) */
-  const STORE_TABS = [['all', '전체'], ['ebook', '전자책'], ['report', '리포트'], ['mobile', '모바일앱'], ['mine', '내콘텐츠'], ['manage', '관리', 'admin']];   /* 내콘텐츠 — 내가 받은 책(로그인). 관리 — 운영자만(전자책 올리고 내리기, EbookManage) */
+  const STORE_TABS = [['all', '전체'], ['ebook', '전자책'], ['report', '리포트'], ['manual', '매뉴얼'], ['mobile', '모바일앱'], ['mine', '내콘텐츠'], ['manage', '관리', 'admin']];   /* 내콘텐츠 — 내가 받은 책(로그인). 관리 — 운영자만(전자책 올리고 내리기, EbookManage) */
   /* 운영자가 올린 전자책(DB) — 무료로받기 카드. subscribeEbooks 가 채운다(올린 책만) */
   const EB = { list: [], ready: new Set(), mine: 0, mineUid: '', mineStop: null };   /* mine — 내콘텐츠(받은 책) 개수 */   /* ready — 무료로받기를 눌러 다운로드 단추로 바뀐 책 */
   /* 카드 · 자세히보기 창이 같이 쓰는 것 — 한줄설명(없던 책은 내용 첫 줄) · 가격표 · 받기 단추 */
@@ -8794,7 +8796,10 @@ span.cal-day.has { cursor: help; }
   const ebBodyHtml = (t) => (CLOUD.T && CLOUD.T.ebookBodyHtml ? CLOUD.T.ebookBodyHtml(t) : esc(t || ''));
   const ebIsPaid = (b) => (Number(b.price) || 0) > 0;
   const ebPriceTag = (b) => (ebIsPaid(b) ? `<span class="st-price">${Number(b.price).toLocaleString('ko-KR')}원</span>` : '<span class="st-free">무료</span>');
-  const ebAction = (b) => (ebIsPaid(b) ? `<button type="button" class="st-buy" data-act="ebook-buy" data-v="${esc(b.id)}">구매하기</button>`
+  const ebSoon = (b) => b.upcoming === true;   /* 출시예정 — 카드 · 설명은 보이고 받기는 막는다(규칙도 막는다) */
+  const ebSoonText = (b) => (CLOUD.T && CLOUD.T.ebookReleaseText ? CLOUD.T.ebookReleaseText(b) : '출시예정');
+  const ebAction = (b) => (ebSoon(b) ? `<button type="button" class="st-buy soon" disabled>${esc(ebSoonText(b))}</button>`
+    : ebIsPaid(b) ? `<button type="button" class="st-buy" data-act="ebook-buy" data-v="${esc(b.id)}">구매하기</button>`
     : EB.ready.has(b.id) ? `<button type="button" class="st-buy dl" data-act="ebook-dl" data-v="${esc(b.id)}">다운로드</button>`
     : `<button type="button" class="st-buy" data-act="ebook-get" data-v="${esc(b.id)}">무료로받기</button>`);
   let ebmStop = null;   /* 관리 탭에 띄운 앱 화면 — 다시 그리기 전에 걷는다 */   /* 모바일앱 — 위 메뉴에 따로 있던 화면을 탭으로 옮겼다 */
@@ -8802,22 +8807,22 @@ span.cal-day.has { cursor: help; }
     const adm = (() => { try { return agIsAdmin(); } catch (e) { return false; } })();
     const tab = S.storeTab === 'manage' && !adm ? 'all' : S.storeTab;   /* 관리 탭은 운영자만 — 아니면 전체로 */
     /* 운영자가 고른 분류(kind) 탭에 나간다 — 전체 탭엔 다. 분류가 없던 책은 전자책 */
-    const ebKind = (b) => (b.kind === 'report' || b.kind === 'mobile' ? b.kind : 'ebook');
+    const ebKind = (b) => (b.kind === 'report' || b.kind === 'manual' || b.kind === 'mobile' ? b.kind : 'ebook');
     const ebooks = EB.list.filter((b) => tab === 'all' || ebKind(b) === tab);
-    const EB_KIND_LABEL = { ebook: '전자책', report: '리포트', mobile: '모바일앱' };
+    const EB_KIND_LABEL = { ebook: '전자책', report: '리포트', manual: '매뉴얼', mobile: '모바일앱' };
     /* 운영자가 올린 책 — 표지 그림이 있으면 그것, 없으면 남색 표지에 제목 */
     /* 무료(0원)는 로그인한 회원 누구나 — 무료로받기 → 다운로드 단추로 바뀌고, 누르면 PDF 를 내려받는다. 유료는 구매하기 창(결제 연동 전이라 결제는 준비 중) */
     /* 카드 — 표지 · 제목 · 한줄설명. 표지 · 제목 · 자세히보기를 누르면 내용(줄바꿈 그대로) 창 */
     const ebCard = (b) => `<article class="st-card">${b.coverUrl ? `<div class="st-cover img" data-act="ebook-info" data-v="${esc(b.id)}"><img src="${esc(b.coverUrl)}" alt="" loading="lazy"></div>` : `<div class="st-cover navy" data-act="ebook-info" data-v="${esc(b.id)}"><strong>${esc(b.title)}</strong></div>`}`
-      + `<div class="st-body"><h3 data-act="ebook-info" data-v="${esc(b.id)}">${b.tag ? `<em>[${esc(b.tag)}]</em> ` : ''}${esc(b.title)}</h3><p>${esc(ebSummary(b))}</p><div class="st-meta"><span class="st-tags">${ebPriceTag(b)}<span class="st-kind-in">${EB_KIND_LABEL[ebKind(b)]}</span></span>${(b.desc || '').trim() ? `<button type="button" class="st-more" data-act="ebook-info" data-v="${esc(b.id)}">자세히보기<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>` : ''}</div>${ebAction(b)}</div></article>`;   /* 가격 칩 왼쪽 · 자세히보기 오른쪽 끝(받기 단추 끝에 맞춤) */
-    return `<section class="info-box"><div class="info-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>콘텐츠</h2><p>경매 공부와 실전에 바로 쓰는 전자책 · 리포트를 준비하고 있습니다.</p></div>`
+      + `<div class="st-body"><h3 data-act="ebook-info" data-v="${esc(b.id)}">${b.tag ? `<em>[${esc(b.tag)}]</em> ` : ''}${esc(b.title)}</h3><p>${esc(ebSummary(b))}</p><div class="st-meta"><span class="st-tags">${ebPriceTag(b)}<span class="st-kind-in">${EB_KIND_LABEL[ebKind(b)]}</span>${ebSoon(b) ? '<span class="st-soon">출시예정</span>' : ''}</span>${(b.desc || '').trim() ? `<button type="button" class="st-more" data-act="ebook-info" data-v="${esc(b.id)}">자세히보기<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>` : ''}</div>${ebAction(b)}</div></article>`;   /* 가격 칩 왼쪽 · 자세히보기 오른쪽 끝(받기 단추 끝에 맞춤) */
+    return `<section class="info-box"><div class="info-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>콘텐츠</h2><p>경매 공부와 실전에 바로 쓰는 전자책 · 리포트 · 매뉴얼을 준비하고 있습니다.</p></div>`
       + `<nav class="st-tabs" role="tablist">${STORE_TABS.filter(([, , f]) => f !== 'admin' || adm).map(([k, t, f]) => `<button type="button" role="tab" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}" data-act="store-tab" data-v="${k}">${t}${k === 'mine' && S.loggedIn ? `<span class="st-cnt">${EB.mine.toLocaleString('ko-KR')}</span>` : ''}${f === 'admin' ? '<span class="adm-chip">운영</span>' : ''}</button>`).join('')}</nav>`
       + (tab === 'mobile' ? `${ebooks.length ? `<div class="st-grid">${ebooks.map(ebCard).join('')}</div>` : ''}<div class="st-mobile">${mobileHtml()}</div></section>`
         : tab === 'manage' ? `<div class="st-manage" id="ebmMount"></div></section>`
         : tab === 'mine' ? (S.loggedIn ? `<div class="st-manage" id="mycMount"></div></section>`
           : `<div class="st-mine-out"><p>로그인하면 받은 콘텐츠를 여기서 다시 받을 수 있습니다.</p><button type="button" class="st-buy" data-act="store-login">로그인</button></div></section>`)
         : ebooks.length ? `<div class="st-grid">${ebooks.map(ebCard).join('')}</div></section>`
-        : `<p class="st-empty">아직 올라온 콘텐츠가 없습니다. 곧 전자책 · 리포트를 올려 드리겠습니다.</p></section>`);
+        : `<p class="st-empty">아직 올라온 콘텐츠가 없습니다. 곧 전자책 · 리포트 · 매뉴얼을 올려 드리겠습니다.</p></section>`);
   };
   /* 핵심 가치 — 서비스 목표 장(소개서)과 같은 네 가지. 앱 소개 페이지(public/app/index.html VALUES)와 같이 고친다 */
   const MOBILE_VALUES = [['현장에서 바로', '조사한 내용을 현관 앞에서 펼쳐 보고 그 자리에서 고칩니다'], ['기록은 남는다', '적고 찍은 모든 것이 사건카드에 쌓여 잊히지 않습니다'],
@@ -9785,13 +9790,14 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'go-mypage': S.menu = null; S.pageTab.more = 'mypage'; if (S.route === 'more') { writeHash(true); renderSubTabs(); renderAppPage(); } else go('more'); break;
       /* 낙찰이후 · 자금관리 · 더보기 — 펼침 메뉴의 항목(data-name)이면 그 하위 탭으로 연다 */
       /* 스토어 — 펼침 칸의 전체 · 전자책 · 리포트는 그 탭으로 */
-      case 'go-store': { const k = { 전체: 'all', 전자책: 'ebook', 리포트: 'report', 모바일앱: 'mobile', 내콘텐츠: 'mine' }[t.dataset.name]; if (k) { S.storeTab = k; store.set('wlp.web.storeTab2', k); } S.menu = null; S.pop = ''; if (S.route === 'store') render(); else go('store'); } break;
+      case 'go-store': { const k = { 전체: 'all', 전자책: 'ebook', 리포트: 'report', 매뉴얼: 'manual', 모바일앱: 'mobile', 내콘텐츠: 'mine' }[t.dataset.name]; if (k) { S.storeTab = k; store.set('wlp.web.storeTab2', k); } S.menu = null; S.pop = ''; if (S.route === 'store') render(); else go('store'); } break;
       case 'go-mobile': S.menu = null; S.pop = ''; S.storeTab = 'mobile'; store.set('wlp.web.storeTab2', 'mobile'); if (S.route === 'store') renderInfo(); else go('store'); break;   /* 모바일앱은 스토어 안 탭 */
       case 'web-guide': if (WEB_GUIDE_URL) window.open(WEB_GUIDE_URL, '_blank', 'noopener'); else toast('‘이용가이드’는 준비 중입니다.', 'info'); break;   /* 하던 화면은 그대로 두고 새 탭 */
       case 'mobile-slide': showSlide(Number(v) || 0); startSlides(); break;
       case 'mobile-more': if (MOBILE_LANDING_URL) location.href = MOBILE_LANDING_URL; else toast('‘앱 소개 페이지’는 준비 중입니다.', 'info'); break;
       case 'ebook-info': if (EB.list.some((b) => b.id === v)) { S.modal = { kind: 'ebinfo', ebook: v }; renderModal(); } break;   /* 콘텐츠 자세히보기 */
       case 'ebook-buy': {
+        if (EB.list.some((x) => x.id === v && x.upcoming === true)) { toast('출시예정 콘텐츠입니다. 출시한 뒤 받을 수 있습니다.', 'info'); break; }
         if (!S.loggedIn) { toast('회원가입 후 로그인하면 구매할 수 있습니다.', 'info'); openAppLogin(); break; }
         if (!EB.list.some((b) => b.id === v)) break;
         S.modal = { kind: 'buy', ebook: v, back: S.modal && S.modal.kind === 'ebinfo' ? S.modal : null }; renderModal(); break;   /* 자세히보기에서 왔으면 닫으면 거기로 */
@@ -9802,6 +9808,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'store-tab': S.storeTab = v; store.set('wlp.web.storeTab2', v); renderInfo(); break;
       /* 전자책 무료로받기 — 회원가입 후 로그인한 회원만. 받은 기록을 남기고(콘텐츠 › 내콘텐츠) 새 탭으로 내려받는다 */
       case 'ebook-get': {
+        if (EB.list.some((x) => x.id === v && x.upcoming === true)) { toast('출시예정 콘텐츠입니다. 출시한 뒤 받을 수 있습니다.', 'info'); break; }
         if (!S.loggedIn) { toast('회원가입 후 로그인하면 무료로 받을 수 있습니다.', 'info'); openAppLogin(); break; }
         const b = EB.list.find((x) => x.id === v); if (!b) break;
         if ((Number(b.price) || 0) > 0) { toast('유료 콘텐츠는 구매한 뒤 받을 수 있습니다.', 'info'); break; }
@@ -9811,6 +9818,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
         break;
       }
       case 'ebook-dl': {
+        if (EB.list.some((x) => x.id === v && x.upcoming === true)) { toast('출시예정 콘텐츠입니다. 출시한 뒤 받을 수 있습니다.', 'info'); break; }
         if (!S.loggedIn) { toast('회원가입 후 로그인하면 무료로 받을 수 있습니다.', 'info'); openAppLogin(); break; }
         const b = EB.list.find((x) => x.id === v); if (!b || !CLOUD.T || !CLOUD.T.downloadEbook) break;
         const w = b.link ? window.open('', '_blank') : null;   /* 드라이브 링크면 누른 자리에서 새 창을 먼저 연다 — 늦게 열면 팝업으로 막힌다. 파일이면 바로 저장 */

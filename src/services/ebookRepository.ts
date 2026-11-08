@@ -53,14 +53,18 @@ export type Ebook = {
   /** 조각 수 — filePath 가 'parts:…' 이면 ebookParts 글 이만큼에 나눠 담겼다 */
   fileParts: number;
   published: boolean;
+  /** 출시예정 — 카드 · 설명은 보이고 받기는 막는다(규칙도 막는다). 출시하면 false */
+  upcoming: boolean;
+  /** 출시일 'YYYY-MM-DD' — 출시예정일 때 받기 단추에 '11월 20일 출시'. 비워도 된다 */
+  releaseDate: string;
   order: number;
   downloads: number;
   createdAt: string;
   updatedAt: string;
 };
 
-export type EbookKind = 'ebook' | 'report' | 'mobile';
-export const EBOOK_KINDS: [EbookKind, string][] = [['ebook', '전자책'], ['report', '리포트'], ['mobile', '모바일앱']];
+export type EbookKind = 'ebook' | 'report' | 'manual' | 'mobile';
+export const EBOOK_KINDS: [EbookKind, string][] = [['ebook', '전자책'], ['report', '리포트'], ['manual', '매뉴얼'], ['mobile', '모바일앱']];
 export const ebookKindLabel = (k: string): string => (EBOOK_KINDS.find(([v]) => v === k) ?? EBOOK_KINDS[0])[1];
 
 export type EbookReceipt = { id: string; uid: string; ebookId: string; title: string; receivedAt: string };
@@ -69,7 +73,7 @@ export const newEbookId = (): string => `eb${Date.now().toString(36)}${Math.rand
 
 export const emptyEbook = (): Ebook => ({
   id: '', title: '', summary: '', desc: '', tag: '', kind: 'ebook', price: 0, coverUrl: '', coverPath: '', link: '', filePath: '', fileName: '', fileSize: 0, fileParts: 0,
-  published: false, order: Date.now(), downloads: 0, createdAt: '', updatedAt: '',
+  published: false, upcoming: false, releaseDate: '', order: Date.now(), downloads: 0, createdAt: '', updatedAt: '',
 });
 
 /** 내용 글자 수 한도 */
@@ -83,6 +87,14 @@ export const ebookSummary = (b: Pick<Ebook, 'summary' | 'desc'>): string =>
 export const ebookBodyHtml = (text: string): string =>
   (text || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string)
     .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>');
+
+/** 출시예정인가 — 보이기만 하고 받지 못한다 */
+export const isUpcomingEbook = (b: Partial<Pick<Ebook, 'upcoming'>>): boolean => b.upcoming === true;
+/** 출시예정 단추 글 — 출시일이 있으면 '11월 20일 출시', 없으면 '출시예정' */
+export const ebookReleaseText = (b: Partial<Pick<Ebook, 'releaseDate'>>): string => {
+  const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(b.releaseDate || '');
+  return m ? `${Number(m[1])}월 ${Number(m[2])}일 출시` : '출시예정';
+};
 
 /** 유료인가 — 값이 1원 이상 */
 export const isPaidEbook = (b: Pick<Ebook, 'price'>): boolean => (Number(b.price) || 0) > 0;
@@ -200,7 +212,7 @@ export const saveEbook = async (
 };
 
 /** 올리기 · 내리기 · 차례만 바꾸기(운영자) — 파일은 건드리지 않는다 */
-export const patchEbook = async (id: string, patch: Partial<Pick<Ebook, 'published' | 'order'>>): Promise<void> => {
+export const patchEbook = async (id: string, patch: Partial<Pick<Ebook, 'published' | 'order' | 'upcoming'>>): Promise<void> => {
   if (!firestore) throw new Error(firestoreDisabledReason ?? '연결되지 않았습니다.');
   await updateDoc(doc(firestore, BOOKS, id), patch);
 };
@@ -222,11 +234,12 @@ export const removeEbook = async (book: Ebook): Promise<void> => {
  * 로그인 전이면 'login' 을 던진다 — 화면이 로그인 창을 띄운다.
  */
 export const downloadEbook = async (
-  book: Pick<Ebook, 'id' | 'title' | 'filePath' | 'price' | 'link' | 'fileName' | 'fileParts'>,
+  book: Pick<Ebook, 'id' | 'title' | 'filePath' | 'price' | 'link' | 'fileName' | 'fileParts'> & Partial<Pick<Ebook, 'upcoming'>>,
   win?: Window | null,
 ): Promise<void> => {
   const uid = auth?.currentUser?.uid;
   if (!uid) throw new Error('login');
+  if (isUpcomingEbook(book)) throw new Error('출시예정 콘텐츠입니다. 출시한 뒤 받을 수 있습니다.');   // 규칙도 막는다
   if (isPaidEbook(book)) throw new Error('유료 콘텐츠는 결제를 붙인 뒤 받을 수 있습니다.');   // 규칙(firestore.rules)도 막는다
   if (!firestore) throw new Error('연결되지 않았습니다.');
   if (!hasEbookFile(book)) throw new Error('아직 파일이 올라오지 않은 책입니다.');

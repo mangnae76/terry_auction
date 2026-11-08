@@ -13,9 +13,11 @@ import {
   EBOOK_MAX_MB,
   ebookBodyHtml,
   ebookKindLabel,
+  ebookReleaseText,
   emptyEbook,
   hasEbookFile,
   isPaidEbook,
+  isUpcomingEbook,
   patchEbook,
   removeEbook,
   saveEbook,
@@ -36,7 +38,8 @@ const editing = computed(() => !!draft.value.id);
 const pdf = ref<File | null>(null);
 const cover = ref<File | null>(null);
 const coverPreview = ref('');
-const publishNow = ref(true);
+/** 상태 — 출시예정(보이기만, 받기 막음) · 공개(받기) */
+const status = ref<'upcoming' | 'open'>('open');
 const progress = ref(0);
 const saving = ref(false);
 const formEl = ref<HTMLElement | null>(null);
@@ -61,10 +64,10 @@ const why = (e: unknown, fallback: string) => {
 
 const setCoverPreview = (url: string) => { if (coverPreview.value.startsWith('blob:')) URL.revokeObjectURL(coverPreview.value); coverPreview.value = url; };
 const reset = () => {
-  draft.value = emptyEbook(); paid.value = false; pdf.value = null; cover.value = null; setCoverPreview(''); publishNow.value = true; progress.value = 0; showPrev.value = false;
+  draft.value = emptyEbook(); paid.value = false; pdf.value = null; cover.value = null; setCoverPreview(''); status.value = 'open'; progress.value = 0; showPrev.value = false;
 };
 const openEdit = (b: Ebook) => {
-  draft.value = { ...emptyEbook(), ...b }; paid.value = isPaidEbook(b); pdf.value = null; cover.value = null; setCoverPreview(b.coverUrl); publishNow.value = b.published; progress.value = 0; showPrev.value = false;
+  draft.value = { ...emptyEbook(), ...b }; paid.value = isPaidEbook(b); pdf.value = null; cover.value = null; setCoverPreview(b.coverUrl); status.value = isUpcomingEbook(b) ? 'upcoming' : 'open'; progress.value = 0; showPrev.value = false;
   nextTick(() => formEl.value?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
 };
 
@@ -128,24 +131,24 @@ const fileText = computed(() => {
   return null;
 });
 
-/** 저장 — 임시저장은 숨김으로, 올리기는 '바로공개'를 따른다 */
-const save = async (asDraft: boolean) => {
+/** 저장 — 고른 상태(출시예정 · 공개)로 올린다. 출시예정은 파일 없이도 올릴 수 있다 */
+const save = async () => {
   const d = draft.value;
   if (!d.title.trim()) { flash('제목을 적어 주세요.'); return; }
   if (paid.value && !(d.price > 0)) { flash('유료 금액을 적어 주세요.'); return; }
   const link = (d.link || '').trim();
   if (link && !/^https:\/\//.test(link)) { flash('링크는 https:// 로 시작하는 주소를 붙여 넣어 주세요.'); return; }
-  const publish = !asDraft && publishNow.value;
-  if (publish && !link && !d.filePath && !pdf.value) { flash('책 파일을 올리거나 구글드라이브 링크를 붙여 넣어 주세요.'); return; }
+  const soon = status.value === 'upcoming';
+  if (!soon && !link && !d.filePath && !pdf.value) { flash('책 파일을 올리거나 구글드라이브 링크를 붙여 넣어 주세요.'); return; }
   saving.value = true;
   progress.value = 0;
   try {
     await saveEbook(
-      { ...d, link, title: d.title.trim(), summary: (d.summary || '').trim(), desc: d.desc.trim(), price: paid.value ? d.price : 0, published: publish },
+      { ...d, link, title: d.title.trim(), summary: (d.summary || '').trim(), desc: d.desc.trim(), price: paid.value ? d.price : 0, published: true, upcoming: soon, releaseDate: soon ? (d.releaseDate || '') : '' },
       { pdf: link ? null : pdf.value, cover: cover.value },
       (r) => { progress.value = r; },
     );
-    flash(publish ? '올렸습니다. 콘텐츠 카드에 바로 나갑니다.' : '숨김으로 저장했습니다. 회원에게는 아직 보이지 않습니다.');
+    flash(soon ? '출시예정으로 올렸습니다. 카드는 보이고 받기는 막혀 있습니다.' : '올렸습니다. 콘텐츠 카드에 바로 나갑니다.');
     reset();
   } catch (e) {
     flash(why(e, '저장하지 못했습니다. 잠시 뒤 다시 해 주세요.'), 7000);
@@ -154,10 +157,12 @@ const save = async (asDraft: boolean) => {
   }
 };
 
-const setPublished = async (b: Ebook, on: boolean) => {
-  if (on && !hasEbookFile(b)) { flash('책 파일이 없어 공개할 수 없습니다. 고치기에서 파일이나 구글드라이브 링크를 넣어 주세요.'); return; }
-  try { await patchEbook(b.id, { published: on }); flash(on ? '공개했습니다.' : '내렸습니다 — 회원에게 보이지 않습니다.'); } catch (e) { flash(why(e, '바꾸지 못했습니다.'), 7000); }
+/** 표에서 상태 바꾸기 — 공개(받기 열기) · 출시예정(받기 막기) */
+const setStatus = async (b: Ebook, open: boolean) => {
+  if (open && !hasEbookFile(b)) { flash('책 파일이 없어 공개할 수 없습니다. 고치기에서 파일이나 구글드라이브 링크를 넣어 주세요.'); return; }
+  try { await patchEbook(b.id, { published: true, upcoming: !open }); flash(open ? '공개했습니다. 이제 받을 수 있습니다.' : '출시예정으로 바꿨습니다. 받기가 막힙니다.'); } catch (e) { flash(why(e, '바꾸지 못했습니다.'), 7000); }
 };
+const statusOf = (b: Ebook) => (!b.published ? { t: '숨김', c: 'off' } : isUpcomingEbook(b) ? { t: '출시예정', c: 'soon' } : { t: '공개', c: 'on' });
 
 /** 차례 바꾸기 — 작은 것이 위 */
 const move = async (b: Ebook, dir: -1 | 1) => {
@@ -259,14 +264,15 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
 
         <div class="ebm-foot">
           <div class="ebm-chks">
-            <label class="ebm-chk"><input v-model="publishNow" type="checkbox" />바로공개</label>
+            <span class="ebm-lb">상태</span>
+            <div class="ebm-seg"><button type="button" :class="{ on: status === 'upcoming' }" @click="status = 'upcoming'">출시예정</button><button type="button" :class="{ on: status === 'open' }" @click="status = 'open'">공개</button></div>
+            <label v-if="status === 'upcoming'" class="ebm-rel"><input v-model="draft.releaseDate" class="ebm-in" type="date" aria-label="출시일" /><small>출시일(비워도 됨)</small></label>
             <!-- 받기는 늘 로그인한 회원만 — 파일 조각 읽기 규칙 · 받은 기록(회원 아이디)이 로그인을 요구한다 -->
-            <p class="ebm-note">받기는 회원가입 후 로그인한 회원만 할 수 있습니다.</p>
+            <p class="ebm-note">{{ status === 'upcoming' ? '출시예정은 카드 · 설명만 보이고 받기는 막힙니다(무료 · 유료 모두).' : '받기는 회원가입 후 로그인한 회원만 할 수 있습니다.' }}</p>
           </div>
           <div class="ebm-btns">
             <button v-if="editing" type="button" class="ebm-btn" :disabled="saving" @click="reset">취소</button>
-            <button type="button" class="ebm-btn" :disabled="saving" @click="save(true)">임시저장</button>
-            <button type="button" class="ebm-btn ebm-pri" :disabled="saving" @click="save(false)">{{ saving ? '올리는 중' : editing ? '고친내용저장' : '올리기' }}</button>
+            <button type="button" class="ebm-btn ebm-pri" :disabled="saving" @click="save">{{ saving ? '올리는 중' : editing ? '고친내용저장' : '올리기' }}</button>
           </div>
         </div>
       </div>
@@ -287,14 +293,14 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
             </td>
             <td>{{ ebookKindLabel(b.kind) }}</td>
             <td><span :class="['ebm-pill', isPaidEbook(b) ? 'paid' : 'free']">{{ priceLabel(b) }}</span></td>
-            <td><span :class="['ebm-pill', b.published ? 'on' : 'off']">{{ b.published ? '공개' : '숨김' }}</span></td>
+            <td><span :class="['ebm-pill', statusOf(b).c]">{{ statusOf(b).t }}</span><small v-if="isUpcomingEbook(b) && b.releaseDate" class="ebm-reld">{{ ebookReleaseText(b) }}</small></td>
             <td class="r">{{ (b.downloads || 0).toLocaleString('ko-KR') }}명</td>
             <td>{{ day(b.createdAt) }}</td>
             <td class="ebm-ac">
               <button type="button" class="ebm-sq" :disabled="i === 0" aria-label="위로" @click="move(b, -1)">▲</button>
               <button type="button" class="ebm-sq" :disabled="i === books.length - 1" aria-label="아래로" @click="move(b, 1)">▼</button>
               <button type="button" @click="openEdit(b)">고치기</button>
-              <button type="button" @click="setPublished(b, !b.published)">{{ b.published ? '내리기' : '공개' }}</button>
+              <button type="button" @click="setStatus(b, statusOf(b).c !== 'on')">{{ statusOf(b).c === 'on' ? '출시예정으로' : '공개' }}</button>
               <button type="button" class="ebm-del" @click="askRemove(b)">지우기</button>
             </td>
           </tr>
@@ -402,6 +408,11 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
 .ebm-pill.free { background: #e8f6ee; color: #15803d; }
 .ebm-pill.paid, .ebm-pill.on { background: var(--e-blue-soft); color: var(--e-blue); }
 .ebm-pill.off { background: var(--e-bg2); color: var(--e-muted); }
+.ebm-pill.soon { background: #fff4e5; color: #b45309; }
+.ebm-reld { display: block; margin-top: 3px; font-size: 12px; color: var(--e-muted); }
+.ebm-rel { display: inline-flex; align-items: center; gap: 6px; }
+.ebm-rel .ebm-in { width: 150px; height: 34px; }
+.ebm-rel small { font-size: 12px; color: var(--e-muted); }
 .ebm-list .ebm-ac { text-align: right; }
 .ebm-list .ebm-ac button { height: 28px; margin-left: 4px; padding: 0 9px; border: 1px solid var(--e-line); border-radius: 6px; background: var(--e-bg); color: var(--e-text); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 .ebm-list .ebm-ac button.ebm-sq { width: 28px; padding: 0; }
