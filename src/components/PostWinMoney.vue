@@ -270,9 +270,11 @@ const finals = computed(() => ({ plan: finalCase('plan'), deal: finalCase('deal'
 /** 보일 시나리오 — 협의 종결이면 강제집행은 뺀다 */
 // 수익분석 몇 안의 명도비인지 이름에 — 확정 안 했으면 A안 값을 쓴다
 const planMarked = computed(() => confirmedMarkOf(props.auction) >= 0);
-const planEvictName = computed(() => `수익분석 ${'ABCD'[Math.max(0, confirmedMarkOf(props.auction))]}안 명도비`);
+const planEvictName = '수익분석 명도비';
+/** 어느 안인지는 제목 옆 칩으로 — 확정했으면 'B안 확정', 안 했으면 'A안' */
+const planChip = computed(() => (planMarked.value ? `${'ABCD'[confirmedMarkOf(props.auction)]}안 확정` : 'A안'));
 const evScenarios = computed(() => ([
-  ['plan', `${planEvictName.value}`, planMarked.value ? '확정한 안에 적은 금액 그대로' : '확정한 안이 없어 A안 금액 그대로'],
+  ['plan', planEvictName, planMarked.value ? '확정한 안에 적은 금액 그대로' : '확정한 안이 없어 A안 금액 그대로'],
   ['deal', '명도협의', '자동 계산 — 이사비 · 서류 · 지연 비용'],
   ['exec', '강제집행', '자동 계산 — 집행 비용 · 서류 · 지연 비용'],
 ] as Array<[EvKey, string, string]>));
@@ -301,7 +303,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
       <div :class="['pwm-cmp', { three: webEmbed && !dealDone, two: webEmbed && dealDone }]">
         <!-- ① 수익분석에 사용자가 적은 명도비 — 그대로 -->
         <article v-if="webEmbed" class="pwm-case plan">
-          <h3>{{ planEvictName }}</h3>
+          <h3>{{ planEvictName }}<span :class="['pwm-plan-chip', { on: planMarked }]">{{ planChip }}</span></h3>
           <div class="pwm-grpbox">
             <p class="pwm-grp"><span>명도비 <em>{{ planName }}에 적은 금액 그대로</em></span><b>{{ won(planEvict) }}</b></p>
           </div>
@@ -433,7 +435,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
         <h3 class="pwm-finals-h"><svg class="pwm-h3-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18" /><path d="m7 15 4-4 3 3 5-6" /></svg>최종 예상 순수익 <em>명도비용 포함</em></h3>
         <div :class="['pwm-finals-grid', { three: evScenarios.length === 3, rows: webEmbed }]">
           <article v-for="([k, name, sub], ni) in evScenarios" :key="k" :class="['pwm-card', 'pwm-final', k]">
-            <h4><small>{{ ni + 1 }}</small>{{ name }}<em>{{ sub }}</em></h4>
+            <h4><small>{{ ni + 1 }}</small>{{ name }}<span v-if="k === 'plan'" :class="['pwm-plan-chip', { on: planMarked }]">{{ planChip }}</span><em>{{ sub }}</em></h4>
             <dl>
               <div><dt>{{ who === 'biz' ? '매매차익' : '양도차익' }}</dt><dd>{{ won(tradeGain) }}<small>매도가 − 낙찰가 − 필요경비</small></dd></div>
               <div><dt>− 사업경비</dt><dd>{{ won(bizBase) }}<small>이자 · 관리비 · 수리 · 광고 등(명도비용 빼고)</small></dd></div>
@@ -462,6 +464,8 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 </template>
 
 <style scoped>
+.pwm-plan-chip { display: inline-flex; align-items: center; height: 20px; margin-left: 6px; padding: 0 8px; border-radius: 999px; background: #f1f3f8; color: #6b7280; font-size: 12px; font-weight: 700; vertical-align: 2px; white-space: nowrap; }   /* 어느 안의 명도비인지 — 확정안은 파랑 */
+.pwm-plan-chip.on { background: #eef3ff; color: #2b6df3; }
 .pwm { color-scheme: light; background: #fff; border-radius: 10px; padding: 24px 32px 30px; color: #111827; }
 .pwm-head { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid #eef1f6; }
 .pwm-head h2 { margin: 0; display: inline-flex; align-items: center; gap: 6px; font-size: var(--title-fs, 16px); font-weight: 800; color: #111827; }
