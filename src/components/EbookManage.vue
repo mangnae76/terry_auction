@@ -37,11 +37,21 @@ const openNew = () => { draft.value = emptyEbook(); pdf.value = null; cover.valu
 const openEdit = (b: Ebook) => { draft.value = { ...b }; pdf.value = null; cover.value = null; coverPreview.value = b.coverUrl; progress.value = 0; };
 const close = () => { draft.value = null; };
 
-const onPdf = (e: Event) => {
-  const f = (e.target as HTMLInputElement).files?.[0] ?? null;
-  if (f && f.size > EBOOK_MAX_MB * 1024 * 1024) { flash(`책 파일은 ${EBOOK_MAX_MB}MB 까지 올릴 수 있습니다.`); (e.target as HTMLInputElement).value = ''; return; }
+/** 책 파일 받기 — 고르기 단추와 끌어다 놓기 상자가 같이 쓴다 */
+const takePdf = (f: File | null): boolean => {
+  if (!f) return false;
+  if (!/\.(pdf|epub)$/i.test(f.name)) { flash('PDF · EPUB 파일만 올릴 수 있습니다.'); return false; }
+  if (f.size > EBOOK_MAX_MB * 1024 * 1024) { flash(`책 파일은 ${EBOOK_MAX_MB}MB 까지 올릴 수 있습니다.`); return false; }
   pdf.value = f;
+  return true;
 };
+const onPdf = (e: Event) => {
+  const el = e.target as HTMLInputElement;
+  if (!takePdf(el.files?.[0] ?? null)) el.value = '';
+};
+/* 끌어다 놓기 — 상자 위에 있는 동안 파란 테두리 */
+const dragOn = ref(false);
+const onDrop = (e: DragEvent) => { dragOn.value = false; takePdf(e.dataTransfer?.files?.[0] ?? null); };
 const onCover = (e: Event) => {
   const f = (e.target as HTMLInputElement).files?.[0] ?? null;
   cover.value = f;
@@ -127,6 +137,18 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
           <span class="ebm-file"><label class="pick">파일고르기<input type="file" accept="application/pdf,.pdf,.epub" @change="onPdf" /></label>
             <small>{{ pdf ? `${pdf.name} · ${sizeText(pdf.size)}` : draft.fileName ? `${draft.fileName} · ${sizeText(draft.fileSize)} (새로 고르면 바뀝니다)` : `PDF · EPUB, ${EBOOK_MAX_MB}MB 까지` }}</small></span>
         </div>
+        <!-- 책 파일 끌어다 놓기 — 파일고르기 아래 -->
+        <div
+          :class="['ebm-drop', { on: dragOn, has: !!pdf }]"
+          @dragenter.prevent="dragOn = true"
+          @dragover.prevent="dragOn = true"
+          @dragleave.prevent="dragOn = false"
+          @drop.prevent="onDrop"
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5" /><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" /></svg>
+          <b>{{ pdf ? pdf.name : '책 파일을 여기로 끌어다 놓으세요' }}</b>
+          <small>{{ pdf ? `${sizeText(pdf.size)} · 다른 파일을 놓으면 바뀝니다` : `PDF · EPUB, ${EBOOK_MAX_MB}MB 까지` }}</small>
+        </div>
         <div v-if="saving" class="ebm-bar" role="progressbar" :aria-valuenow="Math.round(progress * 100)" aria-valuemin="0" aria-valuemax="100"><i :style="{ width: pct }" /><b>{{ pct }}</b></div>
         <div class="ebm-acts">
           <button type="button" class="ghost" :disabled="saving" @click="close">닫기</button>
@@ -187,6 +209,12 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
 .ebm-tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .ebm-tags button { height: 30px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 999px; background: #fff; color: #4b5563; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .ebm-tags button.on { border-color: #2b6df3; background: #eef3ff; color: #2b6df3; }
+.ebm-drop { margin-left: 82px; display: grid; justify-items: center; gap: 4px; padding: 18px 12px; border: 2px dashed #c9d6f5; border-radius: 10px; background: #fff; color: #6b7280; text-align: center; transition: border-color .15s, background .15s; }
+.ebm-drop svg { color: #9fb8f5; }
+.ebm-drop b { font-size: 14px; font-weight: 700; color: #374151; word-break: break-all; }
+.ebm-drop small { font-size: 12px; color: #9ca3af; }
+.ebm-drop.on { border-color: #2b6df3; background: #eef3ff; } .ebm-drop.on svg { color: #2b6df3; }
+.ebm-drop.has { border-style: solid; border-color: #9fb8f5; } .ebm-drop.has svg { color: #2b6df3; }
 .ebm-bar { position: relative; height: 22px; margin-left: 82px; border-radius: 6px; background: #e5eaf4; overflow: hidden; }
 .ebm-bar i { position: absolute; inset: 0 auto 0 0; background: #2b6df3; transition: width .2s; }
 .ebm-bar b { position: relative; display: block; text-align: center; line-height: 22px; font-size: 12px; color: #fff; mix-blend-mode: difference; }
