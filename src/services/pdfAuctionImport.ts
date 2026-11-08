@@ -4,6 +4,7 @@ import type { AuctionHistoryRow, NearBidRow, RealTradeRow } from '../types/aucti
 import { formatNumber, parseKoreanPriceText } from '../utils/numberFormat';
 import { pickCurrentRound } from '../utils/auctionSchedule';
 import { apiPath } from './apiBase';
+import { applyAuction1, isAuction1Pdf } from './pdfAuction1';
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -1220,7 +1221,19 @@ const parseBuildingHeader = (text: string) => {
   };
 };
 
+/** PDF 글 → 물건 칸. 옥션원 인쇄본이면 옥션원 자리에서 한 번 더 읽어 고친다(pdfAuction1) */
 export const parseAuctionPdfText = (
+  text: string,
+  sourceName: string,
+  sourceUrl?: string,
+  sourceFolderUrl?: string,
+  sourceFileId?: string,
+): ParsedPdfAuction => {
+  const base = parseAuctionPdfTextBase(text, sourceName, sourceUrl, sourceFolderUrl, sourceFileId);
+  return isAuction1Pdf(text) ? applyAuction1(text, base) : base;
+};
+
+const parseAuctionPdfTextBase = (
   text: string,
   sourceName: string,
   sourceUrl?: string,
