@@ -79,9 +79,13 @@ export const subscribeEbooks = (
 const extOf = (name: string, fallback: string) => (/\.([a-z0-9]{2,5})$/i.exec(name)?.[1] ?? fallback).toLowerCase();
 
 /** 파일 하나 올리기 — 몇 % 올렸는지 onProgress(0~1) 로 알린다 */
-const upload = (path: string, file: File, onProgress?: (r: number) => void): Promise<void> => new Promise((resolve, reject) => {
+const upload = (path: string, file: File, onProgress?: (r: number) => void, download = false): Promise<void> => new Promise((resolve, reject) => {
   if (!storage) { reject(new Error('파일 저장소가 연결되지 않았습니다.')); return; }
-  const task = uploadBytesResumable(storageRef(storage, path), file, { contentType: file.type || 'application/octet-stream' });
+  const task = uploadBytesResumable(storageRef(storage, path), file, {
+    contentType: file.type || 'application/octet-stream',
+    // 책 파일은 열 때 새 탭에 띄우지 않고 바로 내려받게 — 원래 파일 이름 그대로
+    ...(download ? { contentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}` } : {}),
+  });
   task.on('state_changed', (s) => onProgress?.(s.totalBytes ? s.bytesTransferred / s.totalBytes : 0), reject, () => resolve());
 });
 
@@ -106,7 +110,7 @@ export const saveEbook = async (
   if (files.pdf) {
     if (files.pdf.size > EBOOK_MAX_MB * 1024 * 1024) throw new Error(`파일이 ${EBOOK_MAX_MB}MB 보다 큽니다.`);
     const path = `ebooks/${id}/${Date.now()}.${extOf(files.pdf.name, 'pdf')}`;
-    await upload(path, files.pdf, onProgress);
+    await upload(path, files.pdf, onProgress, true);
     if (book.filePath && book.filePath !== path) await dropFile(book.filePath);
     next.filePath = path;
     next.fileName = files.pdf.name;
