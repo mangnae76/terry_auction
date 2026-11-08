@@ -21,6 +21,7 @@ import {
   tagAt,
   titleOf,
   whenLabel,
+  nowLocal,
   type BoardKind,
   type BoardPost,
 } from '../services/boardRepository';
@@ -190,7 +191,10 @@ const save = async (publish: boolean) => {
       title: d.title.trim(),
       body: (d.body ?? '').trim(),
     });
-    flash(publish ? '올렸습니다. 앱에 바로 나갑니다.' : '작성 중으로 담아 두었습니다. 앱에는 아직 나가지 않습니다.');
+    // 올리는 때를 뒤로 잡아 두었으면 '바로 나간다'고 하지 않는다 — 그때까지는 웹 · 앱 어디에도 안 보인다
+    const later = publish && !!d.startAt && d.startAt > nowLocal();
+    flash(!publish ? '작성 중으로 담아 두었습니다. 웹 · 앱에는 아직 나가지 않습니다.'
+      : later ? `예약했습니다. ${whenLabel(d.startAt!)}에 웹 · 앱에 나갑니다.` : '올렸습니다. 웹 · 앱에 바로 나갑니다.');
     close();
   } catch (e) {
     flash(reason(e, '저장하지 못했습니다.'));
@@ -444,7 +448,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             </div>
           </div>
           <p class="adb-note">
-            {{ hasEnd ? '예약한 때가 되면 앱에서 저절로 올라오고 내려갑니다.' : '예약한 때가 되면 앱에 저절로 올라갑니다.' }}
+            {{ hasEnd ? '비워 두면 바로 올라갑니다. 예약한 때가 되면 웹 · 앱에서 저절로 올라오고 내려갑니다.' : '비워 두면 바로 올라갑니다. 예약한 때가 되면 웹 · 앱에 저절로 올라갑니다.' }}
           </p>
 
           <!-- 꼬리말 예약 — 이벤트에만 (때맞춰 안내 → 진행 → 마감) -->
