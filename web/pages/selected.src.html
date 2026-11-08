@@ -3349,7 +3349,8 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .st-cover[data-act], .st-body h3[data-act] { cursor: pointer; } .st-body h3[data-act]:hover { color: var(--blue); }
 .st-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .st-meta .st-free, .st-meta .st-price { align-self: auto; }
-.st-more { margin: 0; padding: 0; border: 0; background: none; color: var(--blue); font-size: 13px; font-weight: 700; cursor: pointer; } .st-more:hover { text-decoration: underline; }
+.st-more svg { width: 14px; height: 14px; margin-left: 2px; pointer-events: none; }
+.st-more { display: inline-flex; align-items: center; margin: 0; padding: 0; border: 0; background: none; color: var(--blue); font-size: 13px; font-weight: 700; cursor: pointer; } .st-more:hover { text-decoration: underline; }
 /* 콘텐츠 자세히보기 창 */
 .dialog.eb-dlg { width: min(640px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; padding: 26px 28px 28px; display: flex; flex-direction: column; gap: 18px; }
 .eb-dlg .buy-head h2 { font-size: 20px; line-height: 1.4; } .eb-dlg .buy-head h2 em { font-style: normal; color: var(--blue); }
@@ -8803,7 +8804,7 @@ span.cal-day.has { cursor: help; }
     /* 무료(0원)는 로그인한 회원 누구나 — 무료로받기 → 다운로드 단추로 바뀌고, 누르면 PDF 를 내려받는다. 유료는 구매하기 창(결제 연동 전이라 결제는 준비 중) */
     /* 카드 — 표지 · 제목 · 한줄설명. 표지 · 제목 · 자세히보기를 누르면 내용(줄바꿈 그대로) 창 */
     const ebCard = (b) => `<article class="st-card">${b.coverUrl ? `<div class="st-cover img" data-act="ebook-info" data-v="${esc(b.id)}"><img src="${esc(b.coverUrl)}" alt="" loading="lazy"><span class="st-kind">${EB_KIND_LABEL[ebKind(b)]}</span></div>` : `<div class="st-cover navy" data-act="ebook-info" data-v="${esc(b.id)}"><span class="st-kind">${EB_KIND_LABEL[ebKind(b)]}</span><strong>${esc(b.title)}</strong></div>`}`
-      + `<div class="st-body"><h3 data-act="ebook-info" data-v="${esc(b.id)}">${b.tag ? `<em>[${esc(b.tag)}]</em> ` : ''}${esc(b.title)}</h3><p>${esc(ebSummary(b))}</p><div class="st-meta">${ebPriceTag(b)}${(b.desc || '').trim() ? `<button type="button" class="st-more" data-act="ebook-info" data-v="${esc(b.id)}">자세히보기</button>` : ''}</div>${ebAction(b)}</div></article>`;   /* 가격 칩 왼쪽 · 자세히보기 오른쪽 끝(받기 단추 끝에 맞춤) */
+      + `<div class="st-body"><h3 data-act="ebook-info" data-v="${esc(b.id)}">${b.tag ? `<em>[${esc(b.tag)}]</em> ` : ''}${esc(b.title)}</h3><p>${esc(ebSummary(b))}</p><div class="st-meta">${ebPriceTag(b)}${(b.desc || '').trim() ? `<button type="button" class="st-more" data-act="ebook-info" data-v="${esc(b.id)}">자세히보기<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>` : ''}</div>${ebAction(b)}</div></article>`;   /* 가격 칩 왼쪽 · 자세히보기 오른쪽 끝(받기 단추 끝에 맞춤) */
     return `<section class="info-box"><div class="info-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>콘텐츠</h2><p>경매 공부와 실전에 바로 쓰는 전자책 · 리포트를 준비하고 있습니다.</p></div>`
       + `<nav class="st-tabs" role="tablist">${STORE_TABS.filter(([, , f]) => f !== 'admin' || adm).map(([k, t, f]) => `<button type="button" role="tab" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}" data-act="store-tab" data-v="${k}">${t}${k === 'mine' && S.loggedIn ? `<span class="st-cnt">${EB.mine.toLocaleString('ko-KR')}</span>` : ''}${f === 'admin' ? '<span class="adm-chip">운영</span>' : ''}</button>`).join('')}</nav>`
       + (tab === 'mobile' ? `${ebooks.length ? `<div class="st-grid">${ebooks.map(ebCard).join('')}</div>` : ''}<div class="st-mobile">${mobileHtml()}</div></section>`
