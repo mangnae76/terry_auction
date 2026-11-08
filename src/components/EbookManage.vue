@@ -7,8 +7,11 @@ import type { ConfirmBox } from '../services/confirmBox';
 import { userMessage } from '../services/userMessage';
 import { auth } from '../services/firebase';
 import {
+  EBOOK_KINDS,
   EBOOK_MAX_MB,
+  ebookKindLabel,
   emptyEbook,
+  hasEbookFile,
   isPaidEbook,
   patchEbook,
   removeEbook,
@@ -41,7 +44,7 @@ const why = (e: unknown, fallback: string) => {
   const m = e instanceof Error ? e.message : '';
   const res = String((e as { customData?: { serverResponse?: string } })?.customData?.serverResponse ?? '');
   // 저장소 402 — 프로젝트 결제 계정이 닫히면 파일 저장소 전체가 멈춘다(규칙 · 계정과 무관)
-  if (/billing|"code":\s*402/i.test(`${m} ${res}`)) return '파일 저장소가 멈춰 있습니다. Firebase 결제 계정(Blaze)이 닫혀 있어 책 파일을 올릴 수 없습니다.';
+  if (/billing|"code":\s*402/i.test(`${m} ${res}`)) return '파일 저장소가 멈춰 있어(결제 계정 닫힘) 파일은 올릴 수 없습니다. 파일을 빼고 책 링크에 구글드라이브 링크를 넣어 주세요.';
   if (/permission|insufficient|unauthorized|unauthenticated/i.test(`${code} ${m}`)) {
     return `이 계정(${auth?.currentUser?.email || '로그인 안 됨'})에는 올릴 권한이 없습니다. 운영자 계정으로 로그인했는지 확인해 주세요.`;
   }
@@ -95,11 +98,13 @@ const save = async (publish: boolean) => {
   if (!d) return;
   if (!d.title.trim()) { flash('책 제목을 적어 주세요.'); return; }
   if (paid.value && !(d.price > 0)) { flash('유료 금액을 적어 주세요.'); return; }
-  if (publish && !d.filePath && !pdf.value) { flash('책 파일(PDF)을 골라 주세요.'); return; }
+  const link = (d.link || '').trim();
+  if (link && !/^https:\/\//.test(link)) { flash('링크는 https:// 로 시작하는 주소를 붙여 넣어 주세요.'); return; }
+  if (publish && !link && !d.filePath && !pdf.value) { flash('구글드라이브 링크를 붙여 넣어 주세요.'); return; }
   saving.value = true;
   progress.value = 0;
   try {
-    await saveEbook({ ...d, title: d.title.trim(), desc: d.desc.trim(), price: paid.value ? d.price : 0, published: publish }, { pdf: pdf.value, cover: cover.value }, (r) => { progress.value = r; });
+    await saveEbook({ ...d, link, title: d.title.trim(), desc: d.desc.trim(), price: paid.value ? d.price : 0, published: publish }, { pdf: pdf.value, cover: cover.value }, (r) => { progress.value = r; });
     flash(publish ? '올렸습니다. 콘텐츠 › 전자책에 바로 나갑니다.' : '작성 중으로 담아 두었습니다. 회원에게는 아직 보이지 않습니다.');
     close();
   } catch (e) {
@@ -110,7 +115,7 @@ const save = async (publish: boolean) => {
 };
 
 const setPublished = async (b: Ebook, on: boolean) => {
-  if (on && !b.filePath) { flash('책 파일이 없어 올릴 수 없습니다 — 고치기에서 파일을 골라 주세요.'); return; }
+  if (on && !hasEbookFile(b)) { flash('책 링크가 없어 올릴 수 없습니다. 고치기에서 구글드라이브 링크를 넣어 주세요.'); return; }
   try { await patchEbook(b.id, { published: on }); flash(on ? '올렸습니다.' : '내렸습니다 — 회원에게 보이지 않습니다.'); } catch (e) { flash(why(e, '바꾸지 못했습니다.'), 7000); }
 };
 
@@ -165,7 +170,13 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
               <button type="button" :class="{ on: paid }" @click="setPaid(true)">유료</button>
             </div>
             <label v-if="paid" class="amt"><input :value="priceText" type="text" inputmode="numeric" maxlength="9" placeholder="0" @input="onPrice" /><em>원</em></label>
-            <small v-if="paid">결제는 아직 붙이지 않았습니다. 지금은 카드에 결제준비중으로 나갑니다.</small>
+            <small v-if="paid">카드에 구매하기 단추가 나갑니다. 결제는 아직 붙이지 않았습니다.</small>
+          </div>
+        </div>
+        <!-- 분류 — 콘텐츠 어느 탭(전자책 · 리포트 · 모바일앱)에 나갈지 -->
+        <div class="f"><span>분류</span>
+          <div class="ebm-tags">
+            <button v-for="[k, t] in EBOOK_KINDS" :key="k" type="button" :class="{ on: (draft.kind || 'ebook') === k }" @click="draft!.kind = k">{{ t }}</button>
           </div>
         </div>
         <!-- 설명 — 300자가 다 보이는 높이, 오른쪽 아래 글자 수 -->
@@ -175,6 +186,9 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
           <span class="ebm-file"><label class="pick">그림고르기<input type="file" accept="image/*" @change="onCover" /></label>
             <small>{{ cover ? cover.name : draft.coverUrl ? '올린 표지가 있습니다 (새로 고르면 바뀝니다)' : '고른 그림이 없습니다 · 세로 3:4 권장' }}</small></span>
         </div>
+        <!-- 책 링크 — 구글드라이브 공유 링크. 회원은 다운로드를 누르면 여기서 바로 받는다 -->
+        <label class="f top"><span>책 링크</span><span class="ebm-link"><input v-model="draft.link" type="url" placeholder="https://drive.google.com/file/d/…" />
+          <small>구글드라이브에서 PDF를 '링크가 있는 모든 사용자'로 공유한 뒤 링크를 붙여 넣으세요. 링크가 있으면 아래 파일은 올리지 않아도 됩니다.</small></span></label>
         <div class="f"><span>책 파일</span>
           <span class="ebm-file"><label class="pick">파일고르기<input type="file" accept="application/pdf,.pdf,.epub" @change="onPdf" /></label>
             <small>{{ pdf ? `${pdf.name} · ${sizeText(pdf.size)}` : draft.fileName ? `${draft.fileName} · ${sizeText(draft.fileSize)} (새로 고르면 바뀝니다)` : `PDF · EPUB, ${EBOOK_MAX_MB}MB 까지` }}</small></span>
@@ -206,9 +220,9 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
       <li v-for="(b, i) in books" :key="b.id" :class="{ off: !b.published }">
         <div class="th"><img v-if="b.coverUrl" :src="b.coverUrl" alt="" /><span v-else>표지</span></div>
         <div class="tx">
-          <b><em v-if="b.tag">[{{ b.tag }}]</em> {{ b.title }}<i :class="['st', b.published ? 'on' : '']">{{ b.published ? '올림' : '내림' }}</i><i :class="['st', 'pr', { paid: isPaidEbook(b) }]">{{ priceLabel(b) }}</i></b>
+          <b><em v-if="b.tag">[{{ b.tag }}]</em> {{ b.title }}<i :class="['st', b.published ? 'on' : '']">{{ b.published ? '올림' : '내림' }}</i><i class="st kd">{{ ebookKindLabel(b.kind) }}</i><i :class="['st', 'pr', { paid: isPaidEbook(b) }]">{{ priceLabel(b) }}</i></b>
           <small v-if="b.desc">{{ b.desc }}</small>
-          <small class="meta">{{ b.fileName ? `${b.fileName} · ${sizeText(b.fileSize)}` : '파일 없음' }} · 받은 회원 {{ (b.downloads || 0).toLocaleString('ko-KR') }}명</small>
+          <small class="meta">{{ b.link ? '구글드라이브 링크' : b.fileName ? `${b.fileName} · ${sizeText(b.fileSize)}` : '파일 없음' }} · 받은 회원 {{ (b.downloads || 0).toLocaleString('ko-KR') }}명</small>
         </div>
         <div class="ac">
           <button type="button" class="sq" :disabled="i === 0" aria-label="위로" @click="move(b, -1)">▲</button>
@@ -284,11 +298,15 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
 .ebm-list .tx small { font-size: 13px; color: #6b7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ebm-list .tx small.meta { font-size: 12px; color: #9ca3af; }
 .ebm-list .st { padding: 2px 7px; border-radius: 5px; background: #f1f3f8; font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; }
+.ebm-fields .f > .ebm-link { display: grid; gap: 6px; font-weight: 400; }
+.ebm-link input { font-weight: 400;  height: 38px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; font: inherit; font-size: 14px; }
+.ebm-link small { font-size: 12px; color: #9aa6c4; line-height: 1.5; }
 .ebm-price { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ebm-price .amt { display: inline-flex; align-items: center; gap: 6px; }
 .ebm-price .amt input { width: 130px; height: 34px; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 8px; font: inherit; font-size: 14px; text-align: right; }
 .ebm-price .amt em { font-style: normal; font-size: 14px; color: #4b5563; }
 .ebm-price small { flex-basis: 100%; font-size: 12px; color: #9aa6c4; }
+.ebm-list .st.kd { background: #fff4e5; color: #b45309; }
 .ebm-list .st.pr { background: #e8f6ee; color: #15803d; }
 .ebm-list .st.pr.paid { background: #eef3ff; color: #2b6df3; }
 .ebm-list .st.on { background: #e8f6ee; color: #15803d; }

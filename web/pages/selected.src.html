@@ -8737,17 +8737,20 @@ span.cal-day.has { cursor: help; }
     const adm = (() => { try { return agIsAdmin(); } catch (e) { return false; } })();
     const tab = S.storeTab === 'manage' && !adm ? 'all' : S.storeTab;   /* 관리 탭은 운영자만 — 아니면 전체로 */
     const list = STORE_ITEMS.filter((x) => tab === 'all' || x.kind === tab);
-    const ebooks = tab === 'all' || tab === 'ebook' ? EB.list : [];
+    /* 운영자가 고른 분류(kind) 탭에 나간다 — 전체 탭엔 다. 분류가 없던 책은 전자책 */
+    const ebKind = (b) => (b.kind === 'report' || b.kind === 'mobile' ? b.kind : 'ebook');
+    const ebooks = EB.list.filter((b) => tab === 'all' || ebKind(b) === tab);
+    const EB_KIND_LABEL = { ebook: '전자책', report: '리포트', mobile: '모바일앱' };
     /* 운영자가 올린 책 — 표지 그림이 있으면 그것, 없으면 남색 표지에 제목 */
     /* 무료(0원)는 로그인한 회원 누구나 — 무료로받기 → 다운로드 단추로 바뀌고, 누르면 PDF 를 내려받는다. 유료는 구매하기 창(결제 연동 전이라 결제는 준비 중) */
     const ebPaid = (b) => (Number(b.price) || 0) > 0;
-    const ebCard = (b) => `<article class="st-card">${b.coverUrl ? `<div class="st-cover img"><img src="${esc(b.coverUrl)}" alt="" loading="lazy"><span class="st-kind">전자책</span></div>` : `<div class="st-cover navy"><span class="st-kind">전자책</span><strong>${esc(b.title)}</strong></div>`}`
+    const ebCard = (b) => `<article class="st-card">${b.coverUrl ? `<div class="st-cover img"><img src="${esc(b.coverUrl)}" alt="" loading="lazy"><span class="st-kind">${EB_KIND_LABEL[ebKind(b)]}</span></div>` : `<div class="st-cover navy"><span class="st-kind">${EB_KIND_LABEL[ebKind(b)]}</span><strong>${esc(b.title)}</strong></div>`}`
       + `<div class="st-body"><h3>${b.tag ? `<em>[${esc(b.tag)}]</em> ` : ''}${esc(b.title)}</h3><p>${esc(b.desc || '')}</p>${ebPaid(b) ? `<span class="st-price">${Number(b.price).toLocaleString('ko-KR')}원</span><button type="button" class="st-buy" data-act="ebook-buy" data-v="${esc(b.id)}">구매하기</button>` : `<span class="st-free">무료</span>${EB.ready.has(b.id) ? `<button type="button" class="st-buy dl" data-act="ebook-dl" data-v="${esc(b.id)}">다운로드</button>` : `<button type="button" class="st-buy" data-act="ebook-get" data-v="${esc(b.id)}">무료로받기</button>`}`}</div></article>`;
     const card = (x) => `<article class="st-card"><div class="st-cover ${x.tone}"><span class="st-kind">${x.kind === 'ebook' ? '전자책' : '리포트'}</span><strong>${x.cover.map(esc).join('<br>')}</strong><small>${esc(x.sub)}</small></div>`
       + `<div class="st-body"><h3><em>[${esc(x.tag)}]</em> ${esc(x.title)}</h3><p>${esc(x.desc)}</p><span class="st-soon">가격미정</span><button type="button" class="st-buy" data-act="store-buy" data-v="${STORE_ITEMS.indexOf(x)}">구매하기</button></div></article>`;
     return `<section class="info-box"><div class="info-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>콘텐츠</h2><p>경매 공부와 실전에 바로 쓰는 전자책 · 리포트를 준비하고 있습니다.</p></div>`
       + `<nav class="st-tabs" role="tablist">${STORE_TABS.filter(([, , f]) => f !== 'admin' || adm).map(([k, t, f]) => `<button type="button" role="tab" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}" data-act="store-tab" data-v="${k}">${t}${f === 'admin' ? '<span class="adm-chip">운영</span>' : ''}</button>`).join('')}</nav>`
-      + (tab === 'mobile' ? `<div class="st-mobile">${mobileHtml()}</div></section>`
+      + (tab === 'mobile' ? `${ebooks.length ? `<div class="st-grid">${ebooks.map(ebCard).join('')}</div>` : ''}<div class="st-mobile">${mobileHtml()}</div></section>`
         : tab === 'manage' ? `<div class="st-manage" id="ebmMount"></div></section>`
         : `<div class="st-grid">${ebooks.map(ebCard).join('')}${list.map(card).join('')}</div></section>`);
   };
@@ -9300,7 +9303,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     /* 새 공지 · 이벤트 · 업데이트 — 앱 공지 탭과 같은 셈으로 '공지' 옆 점 */
     if (T.useBoardFeed) { try { const feed = T.useBoardFeed(); T.watch(() => feed.notices.value, (v) => { HM.notices = Array.isArray(v) ? v : []; if (S.route === 'home') renderHome(); }, { immediate: true }); } catch (e) { /* 홈 공지만 비어 보인다 */ } }
     /* 전자책 — 운영자가 올린 책(올린 것만). 바뀌면 콘텐츠 화면을 다시 그린다(관리 탭은 제 화면이 따로 본다) */
-    if (T.subscribeEbooks) { try { T.subscribeEbooks((rows) => { EB.list = Array.isArray(rows) ? rows : []; if (S.route === 'store' && S.storeTab !== 'manage' && S.storeTab !== 'mobile') renderInfo(); }, () => { /* 책 카드만 비어 보인다 */ }); } catch (e) { /* 책 카드만 비어 보인다 */ } }
+    if (T.subscribeEbooks) { try { T.subscribeEbooks((rows) => { EB.list = Array.isArray(rows) ? rows : []; if (S.route === 'store' && S.storeTab !== 'manage' && (S.storeTab !== 'mobile' || EB.list.some((b) => b.kind === 'mobile'))) renderInfo(); }, () => { /* 책 카드만 비어 보인다 */ }); } catch (e) { /* 책 카드만 비어 보인다 */ } }
     if (T.useBoardNew) { try { const bn = T.useBoardNew(); T.watch(() => bn.any.value, (v) => { const d = $('noticeDot'); if (d) d.hidden = !v; }, { immediate: true }); } catch (e) { /* 점만 못 띄운다 */ } }
     const fromStore = () => {
       if (!CLOUD.on) return;
@@ -9731,10 +9734,11 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'ebook-dl': {
         if (!S.loggedIn) { toast('회원가입 후 로그인하면 무료로 받을 수 있습니다.', 'info'); openAppLogin(); break; }
         const b = EB.list.find((x) => x.id === v); if (!b || !CLOUD.T || !CLOUD.T.receiveEbook) break;
+        const w = window.open('', '_blank');   /* 누른 자리에서 새 창을 먼저 연다 — 주소를 받은 뒤 열면 팝업으로 막힌다 */
         t.disabled = true; t.textContent = '받는 중';
-        /* 책 파일은 내려받기(attachment)로 올려 두었다 — 주소로 가면 화면은 그대로 두고 PDF 가 받아진다 */
-        CLOUD.T.receiveEbook(b).then((url) => { location.href = url; toast('다운로드를 시작했습니다. 마이페이지 › 받은콘텐츠에서 다시 받을 수 있습니다.', 'ok'); })
-          .catch((e) => { if (e && e.message === 'login') { toast('회원가입 후 로그인하면 무료로 받을 수 있습니다.', 'info'); openAppLogin(); } else toast(userMsg(e, '받지 못했습니다. 잠시 뒤 다시 해 주세요.'), 'error'); })
+        /* 구글드라이브 링크면 드라이브에서 바로 받는다 — 받은 기록은 마이페이지 › 받은콘텐츠에 남는다 */
+        CLOUD.T.receiveEbook(b).then((url) => { if (w) w.location.href = url; else location.href = url; toast('다운로드를 시작했습니다. 마이페이지 › 받은콘텐츠에서 다시 받을 수 있습니다.', 'ok'); })
+          .catch((e) => { if (w) w.close(); if (e && e.message === 'login') { toast('회원가입 후 로그인하면 무료로 받을 수 있습니다.', 'info'); openAppLogin(); } else toast(userMsg(e, '받지 못했습니다. 잠시 뒤 다시 해 주세요.'), 'error'); })
           .finally(() => { t.disabled = false; t.textContent = '다운로드'; });
         break;
       }

@@ -15,13 +15,15 @@ const msg = ref('');
 const again = async (r: EbookReceipt) => {
   if (busy.value) return;
   busy.value = r.id;
+  const w = window.open('', '_blank');   // 누른 자리에서 새 창을 먼저 연다 — 주소를 받은 뒤 열면 팝업으로 막힌다
   try {
     const book = await getEbook(r.ebookId);
     if (!book || !book.published) throw new Error('지금은 받을 수 없는 책입니다. 운영자가 내렸거나 지웠습니다.');
     if (isPaidEbook(book)) throw new Error('유료로 바뀐 책입니다. 결제를 붙인 뒤 받을 수 있습니다.');
     const url = await receiveEbook(book);
-    window.location.href = url;   // 책 파일은 내려받기로 올려 두어(attachment) 화면은 그대로 두고 받아진다
+    if (w) w.location.href = url; else window.location.href = url;   // 구글드라이브 · 저장소 어느 쪽이든 새 창에서 받는다
   } catch (e) {
+    w?.close();
     msg.value = userMessage(e, '받지 못했습니다. 잠시 뒤 다시 해 주세요.');
     window.setTimeout(() => { msg.value = ''; }, 2600);
   } finally {

@@ -1,8 +1,8 @@
 // 전자책 — 운영자가 올리고(콘텐츠 › 관리), 회원이 무료로 받는다(콘텐츠 › 전자책 · 마이페이지 › 받은콘텐츠).
 //
-// 책 한 권 = Firestore 'ebooks' 글 하나 + Storage 파일(ebooks/{id}/…) · 표지(ebook-covers/{id}/…).
+// 책 한 권 = Firestore 'ebooks' 글 하나(표지는 줄인 그림을 글 안에) + 책 파일은 구글드라이브 링크(link), 또는 Storage 파일(ebooks/{id}/…).
 // 받기는 회원가입 · 로그인한 회원만 — 받을 때마다 'ebookReceipts/{uid}_{책}' 에 남기고, 처음 받을 때만 받은 수를 1 올린다.
-// 파일 주소는 글에 적지 않는다 — 받을 때 로그인한 회원에게만 그때그때 꺼내 준다(Storage 규칙이 로그인을 본다).
+// Storage 파일 주소는 글에 적지 않는다 — 받을 때 로그인한 회원에게만 꺼내 준다. 드라이브 링크는 무료 책용(글에 그대로 보인다).
 import {
   collection,
   deleteDoc,
@@ -30,10 +30,15 @@ export type Ebook = {
   desc: string;
   /** 꼬리표 — 기초 · 필수 · 실전 … (카드 제목 앞 [ ]) */
   tag: string;
+  /** 분류 — 콘텐츠 어느 탭에 나가는가 */
+  kind: EbookKind;
   /** 값 — 0 이면 무료(로그인한 회원 누구나 바로 받음), 1 이상이면 유료(결제 뒤 받기 — 결제는 아직 붙이지 않음) */
   price: number;
+  /** 표지 — 줄인 그림(data:)을 글 안에 담는다. 예전에 저장소에 올린 표지면 그 주소 */
   coverUrl: string;
   coverPath: string;
+  /** 구글드라이브 공유 링크 — 있으면 받기는 여기서 바로 내려받는다(파일 저장소를 쓰지 않음) */
+  link: string;
   filePath: string;
   fileName: string;
   fileSize: number;
@@ -44,17 +49,43 @@ export type Ebook = {
   updatedAt: string;
 };
 
+export type EbookKind = 'ebook' | 'report' | 'mobile';
+export const EBOOK_KINDS: [EbookKind, string][] = [['ebook', '전자책'], ['report', '리포트'], ['mobile', '모바일앱']];
+export const ebookKindLabel = (k: string): string => (EBOOK_KINDS.find(([v]) => v === k) ?? EBOOK_KINDS[0])[1];
+
 export type EbookReceipt = { id: string; uid: string; ebookId: string; title: string; receivedAt: string };
 
 export const newEbookId = (): string => `eb${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 export const emptyEbook = (): Ebook => ({
-  id: '', title: '', desc: '', tag: '', price: 0, coverUrl: '', coverPath: '', filePath: '', fileName: '', fileSize: 0,
+  id: '', title: '', desc: '', tag: '', kind: 'ebook', price: 0, coverUrl: '', coverPath: '', link: '', filePath: '', fileName: '', fileSize: 0,
   published: false, order: Date.now(), downloads: 0, createdAt: '', updatedAt: '',
 });
 
 /** 유료인가 — 값이 1원 이상 */
 export const isPaidEbook = (b: Pick<Ebook, 'price'>): boolean => (Number(b.price) || 0) > 0;
+
+/** 구글드라이브 공유 링크 → 바로 내려받는 주소. 드라이브 링크가 아니면 그대로 */
+export const ebookLinkUrl = (link: string): string => {
+  const id = /\/d\/([\w-]{10,})/.exec(link)?.[1] ?? /[?&]id=([\w-]{10,})/.exec(link)?.[1];
+  return id ? `https://drive.google.com/uc?export=download&id=${id}` : link;
+};
+/** 받을 파일이 있는가 — 링크든 올린 파일이든 */
+export const hasEbookFile = (b: Pick<Ebook, 'link' | 'filePath'>): boolean => !!(b.link || b.filePath);
+
+/** 표지 그림 줄이기 — 가로 600px JPEG 로, 글 하나에 담을 만큼(300KB 아래) */
+const coverDataUrl = async (file: File): Promise<string> => {
+  const img = await createImageBitmap(file);
+  const w = Math.min(600, img.width);
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = Math.round((img.height * w) / img.width);
+  c.getContext('2d')?.drawImage(img, 0, 0, c.width, c.height);
+  let q = 0.85;
+  let url = c.toDataURL('image/jpeg', q);
+  while (url.length > 300_000 && q > 0.4) { q -= 0.15; url = c.toDataURL('image/jpeg', q); }
+  return url;
+};
 
 /** 책 목록 — 운영자는 내린 책까지 다(all), 회원 · 손님은 올린 책만 */
 export const subscribeEbooks = (
@@ -117,12 +148,10 @@ export const saveEbook = async (
     next.fileSize = files.pdf.size;
   }
   if (files.cover) {
-    if (!storage) throw new Error('파일 저장소가 연결되지 않았습니다.');
-    const path = `ebook-covers/${id}/${Date.now()}.${extOf(files.cover.name, 'jpg')}`;
-    await upload(path, files.cover);
-    if (book.coverPath && book.coverPath !== path) await dropFile(book.coverPath);
-    next.coverPath = path;
-    next.coverUrl = await getDownloadURL(storageRef(storage, path));   // 표지는 손님도 본다 — 주소를 글에 적어 둔다
+    // 표지는 줄여서 글 안에 담는다 — 파일 저장소(결제 계정 필요)를 거치지 않는다
+    next.coverUrl = await coverDataUrl(files.cover);
+    if (book.coverPath) await dropFile(book.coverPath);
+    next.coverPath = '';
   }
   const { id: _omit, ...data } = next;
   // 서버가 끝내 답하지 않으면(연결 끊김 · 다른 창이 막음) 20초 뒤 알려 준다 — '올리는 중'에 멈춰 있지 않게
@@ -151,17 +180,19 @@ export const removeEbook = async (book: Ebook): Promise<void> => {
  * 받기 — 로그인한 회원만(유료 · 무료 회원 모두 무료 책은 받는다). 유료 책은 아직 받지 못한다. 받은 기록을 남기고(처음이면 받은 수 +1) 파일 주소를 돌려준다.
  * 로그인 전이면 'login' 을 던진다 — 화면이 로그인 창을 띄운다.
  */
-export const receiveEbook = async (book: Pick<Ebook, 'id' | 'title' | 'filePath' | 'price'>): Promise<string> => {
+export const receiveEbook = async (book: Pick<Ebook, 'id' | 'title' | 'filePath' | 'price' | 'link'>): Promise<string> => {
   const uid = auth?.currentUser?.uid;
   if (!uid) throw new Error('login');
   if (isPaidEbook(book)) throw new Error('유료 콘텐츠는 결제를 붙인 뒤 받을 수 있습니다.');   // 규칙(firestore.rules)도 막는다
-  if (!firestore || !storage) throw new Error('연결되지 않았습니다.');
-  if (!book.filePath) throw new Error('아직 파일이 올라오지 않은 책입니다.');
+  if (!firestore) throw new Error('연결되지 않았습니다.');
+  if (!hasEbookFile(book)) throw new Error('아직 파일이 올라오지 않은 책입니다.');
   const rid = `${uid}_${book.id}`;
   const rref = doc(firestore, RECEIPTS, rid);
   const first = !(await getDoc(rref)).exists();
   await setDoc(rref, { uid, ebookId: book.id, title: book.title, receivedAt: new Date().toISOString() });
   if (first) { try { await updateDoc(doc(firestore, BOOKS, book.id), { downloads: increment(1) }); } catch { /* 받은 수는 못 올려도 받기는 그대로 */ } }
+  if (book.link) return ebookLinkUrl(book.link);   // 구글드라이브에서 바로
+  if (!storage) throw new Error('연결되지 않았습니다.');
   return getDownloadURL(storageRef(storage, book.filePath));
 };
 
