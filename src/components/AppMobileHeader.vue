@@ -7,6 +7,7 @@ import calendarIcon from '../assets/icones/calendar-days.png';
 import { useAuthStore } from '../stores/authStore';
 import { MY_PAGE_ITEMS, type MyPageItem } from '../services/myPageMenu';
 import { useAlertBadge } from '../services/alertBadge';
+import { useBoardNew } from '../services/boardFeed';
 import { POINT_GRADES } from '../services/pointPolicy';
 import { PLAN_REST_DAYS, POINTS_OPEN } from '../services/billingPlans';
 
@@ -32,6 +33,8 @@ const goFact = (path: string) => {
 
 /** 알림이 몇 건인지 — 더보기의 바로가기와 같은 셈을 쓴다 */
 const { count: alertCount } = useAlertBadge();
+/** 공지에 새 글이 있는가 — 더보기의 공지 탭 빨간 점과 같은 값 */
+const { any: newsNew } = useBoardNew();
 
 const displayNickname = computed(() => authStore.nickname || (authStore.email ? authStore.email.split('@')[0] : '게스트'));
 /** 아이디 — 메일 주소는 통째로 보이지 않게 앞쪽만 적는다 */
@@ -77,23 +80,35 @@ const onLogout = async () => {
       <div class="amh-brand">
         <BrandLogo :size="40" tone="white" />
       </div>
+      <!-- 공지 · 알림 — 아랫줄이 로고에 닿지 않게 윗줄 오른쪽에 둔다 -->
+      <div class="amh-top-icons">
+        <button type="button" class="amh-bell" aria-label="공지" @click="router.push('/news')">
+          <!-- 확성기 — 공지. 새 글이 있으면 종처럼 빨간 점 -->
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3.5 10v4a1 1 0 0 0 1 1h2.5l7 4.5v-15L7 9H4.5a1 1 0 0 0-1 1Z" />
+            <path d="M17.5 9a4 4 0 0 1 0 6" />
+            <path d="M7.5 15l1 4.5" />
+          </svg>
+          <i v-if="newsNew" class="amh-bell-dot" />
+        </button>
+        <button type="button" class="amh-bell" aria-label="알림" @click="router.push('/notifications')">
+          <!-- 종 — 알릴 것이 있으면 꼭지에 빨간 점이 붙는다 -->
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5Z" />
+            <path d="M10.3 19a2 2 0 0 0 3.4 0" />
+          </svg>
+          <i v-if="alertCount" class="amh-bell-dot" />
+        </button>
+      </div>
     </div>
     <div class="amh-row amh-row-bottom">
-      <button type="button" class="amh-bell" aria-label="알림" @click="router.push('/notifications')">
-        <!-- 종 — 알릴 것이 있으면 꼭지에 빨간 점이 붙는다 -->
-        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 8.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5Z" />
-          <path d="M10.3 19a2 2 0 0 0 3.4 0" />
-        </svg>
-        <i v-if="alertCount" class="amh-bell-dot" />
-      </button>
       <!-- 날짜 — 결제하기 왼쪽. 누르면 입찰 캘린더로 -->
       <button type="button" class="amh-cal-btn" aria-label="입찰 캘린더 열기" @click="router.push('/bid-calendar')">
         <img :src="calendarIcon" alt="" class="amh-icon" />
         <span>{{ formattedDate }}</span>
       </button>
       <button v-if="SHOW_PAY" type="button" class="amh-pay" @click="router.push('/billing')">결제하기</button>
-      <button type="button" class="amh-user-btn" aria-label="사용자 메뉴" @click="toggleMenu">
+      <button type="button" class="amh-user-btn" aria-label="사용자 메뉴" :aria-expanded="menuOpen" @click="toggleMenu">
         <!-- 흉상 — 종과 같은 선 그림으로 맞춘다 (그림 파일은 작게 줄이면 뭉개진다) -->
         <svg
           class="amh-greet-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"
@@ -104,6 +119,8 @@ const onLogout = async () => {
         </svg>
         <!-- 닉네임 — 아이콘에 붙여 한 단추로. 어디를 눌러도 회원정보가 열린다 -->
         <span class="amh-greet"><strong>{{ displayNickname }}</strong><span class="amh-greet-nim">님</span></span>
+        <!-- 웹 머리띠와 같은 주황 ▼ — 메뉴가 열리면 뒤집힌다 -->
+        <i :class="['amh-caret', { open: menuOpen }]" aria-hidden="true" />
       </button>
       <div v-if="menuOpen" class="amh-user-menu-wrap" @click.self="closeMenu">
         <ul class="amh-user-menu" @click.stop>
@@ -145,7 +162,7 @@ const onLogout = async () => {
 .amh-cal-btn {
   border: none; background: transparent; padding: 2px 0; margin: 0 9px 0 0;
   display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;
-  font-family: inherit; font-size: 11px; font-weight: 400; color: #fff; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 400; color: #fff; cursor: pointer;
 }
 .amh {
   background: linear-gradient(180deg, #1f3a72 0%, #15295b 100%);
@@ -181,20 +198,29 @@ const onLogout = async () => {
 
 
 /* 인사말과 종 사이도 종·사람 사이와 같은 만큼 띄운다 */
-.amh-greet { font-size: 11px; color: var(--amh-text); font-weight: 400; white-space: nowrap; flex-shrink: 0; }
+.amh-greet { font-size: 12px; color: var(--amh-text); font-weight: 400; white-space: nowrap; flex-shrink: 0; }
 .amh-greet strong { color: inherit; font-weight: 400; margin: 0 1px 0 0; }
 .amh-greet-nim { color: inherit; }
 .amh-greet-icon { width: 19px; height: 19px; flex-shrink: 0; display: block; }
 .amh-user-btn { color: #fff; }
+/* 주황 ▼ — 웹 머리띠(.g-arrow)와 같은 꼴 · 같은 색 */
+.amh-caret {
+  flex: 0 0 auto; width: 0; height: 0; margin-left: 3px;
+  border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 6px solid #f4700a;
+  transition: transform 0.2s;
+}
+.amh-caret.open { transform: rotate(180deg); }
 .amh-user-btn { border: none; background: transparent; padding: 3px; cursor: pointer; display: inline-flex; align-items: center; gap: 1px; font-family: inherit; }
 /* 결제하기 */
 .amh-pay {
   border: none; background: transparent; padding: 2px 0; cursor: pointer;
-  font-family: inherit; font-size: 11px; font-weight: 400; color: #fff;
+  font-family: inherit; font-size: 12px; font-weight: 400; color: #fff;
   margin-right: 9px;
 }
 
 /* 종과 사람은 손가락이 닿을 자리를 넉넉히 두고 서로 떨어뜨린다 */
+.amh-top-icons { display: inline-flex; align-items: center; gap: 10px; margin-top: 8px; margin-right: -3px; }
+.amh-top-icons .amh-bell { margin-right: 0; }
 .amh-bell {
   position: relative; border: none; background: transparent; padding: 3px; cursor: pointer;
   display: inline-flex; align-items: center; color: #fff; margin-right: 9px;
@@ -266,8 +292,11 @@ const onLogout = async () => {
 
 @media (max-width: 400px) {
   /* 좁은 손전화 */
+  /* 아랫줄이 로고에 닿지 않게 틈을 줄인다 */
+  .amh-row-bottom { gap: 3px; }
+  .amh-cal-btn, .amh-pay { margin-right: 4px; }
   .amh-icon { width: 11px; height: 11px; }
-  .amh-greet { font-size: 11px; }
+  .amh-greet { font-size: 12px; }
   .amh-greet-icon { width: 14px; height: 14px; }
 }
 </style>

@@ -90,7 +90,7 @@ export const SUPPORT_GUIDES: GuideGroup[] = [
       ...(POINTS_OPEN ? [{ icon: 'Ⓟ', label: '포인트제도 안내', path: '/points' }] : []),
       { icon: '👤', label: '회원전용 메뉴 안내', path: '/more', query: { tab: 'mypage' } },
       { icon: '🔔', label: '알림서비스 안내', path: '/notifications' },
-      { icon: '🎁', label: '이벤트 보기', path: '/more', query: { sec: 'event' } },
+      { icon: '🎁', label: '이벤트 보기', path: '/news', query: { sec: 'event' } },
     ],
   },
 ];

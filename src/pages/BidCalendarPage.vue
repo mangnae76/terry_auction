@@ -500,6 +500,8 @@ const webEmbed = inject('webEmbed', false);
 /* 앱 — 상자 양옆 여백을 줄여 달력을 키우고, 날짜 숫자는 칸 왼쪽 선에서 조금 띄운다 */
 .cal-app .cal-card { margin: 0 6px; }
 .cal-app .cal-cell { padding-left: 6px; padding-right: 4px; }
+/* 앱 — 연월 칸 너비를 못 박아 달력 · 목록, 9월 · 11월을 오가도 화살표가 좌우로 움직이지 않게 */
+.cal-app .cal-nav strong { flex: 0 0 auto; width: 6.4em; text-align: center; font-variant-numeric: tabular-nums; }
 .cal-cell.out { background: #fcfcfd; }
 .cal-cell.out .cal-daynum { visibility: hidden; }
 .cal-daynum {

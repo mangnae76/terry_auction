@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 더보기 — 계정·설정·공지 등 다른 탭에 들어가지 않는 것들을 모아 둔다.
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, inject, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import MyPageCards from '../components/MyPageCards.vue';
@@ -48,8 +48,11 @@ const ALL_TABS = [
   { key: 'support', label: '고객센터' },
 ] as const;
 type TabKey = (typeof ALL_TABS)[number]['key'];
-/** '포인트' 탭은 포인트를 붙일 때까지 뺀다(POINTS_OPEN, 지우지 않음) — 주소로 ?tab=points 가 와도 열리지 않는다 */
-const TABS = ALL_TABS.filter((t) => POINTS_OPEN || t.key !== 'points');
+/** 웹에 들어가 있는가 — 앱에서만 공지 탭을 뺀다 */
+const webEmbed = inject('webEmbed', false);
+/** '포인트' 탭은 포인트를 붙일 때까지 뺀다(POINTS_OPEN, 지우지 않음) — 주소로 ?tab=points 가 와도 열리지 않는다.
+ *  앱의 '공지'는 머리글 확성기의 공지 화면(/news)으로 옮겨 여기서 뺀다 (웹은 그대로) */
+const TABS = ALL_TABS.filter((t) => (POINTS_OPEN || t.key !== 'points') && (webEmbed || t.key !== 'news'));
 const tab = ref<TabKey>('mypage');
 
 /** 고른 탭을 주소에 적어 둔다 — 다른 화면에 갔다 돌아와도 보던 탭이 그대로 열린다.
@@ -71,15 +74,21 @@ const tabDot = (key: TabKey) => key === 'news' && newsNew.value;
 /** 배너의 '자세히 보기' — 그 이벤트 상세로 간다. 번호가 없으면 공지 탭의 이벤트 묶음으로 */
 const goEvents = (id: string) => {
   if (id) { router.push(`/post/${id}`); return; }
+  if (!webEmbed) { router.push({ path: '/news', query: { sec: 'event' } }); return; }
   tab.value = 'news';
   window.setTimeout(() => {
     document.querySelector('[data-sec="event"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 60);
 };
 
-// 다른 화면에서 '?tab=news&sec=event' 로 들어오면 그 탭을 열고 그 묶음으로 내려간다
+// 다른 화면에서 '?tab=news&sec=event' 로 들어오면 그 탭을 열고 그 묶음으로 내려간다 (웹)
 onMounted(() => {
   const asked = String(route.query.tab ?? '');
+  // 앱 — 예전 '?tab=news' · '?sec=…' 길은 공지 화면으로 넘긴다
+  if (!webEmbed && (asked === 'news' || route.query.sec)) {
+    void router.replace({ path: '/news', query: route.query.sec ? { sec: String(route.query.sec) } : {} });
+    return;
+  }
   if (TABS.some((t) => t.key === asked)) tab.value = asked as TabKey;
   const sec = String(route.query.sec ?? '');
   if (!sec) return;

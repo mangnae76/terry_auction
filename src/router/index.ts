@@ -168,6 +168,12 @@ const router = createRouter({
       component: () => import('../pages/SupportPage.vue'),
     },
     {
+      // 공지 — 머리글 확성기에서 들어온다(더보기의 공지 탭을 옮겨 왔다)
+      path: '/news',
+      name: 'news',
+      component: () => import('../pages/NewsPage.vue'),
+    },
+    {
       // 알림 설정 — 무엇을 알려 줄지 고르고 지금 걸린 알림을 본다
       path: '/notifications',
       name: 'notifications',
