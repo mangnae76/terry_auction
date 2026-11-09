@@ -2042,7 +2042,9 @@ const fetchNearbyForAuction = async () => {
   }
 };
 
-const editingProfit = ref(false);
+/** 앱 수익분석 표는 늘 열려 있다(편집 단추를 뺐다, 2026-11-09) — 값이 실제로 바뀌면 손을 멈출 때 적는다(아래 profitKey 감시) */
+const profitAlwaysOpen = !webEmbed;
+const editingProfit = ref(profitAlwaysOpen);
 
 const apprValue = computed(() => auction.value?.metrics.appraisalValue ?? 0);
 // 입찰보증금 — PDF 값이 있으면 그걸, 없으면 최저가의 10%
@@ -2496,13 +2498,10 @@ const removeProfitScenario = () => {
 };
 
 
-const startEditProfit = () => {
-  editingProfit.value = true;
-};
 // 산정표는 칸이 서로 물려 자동으로 다시 셈한다 — 어느 칸이 바뀌든 손을 멈추면 적는다
 watch(
   () => auction.value?.bidScenarios,
-  () => { if (editingProfit.value) persistSoon(); },
+  () => { if (editingProfit.value && !profitAlwaysOpen) persistSoon(); },
   { deep: true },
 );
 /** 비중 기본값 — services/auctionMapper 의 createBidCostDefaults 와 같은 값이다.
@@ -2596,7 +2595,7 @@ onMounted(() => { window.addEventListener('resize', onBidaResize); watchBida(); 
 onBeforeUnmount(() => { window.removeEventListener('resize', onBidaResize); if (bidaRaf) cancelAnimationFrame(bidaRaf); bidaRo?.disconnect(); });
 /* 새화면은 칸이 늘 열려 있다. 값이 실제로 바뀌었을 때만 손을 멈추면 적는다(물건을 읽은 것만으로는 적지 않는다) */
 let profitJson = '';
-const profitKey = () => (webNew.value && auction.value ? JSON.stringify([auction.value.metrics?.myBidValue, auction.value.expectedSaleValue, auction.value.expectedSaleValue2, auction.value.bidCost, auction.value.bidScenarios]) : '');
+const profitKey = () => ((webNew.value || profitAlwaysOpen) && auction.value ? JSON.stringify([auction.value.metrics?.myBidValue, auction.value.expectedSaleValue, auction.value.expectedSaleValue2, auction.value.bidCost, auction.value.bidScenarios]) : '');
 watch(() => auction.value?.id, () => { profitJson = ''; });
 // 물건이 통째로 새 객체가 되면(서버에서 내려옴 · 저장 뒤 정리) 기준만 지금 값으로 — 아래 감시보다 먼저 돈다.
 // 내려온 값을 또 저장해 다른 창과 서로 주고받던 고리를 끊는다. 이 화면에서 칸을 고칠 때(같은 객체)만 저장된다
@@ -2613,11 +2612,6 @@ watch(
   // 화면을 여는 순간 처음 값을 기억한다 — 안 그러면 첫 번째로 고친 값을 '처음 값'으로 삼아 한 번만 고치고 나가면 저장되지 않았다
   { immediate: true },
 );
-const saveProfit = async () => {
-  if (!auction.value) return;
-  await store.saveAuction(auction.value);
-  editingProfit.value = false;
-};
 
 /** 물건정보 탭의 기본 상태 — 정보요약·물건기본정보만 펴 두고 나머지는 접어 둔다.
  *  (처음 들어왔을 때 한 화면에서 핵심만 보이게) */
@@ -6351,13 +6345,12 @@ const goBack = () => router.back();
             </h2>
             <span :class="['adp-auto-chip', { 'web-solo': webEmbed }]">✦ 자동계산</span>
             <!-- 몇 번째 수익분석인지 — 임장 전엔 대략, 임장완료 · 입찰 · 낙찰이면 임장 결과를 반영한 값(2026-11-03) -->
-            <span v-if="!webNew" :class="['adp-field-mark', { on: fieldDone }]" :title="fieldDone ? '임장을 다녀온 뒤의 수익분석입니다' : '임장 전 대략 계산입니다 — 임장을 다녀와 다시 고쳐 입찰가를 확정하세요'">{{ fieldDone ? '임장 반영' : '임장 전 · 대략' }}</span>
             <!-- 웹은 날짜를 머리(자동계산 오른쪽)로 올린다 — 따로 있던 날짜 줄을 걷어 아래가 위로 붙는다 -->
-            <span v-if="webEmbed && !isCollapsed('profit')" class="adp-head-dates" @click.stop>
+            <span v-if="!isCollapsed('profit')" :class="['adp-head-dates', { app: !webEmbed }]" @click.stop>
               <!-- 수익분석은 숫자만 본다 — 입찰일(= 매각기일)은 보여 주기만. 낙찰은 고정카드 단계, 잔금 · 매도 날짜는 낙찰이후 › 진행절차에서(2026-11-04) -->
               <span class="adp-pd-item ro" title="매각기일 — 물건정보의 날짜입니다">
                 <em>입찰일</em>
-                <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ shortYmd(auction.eventDate) || '-' }}</span></span>
+                <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ shortYmd(auction?.eventDate) || '-' }}</span></span>
               </span>
             </span>
             <!-- 웹 새화면 — 안 고르기(A~D안) · 초기화를 머리 줄 오른쪽 끝으로(아래 .bida-plans 가 여기로 옮겨 온다). 머리 줄은 늘 한 줄 -->
@@ -6368,18 +6361,9 @@ const goBack = () => router.back();
               <button type="button" aria-label="산정표 삭제" :disabled="profitScenarios.length <= 1" @click.stop="removeProfitScenario">−</button>
               <button type="button" aria-label="산정표 추가" :disabled="profitScenarios.length >= PROFIT_MAX" @click.stop="addProfitScenario">＋</button>
             </span>
-            <button v-if="!editingProfit && !webNew" class="adp-edit-btn" type="button" @click.stop="startEditProfit"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-            <button v-else-if="!webNew" class="adp-edit-btn save" type="button" @click.stop="saveProfit">완료</button>
+
             <img v-if="!webEmbed" :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('profit') }]" alt="" />
           </header>
-          <div v-if="!isCollapsed('profit') && !webEmbed" class="adp-profit-dates">
-            <!-- 수익분석은 숫자만 본다 — 입찰일(= 매각기일)은 보여 주기만. 낙찰은 고정카드 단계, 잔금 · 매도 날짜는 낙찰이후 › 진행절차에서(2026-11-04) -->
-            <span class="adp-pd-item ro" title="매각기일 — 물건정보의 날짜입니다">
-              <em>입찰일</em>
-              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ shortYmd(auction.eventDate) || '-' }}</span></span>
-            </span>
-            <!-- 표 −/＋ 는 뺐다(2026-11-09) — 아래 A~D안 고르기 줄에서 안을 늘린다 -->
-          </div>
           <!-- 앱 — 웹과 같은 안 고르기 줄(2026-11-09 시안 profit-mock): A~D안(체크 = 그 안으로 확정 · 하나만, 이름 = 그 안 보기, 빈 다음 칸 = 안 하나 더) · 확정필요 · 초기화 -->
           <div v-if="!isCollapsed('profit') && !webEmbed" class="bida-plans app-plans">
             <div class="bida-seg" role="tablist">
