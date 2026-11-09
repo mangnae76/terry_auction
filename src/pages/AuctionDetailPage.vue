@@ -112,12 +112,12 @@ const route = useRoute();
 const store = useAuctionStore();
 const authStore = useAuthStore();
 
-type TabKey = 'basic' | 'rights' | 'profit' | 'verify' | 'survey';
-const TAB_KEYS: TabKey[] = ['basic', 'rights', 'profit', 'verify', 'survey'];
+type TabKey = 'basic' | 'rights' | 'profit' | 'verify' | 'survey' | 'field';
+const TAB_KEYS: TabKey[] = ['basic', 'rights', 'profit', 'verify', 'survey', 'field'];
 // 다른 화면에서 ?tab=survey 로 들어오면 그 탭을 바로 연다
 const initialTab = (): TabKey => {
   const asked = String(route.query.tab ?? '');
-  const wanted = asked === 'field' ? 'survey' : asked;   // 임장경로 '임장조사 열기' — 앱은 손품+현장 탭에 현장 카드가 있다
+  const wanted = asked === 'field' && webEmbed ? 'survey' : asked;   // 앱은 임장조사가 따로 탭(field)   // 임장경로 '임장조사 열기' — 앱은 손품+현장 탭에 현장 카드가 있다
   if (sonpumMode) return 'survey';
   // 앱은 가격정보 탭을 뺐다(2026-11-09) — 예전 ?tab=verify 로 와도 물건정보로
   if (!webEmbed && wanted === 'verify') return 'basic';
@@ -139,9 +139,10 @@ const ALL_TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'survey', label: '손품+현장' },
   { key: 'verify', label: '가격정보' },
   { key: 'profit', label: '수익분석' },   // 이름은 수익분석으로 통일(2026-11-03) — '입찰가산정'은 쓰지 않는다
+  { key: 'field', label: '임장조사' },   // 앱만 — 손품+현장에 있던 현장조사를 옮겼다(2026-11-09)
 ];
 /** 앱은 가격정보 탭을 통째로 뺐다(2026-11-09). 웹은 그대로 */
-const TABS = ALL_TABS.filter((t) => webEmbed || t.key !== 'verify');
+const TABS = ALL_TABS.filter((t) => (webEmbed ? t.key !== 'field' : t.key !== 'verify'));
 // 최근 작성 — 지금 고치는 화면 이름(마이페이지 내정보 「최근 작성」에 남는다)
 watch(activeTab, (t) => { store.setEditWhere(sonpumMode ? '손품조사' : `물건상세 › ${TABS.find((x) => x.key === t)?.label ?? ''}`); }, { immediate: true });
 onBeforeUnmount(() => store.setEditWhere(''));
@@ -9004,7 +9005,12 @@ const goBack = () => router.back();
         </section>
         </Teleport>
         <!-- 손품결론 카드는 뺐다(2026-11-02) — 실거래가 예상은 손품조사 › 가격분석, 인근 매각사례는 물건정보 탭 -->
-        <template v-if="!sonpumMode">
+        <!-- 손품분석(웹) — 임장 결과로 수익분석 다시 보기는 시세 아래에 그대로 -->
+        <!-- 임장을 다녀온 뒤 할 일 — 임장 결과로 수익분석을 다시 본다(손품 → 대략 수익 → 임장 → 수익 확정, 2026-11-03). 웹은 임장조사 탭 아래 제 단추를 쓴다 -->
+        <button v-if="sonpumMode" type="button" class="adp-field-next" @click="activeTab = 'profit'">임장 결과로 수익분석 다시 보기 →</button>
+      </template>
+      <!-- 임장조사 — 앱은 수익분석 오른쪽 다섯째 탭(2026-11-09). 웹은 손품+현장 탭 아래 그대로 -->
+      <template v-if="auction && !sonpumMode && (webEmbed ? activeTab === 'survey' : activeTab === 'field')">
 
         <section class="adp-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('survField')">
@@ -9350,7 +9356,6 @@ const goBack = () => router.back();
         </section>
 
 
-        </template>
         <!-- 임장을 다녀온 뒤 할 일 — 임장 결과로 수익분석을 다시 본다(손품 → 대략 수익 → 임장 → 수익 확정, 2026-11-03). 웹은 임장조사 탭 아래 제 단추를 쓴다 -->
         <button type="button" class="adp-field-next" @click="activeTab = 'profit'">임장 결과로 수익분석 다시 보기 →</button>
       </template>

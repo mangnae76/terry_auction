@@ -704,7 +704,7 @@ const goDetailByAddress = (address: string) => {
     showToast('연결된 물건을 찾지 못했습니다.', 'info');
     return;
   }
-  router.push({ path: `/auctions/${id}`, query: { tab: 'field' } });   // 임장조사 열기 — 앱은 손품+현장 탭, 웹은 임장조사 탭
+  router.push({ path: `/auctions/${id}`, query: { tab: 'field' } });   // 임장조사 열기 — 앱 · 웹 모두 임장조사(앱은 다섯째 탭, 2026-11-09)
 };
 
 const toggleVisited = async (address: string) => {

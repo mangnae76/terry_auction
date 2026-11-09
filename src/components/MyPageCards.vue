@@ -129,7 +129,7 @@ const agoText = (at: number) => {
   return updateStamp(at);
 };
 /** 그 물건의 그 화면으로 — 물건상세 탭 이름 → 탭 열쇠, 손품조사 · 임장경로 기록은 손품+현장 탭 */
-const TAB_OF: Record<string, string> = { 물건정보: 'basic', 권리분석: 'rights', '손품+현장': 'survey', 손품조사: 'survey', 수요분석: 'survey', 가격분석: 'survey', 시세분석: 'survey', 손품결론: 'survey', 가격정보: 'verify', 수익분석: 'profit', 입찰가산정: 'profit' };
+const TAB_OF: Record<string, string> = { 물건정보: 'basic', 권리분석: 'rights', '손품+현장': 'survey', 손품조사: 'survey', 수요분석: 'survey', 가격분석: 'survey', 시세분석: 'survey', 손품결론: 'survey', 가격정보: 'verify', 수익분석: 'profit', 입찰가산정: 'profit', 임장조사: 'field' };
 const openRecent = (r: { id: string; where: string }) => {
   if (r.where.startsWith('임장경로')) { router.push('/field-trip'); return; }
   if (r.where.startsWith('낙찰이후')) {   // 낙찰이후 — 진행절차 안 그 탭(진행절차 ~ 매물등록)까지
