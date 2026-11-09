@@ -36,7 +36,7 @@ const day = (iso: string) => iso.slice(0, 10).replace(/-/g, '.');
 
 <template>
   <section :class="['myc', { app: !webEmbed }]">
-    <header><h3>내콘텐츠</h3><p>{{ webEmbed ? '무료로 받거나 구매한 콘텐츠입니다. 다시받기로 언제든 PDF를 내려받을 수 있습니다.' : '다시받기로 언제든 내려받을 수 있습니다.' }}</p></header>
+    <header><h3>{{ webEmbed ? '내콘텐츠' : '콘텐츠' }}</h3><p>{{ webEmbed ? '무료로 받거나 구매한 콘텐츠입니다. 다시받기로 언제든 PDF를 내려받을 수 있습니다.' : '다시받기로 언제든 내려받을 수 있습니다.' }}</p></header>
     <p v-if="err" class="empty">{{ err }}</p>
     <p v-else-if="loaded && !rows.length" class="empty">아직 받은 콘텐츠가 없습니다. 콘텐츠 › 전자책에서 무료로 받아 보세요.</p>
     <ul v-else class="list">

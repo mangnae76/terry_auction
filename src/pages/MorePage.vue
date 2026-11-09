@@ -44,7 +44,7 @@ const onAuthPill = async () => {
 const ALL_TABS = [
   { key: 'mypage', label: '마이페이지' },
   { key: 'billing', label: '결제하기' },
-  { key: 'mycontents', label: '내콘텐츠' },
+  { key: 'mycontents', label: '콘텐츠' },
   { key: 'points', label: '포인트' },
   { key: 'news', label: '공지' },
   { key: 'support', label: '고객센터' },
