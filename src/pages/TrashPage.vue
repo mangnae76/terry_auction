@@ -4,7 +4,7 @@ import { caseLabelOf } from '../utils/caseLabel';
 // 치워 둔 물건을 카드로 펼쳐 본다 — 길에 따라 휴지통(/trash)과 보관함(/archive) 둘로 선다.
 // 생김새가 같아 화면은 한 벌만 두고, 어느 선반을 보는지만 갈아 끼운다.
 // 목록 화면의 드롭다운은 주소 한 줄만 보여 줘서, 무엇을 치웠는지 알아보기 어려웠다.
-import { computed, ref } from 'vue';
+import { computed, inject, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
@@ -14,6 +14,8 @@ import { useAuctionStore } from '../stores/auctionStore';
 import type { AuctionDetail } from '../types/auction';
 import { stageLabelOf, stageToneOf } from '../utils/stageLabel';
 import calendarDaysIcon from '../assets/icones/calendar-days (1).png';
+/** 웹에 들어가 있는가 — 앱에서만 카드 윗줄(날짜 · 법원 · 사건번호) 글자를 키운다 */
+const webEmbed = inject('webEmbed', false);
 
 const store = useAuctionStore();
 const router = useRouter();
@@ -131,7 +133,7 @@ const stageTone = (item: AuctionDetail) => (stageToneOf(item) === 'bidding' ? 'b
 </script>
 
 <template>
-  <section :class="['trs-shell', { trash: !isArchive }]">
+  <section :class="['trs-shell', { trash: !isArchive, app: !webEmbed }]">
     <header class="trs-header">
       <button type="button" class="trs-back" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
       <h1 class="trs-title">{{ shelfName }}</h1>
@@ -273,6 +275,9 @@ const stageTone = (item: AuctionDetail) => (stageToneOf(item) === 'bidding' ? 'b
 }
 .trs-meta i { font-style: normal; color: #cbd5e1; margin: 0 1px; }
 .trs-meta-ico { width: 11px; height: 11px; object-fit: contain; flex: 0 0 auto; }
+/* 앱 — 날짜 · 법원 · 사건번호를 조금 크게(10.5 → 12) */
+.app .trs-meta { font-size: 12px; }
+.app .trs-meta-ico { width: 13px; height: 13px; }
 .trs-stage {
   flex: 0 0 auto;
   border: 1px solid #6b85f0; background: #dce5ff; color: #3850c2;

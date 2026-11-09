@@ -227,11 +227,11 @@ const go = (c: Card) => {
       </button>
     </div>
 
-    <!-- 기타설정 — 예전 「선정물건」 묶음(보관함 · 휴지통 · 알림설정 …). 계정관리 아래로 -->
+    <!-- 기타설정 — 예전 「선정물건」 묶음(보관함 · 휴지통 · 알림설정 …). 계정관리 아래로. 나의 선정물건은 위 내 자리 칸에 있어 앱 · 웹 모두 뺀다 -->
     <h2 class="mpc-h2">기타설정</h2>
     <div class="mpc-grid">
       <button
-        v-for="c in (webEmbed ? PICK_CARDS.filter((x) => !x.lead) : PICK_CARDS)"
+        v-for="c in PICK_CARDS.filter((x) => !x.lead)"
         :key="c.title"
         type="button"
         :class="['mpc-card', { lead: c.lead }]"
@@ -358,8 +358,11 @@ const go = (c: Card) => {
 .mpc-sum-app { display: flex; align-items: stretch; }
 .mpc-sum-app .mpc-cell { flex: 0 0 auto; justify-content: flex-start; padding: 6px 12px; }
 .mpc-sum-app .mpc-cell-pick {
-  flex: 1 1 auto; min-width: 0; align-items: flex-start; padding-left: 12px;
-  border-left: 1px solid #dfe4ee; border-radius: 0;
+  position: relative; flex: 1 1 auto; min-width: 0; align-items: flex-start; padding-left: 12px;
+}
+/* 사이 세로 줄 — 테두리로 그으면 눌렀을 때 바탕이 각지게 보여 따로 긋는다(바탕은 다른 칸처럼 둥글게) */
+.mpc-sum-app .mpc-cell-pick::before {
+  content: ''; position: absolute; left: -4px; top: 4px; bottom: 4px; width: 1px; background: #dfe4ee;
 }
 .mpc-pick-row { display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
 .mpc-pick-row .mpc-val { flex: 0 0 auto; white-space: nowrap; }
