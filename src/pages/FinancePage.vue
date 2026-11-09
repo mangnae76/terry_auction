@@ -19,6 +19,7 @@ import DateWheelPicker from '../components/DateWheelPicker.vue';
 import { useFinanceStore } from '../stores/financeStore';
 import { useAuctionStore } from '../stores/auctionStore';
 import ExpenseLedger from '../components/ExpenseLedger.vue';
+import WebScope from '../components/WebScope.vue';
 import { bidStageOf } from '../utils/stageLabel';
 import { bidPriceOf, costsOf, incomeOf, shortCourt } from '../utils/auctionSummary';
 import type { AuctionDetail } from '../types/auction';
@@ -173,7 +174,8 @@ const tabOfQuery = (): FinanceTabKey | '' => {
   const k = String(route.query.tab ?? '');
   return (FIN_TABS as string[]).includes(k) ? (k as FinanceTabKey) : '';
 };
-const activeTab = ref<FinanceTabKey>(((t) => (webEmbed && (t === 'fuelMeal' || t === 'itemPurchase') ? 'interior' : t))(tabOfQuery() || 'cashFlow'));
+// 앱도 웹과 같은 네 탭 — 예전 유류&식대 · 물품구매는 사업경비로
+const activeTab = ref<FinanceTabKey>(((t) => (t === 'fuelMeal' || t === 'itemPurchase' ? 'interior' : t))(tabOfQuery() || 'cashFlow'));
 /** 웹 필터 줄의 다섯 탭 — 앱은 아래 머리의 탭 줄 그대로 */
 /** 웹 — 필요경비(예정신고) · 사업경비(5월 종합소득세) 두 장부 */
 const WEB_TABS: Array<[FinanceTabKey, string]> = [['cashFlow', '자금입출금'], ['businessExpense', '필요경비'], ['interior', '사업경비'], ['tax', '세금신고']];
@@ -183,7 +185,7 @@ watch(activeTab, (t) => { auctionStore.setEditWhere(`자금관리 › ${FIN_WHER
 onUnmounted(() => auctionStore.setEditWhere(''));
 /** 웹 장부 표 — 위 필터 줄의 엑셀 · 항목추가가 이 표로 간다 */
 const ledgerRef = ref<InstanceType<typeof ExpenseLedger> | null>(null);
-const onWeb = (t: FinanceTabKey) => webEmbed && (t === 'businessExpense' || t === 'interior');
+const onWeb = (t: FinanceTabKey) => t === 'businessExpense' || t === 'interior';
 const onAddClick = () => { if (onWeb(activeTab.value)) ledgerRef.value?.openAdd(); else openAdd(activeTab.value as ModalKind); };
 watch(() => route.query.tab, () => { const k = tabOfQuery(); if (k && k !== activeTab.value) activeTab.value = k; });
 // 웹 — 화면 안 탭(자금입출금 ~ 세금신고)을 바꾸면 주소에도 적는다(위 웹 경로 · 새로고침이 따라온다). 앱은 그대로
@@ -321,7 +323,6 @@ const sortRows = <T,>(tab: SortTab, list: T[]): T[] => {
     return desc ? -d : d;
   });
 };
-const shownBusiness = computed(() => cut(sortRows('businessExpense', filteredBusiness.value)));
 const shownFuelMeal = computed(() => cut(sortRows('fuelMeal', filteredFuelMeal.value)));
 const shownItemPurchases = computed(() => cut(sortRows('itemPurchase', filteredItemPurchases.value)));
 /** 지금 탭에서 아직 안 그린 줄 수 */
@@ -541,11 +542,6 @@ const exportExcel = () => {
       ['일자', '명세', '입출금', '금액', '비고'],
       ...filteredCashFlows.value.map((r) => [r.date, r.ownerName, r.flowType, r.amount, r.note]),
     ]);
-  } else if (activeTab.value === 'businessExpense') {
-    downloadCsv(webEmbed ? '예정신고비용.csv' : '사업지출.csv', [
-      ['결제일', '물건구분', '사용구분', '명세', '비용(VAT포함)', '비고'],
-      ...filteredBusiness.value.map((r) => [r.date, r.auctionLabel, r.profitCategory || r.memo, r.detail, r.amountWithVat, r.note]),
-    ]);
   } else if (activeTab.value === 'fuelMeal') {
     downloadCsv('유류식대.csv', [
       ['사용일', '사용지역', '사용처', '사용구분', '지출', '카드', '사용자', '비고'],
@@ -565,7 +561,7 @@ const exportExcel = () => {
 </script>
 
 <template>
-  <section :class="['fin-shell', `tab-${activeTab}`]">
+  <section :class="['fin-shell', `tab-${activeTab}`, { web: webEmbed }]">
     <div class="fin-fixed-top">
     <!-- 웹 — 제목 줄 대신: 오른쪽 경로(웹 경로를 이 자리로 옮겨 온다). 낙찰목록 · 매도목록은 아래 흰 상자 첫 줄로 옮겼다. (예전: 오른쪽 낙찰목록 · 매도목록 -->
     <div v-if="webEmbed" class="fin-webrow">
@@ -584,11 +580,7 @@ const exportExcel = () => {
         </span>
       </h1>
       <nav class="fin-tabs">
-        <button :class="['fin-tab', { active: activeTab === 'cashFlow' }]" @click="activeTab = 'cashFlow'">자금입출금</button>
-        <button :class="['fin-tab', { active: activeTab === 'businessExpense' }]" @click="activeTab = 'businessExpense'">사업지출</button>
-        <button :class="['fin-tab', { active: activeTab === 'fuelMeal' }]" @click="activeTab = 'fuelMeal'">유류&amp;식대</button>
-        <button :class="['fin-tab', { active: activeTab === 'itemPurchase' }]" @click="activeTab = 'itemPurchase'">물품구매</button>
-        <button :class="['fin-tab', { active: activeTab === 'tax' }]" @click="activeTab = 'tax'">세금신고</button>
+        <button v-for="[k, label] in WEB_TABS" :key="k" :class="['fin-tab', { active: activeTab === k }]" @click="activeTab = k">{{ label }}</button>
       </nav>
     </header>
 
@@ -639,8 +631,16 @@ const exportExcel = () => {
           <button type="button" class="fin-date-box" @click="rangeTarget = 'end'"><span>{{ customEnd || '종료일' }}</span></button>
         </div>
         <button type="button" class="fin-excel" @click="exportExcel"><i>⬇</i>엑셀저장</button>
-        <button type="button" class="fin-add" @click="openAdd(activeTab as ModalKind)"><i>+</i>항목추가</button>
+        <button type="button" :class="['fin-pick', { on: pickOn }]" @click="onPickClick">선택</button>
+        <button type="button" class="fin-add" @click="onAddClick"><i>+</i>항목추가</button>
       </div>
+    </div>
+    <div v-if="!webEmbed && activeTab === 'tax'" class="fin-toolbar">
+      <label class="fin-taxyear app"><span>당해년도</span>
+        <select v-model.number="taxYear">
+          <option v-for="y in taxYears" :key="y" :value="y">{{ y }}년</option>
+        </select>
+      </label>
     </div>
 
     <div v-if="period === 'custom' && !webEmbed" class="fin-custom-range">
@@ -727,49 +727,16 @@ const exportExcel = () => {
 
     <!-- ========== TAB 2: 사업지출내역 ========== -->
     <!-- 웹 — 필요경비 · 사업경비 장부(낙찰이후 진행절차의 같은 이름 탭과 같은 기록) -->
-    <ExpenseLedger
-      v-else-if="onWeb(activeTab)"
-      ref="ledgerRef"
-      :key="activeTab"
-      class="fin-ledger"
-      :book="activeTab === 'businessExpense' ? 'need' : 'biz'"
-      :in-period="isWithinPeriod"
-    />
-    <template v-else-if="activeTab === 'businessExpense'">
-      <div class="fin-table-wrap">
-        <table class="fin-table mid">
-          <!-- 칸 너비를 못 박는다 — 글자가 왼쪽에 몰리지 않게 -->
-          <colgroup>
-            <col style="width: 15%" /><col style="width: 16%" /><col style="width: 15%" />
-            <col style="width: 17%" /><col style="width: 21%" /><col />
-          </colgroup>
-          <thead>
-            <tr>
-              <th v-for="c in SORT_COLS.businessExpense" :key="c[0]" :class="c[3]">
-                <button type="button" class="fin-sort" @click="toggleTblSort('businessExpense', c[0])">{{ c[1] }}<i :class="{ on: tblSort.businessExpense.key === c[0] }">{{ tblSortMark('businessExpense', c[0]) }}</i></button>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in shownBusiness" :key="r.id" @click="openEdit('businessExpense', r)">
-              <td>{{ shortDate(r.date) }}</td>
-              <td :title="r.auctionLabel">{{ r.auctionLabel || (webEmbed ? '공통' : '-') }}</td>
-              <td :title="r.profitCategory || r.memo"><span class="pill memo">{{ r.profitCategory || r.memo || '-' }}</span></td>
-              <td :title="r.detail">{{ r.detail }}</td>
-              <td>{{ fmtMoney(r.amountWithVat) }}</td>
-              <td :title="r.note">{{ r.note }}</td>
-            </tr>
-            <tr v-if="filteredBusiness.length === 0">
-              <td colspan="6" class="fin-empty">
-                <template v-if="finance.businessExpenses.length === 0">데이터가 없습니다.</template>
-                <template v-else>이 기간에 해당하는 데이터가 없습니다. (전체 {{ finance.businessExpenses.length }}건)</template>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </template>
-
+    <!-- 앱도 웹 장부 그대로(수익분석 확정안을 읽는다) -->
+    <WebScope v-else-if="onWeb(activeTab)">
+      <ExpenseLedger
+        ref="ledgerRef"
+        :key="activeTab"
+        class="fin-ledger"
+        :book="activeTab === 'businessExpense' ? 'need' : 'biz'"
+        :in-period="isWithinPeriod"
+      />
+    </WebScope>
     <!-- ========== TAB 3: 유류비 & 식대 ========== -->
     <template v-else-if="activeTab === 'fuelMeal'">
       <div class="fin-table-wrap">
@@ -852,7 +819,7 @@ const exportExcel = () => {
     </template>
 
     <!-- ========== TAB 5: 세금신고 — 세금관리 화면을 그대로 들여온다 ========== -->
-    <TaxPage v-else-if="activeTab === 'tax'" embedded :web-year="webEmbed ? taxYear : null" />
+    <TaxPage v-else-if="activeTab === 'tax'" embedded :web-year="taxYear" />
 
     <!-- 줄이 많아 잘라 그린 경우에만 — v-if/v-else 사슬 밖에 둔다 -->
     <button v-if="restCount > 0" type="button" class="fin-more" @click="shownCount += PAGE">
@@ -1232,7 +1199,7 @@ const exportExcel = () => {
 
 .fin-tabs {
   /* 네 칸을 정확히 4등분한 알약 카드 */
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
   /* 제목줄 아래 구분선에 알약 상자가 닿아 선을 덮었다 — 한 칸 띄운다 */
   margin: 8px 14px 6px; padding: 3px;
   background: #e2e8f2; border-radius: 12px;
@@ -1255,9 +1222,9 @@ const exportExcel = () => {
   padding: 8px 14px 4px;
   display: flex; flex-direction: column; gap: 7px;
 }
-/* 기간 칩 4개 + 엑셀저장 + 항목추가 = 한 줄 6등분 */
+/* 기간 칩 4개 + 엑셀저장 · 선택 · 항목추가 = 한 줄. 칩은 나눠 갖고 단추는 글자 폭만 */
 .fin-toolbar-right {
-  display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto auto auto; gap: 4px;
   align-items: stretch;
 }
 .fin-period { display: contents; }
@@ -1461,4 +1428,15 @@ td.fin-pickcell input { pointer-events: none; }
 .fin-sort { border: 0; background: none; padding: 0; color: inherit; font: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }
 .fin-sort i { font-style: normal; font-size: 0.85em; opacity: .55; }
 .fin-sort i.on { opacity: 1; }
+/* 앱 — 단추는 글자 폭만큼, 세금신고 연도 줄, 장부 표는 옆으로 민다 */
+.fin-shell:not(.web) .fin-excel, .fin-shell:not(.web) .fin-add, .fin-shell:not(.web) .fin-pick { padding: 7px 5px; font-size: 11px; letter-spacing: -0.3px; }
+.fin-taxyear.app { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #6b7280; }
+.fin-taxyear.app select { margin-left: auto; padding: 5px 8px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; font-size: 12.5px; font-weight: 700; color: #111827; }
+.fin-shell:not(.web) :deep(.xl-head) { flex-wrap: wrap; row-gap: 4px; position: sticky; left: 0; }
+.fin-shell:not(.web) .fin-ledger { margin: 4px 14px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.fin-shell:not(.web) :deep(.xl-head) { font-size: 12.5px; }
+.fin-shell:not(.web) :deep(.xl-tbl) { min-width: 640px; font-size: 12px; }
+.fin-shell:not(.web) :deep(.xl-tbl td) { padding-top: 8px; padding-bottom: 8px; font-size: 12px; }
+.fin-shell:not(.web) :deep(.xl-tbl th) { font-size: 12px; }
+.fin-shell:not(.web) :deep(.xl-tbl th button) { height: 34px; padding: 0 6px; }
 </style>

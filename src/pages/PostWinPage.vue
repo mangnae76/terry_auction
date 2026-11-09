@@ -2222,8 +2222,17 @@ const toggleSection = (key: string) => {
 
 /* ===== 앱 낙찰이후 — 진행절차 하위 탭 여섯을 폰 폭으로(2026-11-09 시안 postwin-mock). 안의 부품은 웹 꼴(WebScope)이라 배치만 여기서 잡는다 ===== */
 .pw-flow-tabs { display: flex; justify-content: space-between; gap: 2px; overflow-x: auto; }
-.pw-flow-tabs .pw-tab { flex: 0 0 auto; padding-left: 2px; padding-right: 2px; font-size: 12.5px; white-space: nowrap;  }
+/* 탭 줄 — 작다는 말에 글자 14 · 줄 높이를 키운다(좁은 폰은 13.5) */
+.pw-flow-tabs .pw-tab { flex: 1 1 auto; padding: 12px 2px 14px; font-size: 14px; letter-spacing: -0.5px; white-space: nowrap; }
+@media (max-width: 380px) { .pw-flow-tabs .pw-tab { font-size: 13.5px; } }
 .pw-flow-tabs { padding-left: 6px; padding-right: 6px; }
+/* 안쪽 상자 — 웹 여백(24~32px)이 폰에선 너무 넓다. 좌우는 상자 끝에 맞추고 위아래도 줄인다 */
+.app-flow .pw-card { padding: 4px 12px 12px; }
+.app-flow :deep(:is(.pwm, .pwt)) { padding: 14px 12px 16px; }
+.app-flow :deep(:is(.pwm-case, .pwm-box, .pwm-card)) { padding: 12px 12px 14px; }
+.app-flow :deep(.pwm-box) { margin-top: 12px; }
+.app-flow :deep(.pwm-notice) { gap: 10px; margin-top: 12px; padding: 12px; }
+.app-flow :deep(.pwm-memo) { padding: 10px 12px; }
 /* 매물등록 — 직거래 등록 머리: 제목 한 줄, 바로가기 · 행 단추는 다음 줄로(겹치지 않게) */
 .app-flow .pw-card-head:has(.pw-golink) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .app-flow .pw-card-head:has(.pw-golink) h2 { flex: 1 1 100%; white-space: nowrap; }
@@ -2258,5 +2267,8 @@ const toggleSection = (key: string) => {
 .app-flow :deep(.xl-hint) { flex: 1 1 100%; order: 2; }
 .app-flow :deep(.xl-btn) { order: 3; }
 .app-flow .pw-ledger :deep(.pw-card-body) { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.app-flow :deep(.xl-tbl) { min-width: 560px; }
+.app-flow :deep(.xl-tbl) { min-width: 640px; }
+.app-flow :deep(.xl-tbl td) { padding-top: 8px; padding-bottom: 8px; font-size: 12px; }
+.app-flow :deep(.xl-tbl th) { font-size: 12px; }
+.app-flow :deep(.xl-tbl th button) { height: 34px; padding: 0 6px; }
 </style>
