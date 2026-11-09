@@ -1296,7 +1296,7 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 .map-fold .mf-t { font-size: 13px; font-weight: 800; color: #374151; }
 .map-fold small { font-size: 11.5px; color: var(--sub); }
 .map-fold i { margin-left: auto; font-style: normal; font-size: 12px; font-weight: 700; color: var(--blue); white-space: nowrap; }
-.pa-wrap.app .map-in { height: 240px; }
+.pa-wrap.app .map-in { height: 480px; }   /* 접어 두니 펼치면 크게(240 → 480, 2026-11-09) */
 /* 거르기 — 반경 · 거래 · 엘베 · 층 · 기준 · 막대 · 단추 차례로 한 줄씩 */
 .pa-wrap.app .conds { display: flex !important; flex-direction: column; align-items: stretch; gap: 6px; padding: 8px; }
 .pa-wrap.app .conds > .simrow { width: 100%; box-sizing: border-box; }
