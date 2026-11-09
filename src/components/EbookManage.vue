@@ -255,7 +255,7 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
               <span v-else class="ebm-tx"><b>책 파일을 끌어다 놓거나 눌러서 고르기</b><small>PDF · EPUB, {{ EBOOK_MAX_MB }}MB 까지</small></span>
               <input type="file" accept="application/pdf,.pdf,.epub" @change="onPdf" />
             </label>
-            <input v-model="draft.link" class="ebm-in" type="url" placeholder="또는 구글드라이브 링크 https://drive.google.com/file/d/…" />
+            <input v-model="draft.link" class="ebm-in" type="url" placeholder="또는 웹 페이지 · 구글드라이브 링크 https://…" />
             <small class="ebm-hint">링크가 있으면 파일 대신 링크로 받습니다. 구글드라이브에서 '링크가 있는 모든 사용자'로 공유해 주세요.</small>
           </div>
         </div>
@@ -289,7 +289,7 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
           <tr v-for="(b, i) in books" :key="b.id" :class="{ off: !b.published, cur: draft.id === b.id }">
             <td class="ebm-ttl">
               <span class="ebm-th"><img v-if="b.coverUrl" :src="b.coverUrl" alt="" /></span>
-              <span class="ebm-nm"><b><em v-if="b.tag">[{{ b.tag }}]</em> {{ b.title }}</b><small>{{ b.link ? '구글드라이브 링크' : b.fileName ? `${b.fileName} · ${sizeText(b.fileSize)}` : '파일 없음' }}</small></span>
+              <span class="ebm-nm"><b><em v-if="b.tag">[{{ b.tag }}]</em> {{ b.title }}</b><small>{{ b.link ? (/drive\.google\.com/.test(b.link) ? '구글드라이브 링크' : '웹 페이지 링크') : b.fileName ? `${b.fileName} · ${sizeText(b.fileSize)}` : '파일 없음' }}</small></span>
             </td>
             <td>{{ ebookKindLabel(b.kind) }}</td>
             <td><span :class="['ebm-pill', isPaidEbook(b) ? 'paid' : 'free']">{{ priceLabel(b) }}</span></td>
