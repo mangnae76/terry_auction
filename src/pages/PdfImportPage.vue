@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { userMessage } from '../services/userMessage';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { Clipboard } from '@capacitor/clipboard';
@@ -677,7 +677,9 @@ const IMPORT_TABS: Array<{ key: ImportTab; label: string; plus: boolean }> = [
   { key: 'manual', label: '직접입력', plus: false },
 ];
 const TAB_STORE = 'myturn.import.tab';
-const readTab = (): ImportTab => { try { return localStorage.getItem(TAB_STORE) === 'manual' ? 'manual' : 'auto'; } catch { return 'auto'; } };
+/** 더보기 › 계정관리의 'AI 자동 분석 설정' 카드는 ?tab=auto 로 들어온다 — AI 칸이 있는 자동등록 탭을 연다 */
+const route = useRoute();
+const readTab = (): ImportTab => { if (route.query.tab === 'auto') return 'auto'; try { return localStorage.getItem(TAB_STORE) === 'manual' ? 'manual' : 'auto'; } catch { return 'auto'; } };
 const importTab = ref<ImportTab>(readTab());
 watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /* 그만 */ } });
 /** 결과 상자 — 이름은 하나다 (웹 /web 과 같은 글) */

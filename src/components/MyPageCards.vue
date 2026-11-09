@@ -21,17 +21,6 @@ const isPublicSale = (id: string) => id.startsWith('onbid-');
 const auctionCount = computed(() => store.auctions.filter((a) => !isPublicSale(a.id)).length);
 const publicSaleCount = computed(() => store.auctions.filter((a) => isPublicSale(a.id)).length);
 
-const p2 = (n: number) => String(n).padStart(2, '0');
-const now = new Date();
-const todayKey = `${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())}`;
-const monthKey = `${now.getFullYear()}-${p2(now.getMonth() + 1)}`;
-const dateKeyOf = (raw?: string) => {
-  const d = String(raw ?? '').replace(/\D/g, '');
-  return d.length >= 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}` : '';
-};
-const bidToday = computed(() => store.auctions.filter((a) => dateKeyOf(a.eventDate) === todayKey).length);
-const bidMonth = computed(() => store.auctions.filter((a) => dateKeyOf(a.eventDate).startsWith(monthKey)).length);
-
 /** 종류별 건수 — 많은 것부터. 선정물건 목록의 배지와 같은 기준으로 묶는다 */
 const typeTally = computed(() => {
   const by = new Map<string, number>();
@@ -76,15 +65,10 @@ const PICK_CARDS = computed<Card[]>(() => [
   { icon: '🗑️', title: '휴지통', desc: '물건 지우기 및 되살리기', path: '/trash' },
   { icon: '🔔', title: '알림설정', desc: '기한·일정 알림', path: '/notifications' },
   { icon: '🏢', title: '중개업체 관리', desc: '상호·연락처 관리', path: '/agencies' },
-  {
-    icon: '📅', title: '입찰 캘린더',
-    path: '/bid-calendar',
-    tally: `오늘 ${bidToday.value}건 · 이달 ${bidMonth.value}건`,
-  },
   { icon: '🛠️', title: '인테리어 업체', desc: '견적·업체 비딩 관리', path: '/interior-vendors' },
-].filter((c) => !(webEmbed && c.path === '/bid-calendar')));   // 웹은 입찰 캘린더가 마이페이지 탭(결제하기 옆)에 따로 있다 — 기타 설정 카드에선 뺀다
+]);   // 입찰 캘린더는 기타설정에서 뺐다 — 앱은 머리글 날짜, 웹은 마이페이지 탭으로 들어간다(2026-11-09)
 
-/** 웹 — AI 설정(자동 분석 켜고 끄기 · 제미나이 키 등록 한 창)을 계정관리에 둔다. 누르면 웹이 설정 창을 띄운다. 앱에는 없다 */
+/** 웹 — AI 설정(자동 분석 켜고 끄기 · 제미나이 키 등록 한 창)을 계정관리에 둔다. 누르면 웹이 설정 창을 띄운다 */
 const webEmbed = inject<boolean>('webEmbed', false);
 const WEB_AI_CARDS: Card[] = [
   { icon: '🤖', title: 'AI 자동 분석 설정', desc: '켜고 끄기 · 제미나이 API 키 등록', path: '/web-ai' },
@@ -100,9 +84,16 @@ const ACCOUNT_CARDS_BASE: Card[] = [
 /** 웹 — 중요한 차례로, 두 칸씩 비슷한 것끼리 짝지어 놓는다(왼쪽 | 오른쪽)
  *  내 계정(정보수정 | AI 설정) → 결제(결제하기 | 결제관리) → 혜택(포인트내역 | 3일무료체험) → 회원탈퇴는 맨 끝 */
 const WEB_ACCOUNT_ORDER = ['정보수정', 'AI 자동 분석 설정', '결제하기', '결제관리', ...(POINTS_OPEN ? ['포인트내역'] : []), '3일무료체험', '회원탈퇴'];
-const ACCOUNT_CARDS = webEmbed
-  ? WEB_ACCOUNT_ORDER.map((t) => [...ACCOUNT_CARDS_BASE, ...WEB_AI_CARDS].find((c) => c.title === t)).filter((c): c is Card => !!c)
-  : ACCOUNT_CARDS_BASE;
+/** 앱 — AI 설정은 물건등록 화면 맨 위(자동등록 탭)의 AI 자동 분석 칸으로 간다 */
+const APP_AI_CARDS: Card[] = [
+  { icon: '🤖', title: 'AI 자동 분석 설정', desc: '켜고 끄기 · 제미나이 API 키 등록', path: '/auctions/import?tab=auto' },
+];
+/** 앱 — 두 칸씩(왼쪽 | 오른쪽): 정보수정 | 결제하기 → 3일무료체험 | AI 설정 → 결제관리 | 회원탈퇴 (2026-11-09) */
+const APP_ACCOUNT_ORDER = ['정보수정', '결제하기', '3일무료체험', 'AI 자동 분석 설정', '결제관리', ...(POINTS_OPEN ? ['포인트내역'] : []), '회원탈퇴'];
+const ACCOUNT_CARDS = (webEmbed
+  ? WEB_ACCOUNT_ORDER.map((t) => [...ACCOUNT_CARDS_BASE, ...WEB_AI_CARDS].find((c) => c.title === t))
+  : APP_ACCOUNT_ORDER.map((t) => [...ACCOUNT_CARDS_BASE, ...APP_AI_CARDS].find((c) => c.title === t))
+).filter((c): c is Card => !!c);
 
 // ===== 최근 작성 — 물건마다 남긴 editLog(저장할 때 한 줄)를 모아 새것부터 세 줄. 맨 위 요약 줄엔 한 건 =====
 // 경매 진행 단계(물건상세 탭 · 임장경로 · 낙찰이후)에서 남긴 줄만 — 시장분석(손품조사 등)에서 남긴 줄은 뺀다
@@ -221,8 +212,8 @@ const go = (c: Card) => {
       </button>
     </div>
 
-    <!-- 기타 설정 — 예전 「선정물건」 묶음(보관함 · 휴지통 · 알림설정 …). 계정관리 아래로 -->
-    <h2 class="mpc-h2">기타 설정</h2>
+    <!-- 기타설정 — 예전 「선정물건」 묶음(보관함 · 휴지통 · 알림설정 …). 계정관리 아래로 -->
+    <h2 class="mpc-h2">기타설정</h2>
     <div class="mpc-grid">
       <button
         v-for="c in (webEmbed ? PICK_CARDS.filter((x) => !x.lead) : PICK_CARDS)"
