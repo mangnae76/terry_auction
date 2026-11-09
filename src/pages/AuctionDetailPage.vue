@@ -12822,6 +12822,7 @@ select.adp-pub-input option { text-align: center; }
 .app-plans .bida-okname { flex: 0 0 auto; font-size: 11px; font-weight: 700; color: #1f7a4a; white-space: nowrap; }
 .app-plans .bida-okname.none { color: #9aa3b2; font-weight: 400; }
 .app-plans .adp-pd-reset { flex: 0 0 auto; }
+.adp-profit-head .adp-head-dates.app ~ .adp-chev { margin-left: auto; }   /* 접기 화살표는 늘 오른쪽 끝(2026-11-09) */
 .app-bida { gap: 8px; margin: 8px 0; }
 .app-bida .bida-sum { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .app-bida .bida-kpi { gap: 2px; padding: 9px 10px; border-radius: 10px; }
