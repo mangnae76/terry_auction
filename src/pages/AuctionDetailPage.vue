@@ -3678,28 +3678,9 @@ const dmClearGrade = computed(() => gradeOf(dmUnits.value > 0 && dmListings.valu
 // 월 기준 15%/10% 을 연 기준으로 환산 — 180%/120%
 const dmAbsorbGrade = computed(() => gradeOf(dmListings.value > 0, dmAbsorb.value, 180, 120, true));
 
-/** 종합등급 (엑셀 L4) — 네 등급에 A 3 · B 2 · C 1 점을 주고 평균.
- *  2.5 이상이면 A, 1.5 이상이면 B, 그 아래는 C. 등급이 셋 미만이면 빈칸. */
-const DM_LEVEL_SCORE: Record<string, number> = { A: 3, B: 2, C: 1 };
 /** 보기용 적합 표시 — A·B는 적합, C·D는 부적합 */
 const dmFitText = (grade: string) => (grade === '-' ? '' : (grade === 'A' || grade === 'B' ? '적합' : '부적합'));
-const dmCoreGrades = computed(() => [
-  dmTurnGrade.value, dmBurdenGrade.value, dmClearGrade.value, dmAbsorbGrade.value,
-]);
-const dmTotalReady = computed(
-  () => dmCoreGrades.value.filter((g) => g !== '-').length >= 3,
-);
-/** 매긴 등급들의 평균 점수 */
-const dmTotalScore = computed(() => {
-  const scored = dmCoreGrades.value.filter((g) => g !== '-').map((g) => DM_LEVEL_SCORE[g] ?? 0);
-  if (scored.length === 0) return 0;
-  return scored.reduce((a, b) => a + b, 0) / scored.length;
-});
-const dmTotalGrade = computed(() => {
-  if (!dmTotalReady.value) return '-';
-  const n = dmTotalScore.value;
-  return n >= 2.5 ? 'A' : n >= 1.5 ? 'B' : 'C';
-});
+/* 종합등급(네 등급 평균)은 화면에서 뺐다 — 웹(2026-11-02) · 앱(2026-11-09) */
 /** 소진기간 표시 — 12개월을 넘으면 해로 환산한다. 연은 Y, 달은 M (대문자) */
 const dmClearParts = computed<Array<[string, string]>>(() => {
   const months = dmClearMonths.value;
@@ -8192,27 +8173,9 @@ const goBack = () => router.back();
             <div class="adp-dm-block">
               <div class="adp-dm-block-head">
                 <span class="t">② 수요지표</span>
-                <div v-if="!webEmbed" class="adp-dm-total">
-                  <span class="lab">종합</span>
-                  <button
-                    type="button"
-                    class="adp-dm-info"
-                    aria-label="설명"
-                    @mouseenter="tipEnter('total')"
-                    @mouseleave="tipLeave()"
-                    @click.stop="dmTip = dmTip === 'total' ? '' : 'total'"
-                  >
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
-                    </svg>
-                  </button>
-                  <span class="adp-dm-arrow">›</span>
-                  <strong :class="['adp-dm-grade', `g-${levelTone(dmTotalGrade)}`]">{{ dmTotalGrade }}</strong>
-                  <span v-if="dmTotalGrade !== '-'" :class="['adp-dm-fit', { bad: dmTotalGrade === 'C' }]">/ {{ dmFitText(dmTotalGrade) }}</span>
-                </div>
               </div>
               <div class="adp-dm-rowwrap">
-              <!-- 웹 종합 칸은 뺐다(2026-11-02) — 지표 4칸만. 앱은 위 머리 줄의 종합(adp-dm-total)을 그대로 쓴다 -->
+              <!-- 종합 칸은 뺐다 — 웹(2026-11-02) · 앱 머리 줄 종합(2026-11-09). 지표 4칸만 -->
               <div :class="['adp-mkt-cells', 'c4', 'adp-dm-table', 'dm-result']">
                 <div :class="['cell split calc', { lit: dmLit('absorb') }]" @mouseenter="dmLitEnter('absorb')" @mouseleave="dmLitLeave()" @click="dmLitTap('absorb')">
                   <div class="cell-head">
@@ -8330,7 +8293,7 @@ const goBack = () => router.back();
 
             <!-- ① 실사용자 + 입지등수 -->
             <div class="adp-dm-block boxed">
-            <div class="adp-dm-sub">① 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>{{ webEmbed ? '초기화' : '자동으로' }}</button></div>
+            <div class="adp-dm-sub">① 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>초기화</button></div>
             <table class="adp-table adp-ruser-table">
               <colgroup v-if="webEmbed">
               <col style="width: 20%" /><col style="width: 15%" /><col style="width: 21%" /><col style="width: 17%" /><col style="width: 12%" /><col style="width: 15%" />
