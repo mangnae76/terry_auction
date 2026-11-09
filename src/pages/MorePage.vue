@@ -10,7 +10,7 @@ import BillingBody from '../components/BillingBody.vue';
 import PointsBody from '../components/PointsBody.vue';
 import NewsBody from '../components/NewsBody.vue';
 import SupportBody from '../components/SupportBody.vue';
-import MyContentsPage from './MyContentsPage.vue';
+import ContentStore from '../components/ContentStore.vue';
 import { useAuthStore } from '../stores/authStore';
 import { POINTS_OPEN } from '../services/billingPlans';
 
@@ -150,7 +150,7 @@ onMounted(() => {
       <BillingBody v-else-if="tab === 'billing'" />
       <PointsBody v-else-if="tab === 'points'" />
       <NewsBody v-else-if="tab === 'news'" />
-      <MyContentsPage v-else-if="tab === 'mycontents'" />
+      <ContentStore v-else-if="tab === 'mycontents'" />
       <SupportBody v-else />
     </div>
 

@@ -6,6 +6,8 @@ import { getEbook, isPaidEbook, downloadEbook, subscribeMyReceipts, type EbookRe
 
 /** 웹에 들어가 있는가 — 앱(더보기 › 내콘텐츠)은 좁아서 제목을 한 줄 통째로 쓰고 받은 날은 그 아래로 */
 const webEmbed = inject('webEmbed', false);
+/** bare — 앱 콘텐츠 › 내콘텐츠 탭 안: 바깥 상자 · 제목은 콘텐츠 화면 것을 쓴다 */
+defineProps<{ bare?: boolean }>();
 const rows = ref<EbookReceipt[]>([]);
 const err = ref('');
 const loaded = ref(false);
@@ -35,8 +37,8 @@ const day = (iso: string) => iso.slice(0, 10).replace(/-/g, '.');
 </script>
 
 <template>
-  <section :class="['myc', { app: !webEmbed }]">
-    <header><h3>{{ webEmbed ? '내콘텐츠' : '콘텐츠' }}</h3><p>{{ webEmbed ? '무료로 받거나 구매한 콘텐츠입니다. 다시받기로 언제든 PDF를 내려받을 수 있습니다.' : '다시받기로 언제든 내려받을 수 있습니다.' }}</p></header>
+  <section :class="['myc', { app: !webEmbed, bare }]">
+    <header v-if="!bare"><h3>{{ webEmbed ? '내콘텐츠' : '콘텐츠' }}</h3><p>{{ webEmbed ? '무료로 받거나 구매한 콘텐츠입니다. 다시받기로 언제든 PDF를 내려받을 수 있습니다.' : '다시받기로 언제든 내려받을 수 있습니다.' }}</p></header>
     <p v-if="err" class="empty">{{ err }}</p>
     <p v-else-if="loaded && !rows.length" class="empty">아직 받은 콘텐츠가 없습니다. 콘텐츠 › 전자책에서 무료로 받아 보세요.</p>
     <ul v-else class="list">
@@ -66,6 +68,7 @@ const day = (iso: string) => iso.slice(0, 10).replace(/-/g, '.');
 .list small { flex: 0 0 auto; font-size: 13px; color: #6b7280; }
 /* 앱 — 좁은 폭에 맞춘 여백 · 글자 */
 .app { padding: 16px 14px; }
+.myc.bare { padding: 0; border: 0; border-radius: 0; }
 .app header p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .app .list li { gap: 10px; }
 .app .list b { max-width: 100%; font-size: 14px; }
