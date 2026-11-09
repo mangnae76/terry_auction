@@ -3,7 +3,7 @@
 // 상품은 웹과 같은 자료(운영자가 올린 ebooks). 모바일앱 · 관리 탭은 앱에 두지 않는다.
 import { computed, onUnmounted, ref } from 'vue';
 import MyContentsPage from '../pages/MyContentsPage.vue';
-import whiteLogo from '../assets/icones/log/LOGO_AUCTION_WHITE.png';
+import whiteLogo from '../assets/icones/log/LOGO_MYTURN.svg';
 import { userMessage } from '../services/userMessage';
 import {
   downloadEbook, ebookBodyHtml, ebookReleaseText, ebookSummary, isPaidEbook, isUpcomingEbook,

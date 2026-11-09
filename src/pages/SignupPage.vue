@@ -16,7 +16,7 @@ import {
   TERMS_CHAPTERS,
   TERMS_EFFECTIVE,
 } from '../services/legalTerms';
-import markImg from '../assets/icones/log/LOGO_MARK.png';
+import markImg from '../assets/icones/log/LOGO_MARK.svg';
 import { POINTS_OPEN, TRIAL_DAYS, WELCOME_POINT } from '../services/billingPlans';
 import { TRIAL_PERK_LINE } from '../services/trialInfo';
 
