@@ -4,51 +4,15 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import BrandLogo from './BrandLogo.vue';
 import calendarIcon from '../assets/icones/calendar-days.png';
-import sunIcon from '../assets/icones/sun.png';
-import dollarIcon from '../assets/icones/circle-dollar-sign.png';
 import { useAuthStore } from '../stores/authStore';
 import { MY_PAGE_ITEMS, type MyPageItem } from '../services/myPageMenu';
 import { useAlertBadge } from '../services/alertBadge';
 import { POINT_GRADES } from '../services/pointPolicy';
 import { PLAN_REST_DAYS, POINTS_OPEN } from '../services/billingPlans';
-import { useHeaderInfo } from '../services/headerInfo';
 
 const authStore = useAuthStore();
 const router = useRouter();
 const menuOpen = ref(false);
-
-/** 동네·기온·원/달러 — 못 받은 칸은 지어내지 않고 '–' 로 둔다 */
-const { place, weather, usd } = useHeaderInfo();
-const hhmm = (ms: number) => {
-  const t = new Date(ms);
-  return `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
-};
-const weatherText = computed(() => {
-  const w = weather.value;
-  return `${place.value.name} ${w ? `${Math.round(w.temp)}℃` : '–℃'}`;
-});
-const weatherTitle = computed(() => {
-  const w = weather.value;
-  const where = place.value.fromDevice ? '내 위치' : '기본 위치(인천시청)';
-  if (!w) return `${where} · 기온을 받아오지 못했습니다`;
-  return w.stale ? `${where} · 기상청 · 받아오지 못해 ${hhmm(w.savedAt)}에 받은 값` : `${where} · 기상청 · ${hhmm(w.savedAt)} 기준`;
-});
-const usdText = computed(() => {
-  const u = usd.value;
-  return u ? Math.round(u.rate).toLocaleString('ko-KR') : '–';
-});
-/** 등락 — 0 이면 기호를 붙이지 않는다 */
-const usdChange = computed(() => {
-  const u = usd.value;
-  if (!u || !u.change) return '';
-  return `${u.change > 0 ? '+' : ''}${u.change.toFixed(1)}`;
-});
-const usdTitle = computed(() => {
-  const u = usd.value;
-  if (!u) return '환율을 받아오지 못했습니다';
-  const day = `${u.date.slice(4, 6)}.${u.date.slice(6, 8)}`;
-  return `한국수출입은행 매매기준율 · ${day} 고시${u.stale ? ' · 받아오지 못해 예전 값' : ''}`;
-});
 
 /** 머리글의 '결제하기' 글자 — 내리려면 false 로 */
 const SHOW_PAY = true;
@@ -118,18 +82,10 @@ const onLogout = async () => {
           <img :src="calendarIcon" alt="" class="amh-icon" />
           <span>{{ formattedDate }}</span>
         </button>
-        <span class="amh-info-cell" :title="weatherTitle">
-          <img :src="sunIcon" alt="" class="amh-icon" />
-          <span>{{ weatherText }}</span>
-        </span>
-        <span class="amh-info-cell" :title="usdTitle">
-          <img :src="dollarIcon" alt="" class="amh-icon" />
-          <span>USD {{ usdText }} <em v-if="usdChange" :class="{ down: usdChange.startsWith('-') }">{{ usdChange }}</em></span>
-        </span>
       </div>
     </div>
     <div class="amh-row amh-row-bottom">
-      <span class="amh-greet">반가워요! <strong>{{ displayNickname }}</strong><span class="amh-greet-nim">님</span></span>
+      <span class="amh-greet"><strong>{{ displayNickname }}</strong><span class="amh-greet-nim">님</span></span>
       <button v-if="SHOW_PAY" type="button" class="amh-pay" @click="router.push('/billing')">결제하기</button>
       <button type="button" class="amh-gift" aria-label="이벤트" @click="router.push({ path: '/more', query: { sec: 'event' } })">
         <!-- 선물상자 — 이벤트 자리로 간다 -->
@@ -240,9 +196,6 @@ const onLogout = async () => {
   align-self: flex-start;
 }
 .amh-info-cell { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
-.amh-info-cell em { color: #4ade80; font-style: normal; font-weight: 400; margin-left: 1px; }
-/* 원/달러가 내렸을 때 — 오른 날의 초록과 구분한다 */
-.amh-info-cell em.down { color: #93c5fd; }
 
 .amh-icon {
   width: 13px; height: 13px;
@@ -341,7 +294,7 @@ const onLogout = async () => {
 .amh-user-menu-btn:hover { background: #f9fafb; }
 
 @media (max-width: 400px) {
-  /* 좁은 손전화 — 날짜·날씨·환율 셋이 한 줄에 다 들어가야 한다 */
+  /* 좁은 손전화 */
   .amh-info { gap: 4px; font-size: 9.5px; }
   .amh-info-cell { gap: 2px; }
   .amh-icon { width: 11px; height: 11px; }
