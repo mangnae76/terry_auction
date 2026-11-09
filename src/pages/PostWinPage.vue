@@ -2234,9 +2234,13 @@ const toggleSection = (key: string) => {
 .app-flow :deep(.pwm-notice) { gap: 10px; margin-top: 12px; padding: 12px; }
 .app-flow :deep(.pwm-memo) { padding: 10px 12px; }
 /* 매물등록 — 직거래 등록 머리: 제목 한 줄, 바로가기 · 행 단추는 다음 줄로(겹치지 않게) */
-.app-flow .pw-card-head:has(.pw-golink) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.app-flow .pw-card-head:has(.pw-golink) h2 { flex: 1 1 100%; white-space: nowrap; }
-.app-flow .pw-card-head:has(.pw-golink) .pw-golink { position: static; }
+/* 매물등록 — 제목 · 바로가기(당근 ~ 업체) · 행 단추를 한 줄에. 단추는 글자 폭만큼 줄여 넣는다 */
+.app-flow .pw-card-head:has(.pw-golink) { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; }
+.app-flow .pw-card-head:has(.pw-golink) h2 { flex: 0 1 auto; flex-wrap: nowrap; min-width: 0; margin-right: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app-flow .pw-card-head:has(.pw-golink) .pw-golink { position: static; margin-left: 0; padding: 0 5px; gap: 2px; }
+.app-flow .pw-card-head:has(.pw-golink) .pw-golink svg { display: none; }
+.app-flow .pw-card-head:has(.pw-golink) .pw-golink:is(button) svg { display: block; width: 10px; height: 10px; }   /* 업체 더하기 ＋ 는 남긴다 */
+.app-flow .pw-card-head:has(.pw-golink) .pw-rowstep { margin-left: 2px; }
 /* 카드 머리 — 제목은 한 줄로, 설명은 아래 줄, 단추는 제목 줄 오른쪽 */
 .app-flow :deep(:is(.pwt-head, .pwm-head)) { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
 .app-flow :deep(:is(.pwt-head, .pwm-head) h2) { flex: 0 0 auto; white-space: nowrap; }
@@ -2252,24 +2256,30 @@ const toggleSection = (key: string) => {
 .app-flow :deep(.pwt-main) { grid-area: main; min-width: 0; }
 .app-flow :deep(.pwt-ctrl) { grid-area: ctrl; }
 .app-flow :deep(.pwt-todos) { grid-area: todos; min-width: 0; padding-left: 30px; }
+/* 해야 할 일 — 글자 한 단 작게(15→13), 화살표는 오른쪽 끝 X 단추(30px) 가운데 세로줄에 */
+.app-flow :deep(.pwt-todos) { gap: 4px; }
+.app-flow :deep(.pwt-todo) { min-height: 24px; }
+.app-flow :deep(.pwt-todo-t) { position: relative; flex: 1 1 auto; padding-right: 28px; font-size: 13px; }
+.app-flow :deep(.pwt-arrow) { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); margin: 0; font-size: 15px; }
 .app-flow :deep(.pwt-meta) { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
 .app-flow :deep(.pwt-meta .pwt-base) { margin-left: 0; text-align: left; }
 .app-flow :deep(.pwt-name) { white-space: normal; }
 /* 명도분석 — 비교 셋은 글자를 줄여 한 줄에, 비용 카드는 위아래로 */
 .app-flow :deep(.pwm-nav) { gap: 5px; }
-.app-flow :deep(.pwm-nav > div) { padding: 8px 7px; min-width: 0; }
+.app-flow :deep(.pwm-nav > div) { padding: 8px 3px 8px 5px; min-width: 0; }
 .app-flow :deep(.pwm-nav small) { font-size: 10.5px; }
-/* 개월 · 금액은 각각 한 줄로(줄 바꿈 없이) 크게 */
-.app-flow :deep(.pwm-nav b) { font-size: 15px; line-height: 1.3; white-space: nowrap; }
-.app-flow :deep(.pwm-nav b > span) { display: block; }
-.app-flow :deep(.pwm-nav b > i) { display: none; }
+/* 개월 · 금액은 한 줄로 — 칸에 들어가게 글자를 줄이고 점 둘레 여백도 좁힌다 */
+.app-flow :deep(.pwm-nav b) { font-size: 13px; line-height: 1.3; letter-spacing: -0.4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app-flow :deep(.pwm-nav b > i) { font-size: 8px; }
 .app-flow :deep(.pwm-nav em) { font-size: 10px; }
 .app-flow :deep(:is(.pwm-cmp.three, .pwm-cmp.two, .pwm-finals-grid.three)) { grid-template-columns: minmax(0, 1fr); }
 /* 필요경비 · 사업경비 — 단추 줄은 감싸고, 표는 옆으로 밀어 본다 */
 .app-flow :deep(.xl-tools) { flex-wrap: wrap; row-gap: 6px; }
-.app-flow :deep(.xl-hint) { flex: 1 1 100%; order: 2; }
+.app-flow :deep(.xl-sum) { flex: 1 1 100%; }
+/* 둘째 줄 — 입찰가A 안내(왼쪽)와 엑셀저장 · 항목추가(표 오른쪽 끝)를 한 줄에 */
+.app-flow :deep(.xl-hint) { flex: 0 1 auto; min-width: 0; order: 2; margin-right: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .app-flow :deep(.xl-btn) { order: 3; }
-.app-flow :deep(.xl-tools > button:first-of-type) { margin-left: auto; }   /* 엑셀저장 ~ 항목추가는 표 오른쪽 끝에 맞춘다 */
+.app-flow :deep(.xl-tools) { column-gap: 6px; }
 .app-flow :deep(.pwm-cap) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* 명도분석 계산에 쓴 값 — 폰에서 글자 · 단추를 한 단 작게 */
 /* 제목 한 줄, 단추는 그 아래 줄(::before 가 줄을 끊는다), 단추 줄 밑에 가로 구분선 */
@@ -2285,6 +2295,21 @@ const toggleSection = (key: string) => {
 .app-flow :deep(.pwm-basis) { margin-top: 8px; padding-left: 16px; font-size: 12px; line-height: 1.6; }
 .app-flow :deep(.pwm-note) { font-size: 11.5px; }
 .app-flow :deep(.pwm-grp b) { white-space: nowrap; }   /* 금액이 '원' 앞에서 꺾이지 않게 */
+/* 세금분석 — 웹 두 칸 높이 맞춤(560px)을 풀고, 줄 위아래 여백을 고르게 줄인다 */
+.app-flow :deep(.pwm-tax) { grid-template-columns: minmax(0, 1fr); gap: 10px; --pwm-card-h: 0px; }
+.app-flow :deep(.pwm-tax > .pwm-card) { min-height: 0; }
+.app-flow :deep(.pwm-card h3) { margin-bottom: 2px; }
+.app-flow :deep(.pwm-card dl > div) { padding: 8px 2px; gap: 10px; }
+.app-flow :deep(.pwm-card dd) { gap: 1px; }
+.app-flow :deep(.pwm-card dd small) { font-size: 11px; line-height: 1.4; }
+.app-flow :deep(.pwm-finals) { margin-top: 12px; }
+.app-flow :deep(.pwm-finals-h) { margin-bottom: 8px; }
+.app-flow :deep(.pwm-finals-grid) { gap: 10px; }
+.app-flow :deep(.pwm-final h4) { flex-wrap: wrap; row-gap: 2px; }
+.app-flow :deep(.pwm-final h4 em) { flex-basis: 100%; margin-left: 0; }
+.app-flow :deep(.pwm-final dl > div.total) { margin-top: 4px; padding: 10px 12px; }
+.app-flow :deep(.pwm-finals-grid.rows .pwm-final dl > div.ev) { padding: 8px 12px; }
+.app-flow :deep(.pwm-notice li) { font-size: 13px; line-height: 1.55; }
 /* 출처 — 한 곳에 한 줄(넘치면 …) */
 .app-flow :deep(.pwm-src) { gap: 3px; font-size: 11px; }
 .app-flow :deep(.pwm-src a) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

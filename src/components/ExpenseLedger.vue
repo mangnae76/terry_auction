@@ -243,12 +243,13 @@ defineExpose({ openAdd, exportCsv, total, pick, togglePick });
   <section :class="['xl', { phone }]">
     <div v-if="tools" class="xl-tools">
       <span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span>
-      <span class="xl-hint"><b class="xl-plan">입찰가A</b> {{ planSrc }}에서 가져옵니다. 필요시 직접 입력하세요.</span>
+      <span class="xl-hint"><b class="xl-plan">입찰가A</b> {{ phone ? planSrc : `${planSrc}에서 가져옵니다. 필요시 직접 입력하세요.` }}</span>
       <button type="button" class="xl-btn" @click="exportCsv">⬇ 엑셀저장</button>
-      <button type="button" :class="['xl-btn', { picking: pick }]" @click="togglePick">선택</button>
+      <!-- 골라 지우기 — 앱(폰)에는 두지 않는다 -->
+      <button v-if="!phone" type="button" :class="['xl-btn', { picking: pick }]" @click="togglePick">선택</button>
       <button type="button" class="xl-btn on" :disabled="auctionId === ''" @click="openAdd">＋ 항목추가</button>
     </div>
-    <p v-else class="xl-head"><span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span><span class="xl-hint"><b class="xl-plan">입찰가A</b> {{ planSrc }}에서 가져옵니다. 필요시 직접 입력하세요.</span></p>
+    <p v-else class="xl-head"><span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span><span class="xl-hint"><b class="xl-plan">입찰가A</b> {{ phone ? planSrc : `${planSrc}에서 가져옵니다. 필요시 직접 입력하세요.` }}</span></p>
     <PickBar v-if="pick" :n="pickedRows.length" :all="allPicked" @all="pickAll" @delete="deletePicked" @close="togglePick">
       <template v-if="sorted.some((r) => r.src === 'plan')" #note><b class="xl-plan lead">입찰가A</b> 줄은 지울 수 없습니다 — 수익분석에서 0으로 바꾸면 사라집니다</template>
     </PickBar>
