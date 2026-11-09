@@ -21,7 +21,8 @@ import { askEvictAi } from '../services/geminiEvict';
 import { getGeminiKey, isGeminiOn, loadGeminiPrefs } from '../services/geminiPdf';
 import { EVICT_BASIS, EVICT_DEFAULT, EVICT_SOURCES, bizIncomeTaxOf, dealCost, execCost, monthlyCarry, planOf, transferTaxOf, vatOf, type EvictInput, type HoldTerm } from '../services/postWinMoney';
 
-const props = defineProps<{ auction: AuctionDetail | null; mode: 'evict' | 'tax' }>();
+/** brief — 앱 폰 폭: 머리 안내를 한 줄로 */
+const props = defineProps<{ auction: AuctionDetail | null; mode: 'evict' | 'tax'; brief?: boolean }>();
 // 웹은 수익분석에서 '확정' 한 안의 입찰가 · 매도가 · 비용을 쓴다(앱은 그대로 A안)
 const webEmbed = inject<boolean>('webEmbed', false);
 const planned = <T extends AuctionDetail | null | undefined>(a: T): T => (webEmbed ? withConfirmedPlan(a) : a) as T;
@@ -288,16 +289,17 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
       <!-- 명도분석은 AI 로 값을 채운다 — 제목에 AI 표시, 오른쪽 끝에 시작 단추(권리분석 'AI 권리분석 시작'과 같은 꼴) -->
       <h2 v-if="mode === 'evict'"><svg class="pwm-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z"/></svg>{{ webEmbed ? '명도분석' : 'AI 명도분석' }}</h2>
       <h2 v-else>세금분석</h2>
-      <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 필요경비 · 사업경비 탭의 값으로 계산합니다' }}</span>
+      <span v-if="brief && mode === 'tax'" class="pwm-cap">필요경비 · 사업경비로 예상 세금을 계산합니다</span>
+      <span v-else-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 필요경비 · 사업경비 탭의 값으로 계산합니다' }}</span>
       <button v-if="mode === 'evict' && !webEmbed" type="button" class="pwm-ai-start head" :disabled="aiBusy" @click="aiFill">{{ aiBusy ? 'AI가 읽는 중…' : 'AI 명도분석 시작' }}</button>
     </header>
     <!-- ===== 명도분석 ===== -->
     <template v-if="mode === 'evict'">
       <!-- 한눈에 — 협의 · 강제집행의 기간과 비용, 그 차이 -->
       <div class="pwm-nav">
-        <div class="deal"><small>협의로 끝날 때</small><b>{{ ev.dealMonths }}개월 · {{ man(deal.total) }}</b></div>
-        <div v-if="!dealDone" class="exec"><small>강제집행까지 갈 때</small><b>{{ ev.execMonths }}개월 · {{ man(exec.total) }}</b></div>
-        <div v-if="!dealDone" class="gap"><small>차이</small><b>{{ ev.execMonths - ev.dealMonths >= 0 ? '+' : '' }}{{ ev.execMonths - ev.dealMonths }}개월 · {{ save >= 0 ? '+' : '-' }}{{ man(Math.abs(save)) }}</b><em>한 달 늦어질 때마다 {{ man(monthlyCarry(ev)) }}</em></div>
+        <div class="deal"><small>협의로 끝날 때</small><b><span>{{ ev.dealMonths }}개월</span><i> · </i><span>{{ man(deal.total) }}</span></b></div>
+        <div v-if="!dealDone" class="exec"><small>강제집행까지 갈 때</small><b><span>{{ ev.execMonths }}개월</span><i> · </i><span>{{ man(exec.total) }}</span></b></div>
+        <div v-if="!dealDone" class="gap"><small>차이</small><b><span>{{ ev.execMonths - ev.dealMonths >= 0 ? '+' : '' }}{{ ev.execMonths - ev.dealMonths }}개월</span><i> · </i><span>{{ save >= 0 ? '+' : '-' }}{{ man(Math.abs(save)) }}</span></b><em>한 달 늦어질 때마다 {{ man(monthlyCarry(ev)) }}</em></div>
       </div>
       <p v-if="dealDone" class="pwm-done">명도협의로 종결했습니다({{ auction?.postWinFlow?.endedAt }}) — 강제집행은 보여 주지 않습니다.</p>
       <div :class="['pwm-cmp', { three: webEmbed && !dealDone, two: webEmbed && dealDone }]">
@@ -306,10 +308,12 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
           <h3>{{ planEvictName }}<span :class="['pwm-plan-chip', { on: planMarked }]">{{ planChip }}</span></h3>
           <div class="pwm-grpbox">
             <p class="pwm-grp"><span>명도비 <em>{{ planName }}에 적은 금액 그대로</em></span><b>{{ won(planEvict) }}</b></p>
+            <!-- 고치는 길 — 명도비 줄 바로 아래, 명도비 글과 같은 왼쪽 선에서 -->
+            <p class="pwm-auto">고치려면 수익분석 › 비용 › 명도비</p>
           </div>
           <div class="pwm-slot" aria-hidden="true"></div>
           <p class="pwm-total">합계 <b>{{ won(planEvict) }}</b></p>
-          <p class="pwm-auto">고치려면 수익분석 › 비용 › 명도비</p>
+          <div class="pwm-slot" aria-hidden="true"></div>
         </article>
         <article class="pwm-case deal">
           <h3>{{ webEmbed ? '명도협의(자동 계산)' : '협의로 끝날 때' }}</h3>
@@ -348,7 +352,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
         <button v-if="webEmbed" type="button" class="pwm-ai-start lead" :disabled="aiBusy" @click="aiFill">{{ aiBusy ? 'AI가 읽는 중…' : 'AI 명도분석 시작' }}</button>
         <button type="button" :class="['pwm-edit', { on: evEdit }]" @click="evEdit = !evEdit">{{ evEdit ? '접기' : '직접입력' }}</button>
         <button v-if="!webEmbed" type="button" class="pwm-ai-start" :disabled="aiBusy" @click="aiFill">{{ aiBusy ? 'AI가 읽는 중…' : 'AI 명도분석 시작' }}</button>
-        <button v-if="evEdit" type="button" class="pwm-reset" @click="reset">초기화</button>
+        <button v-if="evEdit || brief" type="button" class="pwm-reset" @click="reset">초기화</button>
       </h3>
       <p v-if="aiErr" class="pwm-aierr">{{ aiErr }}</p>
       <p v-if="aiSummary" class="pwm-aisum"><b>AI 요약</b>{{ aiSummary }}</p>
@@ -476,6 +480,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-nav > div { display: flex; flex-direction: column; gap: 6px; padding: 16px 22px; border: 1px solid #e3e8f0; border-radius: 10px; }
 .pwm-nav small { font-size: 14px; color: #6b7280; }
 .pwm-nav b { font-size: 18px; font-weight: 800; }
+.pwm-nav b > i { font-style: normal; }   /* 개월 · 금액 사이 점 — 앱은 둘을 두 줄로 나눈다 */
 .pwm-nav em { font-style: normal; font-size: 14px; color: #6b7280; }
 .pwm-nav .deal b { color: #2f7d4a; }
 .pwm-nav .exec b { color: #b44545; }
@@ -584,7 +589,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-grpbox li { padding-left: 24px; border-bottom-color: #e6eaf2; }   /* 명도비보다 두 글자쯤 안쪽 */
 .pwm-grpbox li span, .pwm-grpbox li b { font-weight: 400; color: #4b5563; }
 .pwm-grpbox li:last-child { border-bottom: 0; }
-.pwm-auto { margin: 2px 0 0; padding-left: 24px; font-size: 12px; color: #9aa3b2; }
+.pwm-auto { margin: 0; padding: 0 0 4px; font-size: 12px; color: #9aa3b2; }
 /* 바탕 띠는 양옆으로 10px 내밀고 글은 제자리 — 명도비 · 지연 비용 · 세부 · 합계의 '원' 끝이 한 줄에 선다 */
 .pwm-grp { display: flex; align-items: baseline; gap: 8px; margin: 10px -10px 4px; padding: 8px 10px; border-radius: 8px; background: #f5f7fb; font-size: 14px; font-weight: 800; color: #1f2a44; }
 .pwm-grp em { margin-left: 4px; font-style: normal; font-size: 12px; font-weight: 500; color: #6b7280; }

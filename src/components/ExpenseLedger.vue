@@ -27,7 +27,9 @@ const props = withDefaults(defineProps<{
   inPeriod?: (date: string) => boolean;
   /** 표 위 합계 · 엑셀 · 항목추가 줄(낙찰이후) — 자금관리는 위 필터 줄의 단추를 쓴다 */
   tools?: boolean;
-}>(), { auctionId: null, inPeriod: undefined, tools: false });
+  /** 앱 폰 폭 — 예전 앱 표 글자(11px)로 옆으로 밀지 않고 한 줄에 */
+  phone?: boolean;
+}>(), { auctionId: null, inPeriod: undefined, tools: false, phone: false });
 
 const auctions = useAuctionStore();
 const finance = useFinanceStore();
@@ -64,7 +66,7 @@ const toggleSort = (key: SortKey) => {
 const mark = (key: SortKey) => (sort.value.key === key ? (sort.value.desc ? '↓' : '↑') : '⇅');
 const cols = computed<Array<[SortKey, string]>>(() => [
   ['date', '날짜'], ...(many.value ? [['auction', '물건'] as [SortKey, string]] : []), ['category', '사용구분'], ['from', '출처'], ['detail', '명세'],
-  ['amount', '비용(VAT포함)'], ...(props.book === 'biz' ? [['vendor', '업체 · 연락처'] as [SortKey, string]] : []), ['note', '비고'],
+  ['amount', props.phone ? '비용' : '비용(VAT포함)'], ...(props.book === 'biz' ? [['vendor', props.phone ? '업체' : '업체 · 연락처'] as [SortKey, string]] : []), ['note', '비고'],
 ]);
 
 /** 칸 폭 규칙 — 모든 칸이 한 몫, 명세만 두 몫. 칸 수가 바뀌어도(물건 · 업체 칸) 같은 규칙으로 나눈다 */
@@ -238,7 +240,7 @@ defineExpose({ openAdd, exportCsv, total, pick, togglePick });
 </script>
 
 <template>
-  <section class="xl">
+  <section :class="['xl', { phone }]">
     <div v-if="tools" class="xl-tools">
       <span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span>
       <span class="xl-hint"><b class="xl-plan">입찰가A</b> {{ planSrc }}에서 가져옵니다. 필요시 직접 입력하세요.</span>
@@ -251,7 +253,7 @@ defineExpose({ openAdd, exportCsv, total, pick, togglePick });
       <template v-if="sorted.some((r) => r.src === 'plan')" #note><b class="xl-plan lead">입찰가A</b> 줄은 지울 수 없습니다 — 수익분석에서 0으로 바꾸면 사라집니다</template>
     </PickBar>
     <table class="xl-tbl">
-      <colgroup><col v-if="pick" class="xc-pickcol" /><col v-for="[k] in cols" :key="k" :style="{ width: colWidth(k) }" /></colgroup>
+      <colgroup><col v-if="pick" class="xc-pickcol" /><col v-for="[k] in cols" :key="k" :class="`xw-${k}`" :style="{ width: colWidth(k) }" /></colgroup>
       <thead>
         <tr>
           <th v-if="pick" class="xc-pick"><input type="checkbox" :checked="allPicked" :disabled="!pickable.length" aria-label="전체선택" @change="pickAll" /></th>
@@ -372,6 +374,30 @@ defineExpose({ openAdd, exportCsv, total, pick, togglePick });
 .xl-sub { font-size: 12px; font-weight: 400; color: #6b7280; }
 .xl-form :deep(input:disabled) { background: #f5f7fa; color: #374151; }
 .xl-empty { padding: 28px 10px !important; color: #6b7280 !important; cursor: default; }
+/* 앱 폰 폭 — 글자는 예전 앱 표(11px), 칸은 화면 폭 안에서 나누고 넘치면 … */
+.xl.phone .xl-sum { font-size: 13px; }
+.xl.phone .xl-hint { font-size: 11.5px; }
+.xl.phone .xl-btn { height: 30px; padding: 0 10px; font-size: 12.5px; }
+.xl.phone .xl-tbl th { font-size: 10.5px; }
+.xl.phone .xl-tbl th button { height: 30px; padding: 0 2px; }
+.xl.phone .xl-tbl th i { margin-left: 1px; font-size: 8px; }
+.xl.phone .xl-tbl th.xc-detail button { padding-left: 6px; }
+.xl.phone .xl-tbl td { padding: 7px 3px; font-size: 11px; }
+.xl.phone .xl-tbl td.l { padding-left: 6px; }
+.xl.phone .xl-pill { max-width: 100%; padding: 1px 5px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.xl.phone .xl-from { width: auto; max-width: 100%; padding: 1px 4px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.xl.phone :is(.xl-qty, .xl-st) { margin-left: 4px; font-size: 10px; }
+.xl.phone .xl-vend :is(b, small) { display: inline; }
+.xl.phone .xl-vend small { margin-left: 3px; font-size: 10px; }
+.xl.phone .xc-pickcol { width: 28px; }
+.xl.phone .xw-date { width: 15% !important; }
+.xl.phone .xw-auction { width: 14% !important; }
+.xl.phone .xw-category { width: 15% !important; }
+.xl.phone .xw-from { width: 13% !important; }
+.xl.phone .xw-detail { width: 20% !important; }
+.xl.phone .xw-amount { width: 19% !important; }
+.xl.phone .xw-vendor { width: 12% !important; }
+.xl.phone .xw-note { width: 8% !important; }
 .xl-veil { position: fixed; inset: 0; z-index: 150; background: rgba(15, 23, 42, .45); display: grid; place-items: center; padding: 20px; }
 .xl-modal { color-scheme: light; width: min(560px, 100%); background: #fff; border-radius: 14px; padding: 20px 22px 18px; color: #111827; box-shadow: 0 20px 40px rgba(15, 23, 42, .25); }
 .xl-modal header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }

@@ -631,7 +631,6 @@ const exportExcel = () => {
           <button type="button" class="fin-date-box" @click="rangeTarget = 'end'"><span>{{ customEnd || '종료일' }}</span></button>
         </div>
         <button type="button" class="fin-excel" @click="exportExcel"><i>⬇</i>엑셀저장</button>
-        <button type="button" :class="['fin-pick', { on: pickOn }]" @click="onPickClick">선택</button>
         <button type="button" class="fin-add" @click="onAddClick"><i>+</i>항목추가</button>
       </div>
     </div>
@@ -735,6 +734,7 @@ const exportExcel = () => {
         class="fin-ledger"
         :book="activeTab === 'businessExpense' ? 'need' : 'biz'"
         :in-period="isWithinPeriod"
+        :phone="!webEmbed"
       />
     </WebScope>
     <!-- ========== TAB 3: 유류비 & 식대 ========== -->
@@ -1429,14 +1429,12 @@ td.fin-pickcell input { pointer-events: none; }
 .fin-sort i { font-style: normal; font-size: 0.85em; opacity: .55; }
 .fin-sort i.on { opacity: 1; }
 /* 앱 — 단추는 글자 폭만큼, 세금신고 연도 줄, 장부 표는 옆으로 민다 */
-.fin-shell:not(.web) .fin-excel, .fin-shell:not(.web) .fin-add, .fin-shell:not(.web) .fin-pick { padding: 7px 5px; font-size: 11px; letter-spacing: -0.3px; }
+/* 앱 — 기간 넷 · 엑셀저장 · 항목추가 여섯 칸을 같은 폭으로(선택 단추는 앱에 두지 않는다) */
+.fin-shell:not(.web) .fin-toolbar-right { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.fin-shell:not(.web) :is(.fin-period-btn, .fin-excel, .fin-add) { padding: 7px 0; font-size: 11px; letter-spacing: -0.3px; }
 .fin-taxyear.app { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #6b7280; }
 .fin-taxyear.app select { margin-left: auto; padding: 5px 8px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; font-size: 12.5px; font-weight: 700; color: #111827; }
-.fin-shell:not(.web) :deep(.xl-head) { flex-wrap: wrap; row-gap: 4px; position: sticky; left: 0; }
-.fin-shell:not(.web) .fin-ledger { margin: 4px 14px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.fin-shell:not(.web) :deep(.xl-head) { flex-wrap: wrap; row-gap: 4px; }
+.fin-shell:not(.web) .fin-ledger { margin: 4px 14px 0; }
 .fin-shell:not(.web) :deep(.xl-head) { font-size: 12.5px; }
-.fin-shell:not(.web) :deep(.xl-tbl) { min-width: 640px; font-size: 12px; }
-.fin-shell:not(.web) :deep(.xl-tbl td) { padding-top: 8px; padding-bottom: 8px; font-size: 12px; }
-.fin-shell:not(.web) :deep(.xl-tbl th) { font-size: 12px; }
-.fin-shell:not(.web) :deep(.xl-tbl th button) { height: 34px; padding: 0 6px; }
 </style>

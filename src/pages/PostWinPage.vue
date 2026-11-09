@@ -1001,10 +1001,10 @@ const toggleSection = (key: string) => {
         <header class="pw-card-head"><h2>{{ flowSub === 'need' ? '필요경비' : '사업경비' }}<span class="pw-ledger-cap">{{ BOOK_HINT[flowSub] }}</span></h2></header>
         <div class="pw-card-body">
           <!-- 앱도 웹과 같은 내용 · 계산(확정안 기준) — WebScope 안만 웹 꼴 -->
-          <WebScope><ExpenseLedger :key="`${picked?.id}-${flowSub}`" :book="flowSub" :auction-id="picked?.id ?? ''" tools /></WebScope>
+          <WebScope><ExpenseLedger :key="`${picked?.id}-${flowSub}`" :book="flowSub" :auction-id="picked?.id ?? ''" tools :phone="appFlow" /></WebScope>
         </div>
       </section>
-      <WebScope v-if="activeTab === 'flow' && (flowSub === 'evict' || flowSub === 'tax')"><PostWinMoney :key="`${picked?.id}-${flowSub}`" :auction="picked" :mode="flowSub === 'evict' ? 'evict' : 'tax'" /></WebScope>
+      <WebScope v-if="activeTab === 'flow' && (flowSub === 'evict' || flowSub === 'tax')"><PostWinMoney :key="`${picked?.id}-${flowSub}`" :auction="picked" :mode="flowSub === 'evict' ? 'evict' : 'tax'" :brief="appFlow" /></WebScope>
       <WebScope v-if="activeTab === 'flow' && flowSub === 'steps'">
       <PostWinTimeline
         :auction="picked"
@@ -2259,16 +2259,32 @@ const toggleSection = (key: string) => {
 .app-flow :deep(.pwm-nav) { gap: 5px; }
 .app-flow :deep(.pwm-nav > div) { padding: 8px 7px; min-width: 0; }
 .app-flow :deep(.pwm-nav small) { font-size: 10.5px; }
-.app-flow :deep(.pwm-nav b) { font-size: 12.5px; line-height: 1.35; word-break: keep-all; }
+/* 개월 · 금액은 각각 한 줄로(줄 바꿈 없이) 크게 */
+.app-flow :deep(.pwm-nav b) { font-size: 15px; line-height: 1.3; white-space: nowrap; }
+.app-flow :deep(.pwm-nav b > span) { display: block; }
+.app-flow :deep(.pwm-nav b > i) { display: none; }
 .app-flow :deep(.pwm-nav em) { font-size: 10px; }
 .app-flow :deep(:is(.pwm-cmp.three, .pwm-cmp.two, .pwm-finals-grid.three)) { grid-template-columns: minmax(0, 1fr); }
 /* 필요경비 · 사업경비 — 단추 줄은 감싸고, 표는 옆으로 밀어 본다 */
 .app-flow :deep(.xl-tools) { flex-wrap: wrap; row-gap: 6px; }
 .app-flow :deep(.xl-hint) { flex: 1 1 100%; order: 2; }
 .app-flow :deep(.xl-btn) { order: 3; }
-.app-flow .pw-ledger :deep(.pw-card-body) { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.app-flow :deep(.xl-tbl) { min-width: 640px; }
-.app-flow :deep(.xl-tbl td) { padding-top: 8px; padding-bottom: 8px; font-size: 12px; }
-.app-flow :deep(.xl-tbl th) { font-size: 12px; }
-.app-flow :deep(.xl-tbl th button) { height: 34px; padding: 0 6px; }
+.app-flow :deep(.pwm-cap) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 명도분석 계산에 쓴 값 — 폰에서 글자 · 단추를 한 단 작게 */
+/* 제목 한 줄, 단추는 그 아래 줄(::before 가 줄을 끊는다), 단추 줄 밑에 가로 구분선 */
+.app-flow :deep(.pwm-h) { flex-wrap: wrap; gap: 8px 6px; margin: 4px 0 10px; padding-bottom: 10px; border-bottom: 1px solid #e6eaf2; font-size: 14px; }
+.app-flow :deep(.pwm-h::before) { content: ''; flex-basis: 100%; order: 1; }
+.app-flow :deep(.pwm-h > button) { order: 2; margin-left: 0; }
+.app-flow :deep(.pwm-h > .pwm-reset) { margin-left: auto; }
+.app-flow :deep(.pwm-h :is(.pwm-ai-start, .pwm-edit)) { min-width: 0; height: 28px; padding: 0 10px; border-radius: 8px; font-size: 12px; }
+.app-flow :deep(.pwm-h .pwm-reset) { height: 28px; padding: 0 10px; font-size: 12px; }
+.app-flow :deep(.pwm-fields label) { font-size: 12px; }
+.app-flow :deep(.pwm-in input) { height: 30px; font-size: 12.5px; }
+.app-flow :deep(.pwm-in em) { font-size: 12px; }
+.app-flow :deep(.pwm-basis) { margin-top: 8px; padding-left: 16px; font-size: 12px; line-height: 1.6; }
+.app-flow :deep(.pwm-note) { font-size: 11.5px; }
+.app-flow :deep(.pwm-grp b) { white-space: nowrap; }   /* 금액이 '원' 앞에서 꺾이지 않게 */
+/* 출처 — 한 곳에 한 줄(넘치면 …) */
+.app-flow :deep(.pwm-src) { gap: 3px; font-size: 11px; }
+.app-flow :deep(.pwm-src a) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 </style>
