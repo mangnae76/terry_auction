@@ -85,15 +85,6 @@ const onLogout = async () => {
         <span>{{ formattedDate }}</span>
       </button>
       <button v-if="SHOW_PAY" type="button" class="amh-pay" @click="router.push('/billing')">결제하기</button>
-      <button type="button" class="amh-gift" aria-label="이벤트" @click="router.push({ path: '/more', query: { sec: 'event' } })">
-        <!-- 선물상자 — 이벤트 자리로 간다 -->
-        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M3.5 11.5h17v8.5a.5.5 0 0 1-.5.5H4a.5.5 0 0 1-.5-.5Z" />
-          <path d="M2.8 7.8h18.4v3.7H2.8z" /><path d="M12 7.8v12.7" />
-          <path d="M12 7.8S10.4 3.5 8.2 3.5a2.15 2.15 0 0 0 0 4.3Z" />
-          <path d="M12 7.8s1.6-4.3 3.8-4.3a2.15 2.15 0 0 1 0 4.3Z" />
-        </svg>
-      </button>
       <button type="button" class="amh-bell" aria-label="알림" @click="router.push('/notifications')">
         <!-- 종 — 알릴 것이 있으면 꼭지에 빨간 점이 붙는다 -->
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -194,15 +185,11 @@ const onLogout = async () => {
 .amh-greet-icon { width: 19px; height: 19px; flex-shrink: 0; display: block; }
 .amh-user-btn { color: #fff; }
 .amh-user-btn { border: none; background: transparent; padding: 3px; cursor: pointer; display: inline-flex; align-items: center; gap: 1px; font-family: inherit; }
-/* 결제하기·선물상자 */
+/* 결제하기 */
 .amh-pay {
   border: none; background: transparent; padding: 2px 0; cursor: pointer;
   font-family: inherit; font-size: 11px; font-weight: 400; color: #fff;
   margin-right: 9px;
-}
-.amh-gift {
-  border: none; background: transparent; padding: 3px; cursor: pointer;
-  display: inline-flex; align-items: center; color: #fff; margin-right: 9px;
 }
 
 /* 종과 사람은 손가락이 닿을 자리를 넉넉히 두고 서로 떨어뜨린다 */
