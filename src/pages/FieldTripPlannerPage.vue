@@ -5,7 +5,7 @@ import { Clipboard } from '@capacitor/clipboard';
 import { Capacitor } from '@capacitor/core';
 import { currentRouteJob, trackRouteJob } from '../services/routeJob';
 import { createMapView, type LatLng, type MapView, type PinOpts } from '../services/mapView';
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { saveFieldTripPlan } from '../services/auctionRepository';
 import { buildOptimizedRoute, parseAddressLines, reverseGeocode, straightDistanceKm, type GeoPoint } from '../services/routeOptimizer';
@@ -22,6 +22,7 @@ import AppConfirm from '../components/AppConfirm.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import AppToast from '../components/AppToast.vue';
 import FieldCompareSheet from '../components/FieldCompareSheet.vue';
+import KakaoMapTools from '../components/KakaoMapTools.vue';
 import mapPinIcon from '../assets/icones/mappin (1).png';
 import flagIcon from '../assets/icones/flag (1).png';
 import mapPinPlusIcon from '../assets/icones/map-pin-plus (1).png';
@@ -743,6 +744,8 @@ const unlockMap = () => {
   mapActive.value = true;
   mv?.setLocked(false);
 };
+/** 카카오맵이면 오른쪽 지도 도구 막대(확대 · 로드뷰 · 지적도 · 겹침 · 재기 · 반경 · 검색 · 인쇄) — 시세분석 지도와 같은 것(앱 · 웹, 2026-11-09) */
+const kTools = shallowRef<{ k: unknown; map: unknown } | null>(null);
 const ensureMap = async () => {
   await nextTick();
   if (!mvP) {
@@ -750,8 +753,9 @@ const ensureMap = async () => {
     if (!el) return;
     // 웹은 왼쪽을 경로설정 판이 덮어서 확대 단추를 오른쪽 위에 둔다
     const onWeb = !!el.closest('.app-trip');
-    mvP = createMapView(el, { center: { lat: 37.545, lng: 126.675 }, zoom: 12, zoomControl: onWeb ? 'topright' : 'topleft' }).then((v) => {
+    mvP = createMapView(el, { center: { lat: 37.545, lng: 126.675 }, zoom: 12, zoomControl: onWeb ? 'topright' : 'topleft', kakaoTools: true }).then((v) => {
       mv = v;
+      if (v.native) kTools.value = markRaw(v.native);
       // 손가락으로 쓰는 화면만 처음에 잠근다(목록 스크롤이 지도에 막히지 않게) — 마우스(웹)는 처음부터 끌기 · 휠 확대가 다 된다
       if (touchOnly) { lockMap(); v.onClick(unlockMap); } else unlockMap();
       observeMapSize();
@@ -2024,6 +2028,7 @@ watch(() => authStore.uid, (newUid) => {
 
       <div class="ftp-map-wrap">
         <div id="trip-map" class="ftp-map" />
+        <KakaoMapTools v-if="kTools" :k="kTools.k" :map="kTools.map" />
         <!-- 확대는 처음부터 되고, 한 손가락 이동만 눌러서 켠다 -->
         <span v-if="!mapActive" class="ftp-map-hint">두 손가락으로 확대 · 한 번 눌러 지도 이동</span>
       </div>
