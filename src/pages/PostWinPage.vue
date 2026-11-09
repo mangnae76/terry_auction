@@ -2309,7 +2309,17 @@ const toggleSection = (key: string) => {
 .app-flow :deep(.pwm-final h4 em) { flex-basis: 100%; margin-left: 0; }
 .app-flow :deep(.pwm-final dl > div.total) { margin-top: 4px; padding: 10px 12px; }
 .app-flow :deep(.pwm-finals-grid.rows .pwm-final dl > div.ev) { padding: 8px 12px; }
-.app-flow :deep(.pwm-notice li) { font-size: 13px; line-height: 1.55; }
+/* 중요 안내사항 — 삼각형 · 제목만 한 줄, 아래 글 · 점선은 삼각형 왼쪽 끝부터 상자 끝까지 */
+.app-flow :deep(.pwm-notice) { display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 8px 8px; padding: 12px; }
+.app-flow :deep(.pwm-notice .ico) { width: 30px; height: 30px; }
+.app-flow :deep(.pwm-notice .ico svg) { width: 17px; height: 17px; }
+.app-flow :deep(.pwm-notice .body) { display: contents; }
+.app-flow :deep(.pwm-notice h4) { margin: 0; font-size: 14px; }
+.app-flow :deep(.pwm-notice :is(ul, p.last)) { grid-column: 1 / -1; }
+.app-flow :deep(.pwm-notice ul) { gap: 3px; }
+.app-flow :deep(.pwm-notice li) { padding-left: 11px; font-size: 12px; line-height: 1.55; }
+.app-flow :deep(.pwm-notice li::before) { left: 1px; top: 7px; width: 4px; height: 4px; }
+.app-flow :deep(.pwm-notice p.last) { margin: 2px 0 0; padding-top: 8px; font-size: 11.5px; line-height: 1.55; }
 /* 출처 — 한 곳에 한 줄(넘치면 …) */
 .app-flow :deep(.pwm-src) { gap: 3px; font-size: 11px; }
 .app-flow :deep(.pwm-src a) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
