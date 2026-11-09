@@ -200,8 +200,8 @@ button { cursor: pointer; }
 /* 메뉴 여덟 — 예전 마이페이지를 빼고 더보기를 '마이페이지'로 이름을 바꾸며 간격을 고르게 다시 잡았다(글자 폭 + 같은 틈) */
 /* 메뉴 전부(아래 펼침 칸도 같은 자리) 두 글자만큼 왼쪽으로 — --menu-shift. 좁은 창(1,416 아래)에선 로고에 붙지 않게 덜 옮긴다 */
 /* 물건등록을 로고에서 두 글자(2 × 메뉴 글자) 오른쪽으로 떼고, 마이페이지는 그대로 — 그 사이 일곱 틈을 똑같이 줄여 고르게(2026-11-02) */
-.m0 { left: calc(13.75% - var(--menu-shift) + var(--menu-fs) * 2); } .m1 { left: calc(22.00% - var(--menu-shift) + var(--menu-fs) * 12 / 7); } .m2 { left: calc(29.39% - var(--menu-shift) + var(--menu-fs) * 10 / 7); } .m3c { left: calc(36.79% - var(--menu-shift) + var(--menu-fs) * 8 / 7); } .m3f { left: calc(44.18% - var(--menu-shift) + var(--menu-fs) * 6 / 7); }
-.m3 { left: calc(51.57% - var(--menu-shift) + var(--menu-fs) * 4 / 7); } .m3m { left: calc(59.3% - var(--menu-shift) + var(--menu-fs) * 3 / 7); } .m4s { left: calc(66.2% - var(--menu-shift) + var(--menu-fs) * 2 / 7); } .m5 { left: calc(73.75% - var(--menu-shift)); } /* 자금관리를 낙찰이후 오른쪽 위 메뉴로 꺼내 한 칸 늘었다 — +물건등록(글이 길다) 다음만 조금 넓게, 나머지는 7.39% 고르게 · 매뉴얼(준비 중)은 커뮤니티 오른쪽 */
+.m0 { left: calc(13.75% - var(--menu-shift) + var(--menu-fs) * 2); } .m1 { left: calc(23.06% - var(--menu-shift) + var(--menu-fs) * 12 / 7); } .m2 { left: calc(31.51% - var(--menu-shift) + var(--menu-fs) * 10 / 7); } .m3c { left: calc(39.96% - var(--menu-shift) + var(--menu-fs) * 8 / 7); } .m3f { left: calc(48.41% - var(--menu-shift) + var(--menu-fs) * 6 / 7); }
+.m3 { left: calc(56.86% - var(--menu-shift) + var(--menu-fs) * 4 / 7); } .m4s { left: calc(65.30% - var(--menu-shift) + var(--menu-fs) * 2 / 7); } .m5 { left: calc(73.75% - var(--menu-shift)); } /* 위 메뉴의 매뉴얼을 뺐다(2026-11-09 — 매뉴얼은 콘텐츠 › 매뉴얼로). 여덟 칸 — 물건등록 · 마이페이지 자리는 그대로, 그 사이 일곱 틈을 고르게(물건등록 다음만 조금 넓게) */
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
 /* 메뉴 두 묶음 — 경매 진행은 '›'로 잇고, 세로선 뒤 도구 · 콘텐츠는 아이콘 + 조금 옅은 글(2026-11-03) */
 .g-arr, .g-div { position: absolute; top: 26px; height: 26px; display: flex; align-items: center; pointer-events: none; transform: translateX(-50%); visibility: hidden; }
@@ -4767,7 +4767,6 @@ span.cal-day.has { cursor: help; }
       <!-- 메뉴 두 묶음(2026-11-03) — 경매 진행(물건등록 ~ 자금관리)은 '›'로 잇고, 세로선 뒤 도구 · 콘텐츠는 아이콘 + 옅은 글. 표시는 placeNavMarks 가 메뉴 사이 한가운데에 놓는다 -->
       <span class="g-arr" aria-hidden="true">›</span><span class="g-arr" aria-hidden="true">›</span><span class="g-arr" aria-hidden="true">›</span><span class="g-arr" aria-hidden="true">›</span><span class="g-div" aria-hidden="true"></span>
       <a class="g-menu m3 tool" href="#/market" data-act="go-market" id="navMarket"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>시장분석</a>
-      <a class="g-menu m3m tool" href="#/manual" data-act="go-manual" id="navManual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg>매뉴얼</a>
       <a class="g-menu m4s tool" href="#/store" data-act="go-store" id="navStore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>콘텐츠</a>
       <a class="g-menu m5 tool" href="#/more" data-act="go-more" id="navMore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>마이페이지</a>
       <!-- 메뉴 줄 오른쪽 끝 — [펼치기 ▼] 이름 ▼ · 로그아웃 (10-31 위 줄에서 내렸다) -->
@@ -5273,7 +5272,6 @@ span.cal-day.has { cursor: help; }
     ['m3c', [['진행절차', 'go-postwin'], ['절차별체크리스트', 'go-postwin']]],   /* 가이드는 매뉴얼로 옮겼다 */
     ['m3f', [['자금입출금', 'go-finance'], ['필요경비', 'go-finance'], ['사업경비', 'go-finance'], ['세금신고', 'go-finance']]],
     ['m3', [['실거래분석', 'go-market'], ['시세예측', 'go-market'], ['랭킹분석', 'go-market'], ['매각분석', 'go-market']]],   /* 경매사례 → 매각분석(2026-11-08) */
-    ['m3m', [['경매기초'], ['물건고르기'], ['낙찰이후', 'go-manual']]],   /* 경매기초 · 물건고르기는 준비 중 */
     ['m4s', [['전체', 'go-store'], ['전자책', 'go-store'], ['리포트', 'go-store'], ['매뉴얼', 'go-store'], ['모바일앱', 'go-store'], ['내콘텐츠', 'go-store']]],
     ['m5', [['내정보', 'go-more'], ['알림', 'go-more'], ['결제하기', 'go-more'], ...(SHOW_POINTS ? [['포인트', 'go-more']] : []), ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
   ];
