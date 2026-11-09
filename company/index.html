@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>리치마블</title>
+<meta name="description" content="리치마블 — 부동산 경매의 처음부터 끝까지를 한 곳에 남기는 마이턴옥션을 만듭니다.">
+<link rel="icon" href="assets/mark-myturn.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap">
+<!--
+  회사 홈페이지 첫 화면 — company/ 폴더 하나가 회사 사이트 전체다.
+  - 지금은 배포 때 dist/company/ 로 복사돼 /company/ 로 열린다(firebase.json predeploy).
+  - 나중에 회사 도메인을 따로 붙일 때는 이 폴더를 그대로 그 사이트의 맨 위로 올리면 된다 — 안쪽 경로는 모두 상대 경로.
+  - 서비스(마이턴옥션)로 가는 주소는 아래 SERVICE 한 곳에서 바꾼다.
+-->
+<style>
+:root {
+  --navy: #16203c;
+  --navy-2: #1e2a52;
+  --sky: #50c3fc;
+  --orange: #f07900;
+  --ink: #1b2333;
+  --ink-2: #4a5468;
+  --ink-3: #7a8499;
+  --line: #e3e7ef;
+  --paper: #ffffff;
+  --paper-2: #f5f7fb;
+  --font: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.7; word-break: keep-all; overflow-wrap: break-word; -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+img { max-width: 100%; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+
+/* 머리 */
+.top { position: sticky; top: 0; z-index: 10; background: var(--navy); color: #fff; }
+.top .wrap { display: flex; align-items: center; gap: 24px; height: 64px; }
+.brand { display: flex; align-items: baseline; gap: 10px; text-decoration: none; }
+.brand b { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; }
+.brand span { font-size: 12px; font-weight: 700; letter-spacing: 2px; color: var(--sky); }
+.nav { display: flex; gap: 22px; margin-left: auto; }
+.nav a { font-size: 14px; font-weight: 700; color: #c9d3ea; text-decoration: none; }
+.nav a:hover, .nav a:focus-visible { color: #fff; }
+
+/* 첫 화면 */
+.hero { background: var(--navy); color: #fff; padding-block: 72px 88px; overflow: hidden; }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 48px; align-items: center; }
+.eyebrow { margin: 0 0 14px; font-size: 13px; font-weight: 800; letter-spacing: 3px; color: var(--sky); }
+.hero h1 { margin: 0; font-size: clamp(32px, 5vw, 52px); line-height: 1.25; font-weight: 900; letter-spacing: -1.5px; text-wrap: balance; }
+.hero h1 em { font-style: normal; color: var(--orange); }
+.hero p.lead { margin: 22px 0 0; max-width: 34em; font-size: 17px; color: #c9d3ea; }
+.cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 32px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 22px; border-radius: 10px; font-size: 15px; font-weight: 800; text-decoration: none; }
+.btn.main { background: var(--orange); color: #fff; }
+.btn.main:hover { background: #ff8a14; }
+.btn.line { border: 1px solid #3a4a78; color: #fff; }
+.btn.line:hover { border-color: var(--sky); }
+.btn:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+/* 오른쪽 — 게임판 칸처럼 이어지는 경매 단계 */
+.track { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tile { aspect-ratio: 1 / 1; border-radius: 14px; background: var(--navy-2); border: 1px solid #2c3a66; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; }
+.tile i { font-style: normal; font-size: 12px; font-weight: 800; color: var(--ink-3); }
+.tile b { font-size: 15px; font-weight: 800; }
+.tile.on { background: var(--orange); border-color: var(--orange); }
+.tile.on i { color: #ffe1c2; }
+.tile.mark { background: var(--sky); border-color: var(--sky); align-items: center; justify-content: center; }
+.tile.mark img { width: 72%; }
+
+/* 섹션 공통 */
+section.block { padding-block: 88px; }
+section.block.alt { background: var(--paper-2); }
+.sec-h { margin: 0 0 40px; }
+.sec-h .eyebrow { color: var(--orange); }
+.sec-h h2 { margin: 0; font-size: clamp(24px, 3.2vw, 34px); line-height: 1.35; font-weight: 900; letter-spacing: -1px; text-wrap: balance; }
+.sec-h p { margin: 14px 0 0; max-width: 40em; color: var(--ink-2); }
+
+/* 회사 */
+.about { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.about article { padding: 26px 24px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
+.about h3 { margin: 0 0 8px; font-size: 18px; font-weight: 800; }
+.about p { margin: 0; color: var(--ink-2); font-size: 15px; }
+.about .no { display: block; margin-bottom: 14px; font-size: 13px; font-weight: 900; color: var(--orange); letter-spacing: 1px; }
+
+/* 서비스 */
+.svc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 28px; align-items: stretch; }
+.svc-card { border-radius: 16px; background: var(--navy); color: #fff; padding: 36px 32px; display: flex; flex-direction: column; gap: 18px; }
+.svc-card img { width: 210px; height: auto; }
+.svc-card p { margin: 0; color: #c9d3ea; }
+.svc-card .cta { margin-top: auto; }
+.feat { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.feat li { padding: 18px 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.feat b { display: block; font-size: 16px; font-weight: 800; }
+.feat span { display: block; margin-top: 4px; font-size: 14px; color: var(--ink-2); line-height: 1.6; }
+
+/* 연락 · 회사정보 */
+.contact { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.contact > div { padding: 28px 26px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
+.contact h3 { margin: 0 0 16px; font-size: 18px; font-weight: 800; }
+.contact dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 20px; font-size: 15px; }
+.contact dt { color: var(--ink-3); font-weight: 700; }
+.contact dd { margin: 0; overflow-wrap: anywhere; }
+.contact a { color: var(--ink); font-weight: 700; }
+
+/* 바닥 */
+.foot { background: var(--navy); color: #8f9ab5; font-size: 13px; padding-block: 28px; }
+.foot .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; }
+
+@media (max-width: 860px) {
+  .hero { padding-block: 48px 56px; }
+  .hero .wrap, .svc, .contact { grid-template-columns: 1fr; }
+  .track { max-width: 360px; }
+  .about { grid-template-columns: 1fr; }
+  section.block { padding-block: 64px; }
+}
+@media (max-width: 560px) {
+  .nav { gap: 14px; }
+  .nav a { font-size: 13px; }
+  .brand span { display: none; }
+  .feat { grid-template-columns: 1fr; }
+  .btn { flex: 1 1 auto; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./"><b>리치마블</b><span>RICHMARBLE</span></a>
+    <nav class="nav" aria-label="회사 메뉴">
+      <a href="#about">회사소개</a>
+      <a href="#service">서비스</a>
+      <a href="#contact">연락처</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow">RICHMARBLE</p>
+        <h1>경매의 처음부터 끝까지,<br><em>내 차례</em>를 한 판 위에</h1>
+        <p class="lead">리치마블은 부동산 경매 실무 서비스 마이턴옥션을 만듭니다. 물건을 고르는 날부터 낙찰 뒤 매도까지, 한 건의 모든 기록을 한 곳에 남깁니다.</p>
+        <div class="cta">
+          <a class="btn main" data-svc="/web" href="#">마이턴옥션 시작하기</a>
+          <a class="btn line" href="#service">서비스 둘러보기</a>
+        </div>
+      </div>
+      <div class="track" aria-hidden="true">
+        <div class="tile mark"><img src="assets/mark-myturn.svg" alt=""></div>
+        <div class="tile"><i>01</i><b>물건등록</b></div>
+        <div class="tile"><i>02</i><b>임장경로</b></div>
+        <div class="tile"><i>03</i><b>입찰</b></div>
+        <div class="tile on"><i>04</i><b>낙찰이후</b></div>
+        <div class="tile"><i>05</i><b>매도</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="about">
+    <div class="wrap">
+      <div class="sec-h">
+        <p class="eyebrow">ABOUT</p>
+        <h2>경매를 처음 하는 사람도 끝까지 갈 수 있게</h2>
+        <p>경매는 조사할 것도, 챙길 서류도, 지나고 나서 다시 찾을 기록도 많습니다. 리치마블은 그 길을 한 칸씩 짚어 주는 도구를 만듭니다.</p>
+      </div>
+      <div class="about">
+        <article><span class="no">01</span><h3>한 곳에 남깁니다</h3><p>물건 정보, 현장 메모, 사진, 비용까지 한 건의 기록이 흩어지지 않게 모읍니다.</p></article>
+        <article><span class="no">02</span><h3>숫자로 판단합니다</h3><p>실거래가, 수익분석, 세금까지 계산해서 감이 아닌 숫자로 입찰가를 정합니다.</p></article>
+        <article><span class="no">03</span><h3>현장에서 씁니다</h3><p>임장과 명도처럼 발로 뛰는 순간에 바로 꺼내 쓰도록 앱과 웹을 함께 만듭니다.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block alt" id="service">
+    <div class="wrap">
+      <div class="sec-h">
+        <p class="eyebrow">SERVICE</p>
+        <h2>마이턴옥션</h2>
+        <p>부동산 경매 실무를 한 판의 게임처럼 단계별로 이어 주는 서비스입니다. 웹과 모바일앱에서 같은 기록을 씁니다.</p>
+      </div>
+      <div class="svc">
+        <div class="svc-card">
+          <img src="assets/logo-myturn.svg" alt="MYTURN">
+          <p>선정물건부터 낙찰 뒤 자금관리까지, 경매 한 건의 진행을 끝까지 따라갑니다.</p>
+          <div class="cta">
+            <a class="btn main" data-svc="/web" href="#">웹에서 시작</a>
+            <a class="btn line" data-svc="/guide/" href="#">이용가이드</a>
+          </div>
+        </div>
+        <ul class="feat">
+          <li><b>물건등록 · 물건목록</b><span>관심 물건을 모아 단계별로 관리합니다.</span></li>
+          <li><b>임장경로</b><span>여러 물건을 한 번에 도는 동선을 짜고 현장 기록을 남깁니다.</span></li>
+          <li><b>시장분석</b><span>실거래가와 지역 시세로 물건의 값을 가늠합니다.</span></li>
+          <li><b>낙찰이후</b><span>명도, 세금, 매물등록까지 낙찰 뒤 할 일을 이어 갑니다.</span></li>
+          <li><b>자금관리</b><span>필요경비와 사업경비를 장부로 정리합니다.</span></li>
+          <li><b>콘텐츠</b><span>전자책, 리포트, 실무 매뉴얼로 경매를 배웁니다.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="contact">
+    <div class="wrap">
+      <div class="sec-h">
+        <p class="eyebrow">CONTACT</p>
+        <h2>연락처</h2>
+      </div>
+      <div class="contact">
+        <div>
+          <h3>문의</h3>
+          <dl>
+            <dt>전화</dt><dd><a href="tel:024561234">02-456-1234</a></dd>
+            <dt>메일</dt><dd><a href="mailto:contact@myturn.co.kr">contact@myturn.co.kr</a></dd>
+            <dt>주소</dt><dd>서울시 광진구 강변역로4길 68, 3층301호</dd>
+          </dl>
+        </div>
+        <div>
+          <h3>회사정보</h3>
+          <dl>
+            <dt>상호</dt><dd>리치마블</dd>
+            <dt>대표</dt><dd>강정인</dd>
+            <dt>사업자번호</dt><dd>000-00-03787</dd>
+            <dt>통신판매신고</dt><dd>2026-서울광진-1320</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>상호 리치마블 · 대표 강정인 · 서울시 광진구 강변역로4길 68, 3층301호</span>
+    <span>COPYRIGHT ⓒRichMarble. ALL RIGHTS RESERVED.</span>
+  </div>
+</footer>
+
+<script>
+  // 서비스(마이턴옥션) 주소 — 회사 도메인을 따로 붙여도 서비스로 바로 가게 한 곳에서 정한다
+  const SERVICE = 'https://terryauction-6b374.web.app';
+  document.querySelectorAll('[data-svc]').forEach((a) => { a.href = SERVICE + a.dataset.svc; });
+</script>
+</body>
+</html>
