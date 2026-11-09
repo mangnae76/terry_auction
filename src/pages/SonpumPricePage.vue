@@ -1335,7 +1335,11 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 .pa-wrap.app .conds > .acts-r .save-btn { flex: 2 1 0; }
 /* 근거 표 — 옆으로 밀어 본다 */
 .pa-wrap.app .list-tools { gap: 6px; }
-.pa-wrap.app .warn-box { flex-basis: 100%; padding: 8px 10px; font-size: 11.5px; line-height: 1.55; }
+/* 한 줄 — 왼쪽 '지번 ○곳 · 거래 ○건', 오른쪽 '공시가 기준 …' 글만(상자 없이, 2026-11-09) */
+.pa-wrap.app .list-tools { flex-wrap: nowrap; align-items: center; }
+.pa-wrap.app .list-tools .lt-count { flex: 0 0 auto; margin-right: 0; font-size: 13px; }
+.pa-wrap.app .warn-box { flex: 0 1 auto; min-width: 0; margin-left: auto; padding: 0; border: 0; background: none; font-size: 11.5px; line-height: 1.4; text-align: right; }
+.pa-wrap.app .warn-box > svg { display: none; }
 .pa-wrap.app .pa-list { overflow: hidden; }   /* 표가 옆 칸 밖으로 화면을 밀지 않게 — 표는 안에서 옆으로 민다 */
 .pa-wrap.app .pa-list .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .pa-wrap.app .pa-list table.even { width: max-content; min-width: 100%; font-size: 12px; }

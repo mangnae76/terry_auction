@@ -12834,12 +12834,13 @@ select.adp-pub-input option { text-align: center; }
 .app-price .son-lowcase .adp-mkt-cells .cell.adp-mkt-wide .adp-mkt-input { text-align: left; padding-left: 10px; }
 /* P · N — '주소' 머리 칸 오른쪽(값 줄 높이가 다른 칸과 같게) */
 .app-price .son-lowcase .adp-mkt-cells .cell:has(.son-row-links) { position: relative; }
-.app-price .son-row-links { position: absolute; top: 7px; right: 4px; display: inline-flex; gap: 2px; }
+.app-price .son-row-links { position: absolute; top: 7px; right: 4px; display: inline-flex; align-items: center; gap: 2px; height: 18px; }   /* 주소 머리 칸 안 오른쪽 끝(줄마다 하나) */
+.app-price .son-lowcase .adp-mkt-cells .cell:has(.son-row-links) > small { padding-right: 44px; }   /* '주소'는 아이콘 왼쪽 남는 자리 가운데 */
 .app-price .son-lowcase .adp-mkt-cells .cell > strong { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 400; color: #111827; white-space: nowrap; overflow: hidden; }
 .app-price .son-lowcase .adp-mkt-cells .cell > strong.hi { font-weight: 700; }
 .app-price .son-lowcase .adp-mkt-cells .cell > strong.son-auto-empty { color: #9aa3b2; }
-.app-price .son-lowcase .adp-mkt-cells .cell:has(.son-row-links) > small { padding-right: 46px; }   /* '주소' 글자가 P · N 에 가리지 않게 */
-.app-price .son-map-go { display: inline-flex; align-items: center; justify-content: center; width: 20px; min-width: 20px; height: 18px; padding: 0; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; font-family: inherit; font-size: 11px; font-weight: 800; line-height: 1; cursor: pointer; }
+
+.app-price .son-map-go { display: inline-flex; align-items: center; justify-content: center; width: 20px; min-width: 20px; height: 18px; min-height: 0; margin: 0; padding: 0; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; font-family: inherit; font-size: 11px; font-weight: 800; line-height: 1; cursor: pointer; }
 .app-price .son-map-go.naver { color: #03a94d; }
 .app-price .son-map-go.planet { color: #2f5bea; }
 /* 앱 손품+현장 — 여러 개 고르는 목록에서 고른 줄(파란 바탕)이 붙어 있으면 한 덩어리로 겹쳐 보였다.
