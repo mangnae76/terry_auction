@@ -79,12 +79,6 @@ const onLogout = async () => {
       </div>
     </div>
     <div class="amh-row amh-row-bottom">
-      <!-- 날짜 — 결제하기 왼쪽. 누르면 입찰 캘린더로 -->
-      <button type="button" class="amh-cal-btn" aria-label="입찰 캘린더 열기" @click="router.push('/bid-calendar')">
-        <img :src="calendarIcon" alt="" class="amh-icon" />
-        <span>{{ formattedDate }}</span>
-      </button>
-      <button v-if="SHOW_PAY" type="button" class="amh-pay" @click="router.push('/billing')">결제하기</button>
       <button type="button" class="amh-bell" aria-label="알림" @click="router.push('/notifications')">
         <!-- 종 — 알릴 것이 있으면 꼭지에 빨간 점이 붙는다 -->
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -93,6 +87,12 @@ const onLogout = async () => {
         </svg>
         <i v-if="alertCount" class="amh-bell-dot" />
       </button>
+      <!-- 날짜 — 결제하기 왼쪽. 누르면 입찰 캘린더로 -->
+      <button type="button" class="amh-cal-btn" aria-label="입찰 캘린더 열기" @click="router.push('/bid-calendar')">
+        <img :src="calendarIcon" alt="" class="amh-icon" />
+        <span>{{ formattedDate }}</span>
+      </button>
+      <button v-if="SHOW_PAY" type="button" class="amh-pay" @click="router.push('/billing')">결제하기</button>
       <button type="button" class="amh-user-btn" aria-label="사용자 메뉴" @click="toggleMenu">
         <!-- 흉상 — 종과 같은 선 그림으로 맞춘다 (그림 파일은 작게 줄이면 뭉개진다) -->
         <svg
