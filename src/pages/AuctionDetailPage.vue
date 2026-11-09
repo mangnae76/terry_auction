@@ -9215,8 +9215,8 @@ const goBack = () => router.back();
           </div>
         </section>
 
-        <!-- 현장사진 — 현장조사 바로 아래. 사진이 들어오면 접힌 상태가 기본 -->
-        <section class="adp-card">
+        <!-- 현장사진 — 현장조사 바로 아래. 사진이 들어오면 접힌 상태가 기본. 앱은 뺐다(2026-11-09) -->
+        <section v-if="webEmbed" class="adp-card">
           <header class="adp-card-head" @click="togglePhotoFold('site')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h4l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg>현장사진<PhotoCountMark :n="photoAreaCount('site')" /></h2>
             <!-- 웹 — 큰 단추 대신 제목 줄 오른쪽에 작은 아이콘 단추 둘 (카메라 · 사진 추가) -->
@@ -9255,8 +9255,8 @@ const goBack = () => router.back();
 
 
 
-        <!-- 현장 체크리스트 -->
-        <section class="adp-card">
+        <!-- 현장 체크리스트 — 앱은 뺐다(2026-11-09) -->
+        <section v-if="webEmbed" class="adp-card">
           <header class="adp-card-head" @click="toggleSection('checklist')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 7 2 2 4-4M3 17l2 2 4-4M13 8h8M13 18h8"/></svg>체크리스트</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('checklist') }]" alt="" />
@@ -12822,4 +12822,15 @@ select.adp-pub-input option { text-align: center; }
 .app-price .son-lowcase .adp-mkt-cells.c4 .cell:nth-child(3) { border-left: none; }
 .app-price .son-lowcase .adp-mkt-cells.c4 .cell:nth-child(n+3):not(.adp-mkt-wide) { border-top: 1px solid #e3e8f0; }
 .app-price .son-lowcase .adp-mkt-cells .cell .adp-mkt-input { min-width: 0; max-width: 100%; box-sizing: border-box; }
+
+/* 앱 손품+현장 — 여러 개 고르는 칸을 펴면 목록이 아래 줄(임차인 · 동대표 단추 등) 위에 겹쳐 떴다.
+   목록을 그 자리에 끼워 아래 줄을 밀어내게 한다(겹치지 않게, 2026-11-09). 바깥 누르면 닫히는 막은 그대로라 목록은 막 위(31)에 둔다 */
+.adp-body.is-app :is(.adp-fs-multi, .adp-ind-multi) .adp-agency-options,
+.adp-body.is-app .adp-survey-row .adp-multi-panel {
+  position: relative; top: auto; left: auto; right: auto; z-index: 31;
+  margin-top: 4px; box-shadow: none;
+}
+/* 목록을 편 줄은 이름 · 체크칸을 위쪽에 맞춘다(가운데로 내려가지 않게) */
+.adp-body.is-app .adp-fs-row:has(.adp-agency-options) { align-items: start; }
+.adp-body.is-app .adp-survey-row:has(.adp-multi-panel) { align-items: flex-start; }
 </style>
