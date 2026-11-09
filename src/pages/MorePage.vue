@@ -145,7 +145,7 @@ onMounted(() => {
     <EventBanner @open="goEvents" />
 
     <!-- 고른 탭의 내용이 여기에 그대로 펼쳐진다 (다른 화면으로 가지 않는다) -->
-    <div class="more-body">
+    <div :class="['more-body', { app: !webEmbed }]">
       <MyPageCards v-if="tab === 'mypage'" />
       <BillingBody v-else-if="tab === 'billing'" />
       <PointsBody v-else-if="tab === 'points'" />
@@ -194,6 +194,13 @@ onMounted(() => {
 /* 바로가기로 내려올 때 고정된 제목·계정 상자에 가리지 않게 자리를 둔다 */
 .more-card[data-sec] { scroll-margin-top: 122px; }
 .more-body { padding: 0 14px; }
+/* 앱 — 탭을 바꿔도 상자가 흔들리지 않게, 네 탭의 첫 상자를 내콘텐츠 흰 상자와 같은 자리 · 같은 꼴로
+   (좌우 14px 끝선 · 탭 바로 아래 시작 · 모서리 12 · 테두리 #e8ebf1) */
+.more-body.app :deep(.bil-body),
+.more-body.app :deep(.sup-body) { padding: 0; }
+.more-body.app :deep(.bil-card),
+.more-body.app :deep(.sup-card) { border: 1px solid #e8ebf1; border-radius: 12px; padding: 16px 14px; }
+.more-body.app :deep(.mpc-sum) { margin-top: 0; }
 .more-card {
   margin: 0 14px 10px; padding: 14px 13px;
   background: #fff; border: 1px solid #e8ebf1; border-radius: 14px;
