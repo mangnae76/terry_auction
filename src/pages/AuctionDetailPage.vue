@@ -3308,9 +3308,18 @@ const officialPriceAuto = ref(0);
 const officialPriceYear = ref('');
 /** 어느 호실 값인지 — 말풍선에 같이 적어 눈으로 검산할 수 있게 */
 const officialPriceUnit = ref('');
+/** 공동주택가격 조회가 끝났나 — 물건현황에서 '조회 중…' / '못 찾음' 을 가른다 */
+const officialPriceDone = ref(false);
+/** 물건현황 PDF 표기 — 웹과 같다. 기본값 '1억 미만'은 PDF 값이 아니라 빼고, '1억 이상'은 PDF 에서만 온다 */
+const officialPdfNote = computed(() => auction.value?.officialPriceNote
+  || (auction.value?.officialPriceBand === '1억 이상' ? '공시가 1억 이상' : ''));
 const fetchOfficialPrice = async () => {
   const target = auction.value;
-  if (!target?.address) return;
+  if (!target?.address) { officialPriceDone.value = true; return; }
+  officialPriceDone.value = false;
+  try { await fetchOfficialPriceInner(target); } finally { officialPriceDone.value = true; }
+};
+const fetchOfficialPriceInner = async (target: AuctionDetail) => {
   officialPriceState.value = 'fresh';
   // 주소에서 지역·지번·호수를 뽑아 공시가격까지 한 번에 — 관리자 도구와 같은 모듈이다
   const got = await loadOrFail(() => lookupAddress(target.address, { areaM2: subjectAreaM2.value }));
@@ -6221,11 +6230,12 @@ const goBack = () => router.back();
               <div class="adp-subtab-row">
                 <button class="adp-subtab dark active" type="button">전유부</button>
               </div>
+              <!-- 머릿말 칸 86 → 110 — 두 줄로 꺾이던 머릿말(층수(지하/지상) 등)에 글자 두 개쯤 자리를 더 준다(2026-11-09) -->
               <table class="adp-table adp-kv-table">
                 <colgroup>
-                  <col style="width: 86px" />
+                  <col style="width: 110px" />
                   <col />
-                  <col style="width: 86px" />
+                  <col style="width: 110px" />
                   <col />
                 </colgroup>
                 <tbody>
@@ -6292,10 +6302,17 @@ const goBack = () => router.back();
             </colgroup>
             <tbody>
               <tr><th rowspan="2">공시가격</th><td>{{ fullAddress }}</td></tr>
+              <!-- 웹과 같다 — PDF 금액이 먼저. 없으면 PDF 표기 / 공동주택가격(시세분석과 같은 브이월드 조회) -->
               <tr>
-                <td v-if="auction?.officialPriceValue">공동주택공시가 {{ formatMoney(auction?.officialPriceValue) }}원</td>
-                <td v-else-if="auction?.officialPriceBand">공시가 구간 {{ auction.officialPriceBand }} <span class="adp-na">(PDF에 공시가격 금액 없음)</span></td>
-                <td v-else class="adp-na">공시가격 정보 없음</td>
+                <td v-if="auction?.officialPriceValue">공동주택공시가 {{ formatMoney(auction?.officialPriceValue) }}원 <span class="adp-na">(PDF)</span></td>
+                <td v-else>
+                  <template v-if="officialPdfNote">{{ officialPdfNote }} <span class="adp-na">(PDF)</span></template>
+                  <span v-else class="adp-na">PDF에 공시가격 없음</span>
+                  /
+                  <template v-if="officialPriceAuto">공동주택가격 {{ formatMoney(officialPriceAuto) }}원 <span class="adp-na">({{ officialPriceYear ? `${officialPriceYear}년 · ` : '' }}시세분석)</span></template>
+                  <span v-else-if="officialPriceDone" class="adp-na">공동주택가격 못 찾음</span>
+                  <span v-else class="adp-na">공동주택가격 조회 중…</span>
+                </td>
               </tr>
             </tbody>
           </table>
