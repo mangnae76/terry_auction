@@ -77,14 +77,13 @@ const onLogout = async () => {
       <div class="amh-brand">
         <BrandLogo :size="40" tone="white" />
       </div>
-      <div class="amh-info">
-        <button type="button" class="amh-info-cell amh-cal-btn" aria-label="입찰 캘린더 열기" @click="router.push('/bid-calendar')">
-          <img :src="calendarIcon" alt="" class="amh-icon" />
-          <span>{{ formattedDate }}</span>
-        </button>
-      </div>
     </div>
     <div class="amh-row amh-row-bottom">
+      <!-- 날짜 — 결제하기 왼쪽. 누르면 입찰 캘린더로 -->
+      <button type="button" class="amh-cal-btn" aria-label="입찰 캘린더 열기" @click="router.push('/bid-calendar')">
+        <img :src="calendarIcon" alt="" class="amh-icon" />
+        <span>{{ formattedDate }}</span>
+      </button>
       <button v-if="SHOW_PAY" type="button" class="amh-pay" @click="router.push('/billing')">결제하기</button>
       <button type="button" class="amh-gift" aria-label="이벤트" @click="router.push({ path: '/more', query: { sec: 'event' } })">
         <!-- 선물상자 — 이벤트 자리로 간다 -->
@@ -112,9 +111,9 @@ const onLogout = async () => {
           <circle cx="12" cy="8.2" r="3.7" />
           <path d="M4.8 20.2c1.3-3.6 3.9-5.4 7.2-5.4s5.9 1.8 7.2 5.4" />
         </svg>
+        <!-- 닉네임 — 아이콘에 붙여 한 단추로. 어디를 눌러도 회원정보가 열린다 -->
+        <span class="amh-greet"><strong>{{ displayNickname }}</strong><span class="amh-greet-nim">님</span></span>
       </button>
-      <!-- 닉네임은 사람 아이콘 오른쪽 — 줄의 맨 끝 -->
-      <span class="amh-greet"><strong>{{ displayNickname }}</strong><span class="amh-greet-nim">님</span></span>
       <div v-if="menuOpen" class="amh-user-menu-wrap" @click.self="closeMenu">
         <ul class="amh-user-menu" @click.stop>
           <li class="amh-user-menu-head">마이턴 회원정보</li>
@@ -149,10 +148,11 @@ const onLogout = async () => {
 </template>
 
 <style scoped>
-/* 날짜를 누르면 입찰 캘린더로 — 생김새는 옆 칸들과 똑같이 */
+/* 날짜를 누르면 입찰 캘린더로 — 글자는 옆 결제하기와 같게 */
 .amh-cal-btn {
-  border: none; background: transparent; padding: 0; margin: 0;
-  font: inherit; color: inherit; cursor: pointer;
+  border: none; background: transparent; padding: 2px 0; margin: 0 9px 0 0;
+  display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;
+  font-family: inherit; font-size: 11px; font-weight: 400; color: #fff; cursor: pointer;
 }
 .amh {
   background: linear-gradient(180deg, #1f3a72 0%, #15295b 100%);
@@ -179,25 +179,6 @@ const onLogout = async () => {
   /* 왼쪽 끝을 아래 검색줄의 돋보기와 같은 자리에 둔다 */
   margin-left: -2px;
 }
-.amh-info {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: nowrap;
-  font-size: 11px;
-  white-space: nowrap;
-  min-width: 0;
-  font-weight: 400;
-  flex-shrink: 1;
-  overflow: hidden;
-  /* 오른쪽 끝을 아래 프로필 아이콘 왼쪽에 맞춘다 — 끝자리가 잘리지 않게 */
-  margin-left: auto;
-  margin-right: 17px;
-  margin-top: 5px;
-  align-self: flex-start;
-}
-.amh-info-cell { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
-
 .amh-icon {
   width: 13px; height: 13px;
   object-fit: contain;
@@ -212,7 +193,7 @@ const onLogout = async () => {
 .amh-greet-nim { color: #fff; }
 .amh-greet-icon { width: 19px; height: 19px; flex-shrink: 0; display: block; }
 .amh-user-btn { color: #fff; }
-.amh-user-btn { border: none; background: transparent; padding: 3px; cursor: pointer; display: inline-flex; align-items: center; }
+.amh-user-btn { border: none; background: transparent; padding: 3px; cursor: pointer; display: inline-flex; align-items: center; gap: 1px; font-family: inherit; }
 /* 결제하기·선물상자 */
 .amh-pay {
   border: none; background: transparent; padding: 2px 0; cursor: pointer;
@@ -296,8 +277,6 @@ const onLogout = async () => {
 
 @media (max-width: 400px) {
   /* 좁은 손전화 */
-  .amh-info { gap: 4px; font-size: 9.5px; }
-  .amh-info-cell { gap: 2px; }
   .amh-icon { width: 11px; height: 11px; }
   .amh-greet { font-size: 11px; }
   .amh-greet-icon { width: 14px; height: 14px; }
