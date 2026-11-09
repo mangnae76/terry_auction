@@ -628,6 +628,12 @@ const webEmbed = inject('webEmbed', false);
   background: #f4f6fb; color: #4b5563;
 }
 .cal-tally-chip b { font-weight: 800; }
+/* 앱 — 이달 · 단계 알약을 같은 크기로(높이 · 폭 · 글자 굵기) */
+.cal-app .cal-tally-all, .cal-app .cal-tally-chip {
+  box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 3px;
+  height: 24px; min-width: 66px; padding: 0 8px; white-space: nowrap;
+  font-size: 11px; font-weight: 700;
+}
 .cal-tally-chip.desk { background: #eef1f8; color: #4b5563; }
 .cal-tally-chip.plan { background: #e8f0ff; color: #2b6df3; }
 .cal-tally-chip.visited { background: #e6f4ea; color: #1b7f3b; }
