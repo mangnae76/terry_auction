@@ -139,11 +139,13 @@ const onLogout = async () => {
 </template>
 
 <style scoped>
+/* 머리글 글자색 — 로고 'MY' 의 하늘색. 아이콘은 흰색 그대로 */
+.amh { --amh-text: #50c3fc; }
 /* 날짜를 누르면 입찰 캘린더로 — 글자는 옆 결제하기와 같게 */
 .amh-cal-btn {
   border: none; background: transparent; padding: 2px 0; margin: 0 9px 0 0;
   display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;
-  font-family: inherit; font-size: 11px; font-weight: 400; color: #fff; cursor: pointer;
+  font-family: inherit; font-size: 11px; font-weight: 400; color: var(--amh-text); cursor: pointer;
 }
 .amh {
   background: linear-gradient(180deg, #1f3a72 0%, #15295b 100%);
@@ -179,16 +181,16 @@ const onLogout = async () => {
 
 
 /* 인사말과 종 사이도 종·사람 사이와 같은 만큼 띄운다 */
-.amh-greet { font-size: 11px; color: #ffb38a; font-weight: 400; white-space: nowrap; flex-shrink: 0; }
-.amh-greet strong { color: #fff; font-weight: 400; margin: 0 1px 0 0; }
-.amh-greet-nim { color: #fff; }
+.amh-greet { font-size: 11px; color: var(--amh-text); font-weight: 400; white-space: nowrap; flex-shrink: 0; }
+.amh-greet strong { color: inherit; font-weight: 400; margin: 0 1px 0 0; }
+.amh-greet-nim { color: inherit; }
 .amh-greet-icon { width: 19px; height: 19px; flex-shrink: 0; display: block; }
 .amh-user-btn { color: #fff; }
 .amh-user-btn { border: none; background: transparent; padding: 3px; cursor: pointer; display: inline-flex; align-items: center; gap: 1px; font-family: inherit; }
 /* 결제하기 */
 .amh-pay {
   border: none; background: transparent; padding: 2px 0; cursor: pointer;
-  font-family: inherit; font-size: 11px; font-weight: 400; color: #fff;
+  font-family: inherit; font-size: 11px; font-weight: 400; color: var(--amh-text);
   margin-right: 9px;
 }
 
