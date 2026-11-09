@@ -65,7 +65,7 @@ await build({
 
 // 페이지 — 맨 위 설명 주석을 떼고, 로고 자리에 앱 로고를 끼워 한 장짜리 문서로 만든다
 const src = await readFile(path.join(here, 'pages/selected.src.html'), 'utf8');
-const logo = 'data:image/png;base64,' + (await readFile(path.join(root, 'src/assets/icones/log/LOGO_AUCTION_WHITE.png'))).toString('base64');
+const logo = 'data:image/png;base64,' + (await readFile(path.join(root, 'src/assets/icones/log/LOGO_MYTURN_WHITE.png'))).toString('base64');
 const body = src.replace(/^<!--[\s\S]*?-->\s*/, '').split('{{LOGO_WHITE}}').join(logo);
 const doc = `<!doctype html>
 <html lang="ko">

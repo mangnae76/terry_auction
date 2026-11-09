@@ -1,6 +1,6 @@
 <!--
   마이턴옥션 웹 — 선정물건 · 선정물건등록 (한 파일짜리 페이지 원본)
-  - 로고는 {{LOGO_WHITE}} 자리에 앱의 src/assets/icones/log/LOGO_AUCTION_WHITE.png 를 빌드 때 끼워 넣는다
+  - 로고는 {{LOGO_WHITE}} 자리에 앱의 src/assets/icones/log/LOGO_MYTURN_WHITE.png(엠블럼 · MYTURN, AUCTION 뺀 웹 전용) 를 빌드 때 끼워 넣는다
   - PDF 읽기 등 앱 로직은 web/lib/shared.entry.js 가 앱 src/ 를 그대로 가져다 묶은 pdfparse.js 로 쓴다
   - 빌드: 저장소 맨 위에서 node web/build.mjs  →  web/site/selected.html, web/site/pdfparse.js
 -->
@@ -4758,7 +4758,7 @@ span.cal-day.has { cursor: help; }
 <header class="gnb">
   <div class="wrap">
     <div class="gnb-in">
-      <a class="g-logo" href="#/" data-act="go-home" aria-label="마이턴옥션 홈"><img src="{{LOGO_WHITE}}" alt="MYTURN AUCTION"></a>
+      <a class="g-logo" href="#/" data-act="go-home" aria-label="마이턴옥션 홈"><img src="{{LOGO_WHITE}}" alt="MYTURN"></a>
       <a class="g-menu m0" href="#/register" data-act="go-register" id="navReg">물건등록</a>
       <a class="g-menu m1" href="#/list" data-act="go-list" id="navWatch">물건목록</a>
       <a class="g-menu m2" href="#/trip" data-act="go-trip" id="navTrip">임장경로</a>
@@ -4970,7 +4970,7 @@ span.cal-day.has { cursor: help; }
 <footer class="foot">
   <div class="wrap">
     <div class="foot-in">
-      <div class="f-brand"><img src="{{LOGO_WHITE}}" alt="MYTURN AUCTION"><span>마이턴옥션</span></div>
+      <div class="f-brand"><img src="{{LOGO_WHITE}}" alt="MYTURN"><span>마이턴옥션</span></div>
       <p class="f-info">상호 리치마블 · 서비스명 마이턴옥션 · 대표 강정인<br>사업자번호 000-00-03787 · 통신판매신고 2026-서울광진-1320<br>주소 서울시 광진구 강변역로4길 68, 3층301호<br>문의 02-456-1234 · 대표메일 contact@myturn.co.kr</p>
       <div class="f-copy">COPYRIGHT ⓒMyTurn. ALL RIGHTS RESERVED.</div>
       <!-- 오른쪽 묶음 — 이용약관 줄과 채널 아이콘 줄. 둘 다 1280 상자 안쪽 오른쪽 끝(사업제휴 · 인스타그램)에 세로로 맞춘다 -->
