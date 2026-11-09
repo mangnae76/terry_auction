@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>매매사업자 등록 매뉴얼</title>
+<meta name="description" content="마이턴옥션 매뉴얼 · 낙찰 이후 — 매매사업자 등록: 업종코드 703011, 면세·과세 구분, 홈택스 등록, 사업용 계좌·카드, 등록 후 세금 일정">
+
+<script>/* 콘텐츠 보기 팝업 안(?embed=1)에서는 자기 머리띠를 숨긴다 */try{if(/[?&]embed=1/.test(location.search))document.documentElement.classList.add('embed')}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&family=Noto+Serif+KR:wght@500;700;900&display=swap">
+<style>
+/* 레이아웃: 마이턴옥션 웹·이용가이드와 같은 틀 — 남색 머리띠 · 흰 장(章) 줄 · 블루그레이 바탕 위 흰 판. 넓은 화면은 왼쪽 목차가 따라온다.
+   색·글꼴 토큰은 마이턴옥션 웹(/web) 디자인 토큰을 그대로 쓰고, 법원 서식 예시에만 명조(--serif)를 쓴다 */
+:root{
+  --bg:#e7ebf1;--surface:#ffffff;--surface-2:#f8fafc;--surface-3:#f1f5f9;
+  --line:#e5e7eb;--line-2:#d5dbe6;--card-line:#eef0f5;--row-line:#f1f3f7;--subtab-line:#d8e0ee;
+  --text:#111827;--text-2:#4b5563;--muted:#6b7280;--faint:#9ca3af;
+  --nav:#213366;--nav-2:#2b4078;--nav-text:#ffffff;--nav-dim:#c3cde6;--nav-name:#50c3fc;--nav-line:rgba(255,255,255,.22);
+  --accent:#f4700a;--accent-soft:#f0a35e;--accent-bg:#fff3e8;--strong:#213366;--tab-on:#213366;
+  --blue:#2b6df3;--blue-soft:#eef3ff;
+  --head-bg:#f3f6ff;--head-line:#e6ecfb;--head-text:#1f3a72;
+  --ok:#16a34a;--ok-bg:#eaf7ef;--danger:#d14343;--danger-bg:#fdeeee;
+  --warn-bg:#fff7e8;--warn-line:#f3d9a4;--warn-text:#7a4f00;
+  --paper:#fffdf8;--paper-line:#d9d2c3;--paper-ink:#1c1b18;--stamp:#c2410c;
+  --foot:#252a39;--foot-text:#9aa1b2;--foot-strong:#ffffff;
+  --shadow-card:0 1px 3px rgba(15,23,42,.06);
+  --shadow-paper:0 10px 28px -14px rgba(33,51,102,.35),0 2px 6px rgba(15,23,42,.06);
+  --font:"Pretendard","Noto Sans KR",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --serif:"Noto Serif KR","Nanum Myeongjo","AppleMyungjo","Batang",serif;
+  --gnb-h:57px;--nav-h:46px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141f;--surface:#182031;--surface-2:#1d2638;--surface-3:#232d42;
+  --line:#2a3449;--line-2:#34405a;--card-line:#253046;--row-line:#232d42;--subtab-line:#2a3650;
+  --text:#cfd6e2;--text-2:#a9b2c2;--muted:#8b95a8;--faint:#6e788c;
+  --nav:#172449;--nav-2:#22346a;--nav-text:#e3e8f2;--nav-dim:#9fb0d6;--nav-name:#50c3fc;--nav-line:rgba(255,255,255,.16);
+  --accent:#f4700a;--accent-soft:#f0a35e;--accent-bg:rgba(244,112,10,.14);--strong:#3d5bb0;--tab-on:#e6ecff;
+  --blue:#5b8cff;--blue-soft:rgba(91,140,255,.14);
+  --head-bg:rgba(91,140,255,.12);--head-line:rgba(91,140,255,.22);--head-text:#b5c3ff;
+  --ok:#3fcf74;--ok-bg:rgba(63,207,116,.13);--danger:#ff7a7a;--danger-bg:rgba(255,122,122,.13);
+  --warn-bg:rgba(237,161,52,.12);--warn-line:rgba(237,161,52,.35);--warn-text:#f3c87a;
+  --paper:#1f2636;--paper-line:#3a4459;--paper-ink:#dfe4ee;--stamp:#ff8a4c;
+  --foot:#0b0f18;--foot-text:#7f889b;--foot-strong:#e3e8f2;
+  --shadow-card:0 1px 3px rgba(0,0,0,.35);
+  --shadow-paper:0 12px 28px -12px rgba(0,0,0,.7);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f141f;--surface:#182031;--surface-2:#1d2638;--surface-3:#232d42;
+  --line:#2a3449;--line-2:#34405a;--card-line:#253046;--row-line:#232d42;--subtab-line:#2a3650;
+  --text:#cfd6e2;--text-2:#a9b2c2;--muted:#8b95a8;--faint:#6e788c;
+  --nav:#172449;--nav-2:#22346a;--nav-text:#e3e8f2;--nav-dim:#9fb0d6;--nav-name:#50c3fc;--nav-line:rgba(255,255,255,.16);
+  --accent:#f4700a;--accent-soft:#f0a35e;--accent-bg:rgba(244,112,10,.14);--strong:#3d5bb0;--tab-on:#e6ecff;
+  --blue:#5b8cff;--blue-soft:rgba(91,140,255,.14);
+  --head-bg:rgba(91,140,255,.12);--head-line:rgba(91,140,255,.22);--head-text:#b5c3ff;
+  --ok:#3fcf74;--ok-bg:rgba(63,207,116,.13);--danger:#ff7a7a;--danger-bg:rgba(255,122,122,.13);
+  --warn-bg:rgba(237,161,52,.12);--warn-line:rgba(237,161,52,.35);--warn-text:#f3c87a;
+  --paper:#1f2636;--paper-line:#3a4459;--paper-ink:#dfe4ee;--stamp:#ff8a4c;
+  --foot:#0b0f18;--foot-text:#7f889b;--foot-strong:#e3e8f2;
+  --shadow-card:0 1px 3px rgba(0,0,0,.35);
+  --shadow-paper:0 12px 28px -12px rgba(0,0,0,.7);
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:break-word}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:50;background:var(--nav)}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:4px}
+.wrap{width:100%;max-width:1344px;margin:0 auto;padding-left:max(32px,env(safe-area-inset-left,0px));padding-right:max(32px,env(safe-area-inset-right,0px))}
+@media (max-width:720px){.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+.ic{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.125em}
+
+/* 머리띠 */
+.gnb{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:var(--nav);color:var(--nav-text)}
+.gnb-in{display:flex;align-items:center;justify-content:space-between;gap:16px;height:var(--gnb-h)}
+.g-brand{display:flex;align-items:center;gap:12px;min-width:0;text-decoration:none}
+.g-brand img{display:block;height:34px;width:auto}
+.g-brand span{font-size:15px;font-weight:700;color:var(--nav-name);padding-left:12px;border-left:1px solid var(--nav-line);white-space:nowrap;letter-spacing:-.2px}
+.g-back{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--nav-line);font-size:13px;font-weight:700;color:var(--nav-text);text-decoration:none;white-space:nowrap}
+.g-back:hover{background:rgba(255,255,255,.1)}
+@media (max-width:560px){.g-brand img{height:28px}.g-brand span{display:none}}
+
+/* 팝업 안(embed) — 머리띠를 숨기고 장 줄 · 목차를 맨 위에 붙인다 */
+html.embed .gnb,html.embed body::before{display:none}
+html.embed .secnav{top:0}
+html.embed .side{top:calc(var(--nav-h) + 20px);max-height:calc(100vh - var(--nav-h) - 40px)}
+html.embed .sec{scroll-margin-top:calc(var(--nav-h) + 12px)}
+html.embed .foot{display:none}
+
+/* 장 줄 */
+.secnav{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--gnb-h));z-index:30;background:var(--surface);border-bottom:1px solid var(--subtab-line)}
+.secnav-in{display:flex;align-items:stretch;gap:2px;height:var(--nav-h);overflow-x:auto;scrollbar-width:none}
+.secnav-in::-webkit-scrollbar{display:none}
+.secnav a{position:relative;display:flex;align-items:center;gap:6px;padding:0 13px;font-size:14.5px;font-weight:600;color:var(--text-2);white-space:nowrap;text-decoration:none}
+.secnav a:first-child{padding-left:2px}
+.secnav a:hover{color:var(--text)}
+.secnav a.on{color:var(--tab-on)}
+.secnav a::after{content:"";position:absolute;left:8px;right:8px;bottom:0;height:3px;border-radius:2px 2px 0 0;background:var(--accent);transform:scaleX(0);transition:transform .2s ease}
+.secnav a:first-child::after{left:0}
+.secnav a.on::after{transform:scaleX(1)}
+.secnav .no{font-size:11px;font-weight:800;color:var(--faint);font-variant-numeric:tabular-nums}
+.secnav a.on .no{color:var(--accent)}
+@media (max-width:560px){.secnav a{font-size:14px;padding:0 10px}.secnav .no{display:none}}
+
+/* 본문 틀 */
+main{flex:1;padding-block:24px 64px}
+.layout{display:grid;grid-template-columns:200px minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:1180px){.layout{grid-template-columns:minmax(0,1fr)}.side{display:none}}
+.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--gnb-h) + var(--nav-h) + 20px);max-height:calc(100vh - var(--gnb-h) - var(--nav-h) - 40px);overflow:auto;padding:4px 2px 12px}
+.side h6{margin:0 0 10px;font-size:12px;font-weight:800;letter-spacing:.4px;color:var(--muted)}
+.side ol{list-style:none;margin:0;padding:0;display:grid;gap:2px;border-left:2px solid var(--line-2)}
+.side a{display:flex;gap:8px;margin-left:-2px;padding:6px 10px 6px 14px;border-left:2px solid transparent;font-size:13.5px;font-weight:600;line-height:1.4;color:var(--text-2);text-decoration:none}
+.side a .no{color:var(--faint);font-weight:800;font-variant-numeric:tabular-nums;font-size:12px;padding-top:1px}
+.side a:hover{color:var(--text)}
+.side a.on{border-left-color:var(--accent);color:var(--tab-on);font-weight:800}
+.side a.on .no{color:var(--accent)}
+.content{display:grid;gap:40px;min-width:0}
+
+/* 머리말 */
+.hero{display:grid;gap:14px;padding:26px 28px;border-radius:14px;background:var(--nav);color:var(--nav-text)}
+.crumb{font-size:12.5px;font-weight:600;color:var(--nav-dim)}
+.crumb b{color:var(--nav-name);font-weight:700}
+.hero h1{margin:0;font-size:30px;line-height:1.25;font-weight:900;letter-spacing:-.8px;text-wrap:balance}
+.hero h1 em{font-style:normal;color:var(--accent-soft)}
+.hero p{margin:0;font-size:15.5px;line-height:1.7;color:var(--nav-dim);max-width:66ch}
+.hero p b{color:var(--nav-text)}
+.hero-meta{display:flex;flex-wrap:wrap;gap:6px}
+.hm{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--nav-line);font-size:12.5px;font-weight:700;color:var(--nav-text);white-space:nowrap}
+.hm .ic{color:var(--accent-soft)}
+@media (max-width:720px){.hero{padding:20px 18px}.hero h1{font-size:24px}}
+
+/* 장·판 */
+.sec{display:grid;gap:14px;min-width:0;scroll-margin-top:calc(env(safe-area-inset-top,0px) + var(--gnb-h) + var(--nav-h) + 12px)}
+.sec-head{display:grid;gap:4px;padding:2px}
+.sec-no{font-size:12.5px;font-weight:800;letter-spacing:1.2px;color:var(--accent);font-variant-numeric:tabular-nums}
+.sec-head h2{margin:0;font-size:24px;line-height:1.3;font-weight:800;letter-spacing:-.6px;text-wrap:balance}
+.sec-head p{margin:0;font-size:15px;color:var(--muted);max-width:70ch}
+.panel{min-width:0;display:grid;gap:18px;background:var(--surface);border:1px solid var(--card-line);border-radius:14px;box-shadow:var(--shadow-card);padding:24px 28px 26px}
+@media (max-width:720px){.panel{padding:18px 16px 20px;border-radius:12px}.sec-head h2{font-size:21px}}
+.p{margin:0;font-size:15px;line-height:1.75;color:var(--text-2);max-width:74ch}
+.p b,.list b,.note b,.tbl td b,.qa p b{color:var(--text);font-weight:700}
+.list{margin:0;padding-left:20px;display:grid;gap:6px;font-size:15px;line-height:1.7;color:var(--text-2);max-width:76ch}
+.list li::marker{color:var(--faint)}
+.h3{margin:4px 0 0;font-size:16px;font-weight:800;letter-spacing:-.2px}
+.law{font-weight:700;color:var(--head-text);white-space:nowrap}
+
+/* 꼬리표 */
+.tag{display:inline-flex;align-items:center;height:21px;padding:0 7px;border-radius:5px;font-size:12px;font-weight:800;line-height:1;white-space:nowrap;flex:none}
+.tag.key{background:var(--accent);color:#fff}
+.tag.ok{background:var(--ok-bg);color:var(--ok)}
+.tag.no{background:var(--danger-bg);color:var(--danger)}
+.tag.std{background:var(--blue-soft);color:var(--blue)}
+.tag.mute{background:var(--surface-3);color:var(--muted);border:1px solid var(--line-2)}
+
+/* 요약 타일 */
+.facts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+@media (max-width:1100px){.facts{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.facts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.fact{display:grid;align-content:start;gap:6px;min-width:0;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.fact .k{font-size:12px;font-weight:800;letter-spacing:.6px;color:var(--accent)}
+.fact .v{font-size:16px;font-weight:800;letter-spacing:-.3px;line-height:1.35}
+.fact .s{font-size:13px;line-height:1.55;color:var(--text-2)}
+.fact.dark{background:var(--nav);border-color:var(--nav)}
+.fact.dark .v{color:var(--nav-text)}.fact.dark .s{color:var(--nav-dim)}.fact.dark .k{color:var(--accent-soft)}
+
+/* 표 */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.tbl table{width:100%;border-collapse:collapse;font-size:14px;min-width:600px}
+.tbl th{padding:10px 14px;background:var(--head-bg);border-bottom:1px solid var(--head-line);color:var(--head-text);font-size:13px;font-weight:700;text-align:left;white-space:nowrap}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--row-line);color:var(--text-2);line-height:1.6;vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl td:first-child{color:var(--text);font-weight:700}
+.tbl td.c{text-align:center;white-space:nowrap}
+.tbl tr.hl td{background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
+.tbl-cap{margin:-8px 2px 0;font-size:12.5px;color:var(--muted)}
+.fig-cap{margin:0;font-size:13px;font-weight:700;color:var(--muted);display:flex;gap:6px;align-items:center}
+.fig-cap .fn{color:var(--accent);font-variant-numeric:tabular-nums}
+
+/* 알림 상자 */
+.note{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:13px 16px;border-radius:10px;border:1px solid var(--head-line);background:var(--blue-soft);font-size:14.5px;line-height:1.7;color:var(--text-2)}
+.note>.ic{font-size:18px;color:var(--blue);margin-top:3px}
+.note .nt{display:block;color:var(--text);font-weight:800}
+.note.tip{background:var(--surface-2);border-color:var(--line)}
+.note.tip>.ic{color:var(--accent)}
+.note.warn{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn-text)}
+.note.warn>.ic,.note.warn .nt,.note.warn b{color:var(--warn-text)}
+
+/* 그림 1: 일정 타임라인 (SVG) */
+.figure{display:grid;gap:10px;min-width:0}
+.svg-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:8px 4px}
+.svg-wrap svg{display:block;width:100%;min-width:720px;height:auto}
+.t-title{font:800 15px var(--font);fill:var(--text)}
+.t-sub{font:600 12.5px var(--font);fill:var(--muted)}
+.t-gap{font:700 12px var(--font);fill:var(--head-text)}
+.t-band{font:800 13.5px var(--font)}
+.t-law{font:600 12px var(--font);fill:var(--text-2)}
+.track{stroke:var(--line-2);stroke-width:4;stroke-linecap:round}
+.node{fill:var(--surface);stroke:var(--strong);stroke-width:3}
+.node.first{fill:var(--accent);stroke:var(--accent)}
+.gap-pill{fill:var(--head-bg);stroke:var(--head-line)}
+.band-a{fill:var(--accent-bg);stroke:var(--accent)}.t-a{fill:var(--accent)}
+.band-b{fill:var(--blue-soft);stroke:var(--blue)}.t-b{fill:var(--blue)}
+.band-c{fill:var(--surface-3);stroke:var(--strong)}.t-c{fill:var(--head-text)}
+.tick{stroke:var(--line-2);stroke-width:1.5;stroke-dasharray:3 4}
+
+/* 그림 2: 판단 흐름도 */
+.flow{display:grid;gap:0;justify-items:center}
+.flow-q{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:var(--nav);color:var(--nav-text);font-size:15.5px;font-weight:800}
+.flow-q .ic{color:var(--accent-soft)}
+.flow-stem{width:2px;height:18px;background:var(--line-2)}
+.flow-cols{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%;padding-top:18px}
+.flow-cols::before{content:"";position:absolute;top:0;left:16.66%;right:16.66%;height:2px;background:var(--line-2)}
+.fcol{position:relative;display:grid;align-content:start;gap:8px;min-width:0}
+.fcol::before{content:"";position:absolute;top:-18px;left:50%;width:2px;height:18px;background:var(--line-2)}
+.fwhen{justify-self:center;display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface-2);font-size:13px;font-weight:800;color:var(--text);white-space:nowrap}
+.fbox{display:grid;gap:4px;padding:14px 16px;border-radius:10px;border:2px solid var(--c,var(--strong));background:color-mix(in srgb,var(--c,var(--strong)) 7%,var(--surface))}
+.fbox h4{margin:0;font-size:16px;font-weight:900;color:var(--c,var(--strong));letter-spacing:-.3px}
+.fbox p{margin:0;font-size:13.5px;line-height:1.6;color:var(--text-2)}
+.fdown{justify-self:center;color:var(--faint);font-size:16px;line-height:1}
+.fres{padding:11px 14px;border-radius:10px;border:1px dashed var(--line-2);background:var(--surface-2);font-size:13.5px;line-height:1.6;color:var(--text-2)}
+.fres b{color:var(--text)}
+@media (max-width:820px){
+  .flow-cols{grid-template-columns:minmax(0,1fr);gap:22px;padding-top:0}
+  .flow-cols::before,.fcol::before{display:none}
+  .flow-stem{height:14px}
+}
+
+/* 그림 3: 신청서 작성 예시 */
+.form-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:980px){.form-grid{grid-template-columns:minmax(0,1fr)}}
+.paper{position:relative;padding:34px 34px 30px;border:1px solid var(--paper-line);border-radius:4px;background:var(--paper);color:var(--paper-ink);font-family:var(--serif);box-shadow:var(--shadow-paper);min-width:0}
+@media (max-width:560px){.paper{padding:26px 18px 22px}}
+.paper h4{margin:0 0 20px;text-align:center;font-size:22px;font-weight:900;letter-spacing:.5em;padding-left:.5em}
+.paper .row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px;font-size:14px;line-height:1.75}
+.paper .row .lb{letter-spacing:.2em}
+.paper .blk{position:relative;display:grid;gap:4px;padding:8px 0 8px;border-top:1px solid color-mix(in srgb,var(--paper-line) 60%,transparent)}
+.paper .blk:first-of-type{border-top:0}
+.paper .bh{text-align:center;font-size:15px;font-weight:700;letter-spacing:.45em;padding-left:.45em;margin:4px 0}
+.paper p{margin:0;font-size:14px;line-height:1.85;text-align:justify}
+.paper ol{margin:0;padding-left:20px;font-size:14px;line-height:1.85}
+.paper .sign{text-align:right;font-size:14px;line-height:1.9}
+.paper .to{margin-top:6px;text-align:center;font-size:16px;font-weight:700;letter-spacing:.2em}
+.paper .blank{border-bottom:1px solid currentColor;padding:0 2px}
+.pin{position:absolute;left:-46px;top:10px;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font:800 13px var(--font);font-variant-numeric:tabular-nums}
+@media (max-width:1180px){.pin{left:-40px}}
+@media (max-width:720px){.pin{position:static;display:inline-grid;margin-bottom:2px;width:22px;height:22px;font-size:12px}}
+.paper-shell{position:relative;padding-left:46px;min-width:0}
+@media (max-width:720px){.paper-shell{padding-left:0}}
+.stamp{position:absolute;top:18px;right:18px;padding:4px 10px;border:2px solid var(--stamp);border-radius:4px;color:var(--stamp);font:900 12.5px var(--font);letter-spacing:.15em;transform:rotate(6deg);opacity:.9}
+.legend{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.legend li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;align-items:start}
+.legend .pn{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:800}
+.legend b{display:block;font-size:14.5px;color:var(--text)}
+.legend span{font-size:13.5px;line-height:1.6;color:var(--text-2)}
+.copy-btn{justify-self:start;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--strong);background:var(--strong);color:#fff;font-size:13.5px;font-weight:700}
+.copy-btn:hover{filter:brightness(1.08)}
+
+/* 단계 */
+.steps{list-style:none;margin:0;padding:0;display:grid}
+.step{position:relative;display:grid;grid-template-columns:32px minmax(0,1fr);column-gap:14px;padding-bottom:18px}
+.step:last-child{padding-bottom:0}
+.step:not(:last-child)::before{content:"";position:absolute;left:15px;top:36px;bottom:6px;width:2px;background:var(--line-2)}
+.step-n{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--strong);color:#fff;font-size:14px;font-weight:800}
+.step-b{min-width:0;padding-top:4px;display:grid;gap:3px}
+.step-b h4{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:15.5px;font-weight:800}
+.step-b p{margin:0;font-size:14.5px;line-height:1.7;color:var(--text-2);max-width:72ch}
+.when{font-size:12.5px;font-weight:700;color:var(--accent)}
+
+/* 판례 카드 */
+.cases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:820px){.cases{grid-template-columns:minmax(0,1fr)}}
+.case{display:grid;align-content:start;gap:8px;min-width:0;padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.case-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px}
+.case-no{font-size:13px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+.case h4{margin:0;font-size:15.5px;font-weight:800;letter-spacing:-.2px;line-height:1.45}
+.case p{margin:0;font-size:14px;line-height:1.65;color:var(--text-2)}
+.case p b{color:var(--text)}
+
+/* 자격 비교 */
+.duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:720px){.duo{grid-template-columns:minmax(0,1fr)}}
+.who{display:grid;align-content:start;gap:8px;padding:16px 18px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2)}
+.who h4{margin:0;display:flex;align-items:center;gap:8px;font-size:16px;font-weight:800}
+.who ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px;line-height:1.65;color:var(--text-2)}
+.who.me{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:color-mix(in srgb,var(--accent) 5%,var(--surface))}
+
+/* 체크리스트 */
+.chk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:820px){.chk-grid{grid-template-columns:minmax(0,1fr)}}
+.chk{display:grid;align-content:start;gap:8px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.chk h4{margin:0;font-size:15px;font-weight:800}
+.chk ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.chk li{position:relative;padding:6px 4px 6px 30px;font-size:14px;line-height:1.55;color:var(--text-2)}
+.chk li::before{content:"";position:absolute;left:4px;top:8px;width:16px;height:16px;border:1.5px solid var(--line-2);border-radius:4px;background:var(--surface)}
+
+/* FAQ */
+.faq{display:grid;gap:8px}
+.qa{border:1px solid var(--line);border-radius:10px;background:var(--surface-2);overflow:hidden}
+.qa summary{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;list-style:none;font-size:15px;font-weight:700}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .q{color:var(--accent);font-weight:900}
+.qa summary .ic{margin-left:auto;color:var(--faint);transition:transform .2s}
+.qa[open] summary .ic{transform:rotate(180deg)}
+.qa p{margin:0;padding:0 16px 14px 40px;font-size:14.5px;line-height:1.7;color:var(--text-2)}
+
+/* 출처 */
+.src{margin:0;padding-left:20px;display:grid;gap:6px;font-size:14px;line-height:1.6;color:var(--text-2)}
+.src a{color:var(--blue);text-underline-offset:3px}
+
+/* 바닥 */
+.foot{background:var(--foot);color:var(--foot-text);font-size:13px}
+.foot .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 20px;padding-block:22px}
+.foot b{color:var(--foot-strong)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;padding:10px 16px;border-radius:999px;background:var(--text);color:var(--surface);font-size:13.5px;font-weight:700;white-space:nowrap}
+/* 결론 상자 */
+.verdict{display:grid;gap:6px;padding:16px 18px;border-radius:10px;background:var(--nav);margin:0 0 6px}
+.verdict .vk{font-size:12px;font-weight:800;letter-spacing:.6px;color:var(--accent-soft)}
+.verdict p{margin:0;font-size:15.5px;line-height:1.7;color:var(--nav-dim)}
+.verdict b{color:var(--nav-text)}
+#summary .figure{margin-top:14px!important}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-gavel" viewBox="0 0 24 24"><path d="m14 13-7.5 7.5a2.12 2.12 0 0 1-3-3L11 10"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M5 7h14"/><path d="m5 7-3 7a4 4 0 0 0 6 0Z"/><path d="m19 7-3 7a4 4 0 0 0 6 0Z"/><path d="M8 21h8"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V16h8v-1.3A7 7 0 0 0 12 2Z"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></symbol>
+</svg>
+
+<header class="gnb">
+  <div class="wrap gnb-in">
+    <a class="g-brand" href="#summary" aria-label="매뉴얼 처음으로"><img src="data:image/webp;base64,UklGRjobAABXRUJQVlA4WAoAAAAwAAAA2QAARwAASUNDUMgBAAAAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADZBTFBIHQoAAAGwhm3bIqfZPbKexQmudS8OgQTq7u4tDvUWdw/uLnUJpQ3u7lK3UG+oR5BA2Y3t3D/e953Z2c2Xz48jIiYA/y2sp7Z4oM+gUcOeffSaet5/InR/k2d30O6RyR1Dxj8Fnste2nycTku+mnJVuPJXd8rPpYynVbA+o5JXvWs+41/8yqV65U27aPnfdNP6qmewsqbfcdqiy6VLq1TOvF1/o/vl2Q0qY76Bp5iIsX3nV76MrmeZoDsaVrpu/JmJGnu/SiXrojwmbmy2p1JVcxsTOfK4XonS+v6dUNbnjSpR4R+Y2NbiypMxn4ke7VJpah1NOK4LVZLMOUz8wutsGVJbmiFq0HRDtGFIAcMwTcM0DNM0TMMwTdMEDNM0TV1lmKZpagA8wUDA7/N6TMPQ7BiiSjMM0zS1+DT7NAliE3QboUmZYns7fTIzJ2SOvBApfTPFgGrChAkTMvvpjaZPnzlj+szp02fMmD5j+vQZs+fOrIqes2bNnvOwIfMOmzFz5swuAGbt37d9/YrXl86fPmnQNSFF3cmTp0yddp6i+bRpM2dPbhqf+0qTgMf8NlIpfctGIEqSJ26C8RrFaYrHKY7S2jKOjbCSJJd6ZaHfSXIEgALatAoP36RLWlHM8srSYySLOsZnAZPyGmdfna/QBlMsuh0InhWsqpLgF8JnJtrEo7FsiSLlD2EsgHw7JMu76nbyrnevys/JsdlGXVnJA4rQGcmZuwH0jpHkMMljUZLRh4GW8WgUvwIHjD0ltJBYWzXXOlvJcUpTNZPxkKIfpeVPAajxi7A1DMC3hCS31QJax6OxbLHqd2E0gEIn/K4RgNYSWo+6NotJmqa6QFHaWBLMVnQFgL6lJEtuBXBJhGR5TwAN3s3KyspaflT47b2srKyst6rJFqn+EMYCKBDe1zTj3EnfWSSjTwFoI2Okvkvm5mTppWqj4HJJyz9lMUmDH0hyFYClJJkbgto7X1gdgFyyRBH6XRiv2gjx9r9IcoYJtFVYEwx3quQlyzzV1apITeFRKroJGC0wiECMpNUcdhZK/PYWKYJONkn0NcLrXqCdgj9e6k69gmRZorpHZY0E4Pld1V2i5QhvYjFJrtbcWqwISTJVmyVYIbzps2W97k5aUbKsMBVPqLi1FnAPlZYMN1kkCxt9QTJ6F2zNj8cSRcofwjhAyxfWyj4QXvcCHVQsvd6Vq08ny4YUxbPCxD0kT7aC5zOS+UVCD1nqbpKxryMk1xr2FsZjkSL4uzAGgK16h4UFHqCdxCLJH1LcuDZpNoUVI4XFt5K05uHaIpIzdwg9ZehZSrl1PewtiMdiB2MBrUBYJRhzi0mWPq0BbSUrz5KM9tRkaRXJxhTFFGGZP5dkRJ9EsvwKgSrPx4ov4WChPX21sEQRkowCkC8UfPn1t3+eLCfJYxcAaC25dytJHqqVEb8ORcmy0q+YI8zx3FtOctEBkj9iu9BLgZsjkrN1HfgW2TPWCgsdjFbZjQ2FjatusEjGBnSh0DEejQuS5RVNsVCYYl6YQzI/QsbaYIXwgqZAtmSR1xV9jbDAIwtKxsQh1s8Q2ki6YCVJFu2WpMWjel6yLIBcyxbG6Z7llOdoWCaMsnF1Eckz98Ohd6E9rBSWeGV+yXAAhfait0HaSpIOs4jqoo7x8H6SLCMU+kphhIabZCU9gHnCLF2VXkgyv5OjBfFYGZA1zBP6qcrLyiyh+E5ZS0knaIOi7mBRstyhMFaRtAYAZp7k5yuBUcIbhirjuJDh0gdCYQ3Z/WeFvqqPL798s8DlKZIrJOlA7Q9dujlJzqQqzDXCywCuLRNWAnhC2GqqOhWQLOjsaKGDWQLvl3imWSStWwDkCweAy44LpemS1io8ZrlTtzA5cqH0rhVeAhA8SjKWDuBm4WOPKr2QZH6GE98iB2mWEHncADAonyS/PhdAgXAECL1ikeRu04m2znIFW5NjpMq3jmTsRQDaEJJ/AkAr4SevS96FDpAjsOTHjz79vYziqwaAfOEjAG3PCrxfaCnpBABNfnOnR1kynGmk8q8XXgAATygY9AuNhFwnBZ2d+F91kloo2M1vDAAFwiEAWGoJR+sAaC3pKBiDSl25MjcZdnhUgQ0ky58TbFYR/vKpMk7E5zUnxrBieyc6Qyy0UfsXIdpbA1pKOgmo/7MroVVJUNoNNjYKzzpIEYr9qs4n4+Jb6gQYf9rOsashLRAOC+gbI8k9YSd4stwN3JME315kI7iJZGkfByEhaqOLkJ/hxJwuZNvCpQv+KBesz2Y3hvwPYa/k/C+Fsi5Ac4tkrL1Me8Mieap9nHx7Em+qbkM/v1XLFi1qOdBbtmjRsoWuCl/ZqlWrK0JO0KB9p/SMCzRb8JyXdtudd97SoaEBZeuMjPT08yX6xRnp6RkdqwJmhw5pae2CMqSmpbVv1yYYJ1xclGjHqqLSrGeWJlb0AfyD9Ha+9/Z68WrSJDVB0PSrhLKWBiqgL3K+7Cp8kvMJgPs/y+kJjMmLFBeffM+HgznK9Q0O5OQAnjf/On369OfXATNzcnKuB17MOdIqbtotJxLp28tQ8Y4iucwLIMIIgF4lHIx+JTyx/y9yvvc4lUebFJJI/YI8kRtj5C6sILnOh/Esyogb9J5nE+dUulYB5ZL8sL4D/ScWPZp6y7f8rPm9jzwypITrH3nktpDwIrn7qiv7ljOvjnCslUvwji9OlMijqIDTo7TIDAdVLf7kgTaPBe0AXBnhNAAQlrK0E4B1tO4TrP6aS6g5+e/EKB0YqIjGWrGPySEObiGXAbhn2cxmTsKb+WVTAC+Tk1aQUR4y3EJoZCQRzj7kRwVcbS1zbyjncZ+9IeQQAIbXozlJ3cudqQBuJZeuINewPMM1BMaecu+HO1AhX3aKm4I/kZfZm0H2gk1b53zBXcJ15LIVZFqUeya5Bt89h8vcKXu/vVExPRbjj7N+JN/WbQ0mhwG49vmutZ00OMyPG9lptpzWTvegNXjFlb+fC6GC/obyo1VsPUouA8xXy/LbO6m2nd+eA+AecppwdTFjCQB47th6Kl65r16moYKuW8rjL77Q7zOeuAlnGPEAL5dxYL0yfh9EvQP8/mIn2mvMbw1gNq1uQsMjZEJAq3XL0uPx+GFEaz8q7DnkAEAbELOG6b+zfMhF139o8Rn9R0YmXDolwm01nOARWqsvqdLjOIubCUamlSAAtLo9Pz1TElNYZdHCHXemoAI3PqHVDMAjEa4JDCmn9Jsr0C1CsfhBODL2lVMsfhwCWpUlDoDAuQ8OX/LGuh3bs1+b++xNDXRU6E2XZb8aANBwYfY71WoOXXP4o492vdZRR+CJrD0fHVx+hy40y8p+Ung9OxuoOmz1Rx/te/teoH92dir0ednZb1+cMAA0j79arVphn6mhojdTwiENgBYKh3UYVevVr1/bBzGUWr9uCFIjHPYJKeEwAKNq/fp1ghoQCId1IBAOpxiJ9H9XAQBWUDggJg8AAFA7AJ0BKtoASAA+KRCGQiGhCv4C9AwBQlsRHchhZvfV/x09iynfzj7jfu//o/jB/ZvtV8G+VfJZ8k/I/71/TPx5+gH+N9T3mAfoh/kv7L+8X+Y+En1AeYD+if4P9nvaJ/qP+A9zn7Cfq7/SfkA/i39W/7/tAf272Df3Y9gD+X/2H7//lg/0f7PfA1+zH/s/0HwG/0D+4/+n8//kA9AD/veoB2Kf899APi9+R+qruGvb8rOl3/Oeuv+L769r7/NbyLqv+i9AL1u+d/8PxFdQu84/4vrf4C9AD+P/0P/f/cP8kn/R/oPOh9Qf+j3BP5d/Wf+f/gvak9eH7Xf//3Kf2EZpYckyiLD2qz2769DXF/5iwoBDlDtptDqCO919zbP9q+SeNqpkO2USAvKglcLZ9+GzfRMRiy0MWy4P9/rrIC7HMIP7p8OrHeUlTS+fQbrqdXNvUU2nwRPoNyndAYKf/oaQEApwxGJt1Y+4jnz2lOHqzk3thQJwh/KwvCOOA9wyk/akwiuhgLK3Qez9VPOdvyGaTK7sQgMdi+GVZNqMnSvkRIac9WXz83zbN5c5hzgumMR/rm5vQxweqvt6AQxWWlv3s+9SqVfkr+VYVxn3Rkxt/z99VEx+8BUvPCdAobx2aaaHQAD+/+LYLH/8Kiu+42ackac7535dEsJFHugzc5sliC4RshKlMfUm0F8Wdi33R17WGLZnz/qUUw/4obySzGLTGnbxKfjAcQPdUL/Y0tof9cU5xR+v0VBTHmjI4Y63A4lu25Ssh73OUt+OaKxO1KC0NjRZLVcDs+4u/R1dxUaIYeDeDVYbXcSxYoiHYsjg4koGhy3/E3hvfL9p58fJARz+WfxqpQHgCoZgD935Ox4r2e6V5TnsG0oI1PsaissukqcP1voRfgFem7UwHpoueDFF75cbBYqHbOD2nRTD1jXgUzuEvsmqpvNredACa7jHj760pSEZNYlrbOFI1KSo7yu28rf9KJGOmQoeT2SUf/SRFIOleAANKFtgxlPGx5xIv56TRyrhLwnVxgZVQiPHOR9D5avsvVzxfdRo19YqRasEsYlrw+kYEgjcG7i8MqihXlvFAf4nyFA3GlgN4EgbtbvHVefn83jkXngydkWdreLM43A33+v/ITnDBfPYB+XDvqKzo39tf7Xg/hQ9fud1N/4zH2pH6WH1FFVjvyjLc8MOZcRCCOSROqUYp60NOp+orDmO91Iqln4Pfyyfy0GJhAJ3YW8Gdi8r0C+Wh7dNCL4eOWPD7tpzNg+/Lln9f/sfu60UQIqDEr0kvoafZGMwj/OnTJXVxxtldvZfw2fP4y2fxj3vpgIGrJYT28rlVJlvrO7r2sLAZSzYjOtHmjW061ACQ/MbUz06tsKWZ27KmAM6f/pjbofqwQIgAZuX68ZWRXFqQQwwjVvRhM1rd+kkgnKmKLnGEQ+6bb2pf904E+u8jRVkR2piFvwa4HRrUsx0wKl9dp/mKr+Xm8qMH9jcT4/GnryvMjpPQww4k95sv7YI8mCi4BpY+fneAV3Mvf4k104TNWYbnQbqdFFgtHS+z72aR//1FiGID+H4Jme12p29/27Ig7cyJG8y3G9TrrHYcrFToA+iMiJfWj5YOA5xrCuS/YSP67wldU5xTHrFIHphhxz8yxBpNpXKhfXE013xnIjaj2sVXkDRVwidxJvFnR8R3PRt5Rd9q8OJX3XNiY9TdhdFcwvZ0UuaUt5kzoxSTUJWMTUKFihNJB1yvNqraS0Pfe107k0LYaagi1OGGFW0xYupBwTTAA1pcRfuS3jS5Na2g7WtvQhf1cC1e8ImncpLQylOkUGVMyvpDv6pYT8pEUtLiTnOXDG+sMO3K2wxbUFJ9IPnSgXxnreDYB+CacDYU5WXsm9MtmocbI1Crf1qBolTfL1RXBJBujvdGralxsc7ht7VDUxC6Kl3nqViLr8ewBllGJWETwaALz8HEbg0YgTsJqO3il38Wb7fOpDB/x73bYBa0G29AGv+FN/RHSVY+swyJ964ENzDH5ddbihicgoSf0LBixkDh07oih6ZQ+k4qAHiJmNfscquTJRbg8wTU5OKj55F6JkrNSg7cNyS/7Km7yr0IF+QSNErOta8GKhBQBGcH21rut0EGITRBx66c7ycb4hW16sayTErNoXPbrP9j9qttG/jkVRs5AWwaeeuPSMY1sKdjTlmzx4WMdfxfLa3QETFmxKreOH3drl1AzQtwDw4T3DWu+MV87Vkr//MZ8nfvoapWF5LY28Kt79yhgc7b9LOZzid9jJ3NZ0y3nUXSCnWglZyJRlme2UZF51jxG2sERRyGMd2HbvtpDKpKIdySUzvG7OgdocZJ2jf1RefK60Pf/85Z8/Oon9GfimByMS0RttZkJIzE/XOQ0GxRa7uVkL9XTaOldri343VYN9aPgCVxez4GI0jTq9Zdm/F7AfJJXdLmqPX8kVXWCsjsQgkA0ePJMQFO8QesKOYK3sWUB/CLPExAaX/cRGsU3DoXv1Karwnk8JOOasKg9Vd++hOGdP5zJARd4UNIxvaMNajlkSeeG1730zss8I9qSsCsNMQ5WUWuS8wlZ9CMZb8rq+20WkSZMSuErkWq/7rqDCl+X7Yi0DMj4npzqNOoecOtUCAFBl/B+Qrj1raXxTtixZ6Urw0T+3n6N3CqSvlMZo7/hTbsXmk7zM4nP98+R5jqwyfrvZmClvqrO2bL20RsFYr8c5Qzk8GOcctSaWkMDo2dG7t4haypDrAxkXX3mHka/b+QEN6EDkH0X5+1Fx/eE4mA7myzuEUvjlV0+Pnzrofq4xO1zM9rGpOu5b8Qr8lVFIwTPlTUqnB0HXRiG5KPacaHmlOcfpL0EJLg2B163YGIPToBEBj7MEM8wVJapVVBYV1MjcBsKNO4SIj25sUI2GxWDF4INJbpXgCgXC7grRrMYnTj71RhJKTwXgzoC2nlT6qiQZhL+XX9G762ZbHjBpS2MgwfFJCm9lR2iM43tSl/x84VaY7p/qhZhWWSkN7Iv/siqxUACkexmaUilRHuiI2l+E5lkY/8MeGAB87kNLRvra/ZG8EWSlSxwwKqKv83upYCe5DISXEJ9gW8l4GBOGEr4Wo8CFhOT4AMsRQPP+TlmCfF9hZyS793z6N2IoM/WetbcMTOVLALQOi+dRokhtGDvNWLOAW8wJOahgyoify0fEXflYFrJNkhTVIz04wlMV4Uie0cXNyX9kjpE309SF/YVEZ2aLrsSXTTML2bTUtLfqoFJNm+Fi0s2ZZ8ELQsfvSnhvnXznPPk40E31sbdYsCWrH4UVy4ZjqO99OVymP/D4TiC58tyW0O5tRqpXbhgEk6f/P9fTnv1hgkAm9I2E2jf3IIboNtsay/xQMAo6GqjLhzfVmAnE9A96I/m+ZspKWNfFKXxwzp8MFvMDvtNrBTfgI1QulG0XPpBqBS1BDfl9FnYGaevWCnBZLew0NyFMZka97UXkY3dTQThjurzgzjJi4AmyhjXAT9RmdDDUgeN24zSRoTjhuc6X7TfX3++GF6tfEHcILAsiJProQVsq+CuO0oLbC6ajOOTwr9bLqj7FrQ8CVosb3mbQID/TXDvl7sgsrLU4BaEpHO+PoMyjbpeM6Nt96U8lz6mix1NZynMtqR+/JjRkSMqpXMc6iSlG6NjljIAp0gUfRMnj5Zi9T/Vlrlp6s9bb81HhtFxg1zQ88YVzuMhCJ8d3Od6NrmcWTWWw6ONlWQkvmeBl1CbmWMZ/79hXaqsDdGV3OK97iSPL2rsdgPJcZ/739d3I75U/A1y6/a9sL0Dw/OsWykrZxuIczvYXnV8q+05mEprSOnOnhIk2xcd2kr5aXqLqo4bdcpbTLqOUrUc+NriXLDg5LGXPF8GzIaI4aOIDibYnS8UmNmWMwijVwXyOIhL0fNh00qKax1HV5S/8TX4d8aiD6xQVqe7AlCFtAPK/wRKTiJRzn30+EHP51qNR4Okv0qgFgwL2RtT1MNb356Xmx46tLGknR3ASv1vOXIc3/P4UizKn9nIhhE86N1be9Geb5xuuQ3f/XANZJrdB0+wDvZM1I065cCGn58UIkdVIxsABQ292NHIoEj0hUdl75h37SLZ1alR34jZ320CiIpeIiO688dNffS8hGYmsFQ1s4IKu9yVfcB1kQ4/oz783OaFzJqH5SEwhqPLn3EZRRjsTXKfCHmaSiMsGwV39luTjVg2JaefbRWaNfnRpeoCvj9SEsXE8B4favcrxHG1ic+TpaYbo1dODeoEvZyQUjjxBd/pxUnKfRTvEFxCgejr7pPihmjBVfckg9Y8tTV+z9KZ6cEJHeJpIBpHPYi/52sxCKLvSuZXNGlpP5qriB4mWmNwblUhHet3MSpi23aaH5g0o5b/gLjKDgsv91wE015kJ7tBjJmSW2T/4U0J0oSwKAz5i83mHQ/eKtrtyGP6tJSqb89nlfNSbI+80mqgotVNnXjds3orm3bjG0CopI1xZWa0uReMq/d6REw7s4j91SQNYFYNsXohVToKsWh+EGu/Vjc7eiiBSw8RSNNjH1K5CXJoyUzadS3dCTCJ4shEd6ZtCvNF9clu3WX6uNEPTpCq+lbjvARFoqn60f/FrWW2PmCR+nc8THys0l8n+NaCABC0Z+SRB5Bx9/fkwYva0JjiC1hkrDmBPg+QltpswAJAO4ZtUbR+cZEr9556YeJgrUwUVgMsWF9ww9de2AD8lQew2HMC7PWVu3pC3+aFWo6uX/JeYDswW5A8zm5LCLSSFwDCNDk8YPljMvoTzmfKCvJsSND1ccHFxY12yvafQy6drD+C2g9LeTJV8Vs5KKZZIPVphBkDR33nBfMror8mn+76gUWe+yglQ+0Xtu8hxqtSAbgeFU2sTLnA0YhioSn/40jObXLwP4/v4uEcP5fE0Dmz3OqTOim6X+f7P4CQ74+bm8R5HKqy7F9Bi5eKa71ABt63eZcl5nPvUooHFtDx1JI1I7V3pzwSe8+yh0m4wiLfy2H4u7RIoNwjn13yNBNWzdUP1ECwqhIBtA1Gqn1Wi608iY812ysMg/Umq9/BPAqd7wVvTPrP+1dBtyf7F87CZj3SsjQJOj7eiRCasYTSini+4EYe5cSCDY9s5xI0fOiBp4+r//rW23/auq2WBa+c5gAAKr9G4///sQsAAAAAAHhWJYZqBokAAA" alt="마이턴옥션"><span>콘텐츠 · 매뉴얼</span></a>
+    <a class="g-back" href="https://terryauction-6b374.web.app/web/#/store" target="_top">← 콘텐츠로 돌아가기</a>
+  </div>
+</header>
+
+<nav class="secnav" aria-label="장 목록">
+  <div class="wrap secnav-in" id="secnav">
+    <a href="#summary"><span class="no">00</span>요약</a>
+    <a href="#decide"><span class="no">01</span>업종·과세</a>
+    <a href="#step1"><span class="no">02</span>홈택스등록</a>
+    <a href="#step2"><span class="no">03</span>사업용계좌</a>
+    <a href="#step3"><span class="no">04</span>사업용카드</a>
+    <a href="#after"><span class="no">05</span>등록이후</a>
+    <a href="#sources"><span class="no">06</span>출처</a>
+  </div>
+</nav>
+
+<main>
+<div class="wrap layout">
+  <aside class="side" aria-label="목차">
+    <h6>목차</h6>
+    <ol id="side">
+      <li><a href="#summary"><span class="no">00</span>요약</a></li>
+      <li><a href="#decide"><span class="no">01</span>등록 전에 정할 것</a></li>
+      <li><a href="#step1"><span class="no">02</span>1단계 · 홈택스 등록</a></li>
+      <li><a href="#step2"><span class="no">03</span>2단계 · 사업용 계좌</a></li>
+      <li><a href="#step3"><span class="no">04</span>3단계 · 사업용 카드</a></li>
+      <li><a href="#after"><span class="no">05</span>등록 후 할 일</a></li>
+      <li><a href="#sources"><span class="no">06</span>출처</a></li>
+    </ol>
+  </aside>
+
+  <div class="content">
+
+    <!-- 00 요약 -->
+    <section class="sec" id="summary">
+      <div class="hero">
+        <div class="crumb">콘텐츠 › 매뉴얼 › <b>매매사업자 등록</b> · 2026.11.09 기준</div>
+        <h1>첫 낙찰 후 바로 <em>703011</em>로 개인 매매 사업자 등록하세요</h1>
+        <p>낙찰받은 주택을 되파는 일을 반복할 거라면 <b>매매사업자</b>로 등록합니다. <b>홈택스 등록 → 사업용 계좌 → 사업용 카드</b> 세 단계면 끝나고, 매매 뒤에는 <b>2개월 안 예정신고</b>를 챙깁니다.</p>
+        <div class="hero-meta">
+          <span class="hm"><svg class="ic"><use href="#i-scale"/></svg>부가가치세법 제8조</span>
+          <span class="hm"><svg class="ic"><use href="#i-clock"/></svg>기한: 사업 개시 후 20일</span>
+          <span class="hm"><svg class="ic"><use href="#i-file"/></svg>홈택스 메뉴 경로 포함</span>
+        </div>
+      </div>
+      <div class="facts" role="list">
+        <div class="fact" role="listitem"><span class="k">누가</span><span class="v">되팔 사람</span><span class="s">낙찰 주택 매도를 반복할 계획인 개인</span></div>
+        <div class="fact dark" role="listitem"><span class="k">업종</span><span class="v">703011</span><span class="s">상가·오피스텔도 하면 703014 추가</span></div>
+        <div class="fact" role="listitem"><span class="k">과세유형</span><span class="v">면세 또는 일반</span><span class="s">85㎡ 이하 주택만이면 면세. 간이과세 불가</span></div>
+        <div class="fact" role="listitem"><span class="k">기한</span><span class="v">개시 후 20일</span><span class="s">첫 낙찰 후 바로 신청하면 충분(제8조①)</span></div>
+        <div class="fact" role="listitem"><span class="k">매매 후</span><span class="v">예정신고</span><span class="s">매매일이 속한 달 말일부터 2개월 안</span></div>
+      </div>
+      <figure class="figure" style="margin:0">
+        <p class="fig-cap"><span class="fn">그림 1</span>등록부터 첫 매매 신고까지</p>
+        <div class="svg-wrap">
+          <svg viewBox="0 0 960 230" role="img" aria-labelledby="tlT tlD">
+            <title id="tlT">매매사업자 등록 순서</title>
+            <desc id="tlD">업종과 과세유형을 정하고, 홈택스에서 신청하면 2일 안에 발급, 사업용 계좌와 카드를 만들어 홈택스에 등록, 매매 뒤 2개월 안에 예정신고.</desc>
+            <line class="track" x1="80" y1="112" x2="880" y2="112"/>
+            <circle class="node first" cx="80" cy="112" r="10"/><circle class="node" cx="345" cy="112" r="10"/><circle class="node" cx="612" cy="112" r="10"/><circle class="node" cx="880" cy="112" r="10"/>
+            <text class="t-title" x="80" y="48" text-anchor="middle">업종·과세 정하기</text><text class="t-sub" x="80" y="68" text-anchor="middle">703011 · 면세/일반</text>
+            <text class="t-title" x="345" y="48" text-anchor="middle">홈택스 신청</text><text class="t-sub" x="345" y="68" text-anchor="middle">개인 사업자등록 신청</text>
+            <text class="t-title" x="612" y="48" text-anchor="middle">계좌 · 카드</text><text class="t-sub" x="612" y="68" text-anchor="middle">만들고 홈택스에 등록</text>
+            <text class="t-title" x="880" y="48" text-anchor="middle">예정신고</text><text class="t-sub" x="880" y="68" text-anchor="middle">매매차익 신고·납부</text>
+            <rect class="gap-pill" x="162" y="98" width="102" height="24" rx="12"/><text class="t-gap" x="213" y="114" text-anchor="middle">낙찰 후 바로</text>
+            <rect class="gap-pill" x="424" y="98" width="110" height="24" rx="12"/><text class="t-gap" x="479" y="114" text-anchor="middle">2일 안 발급</text>
+            <rect class="gap-pill" x="684" y="98" width="124" height="24" rx="12"/><text class="t-gap" x="746" y="114" text-anchor="middle">매매 후 2개월 안</text>
+            <rect class="band-a" x="84" y="152" width="524" height="38" rx="8" stroke-width="1.5"/><text class="t-band t-a" x="346" y="176" text-anchor="middle">첫 낙찰 후 바로</text>
+            <rect class="band-c" x="616" y="152" width="260" height="38" rx="8" stroke-width="1.5"/><text class="t-band t-c" x="746" y="176" text-anchor="middle">매도할 때마다</text>
+            <text class="t-law" x="346" y="214" text-anchor="middle">부가가치세법 제8조 · 시행령 제11조</text>
+            <text class="t-law" x="746" y="214" text-anchor="middle">소득세법 제69조</text>
+          </svg>
+        </div>
+      </figure>
+    </section>
+
+    <!-- 01 업종·과세 -->
+    <section class="sec" id="decide">
+      <div class="sec-head"><span class="sec-no">01</span><h2>등록 전에 정할 것</h2><p>업종코드와 과세유형은 따로 정합니다. 코드는 '무엇을 파는지', 면세·과세는 '면적과 용도'로 갈립니다.</p></div>
+      <div class="panel">
+        <div class="verdict">
+          <span class="vk">결론</span>
+          <p>경매로 산 아파트·빌라를 되팔 거면 <b>업종코드 703011</b>로 등록합니다. 85㎡ 이하 주택만 사고팔면 <b>면세사업자</b>, 85㎡ 넘는 주택이나 상가·오피스텔도 하면 <b>일반과세자</b>입니다. 상가·오피스텔도 할 계획이면 부업종 703014를 추가합니다.</p>
+        </div>
+        <h3 class="h3">업종코드</h3>
+        <div class="tbl"><table>
+          <thead><tr><th>파는 물건</th><th>업종코드</th><th>종목</th></tr></thead>
+          <tbody>
+            <tr class="hl"><td>주택(아파트·빌라 등), 토지보유 5년 미만 — 경매 단타 대부분</td><td class="c"><b>703011</b></td><td>주거용 건물 개발 및 공급업 (구입한 주거용 건물 재판매 포함)</td></tr>
+            <tr><td>주택, 토지보유 5년 이상</td><td class="c">703012</td><td>〃</td></tr>
+            <tr><td>상가·업무용 오피스텔 등, 토지보유 5년 미만</td><td class="c">703014</td><td>비주거용 건물 개발 및 공급업</td></tr>
+          </tbody>
+        </table></div>
+        <p class="tbl-cap">표 1. 국세청 업종코드 기준. 홈택스 신청 화면의 업종 검색에 코드를 넣어 고릅니다.</p>
+        <h3 class="h3">과세유형</h3>
+        <div class="tbl"><table>
+          <thead><tr><th>파는 물건</th><th>유형</th><th>의미</th></tr></thead>
+          <tbody>
+            <tr><td>전용 85㎡ 이하 주택만</td><td class="c"><span class="tag ok">면세사업자</span></td><td>부가세 신고 없음, 매입세액 공제 없음. 매년 2월 10일까지 사업장현황신고</td></tr>
+            <tr><td>85㎡ 초과 주택, 상가·오피스텔 포함</td><td class="c"><span class="tag std">일반과세자</span></td><td>건물분 부가세 신고(1월·7월), 매입세액 공제 가능</td></tr>
+          </tbody>
+        </table></div>
+        <ul class="list">
+          <li>국민주택규모(전용 85㎡ 이하, 수도권 밖 도시지역이 아닌 읍·면은 100㎡ 이하) 주택 공급만 면세입니다 <span class="law">(조세특례제한법 제106조)</span>.</li>
+          <li>부동산매매업은 <b>간이과세를 고를 수 없습니다</b> <span class="law">(부가가치세법 시행령 제109조)</span>.</li>
+          <li>면세로 시작했다가 과세 물건을 사면 홈택스의 '면세사업자의 과세 겸업 사업자등록'으로 바꿉니다.</li>
+          <li>사업장 주소는 자택으로도 됩니다. 사무실을 빌렸으면 임대차계약서가 필요합니다.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 02 홈택스 -->
+    <section class="sec" id="step1">
+      <div class="sec-head"><span class="sec-no">02</span><h2>1단계 · 홈택스 사업자등록</h2><p>세무서에 가지 않고 홈택스에서 신청합니다. 메뉴는 2026. 11. 9. 홈택스 화면 기준입니다.</p></div>
+      <div class="panel">
+        <ol class="steps">
+          <li class="step"><span class="step-n">1</span><div class="step-b"><h4>로그인</h4><p><a href="https://www.hometax.go.kr/" target="_blank" rel="noopener">홈택스↗</a>에 공동·금융·간편인증으로 로그인합니다.</p></div></li>
+          <li class="step"><span class="step-n">2</span><div class="step-b"><h4>메뉴 들어가기</h4><p>증명･등록･신청･사업장현황 › 사업자등록 신청·정정·휴폐업 › <b>개인 사업자등록 신청</b></p></div></li>
+          <li class="step"><span class="step-n">3</span><div class="step-b"><h4>입력</h4><p>상호(선택), 사업장 주소, 업종코드 <b>703011</b>(상가·오피스텔도 하면 703014 추가), 개업일, 면세·일반 선택.</p></div></li>
+          <li class="step"><span class="step-n">4</span><div class="step-b"><h4>첨부·제출</h4><p>사무실을 빌린 경우만 임대차계약서 사본을 첨부합니다. 신분증은 인증으로 대신합니다.</p></div></li>
+          <li class="step"><span class="step-n">5</span><div class="step-b"><h4>처리 확인 <span class="when">2일 안</span></h4><p>같은 메뉴의 '사업자등록 민원처리상태 조회'로 확인합니다. 신청일부터 2일 안에 발급되고, 현장 확인이 필요하면 5일까지 늘어날 수 있습니다 <span class="law">(시행령 제11조)</span>.</p></div></li>
+          <li class="step"><span class="step-n">6</span><div class="step-b"><h4>등록증 출력</h4><p>증명･등록･신청･사업장현황 › 민원증명 › <b>즉시발급 증명</b>에서 사업자등록증을 출력하거나, '민원신청 처리결과 조회'에서 출력합니다. 세무서에서 받을 때는 신분증과 접수증을 가져갑니다.</p></div></li>
+        </ol>
+        <div class="note warn"><svg class="ic"><use href="#i-alert"/></svg><div><span class="nt">늦으면</span>사업 개시일부터 20일 안에 신청하지 않으면 미등록가산세(공급가액의 1%)가 붙고, 과세사업자는 등록 전 매입세액을 공제받지 못할 수 있습니다.</div></div>
+      </div>
+    </section>
+
+    <!-- 03 계좌 -->
+    <section class="sec" id="step2">
+      <div class="sec-head"><span class="sec-no">03</span><h2>2단계 · 사업용 계좌</h2></div>
+      <div class="panel">
+        <div class="tbl"><table>
+          <thead><tr><th>할 일</th><th>내용</th></tr></thead>
+          <tbody>
+            <tr><td>개설</td><td>사업자등록증·신분증을 들고 은행에 가서 사업 전용 통장으로 개설</td></tr>
+            <tr><td>홈택스 신고</td><td>증명･등록･신청･사업장현황 › 세금관련 신청·신고 공통분야 › 사업용·공익법인전용 계좌 개설/조회</td></tr>
+            <tr class="hl"><td>의무</td><td>복식부기의무자(부동산매매업은 직전 연도 수입 3억원 이상)는 과세기간 시작일부터 6개월 안에 신고 <span class="law">(소득세법 제160조의5)</span></td></tr>
+            <tr><td>권장</td><td>의무가 없어도 보증금·잔금·수리비·매도대금을 이 계좌로만 주고받기</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- 04 카드 -->
+    <section class="sec" id="step3">
+      <div class="sec-head"><span class="sec-no">04</span><h2>3단계 · 사업용 카드</h2></div>
+      <div class="panel">
+        <div class="tbl"><table>
+          <thead><tr><th>할 일</th><th>내용</th></tr></thead>
+          <tbody>
+            <tr><td>발급</td><td>개인사업자 카드(체크 또는 신용). 사업자등록증 사본·신분증·계좌 사본</td></tr>
+            <tr class="hl"><td>홈택스 등록</td><td>계산서·영수증·카드 › 신용카드 매입 › <b>사업용 신용카드 등록 및 조회</b> (최대 50장)</td></tr>
+            <tr><td>효과</td><td>사용내역이 홈택스에 자동으로 모여 경비·부가세 신고가 편해짐</td></tr>
+            <tr><td>주의</td><td>등록은 의무가 아니고, 등록 안 한 카드도 수령명세서로 공제 가능. 면세사업자는 매입세액 공제가 없음. 개인 카드와 섞어 쓰지 않기</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- 05 등록 후 -->
+    <section class="sec" id="after">
+      <div class="sec-head"><span class="sec-no">05</span><h2>등록 후 할 일</h2></div>
+      <div class="panel">
+        <div class="tbl"><table>
+          <thead><tr><th>언제</th><th>할 일</th><th>근거</th></tr></thead>
+          <tbody>
+            <tr class="hl"><td>매매일이 속한 달 말일부터 2개월 안</td><td><b>매매차익 예정신고·납부</b> (손해가 나도 신고)</td><td class="c">소득세법 제69조</td></tr>
+            <tr><td>1월 · 7월</td><td>부가세 확정신고 (일반과세자)</td><td class="c">부가가치세법</td></tr>
+            <tr><td>2월 10일까지</td><td>사업장현황신고 (면세사업자)</td><td class="c">소득세법 제78조</td></tr>
+            <tr><td>5월</td><td>종합소득세 확정신고</td><td class="c">소득세법</td></tr>
+            <tr><td>거래마다</td><td>세금계산서·카드전표·이체 기록 보관, 장부 작성</td><td class="c">—</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note"><svg class="ic"><use href="#i-info"/></svg><div><span class="nt">중과 대상 주택</span>조정대상지역 다주택 등 중과 대상 주택은 매매사업자여도 양도세 방식으로 계산한 세액과 비교해 큰 쪽으로 과세될 수 있습니다(비교과세, 소득세법 제64조). 해당되면 세무사와 확인하세요.</div></div>
+        <h3 class="h3">체크리스트</h3>
+        <div class="chk-grid">
+          <div class="chk"><h4>등록 전</h4><ul><li>파는 물건 확인(주택·상가·오피스텔)</li><li>업종코드 703011(필요하면 703014 추가)</li><li>면세·일반 결정, 사업장 주소</li></ul></div>
+          <div class="chk"><h4>등록</h4><ul><li>홈택스 개인 사업자등록 신청</li><li>민원처리상태 조회</li><li>사업자등록증 출력</li></ul></div>
+          <div class="chk"><h4>계좌·카드</h4><ul><li>사업 전용 계좌 개설·홈택스 신고</li><li>사업자 카드 발급·홈택스 등록</li></ul></div>
+          <div class="chk"><h4>매매 후</h4><ul><li>2개월 안 매매차익 예정신고</li><li>증빙·장부 보관</li></ul></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 출처 -->
+    <section class="sec" id="sources">
+      <div class="sec-head"><span class="sec-no">06</span><h2>출처</h2></div>
+      <div class="panel">
+        <ol class="src">
+          <li><a href="https://www.hometax.go.kr/" target="_blank" rel="noopener">홈택스↗</a> — 메뉴 경로 2026. 11. 9. 직접 확인</li>
+          <li>부가가치세법 제8조 — <a href="https://korea.legal/wiki/%eb%b6%80%ea%b0%80%ea%b0%80%ec%b9%98%ec%84%b8%eb%b2%95-%ec%a0%9c8%ec%a1%b0/" target="_blank" rel="noopener">법률위키</a>, 부가가치세법 시행령 제11·109조, 조세특례제한법 제106조, 소득세법 제64·69·78·160조의5 — <a href="https://www.law.go.kr" target="_blank" rel="noopener">국가법령정보센터</a></li>
+          <li>국세청 업종코드 <a href="https://upjong.co.kr/business-code/upjong-703011/" target="_blank" rel="noopener">703011</a> · <a href="https://upjong.co.kr/business-code/upjong-703012/" target="_blank" rel="noopener">703012</a> · <a href="https://upjong.co.kr/business-code/upjong-703014/" target="_blank" rel="noopener">703014</a></li>
+          <li><a href="https://www.taxnet.co.kr/contents/taxnetpost/post-detail?id=4902" target="_blank" rel="noopener">택스넷 · 사업용 신용카드 등록과 매입세액공제</a>, <a href="https://www.watax.kr/income-tax/business-bank-account" target="_blank" rel="noopener">사업용계좌 신고</a>, <a href="https://clobe.ai/blog/real-estate-trading-business-tax-checkpoints" target="_blank" rel="noopener">부동산매매업 세무 체크포인트</a></li>
+        </ol>
+        <div class="note tip"><svg class="ic"><use href="#i-info"/></svg><div>이 매뉴얼은 2026. 11. 9. 기준 일반 정보이며 세무 자문이 아닙니다. 홈택스 메뉴 이름은 바뀔 수 있고, 실제 신청 전에는 세무서나 세무사에게 확인하세요.</div></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+</main>
+
+<footer class="foot"><div class="wrap"><span><b>마이턴옥션</b> 콘텐츠 › 매뉴얼 › 매매사업자 등록</span><span>2026.11.09 기준</span></div></footer>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+  /* 지금 읽는 장 표시 (장 줄 + 왼쪽 목차) */
+  const ids = $$('.sec').map(s => s.id);
+  const navLinks = [...$$('#secnav a'), ...$$('#side a')];
+  const setOn = id => {
+    navLinks.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + id));
+    const top = $(`#secnav a[href="#${id}"]`);
+    if (top) { const bar = $('#secnav'); const l = top.offsetLeft - 24; if (l < bar.scrollLeft || top.offsetLeft + top.offsetWidth > bar.scrollLeft + bar.clientWidth) bar.scrollTo({ left: l, behavior: 'smooth' }); }
+  };
+  setOn(ids[0]);
+  if ('IntersectionObserver' in window) {
+    const seen = new Map();
+    const io = new IntersectionObserver(es => {
+      es.forEach(e => seen.set(e.target.id, e.isIntersecting ? e.boundingClientRect.top : null));
+      const vis = ids.filter(id => seen.get(id) != null);
+      if (vis.length) setOn(vis[0]);
+    }, { rootMargin: '-120px 0px -55% 0px' });
+    ids.forEach(id => io.observe(document.getElementById(id)));
+  }
+
+  /* 알림 */
+  const toast = $('#toast'); let tt;
+  const say = msg => { toast.textContent = msg; toast.hidden = false; clearTimeout(tt); tt = setTimeout(() => toast.hidden = true, 1800); };
+
+})();
+</script>
+</body>
+</html>
