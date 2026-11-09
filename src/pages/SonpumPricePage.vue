@@ -28,7 +28,9 @@ import { useAuctionStore } from '../stores/auctionStore';
 
 /** loose — 시장분석 › 시세예측처럼 선정물건이 아닌 검색 주소로 볼 때. 적어 둘 물건이 없어 저장 · 임장경로 넣기는 감추고 '선정물건'은 '검색주소'로 */
 /** months — 기간을 바깥 줄(시세예측 주소 줄)이 고를 때. 이 화면의 기간 · 조회는 감춘다 */
-const props = defineProps<{ auction: AuctionDetail; kind: CasePropertyType; loose?: boolean; months?: number }>();
+/** app — 앱 물건상세 › 손품+현장 › 시세조사(2026-11-09 시안 price-mock). 내용은 웹과 같고(매도가 예상 · 제외 체크 · 저장 단추),
+ *  폰 폭에 맞춰 지도는 접어 두고(한 줄 '지도 보기'), 거르기는 반경 · 거래 · 엘베 · 층 · 기준 → 바로 아래 면적 · 건축 막대 차례로 쌓는다. 전체화면은 없다 */
+const props = defineProps<{ auction: AuctionDetail; kind: CasePropertyType; loose?: boolean; months?: number; app?: boolean }>();
 const meName = computed(() => (props.loose ? '검색주소' : '선정물건'));
 const store = useAuctionStore();
 
@@ -240,7 +242,7 @@ const COLS: Array<ColumnDef<PriceRow>> = [
 const colFilter = useColumnFilters<PriceRow>(kindRows, COLS);
 if (sv?.keep) colFilter.picked.value = { ...colFilter.picked.value, ...sv.keep };
 // 웹 — 머리글 ▾ 거르기 대신 줄마다 '제외' 체크(처음엔 비어 있다 · 체크하면 실거래가 예상 · 평균 · 건수에서 빠지고 표엔 흐리게 남는다) · 머리글은 오름 · 내림 정렬(2026-11-05). 앱은 그대로
-const webEmbed = inject<boolean>('webEmbed', false);
+const webEmbed = inject<boolean>('webEmbed', false) || !!props.app;
 /** 줄 열쇠 — 다시 불러와도 같은 줄이 같은 열쇠(순번 id 는 불러올 때마다 바뀐다) */
 const rowKey = (r: PriceRow) => [r.group, r.contractDate, r.jibun, r.price, r.floorNo, Math.round(r.areaM2 * 100)].join('|');
 const dropped = ref<string[]>(Array.isArray(sv?.drop) ? [...sv.drop] : []);
@@ -625,7 +627,7 @@ onMounted(() => { window.addEventListener('resize', onResize); void run(); });
 // ===== 웹 — 지도 전체화면(C안, 2026-11-05): 왼쪽 지도 · 오른쪽 고정 칸(결론 · 조건 · 유사물건 목록). 이 상자를 body 로 옮겨 화면을 채운다 =====
 /* 전체화면은 새로고침 · 다른 물건에서도 그대로(고른 보기는 남긴다) — 닫기를 눌러야 풀린다 */
 const FS_KEY = 'son.price.fs';
-const fs = ref(webEmbed && (() => { try { return localStorage.getItem(FS_KEY) === '1'; } catch { return false; } })());
+const fs = ref(webEmbed && !props.app && (() => { try { return localStorage.getItem(FS_KEY) === '1'; } catch { return false; } })());
 const fsList = computed(() => [...mapGroups.value].sort((a, b) => (orderOf.value[a.jibun] ?? 999) - (orderOf.value[b.jibun] ?? 999)));
 const fsGo = (g: { jibun: string; spot: { lat: number; lng: number } }) => { focus.value = focus.value === g.jibun ? '' : g.jibun; if (focus.value && mv) mv.focus(g.spot, 16); };
 const onFsKey = (e: KeyboardEvent) => { if (e.key === 'Escape') fs.value = false; };
@@ -642,12 +644,22 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', onFsKey); if (fs.v
 onBeforeUnmount(() => { window.removeEventListener('resize', onResize); runId += 1; mv?.destroy(); mv = null; window.clearTimeout(saveTimer); window.clearTimeout(undoTimer); });
 watch(() => props.auction.id, () => { spots.value = {}; units.value = {}; elevs.value = {}; mySpot.value = null; void run(); });
 
+// ===== 앱 — 지도는 접어 둔다(펼친 것은 다음에도 그대로). 펼칠 때 크기를 다시 잰다 =====
+const MAP_KEY = 'son.price.appMap';
+const mapOpen = ref(!!props.app && (() => { try { return localStorage.getItem(MAP_KEY) === '1'; } catch { return false; } })());
+watch(mapOpen, async (on) => {
+  try { if (on) localStorage.setItem(MAP_KEY, '1'); else localStorage.removeItem(MAP_KEY); } catch { /* 이 창에서만 */ }
+  if (!on) return;
+  await nextTick();
+  [0, 120, 400].forEach((ms) => window.setTimeout(() => { mv?.relayout(); fitMap(); }, ms));
+});
+
 const onPubInput = (e: Event) => { typedPub.value = Number((e.target as HTMLInputElement).value.replace(/\D/g, '')) || 0; };
 const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 </script>
 
 <template>
-  <div class="pa-wrap">
+  <div :class="['pa-wrap', { app: props.app }]">
   <Teleport to="body" :disabled="!fs">
   <section :class="['pa', 'pa-card', { fs }]" aria-label="시세분석">
     <!-- 전체화면 위 띠 — 닫기 · 사건 · 조회기간 · 조회 -->
@@ -694,10 +706,14 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 
     <!-- Ⓑ 근거 -->
     <div class="zone">
-      <div class="map">
+      <!-- 앱 — 지도는 한 줄로 접어 두고 누르면 편다 -->
+      <button v-if="props.app" type="button" class="map-fold" :aria-expanded="mapOpen" @click="mapOpen = !mapOpen">
+        <span class="mf-t">지도</span><small>반경 {{ radText(radius) }} · 유사물건 {{ mapGroups.length }}곳</small><i>{{ mapOpen ? '접기 ⌃' : '지도 보기 ⌄' }}</i>
+      </button>
+      <div v-show="!props.app || mapOpen" class="map">
         <div ref="mapEl" class="map-in" />
         <KakaoMapTools v-if="kTools" :k="kTools.k" :map="kTools.map" :near="webEmbed ? mySpot : null" />
-        <button v-if="webEmbed && !fs" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="fs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
+        <button v-if="webEmbed && !fs && !props.app" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="fs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
         <!-- 근거 제목은 지도 왼쪽 위에 — 따로 줄을 두지 않아 지도를 위로 더 보인다 -->
         <div class="map-title"><span class="pa-tag">근거</span><b>유사물건</b></div>
         <div v-if="addOpen && !loose" class="add-pop" role="dialog" aria-label="임장경로에 비교 물건 넣기">
@@ -732,7 +748,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류">
           <button v-for="k in KINDS" :key="k" type="button" role="radio" :data-k="k" :class="{ on: kindF === k }" :aria-checked="kindF === k" @click="kindF = k">{{ k }} {{ kindCount(k) }}</button>
         </span></span>
-        <span class="pa-lab"><InfoTip v-if="webEmbed" :rows="modeTip" under="box">기준</InfoTip><template v-else>기준</template><span class="pa-seg pa-out" role="radiogroup" aria-label="유사 조건 방식">
+        <span class="pa-lab mode-pick"><InfoTip v-if="webEmbed" :rows="modeTip" under="box">기준</InfoTip><template v-else>기준</template><span class="pa-seg pa-out" role="radiogroup" aria-label="유사 조건 방식">
           <button type="button" role="radio" :class="{ on: simMode === 'sim' }" :aria-checked="simMode === 'sim'" @click="setSimMode('sim')">유사도</button>
           <button type="button" role="radio" :class="{ on: simMode === 'range' }" :aria-checked="simMode === 'range'" @click="setSimMode('range')">직접범위</button>
         </span></span>
@@ -804,7 +820,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <span v-if="pubMissing && !typedPub">이 물건은 <b>공시지가가 없어</b> 매매가율·전세가·갭이 자동 계산되지 않습니다. 경매물건 행(맨 위 빨간색)의 <b>공시가 칸</b>에 숫자를 직접 입력하면 추정치가 계산됩니다. <span class="ref">(전세가율 1.26 단순 적용)</span></span>
           <span v-else>이 물건은 <b>공시지가 기준</b> 매매가율·전세가·갭이 자동 계산됩니다. <span class="ref">(전세가율 1.26 단순 적용)</span></span>
         </div>
-        <button v-if="keptNames.length" type="button" class="pa-fchip" @click="colFilter.clearAll()">필터 적용 중: {{ keptNames.join(' · ') }} &nbsp;✕ 모두 지우기</button>
+        <button v-if="keptNames.length && !props.app" type="button" class="pa-fchip" @click="colFilter.clearAll()">필터 적용 중: {{ keptNames.join(' · ') }} &nbsp;✕ 모두 지우기</button>
       </div>
 
       <div class="pa-list">
@@ -1254,4 +1270,63 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 .more { margin-top: 8px; width: 100%; border: 1px dashed var(--line); background: #fff; border-radius: 8px; padding: 8px; font-size: 13px; color: #374151; cursor: pointer; }
 .list-foot { margin: 0; font-size: 12px; color: var(--todo); line-height: 1.6; }
 
+
+/* ===== 앱(물건상세 › 손품+현장 › 시세조사) — 폰 폭으로 위아래 쌓기(2026-11-09 시안 price-mock) ===== */
+.pa-wrap.app .pa { padding: 12px; gap: 12px; border-radius: 12px; }
+/* 넓은 표가 칸 폭을 밀지 않게 — 모든 칸을 상자 폭에 가둔다 */
+.pa-wrap.app, .pa-wrap.app .pa, .pa-wrap.app .zone { grid-template-columns: minmax(0, 1fr); min-width: 0; max-width: 100%; }
+.pa-wrap.app .est, .pa-wrap.app .conds, .pa-wrap.app .list-tools, .pa-wrap.app .pa-list { min-width: 0; max-width: 100%; }
+.pa-wrap.app .zone-h { row-gap: 8px; }
+.pa-wrap.app .bar-desc { flex: 1 1 100%; margin-left: 0; font-size: 12px; }
+.pa-wrap.app .pa-load-r { flex: 1 1 100%; margin-left: 0; }
+.pa-wrap.app .pa-load-r .prog { min-width: 0; }
+.pa-wrap.app .pa-load-r .pa-seg { flex: 1 1 auto; min-width: 0; }
+.pa-wrap.app .pa-load-r .pa-seg button { flex: 1 1 0; min-width: 0; padding: 0 4px; }
+.pa-wrap.app .pa-load-r .pa-load { flex: 0 0 72px; width: 72px; min-width: 0; padding: 0; }
+/* 매도가 예상 — 큰 칸 한 줄 + 작은 칸 셋씩 */
+.pa-wrap.app .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.pa-wrap.app .tile { padding: 8px 6px; gap: 3px; border: 1px solid #e8ecf3; box-shadow: none; }
+.pa-wrap.app .tile .k { font-size: 11.5px; }
+.pa-wrap.app .tile .v { font-size: 15px; }
+.pa-wrap.app .tile .v.sm { font-size: 12px; white-space: normal; line-height: 1.3; }
+.pa-wrap.app .tile.key { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; padding: 10px 12px; }
+.pa-wrap.app .tile.key .v { font-size: 24px; }
+/* 지도 — 접힌 한 줄, 펴면 240 */
+.map-fold { display: flex; align-items: center; gap: 6px; width: 100%; padding: 10px 12px; border: 1px solid #e8ecf3; border-radius: 10px; background: #f7f9fd; cursor: pointer; text-align: left; }
+.map-fold .mf-t { font-size: 13px; font-weight: 800; color: #374151; }
+.map-fold small { font-size: 11.5px; color: var(--sub); }
+.map-fold i { margin-left: auto; font-style: normal; font-size: 12px; font-weight: 700; color: var(--blue); white-space: nowrap; }
+.pa-wrap.app .map-in { height: 240px; }
+/* 거르기 — 반경 · 거래 · 엘베 · 층 · 기준 · 막대 · 단추 차례로 한 줄씩 */
+.pa-wrap.app .conds { display: flex !important; flex-direction: column; align-items: stretch; gap: 6px; padding: 8px; }
+.pa-wrap.app .conds > .simrow { width: 100%; box-sizing: border-box; }
+.pa-wrap.app .conds > .elev-pick { order: 1; }
+.pa-wrap.app .conds > .floor-pick { order: 2; }
+.pa-wrap.app .conds > .mode-pick { order: 3; }
+.pa-wrap.app .conds > .simrow { order: 4; }
+.pa-wrap.app .conds > .acts-r { order: 5; }
+.pa-wrap.app .conds > .pa-lab,
+.pa-wrap.app .conds:has(> .elev-pick) > .pa-lab { display: grid !important; grid-template-columns: 34px minmax(0, 1fr); gap: 6px; font-size: 12.5px; padding: 4px 8px !important; }
+.pa-wrap.app .conds > .pa-lab .pa-seg { width: 100% !important; }
+.pa-wrap.app .conds > .pa-lab .pa-seg button { font-size: 12.5px; padding: 0 2px; }
+.pa-wrap.app .simrow.has-elev :is(.simA, .simB) { height: auto; }
+.pa-wrap.app .conds > .simrow { padding: 8px !important; }
+.pa-wrap.app .simrow.has-elev .simB,
+.pa-wrap.app .simrow.has-elev .simB:has(> .dl.one) { grid-template-columns: minmax(0, 1fr); row-gap: 18px; }
+.pa-wrap.app .simrow.has-elev .simB .dl.one { grid-template-columns: 58px minmax(0, 1fr); gap: 0 10px; padding-top: 6px; }
+.pa-wrap.app .simrow.has-elev .simB .dl.one > .dn { font-size: 13px; }
+.pa-wrap.app .simrow.has-elev .simB .dl.one > .dual { margin-right: 16px; }   /* 오른쪽 끝 값(2020)이 상자 밖으로 나가지 않게 */
+.pa-wrap.app .simrow.has-elev .simB .dl.one > .dn small { font-size: 11px; }
+.pa-wrap.app .conds > .acts-r { display: flex; width: 100%; }
+.pa-wrap.app .conds > .acts-r > button { flex: 1 1 0; width: auto; }
+.pa-wrap.app .conds > .acts-r .save-btn { flex: 2 1 0; }
+/* 근거 표 — 옆으로 밀어 본다 */
+.pa-wrap.app .list-tools { gap: 6px; }
+.pa-wrap.app .warn-box { flex-basis: 100%; padding: 8px 10px; font-size: 11.5px; line-height: 1.55; }
+.pa-wrap.app .pa-list { overflow: hidden; }   /* 표가 옆 칸 밖으로 화면을 밀지 않게 — 표는 안에서 옆으로 민다 */
+.pa-wrap.app .pa-list .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.pa-wrap.app .pa-list table.even { width: max-content; min-width: 100%; font-size: 12px; }
+.pa-wrap.app .pa-list table.even th, .pa-wrap.app .pa-list table.even td { padding-left: 6px; padding-right: 6px; }
+.pa-wrap.app .pa-list table.even td.l { white-space: nowrap; }
+.pa-wrap.app .list-foot { font-size: 11px; }
 </style>

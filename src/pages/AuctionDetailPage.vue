@@ -75,6 +75,8 @@ import { getGeminiKey, isGeminiOn, loadGeminiPrefs } from '../services/geminiPdf
 import { askRightsAnalysis, DOC_LABELS, type RightsAi, type RightsDocPart } from '../services/geminiRights';
 import { buildRightsFacts } from '../services/rightsFacts';
 import RightsPanel from '../components/RightsPanel.vue';
+import SonpumPricePage from './SonpumPricePage.vue';
+import type { CasePropertyType } from '../services/caseTradeAnalysis';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
 import { geocodeAddress } from '../services/routeOptimizer';
 import {
@@ -94,6 +96,14 @@ const router = useRouter();
 const webEmbed = inject<boolean>('webEmbed', false);
 /** 웹 시장분석 › 손품분석이 띄웠는가 — 손품조사에서 본건사진 · 2. 입지/개별성만 남기고, 그 사이에 지역분석 수요분석(slot 'son-demand')을 넣는다 */
 const sonpumMode = inject<boolean>('sonpumMode', false);
+/** 앱 손품+현장 › 시세조사 — 웹 손품조사 › 시세분석(SonpumPricePage)을 그대로 띄우고, 그 아래 참고 호가매물 둘(2026-11-09 시안 price-mock).
+ *  예전 1. 실거래가 조사(경매지번 실거래가 · 실거래가 조건분석) · 3. 동일지번 매각물건은 앱에서 뺐다 */
+const appPrice = !webEmbed && !sonpumMode;
+/** 시세분석 종류 — 손품분석(SonpumAnalysisPage)과 같은 가름 */
+const priceKind = computed<CasePropertyType>(() => {
+  const t = auction.value?.propertyType ?? '';
+  return /아파트/.test(t) ? 'apt' : /오피스텔/.test(t) ? 'officetel' : 'villa';
+});
 /** 손품분석의 지금 탭 — 손품결론 탭을 처음 열 때만 결론에 드는 값(1년 거래량 · 세대수)을 받는다 */
 const sonpumTab = inject<Ref<string> | null>('sonpumTab', null);
 /** 시세분석 ④ 호가분석 자리가 있으면 네이버 매물조사(매물호가)를 그리로 옮긴다 */
@@ -3036,7 +3046,7 @@ watch(() => auction.value?.id, async (id) => {
 // 카드마다·단락마다 따로 여닫는다. deal = 급매가의 1.실거래가 조사,
 // listing = 2.저렴매물조사 (예전에는 둘이 location 하나를 같이 썼다)
 // 손품분석 ④ 호가분석은 편집 단추 없이 칸이 늘 열려 있다(적으면 손을 멈출 때 저장)
-const editingSurvey = ref({ field: false, deal: false, listing: sonpumMode, individuality: false, realUser: false, demand: false });
+const editingSurvey = ref({ field: false, deal: false, listing: sonpumMode || appPrice, individuality: false, realUser: false, demand: false });
 /** silent — 사람이 고친 게 아닌 자동 채움(주차 · 엘베, 경매지번 실거래가)은 '최근 작성'에 남기지 않는다 */
 const persistSurvey = async (opts: { silent?: boolean } = {}) => {
   if (!auction.value) return;
@@ -8651,8 +8661,10 @@ const goBack = () => router.back();
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>시세조사</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survPrice') }]" alt="" />
           </header>
-          <div v-if="sonpumMode || !isCollapsed('survPrice')" class="adp-mkt-body">
-            <template v-if="!sonpumMode">
+          <div v-if="sonpumMode || !isCollapsed('survPrice')" :class="['adp-mkt-body', { 'app-price': appPrice }]">
+            <!-- 앱 — 웹 시세분석 그대로(기간 조회 · 매도가 예상 · 지도(접힘) · 거르기 · 근거 유사물건) -->
+            <SonpumPricePage v-if="appPrice && auction" :key="auction.id" :auction="auction" :kind="priceKind" app />
+            <template v-if="!sonpumMode && !appPrice">
             <div class="adp-dm-head">
               <strong class="adp-dm-title">1. 실거래가 조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('deal', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('deal', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'deal'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용</span></span></strong>
               <button v-if="!editingSurvey.deal" class="adp-edit-btn" type="button" @click.stop="editingSurvey.deal = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
@@ -8812,13 +8824,13 @@ const goBack = () => router.back();
             </template>
             <!-- 네이버 매물조사 — 손품분석은 시세분석 ④ 호가분석 탭(#sonAskSlot)으로 옮겨 보인다 -->
             <Teleport :key="`ask-${!!sonAskReady}`" defer to="#sonAskSlot" :disabled="!sonpumMode || !sonAskReady">
-            <div v-if="!sonpumMode" class="adp-dm-head sec2">
+            <div v-if="!sonpumMode && !appPrice" class="adp-dm-head sec2">
               <strong class="adp-dm-title">2. 네이버 매물조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('cheap', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('cheap', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'cheap'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
               <button v-if="!editingSurvey.listing" class="adp-edit-btn" type="button" @click.stop="editingSurvey.listing = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('listing')">완료</button>
             </div>
 
-            <template v-if="!sonpumMode">
+            <template v-if="!sonpumMode && !appPrice">
             <!-- ① 해당 빌라 저가 매물 — 줄을 늘려 가며 적는다 -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
@@ -8926,7 +8938,7 @@ const goBack = () => router.back();
 
 
 
-            <template v-if="!sonpumMode">
+            <template v-if="!sonpumMode && !appPrice">
             <!-- 3. 동일지번 매각물건 — 같은 번지에서 전에 팔린 물건. 값을 가늠하는 바로 옆 사례다 -->
             <div class="adp-dm-head sec2">
               <strong class="adp-dm-title">3. 동일지번 매각물건<PhotoCountMark :n="photoAreaCount('sameLot')" /> <span class="adp-dm-addr">{{ lotWithBuildingAddress }}</span></strong>
@@ -12786,4 +12798,28 @@ select.adp-pub-input option { text-align: center; }
 .bidc-later .lab { font-size: 14px; font-weight: 700; color: #374151; }
 .bidc-later.boxed { position: relative; padding: 14px 18px; border: 1px solid #e5e9f2; border-radius: 10px; background: #fff; }   /* 위 단계 카드와 같은 꼴 */
 .bidc-later.boxed .lab { color: #2b6df3; font-weight: 800; }
+
+/* ===== 앱 손품+현장 › 시세조사 — 시세분석 아래 참고 호가매물 둘(웹 손품조사와 같은 꼴, 2026-11-09) ===== */
+.app-price { display: flex; flex-direction: column; gap: 10px; }
+.app-price .son-lowcase { background: #fff; border: 1px solid #e8ecf3; border-radius: 12px; padding: 12px; }
+.app-price .son-lowcase .adp-mkt-block-head { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
+.app-price .son-lowcase .adp-mkt-block-head .t { display: inline-flex; align-items: center; font-size: 14px; font-weight: 800; color: #111827; }
+.app-price .son-lowcase .adp-mkt-block-head .t::before { content: "참고"; display: inline-flex; align-items: center; height: 20px; margin-right: 6px; padding: 0 7px; border-radius: 5px; background: #eef1f8; color: #374151; font-size: 11px; font-weight: 800; }
+.app-price .son-lowcase .adp-mkt-cells + .adp-mkt-block-head { margin-top: 14px; }
+.app-price .son-ask-note { flex: 1 1 100%; order: 3; font-size: 11.5px; font-weight: 400; color: #6b7280; }
+.app-price .son-lowcase .adp-mkt-step { margin-left: auto; }
+.app-price .son-auto { display: block; font-size: 13px; font-weight: 400; color: #111827; }
+.app-price .son-auto.son-auto-empty { color: #9aa3b2; }
+.app-price .son-lowcase .adp-mkt-cells .cell:has(.son-row-links) { position: relative; }
+.app-price .son-addr-field { display: flex; align-items: center; gap: 4px; }
+.app-price .son-addr-field .adp-mkt-input { flex: 1; min-width: 0; }
+.app-price .son-addr-head { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: normal; font-size: 12.5px; color: #111827; }
+.app-price .son-row-links { display: flex; justify-content: flex-end; gap: 4px; margin: 4px 6px 2px; }   /* 폰 — 입력칸 아래 줄 오른쪽(칸을 가리지 않게) */
+.app-price .son-map-go { display: inline-flex; align-items: center; justify-content: center; width: 24px; min-width: 24px; height: 22px; padding: 0; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; font-family: inherit; font-size: 12px; font-weight: 800; line-height: 1; cursor: pointer; }
+.app-price .son-map-go.naver { color: #03a94d; }
+.app-price .son-map-go.planet { color: #2f5bea; }
+.app-price .son-lowcase .adp-mkt-cells.c4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }   /* 폰 — 두 칸씩(시안), 비고는 아래 한 줄 */
+.app-price .son-lowcase .adp-mkt-cells.c4 .cell:nth-child(3) { border-left: none; }
+.app-price .son-lowcase .adp-mkt-cells.c4 .cell:nth-child(n+3):not(.adp-mkt-wide) { border-top: 1px solid #e3e8f0; }
+.app-price .son-lowcase .adp-mkt-cells .cell .adp-mkt-input { min-width: 0; max-width: 100%; box-sizing: border-box; }
 </style>
