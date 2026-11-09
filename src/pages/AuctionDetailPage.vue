@@ -2924,25 +2924,7 @@ const indivRateNum = (item: IndivItem) => {
   return '0';
 };
 const indivRateOf = (item: IndivItem) => `${indivValue(`${item.id}.rate`) || indivRateNum(item)}%`;
-// 가격율 합계와, 실거래평균가에 그 합계를 적용한 값
-const indivRateTotal = computed(() => {
-  let sum = 0;
-  INDIV_GROUPS.forEach((g) => g.items.forEach((item) => {
-    // 부호를 살려서 더한다 (−15 같은 유니코드 빼기도 -로 맞춘다)
-    const raw = String(indivValue(`${item.id}.rate`) || indivRateNum(item)).replace(/[−–—]/g, '-');
-    const m = raw.match(/-?\d+(\.\d+)?/);
-    if (m) sum += Number(m[0]);
-  }));
-  return sum;
-});
-const indivAdjustedPrice = computed(() => {
-  // 손품조사(웹)는 가격분석의 실거래가 예상(매매)이 기준 — 손품결론은 뺐다(2026-11-02). 옛 물건은 시세분석 ③ 평균
-  const base = sonpumMode
-    ? (auction.value?.marketPicks?.price?.estSale || auction.value?.marketPicks?.condSaleAvg || 0)
-    : mktSaleAvgValue.value;
-  if (base <= 0) return '-';
-  return Math.round(base * (1 + indivRateTotal.value / 100)).toLocaleString('ko-KR');
-});
+// 가격율 합계 · 개별성 적용가는 화면에서 뺐다(웹 2026-11-06 · 앱 2026-11-09)
 // 여러 개 고르는 항목 — 쉼표로 이어 붙인 한 문자열로 저장한다
 const indivMultiOpen = ref('');
 // 층처럼 '목록에서 고르거나 직접 입력'인 칸
@@ -8655,22 +8637,7 @@ const goBack = () => router.back();
               </tbody>
             </table>
             </div>
-            <!-- 평균 · 적용가는 두 표 아래 한 줄로 — 웹은 뺐다(2026-11-06) -->
-            <table v-if="!webEmbed" class="adp-table adp-ind-table adp-ind-foot">
-              <colgroup>
-                <col style="width: 96px" /><col /><col style="width: 68px" />
-              </colgroup>
-              <tfoot>
-                <!-- '실거래가 조건분석 평균' 줄은 뺐다 — 가격율 합계는 적용가 줄 오른쪽 칸으로 옮겨 둔다 -->
-                <tr>
-                  <th class="adp-ind-label">개별성 적용가</th>
-                  <td class="adp-ind-ctl">
-                    <div class="row"><strong class="hi">{{ indivAdjustedPrice }}</strong></div>
-                  </td>
-                  <td class="adp-ind-rate">{{ indivRateTotal }}%</td>
-                </tr>
-              </tfoot>
-            </table>
+            <!-- 개별성 적용가 줄은 뺐다 — 웹(2026-11-06) · 앱(2026-11-09) -->
           </div>
           </div>
           </div>
@@ -10989,14 +10956,8 @@ tr.tone-take { background: #fff5f5; }
 .adp-ind-table tr > :first-child { border-left: 0; }
 .adp-ind-table > thead > tr:first-child > *,
 .adp-ind-table > tfoot > tr:first-child > * { border-top: 0; }
-/* 좁아서 위아래로 쌓일 때(앱) — 두 표 사이를 띄우고, 첫 표는 네 모서리 둥글게 · 둘째 표는 위 모서리 둥글고 아래는 펴서
-   개별성 적용가 줄을 바로 붙인다(적용가 줄이 아래 모서리만 둥글다) */
+/* 좁아서 위아래로 쌓일 때(앱) — 두 표 사이를 띄운다. 두 표 모두 네 모서리 둥글게(개별성 적용가 줄을 뺀 뒤 2026-11-09) */
 .adp-ind-pair { row-gap: 12px; }
-.adp-ind-pair .adp-ind-table + .adp-ind-table { border-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-.adp-ind-pair .adp-ind-table + .adp-ind-table > tbody:last-of-type > tr:last-child > * { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-.adp-ind-foot { margin-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
-.adp-ind-foot > tfoot > tr:last-child > :first-child { border-bottom-left-radius: 7px; }
-.adp-ind-foot > tfoot > tr:last-child > :last-child { border-bottom-right-radius: 7px; }
 /* 그룹 머리줄 (구역내 / 단지내 개별성) */
 .adp-ind-head th {
   background: #f3f6fb; font-weight: 700; font-size: 12.5px; color: #6b7280; text-align: center;
