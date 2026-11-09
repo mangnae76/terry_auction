@@ -85,7 +85,6 @@ const onLogout = async () => {
       </div>
     </div>
     <div class="amh-row amh-row-bottom">
-      <span class="amh-greet"><strong>{{ displayNickname }}</strong><span class="amh-greet-nim">님</span></span>
       <button v-if="SHOW_PAY" type="button" class="amh-pay" @click="router.push('/billing')">결제하기</button>
       <button type="button" class="amh-gift" aria-label="이벤트" @click="router.push({ path: '/more', query: { sec: 'event' } })">
         <!-- 선물상자 — 이벤트 자리로 간다 -->
@@ -114,6 +113,8 @@ const onLogout = async () => {
           <path d="M4.8 20.2c1.3-3.6 3.9-5.4 7.2-5.4s5.9 1.8 7.2 5.4" />
         </svg>
       </button>
+      <!-- 닉네임은 사람 아이콘 오른쪽 — 줄의 맨 끝 -->
+      <span class="amh-greet"><strong>{{ displayNickname }}</strong><span class="amh-greet-nim">님</span></span>
       <div v-if="menuOpen" class="amh-user-menu-wrap" @click.self="closeMenu">
         <ul class="amh-user-menu" @click.stop>
           <li class="amh-user-menu-head">마이턴 회원정보</li>
@@ -206,13 +207,13 @@ const onLogout = async () => {
 
 
 /* 인사말과 종 사이도 종·사람 사이와 같은 만큼 띄운다 */
-.amh-greet { font-size: 11px; color: #ffb38a; font-weight: 400; white-space: nowrap; flex-shrink: 0; margin-right: 9px; }
-.amh-greet strong { color: #fff; font-weight: 400; margin: 0 2px; }
+.amh-greet { font-size: 11px; color: #ffb38a; font-weight: 400; white-space: nowrap; flex-shrink: 0; }
+.amh-greet strong { color: #fff; font-weight: 400; margin: 0 1px 0 0; }
 .amh-greet-nim { color: #fff; }
 .amh-greet-icon { width: 19px; height: 19px; flex-shrink: 0; display: block; }
 .amh-user-btn { color: #fff; }
 .amh-user-btn { border: none; background: transparent; padding: 3px; cursor: pointer; display: inline-flex; align-items: center; }
-/* 인사말 오른쪽의 결제하기·선물상자 */
+/* 결제하기·선물상자 */
 .amh-pay {
   border: none; background: transparent; padding: 2px 0; cursor: pointer;
   font-family: inherit; font-size: 11px; font-weight: 400; color: #fff;
