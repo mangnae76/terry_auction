@@ -120,7 +120,7 @@ const info = ref<Ebook | null>(null);
     </header>
     <nav class="cs-tabs" role="tablist">
       <button v-for="[k, label] in TABS" :key="k" type="button" role="tab" :aria-selected="tab === k" :class="{ on: tab === k }" @click="pickTab(k)">
-        {{ label }}<i v-if="k === 'mine' && mineCount">{{ mineCount.toLocaleString('ko-KR') }}</i>
+        {{ label }}<i v-if="k === 'mine' && mineCount">({{ mineCount.toLocaleString('ko-KR') }})</i>
       </button>
     </nav>
 
@@ -162,8 +162,9 @@ const info = ref<Ebook | null>(null);
               <span class="k">{{ KIND_LABEL[kindOf(b)] }}</span>
               <span :class="isPaidEbook(b) ? 'p' : 'f'">{{ isPaidEbook(b) ? '유료' : '무료' }}</span>
               <span v-if="isUpcomingEbook(b)" class="s">출시예정</span>
+              <!-- 칩과 한 줄 — 오른쪽 끝 -->
+              <button v-if="descOf(b).trim()" type="button" class="cs-more" @click="info = b">자세히</button>
             </div>
-            <button v-if="descOf(b).trim()" type="button" class="cs-more" @click="info = b">자세히보기 ›</button>
             <div class="cs-act">
               <button type="button" :class="['cs-go', { soon: isUpcomingEbook(b) }]" :disabled="busy === b.id" @click="onAct(b)">{{ actLabel(b) }}</button>
               <button type="button" class="cs-share" aria-label="공유하기" @click="share(b)">
@@ -222,7 +223,7 @@ const info = ref<Ebook | null>(null);
 .cs-tabs button { position: relative; min-height: 0; padding: 6px 2px 9px; border: 0; border-radius: 0; background: none; font: inherit; font-size: 13.5px; font-weight: 700; color: #6b7280; white-space: nowrap; cursor: pointer; }
 .cs-tabs button.on { color: #111827; }
 .cs-tabs button.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; border-radius: 2px; background: #f4700a; }
-.cs-tabs i { margin-left: 2px; font-style: normal; font-size: 11px; color: #2b6df3; }
+.cs-tabs i { margin-left: 1px; font-style: normal; font-size: 11px; color: #2b6df3; }
 .cs-empty { margin: 0; padding: 28px 0; text-align: center; font-size: 13px; color: #9aa6c4; }
 .cs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .cs-card { border: 1px solid #e8ebf1; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
@@ -234,13 +235,13 @@ const info = ref<Ebook | null>(null);
 .cs-body h4 { margin: 0; font-size: 12.5px; font-weight: 800; line-height: 1.35; color: #111827; cursor: pointer; }
 .cs-body h4 em, .cs-dlg h3 em, .cs-view h3 em { font-style: normal; color: #2b6df3; }
 .cs-body p { margin: 0; font-size: 11px; line-height: 1.4; color: #6b7280; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.cs-meta { display: flex; flex-wrap: wrap; gap: 3px; }
-.cs-meta span { padding: 1px 5px; border-radius: 4px; font-size: 10.5px; font-weight: 700; }
+.cs-meta { display: flex; flex-wrap: nowrap; align-items: center; gap: 2px; white-space: nowrap; min-width: 0; }
+.cs-meta span { flex: 0 1 auto; min-width: 0; overflow: hidden; padding: 1px 3px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: -0.3px; }
 .cs-meta .k { background: #fff1e6; color: #c2410c; }
 .cs-meta .f { background: #e9f6ee; color: #1b7f3b; }
 .cs-meta .p { background: #eaf1ff; color: #1d4ed8; }
 .cs-meta .s { background: #fdeeee; color: #dc2626; }
-.cs-more { align-self: flex-end; min-height: 0; padding: 0; border: 0; background: none; font: inherit; font-size: 11px; font-weight: 700; color: #2b6df3; cursor: pointer; }
+.cs-more { flex: none; margin-left: auto; min-height: 0; padding: 0 0 0 3px; border: 0; background: none; font: inherit; font-size: 10.5px; font-weight: 700; color: #2b6df3; cursor: pointer; }
 .cs-act { display: flex; gap: 4px; margin-top: auto; }
 .cs-go { flex: 1; min-width: 0; min-height: 0; height: 30px; padding: 0 4px; border: 1px solid #2b6df3; border-radius: 6px; background: #2b6df3; color: #fff; font: inherit; font-size: 11.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 .cs-go.soon { border-color: #d0d5dd; background: #f6f7f9; color: #9ca3af; }
