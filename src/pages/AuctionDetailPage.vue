@@ -6349,8 +6349,9 @@ const goBack = () => router.back();
             </tbody>
           </table>
         </section>
-        <!-- 인근 매각사례 — PDF 분석 자료(물건 등록 때 읽은 인근 매각 통계). 손품결론에서 옮겨 왔다(2026-11-02) -->
-        <section class="adp-card">
+        <!-- 인근 매각사례 — PDF 분석 자료(물건 등록 때 읽은 인근 매각 통계). 손품결론에서 옮겨 왔다(2026-11-02).
+             앱 물건정보에서는 뺐다(2026-11-09) — 웹만 -->
+        <section v-if="webEmbed" class="adp-card">
           <header class="adp-card-head" @click="toggleSection('nearBid')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18" /><path d="M7 15l4-4 3 3 5-6" /></svg>인근 매각사례 <span class="adp-head-note">{{ auction?.address?.split(' ').slice(0, 3).join(' ') || '' }} {{ auction?.propertyType || '' }}</span></h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('nearBid') }]" alt="" />
