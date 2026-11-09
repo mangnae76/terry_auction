@@ -2318,21 +2318,9 @@ watch(
 /** 고정 줄에 늘 세워 두는 칸 — A·B·C 셋. 아직 만들지 않은 안은 빈 칸으로 둔다.
  *  D안은 만들 수는 있지만 여기 세우지 않는다 — 넷이 서면 한 줄을 넘는다. */
 const PROFIT_NAV_LABELS = ['A', 'B', 'C', 'D']; // 산정표가 D안까지 있으니 칩도 넷
-/** 고정 줄에 세울 입찰가 — '1.05억'. 칸이 좁아 원 단위로는 셋이 못 선다 */
-const eokText = (n: number) => (n > 0 ? `${(Math.round(n / 1000000) / 100).toFixed(2)}억` : '-');
-/** 그 표로 건너뛴다. 고정 줄 아래에 표 머리가 서도록 그만큼 덜 내린다 */
 /** 지금 보고 있는 안 — 위 칩에서 고른다. 표 · 돈이 나가는 순서는 이 안 하나만 그린다 (앱·웹) */
 const selectedPlan = ref(0);
 watch(() => profitScenarios.value.length, (n) => { if (selectedPlan.value > n - 1) selectedPlan.value = Math.max(0, n - 1); });
-const goProfitTable = (si: number) => {
-  selectedPlan.value = si;
-  const el = document.getElementById(`profit-tbl-${si}`);
-  if (!el) return;
-  const head = document.querySelector('.adp-profit-sticky');
-  const offset = head ? head.getBoundingClientRect().bottom : 0;
-  const y = el.getBoundingClientRect().top + window.scrollY - offset - 6;
-  window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
-};
 
 const scSetAmountByPct = (sc: ProfitScenario, key: BidCostAmountKey, raw: string | number) => {
   const pct = typeof raw === 'number' ? raw : parseFloat(raw);
@@ -2507,34 +2495,6 @@ const removeProfitScenario = () => {
   });
 };
 
-/** 표 삭제 — 그 안 하나를 지운다. 표가 하나뿐이면 지우지 않는다.
- *  A안을 지우면 B안 값이 A안 자리(기본 표)로 올라오고 뒤 안들이 한 칸씩 당겨진다 */
-const removeProfitScenarioAt = (si: number) => {
-  const a = auction.value;
-  if (!a?.bidScenarios?.length || si < 0) return;
-  const label = PROFIT_LABELS[si] ?? `${si + 1}안`;
-  askConfirm({
-    title: `${label}을 지울까요?`,
-    desc: '그 표에 적어 둔 값이 같이 사라집니다.',
-    okLabel: '지우기',
-    skipKey: '',
-    run: async () => {
-      if (si === 0) {
-        const next = a.bidScenarios?.shift();
-        if (!next) return;
-        a.metrics.myBidValue = next.myBidValue;
-        a.expectedSaleValue = next.expectedSaleValue;
-        a.expectedSaleValue2 = next.expectedSaleValue2 ?? '';
-        a.bidCost = next.bidCost;
-      } else {
-        a.bidScenarios?.splice(si - 1, 1);
-      }
-      if (selectedPlan.value >= si) selectedPlan.value = Math.max(0, selectedPlan.value - 1);
-      await store.saveAuction(a);
-      flashToast(`${label}이 삭제되었습니다.`, 'success');
-    },
-  });
-};
 
 const startEditProfit = () => {
   editingProfit.value = true;
@@ -6418,71 +6378,64 @@ const goBack = () => router.back();
               <em>입찰일</em>
               <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ shortYmd(auction.eventDate) || '-' }}</span></span>
             </span>
-            <!-- 표 스텝퍼와 별은 한 묶음 — 자리가 모자라 줄이 내려가도 둘이 같이 내려간다 -->
-            <span class="adp-pd-tail">
-            <span class="adp-mkt-step">
-              <span class="lab">표</span>
-              <button type="button" aria-label="산정표 삭제" :disabled="profitScenarios.length <= 1" @click.stop="removeProfitScenario">−</button>
-              <button type="button" aria-label="산정표 추가" :disabled="profitScenarios.length >= PROFIT_MAX" @click.stop="addProfitScenario">＋</button>
-            </span>
-            </span>
+            <!-- 표 −/＋ 는 뺐다(2026-11-09) — 아래 A~D안 고르기 줄에서 안을 늘린다 -->
           </div>
-          <!-- A·B·C 입찰가 — 표를 한참 내려 보다가도 다른 안이 얼마였는지 보여야 한다.
-               눌러서 그 표로 건너뛴다. 표가 늘면 옆으로 밀어 본다 -->
-          <!-- 웹은 안 칩 줄을 뺀다 — 표를 누르거나 칸에 들어가면 그 안이 골라진다 -->
-          <div v-if="!isCollapsed('profit') && !webEmbed" class="adp-profit-nav">
-            <!-- 안 칩 — 크게 'A안', 그 아래 낙찰 비중 · 입찰가. 고른 안은 파랗게, 그 안의 표만 아래에 선다.
-                 안을 지우는 단추는 아래 표 이름 줄(초기화 옆)에 있다 -->
-            <div
-              v-for="(label, si) in PROFIT_NAV_LABELS"
-              :key="`nav-${label}`"
-              :class="['adp-profit-chip', { empty: !profitScenarios[si], on: si === selectedPlan && !!profitScenarios[si] }]"
-              role="button"
-              :tabindex="profitScenarios[si] ? 0 : -1"
-              :aria-pressed="si === selectedPlan"
-              @click="profitScenarios[si] && goProfitTable(si)"
-              @keydown.enter="profitScenarios[si] && goProfitTable(si)"
-            >
-              <b class="adp-chip-plan">{{ label }}안</b>
-              <!-- 오른쪽은 '입찰가 / 비중' 한 줄 (웹은 원 단위, 앱은 칸이 좁아 '1.20억') -->
-              <span class="adp-chip-vals">
-                <strong>{{ profitScenarios[si] ? (webEmbed ? `${formatMoney(scBid(profitScenarios[si]))}원` : eokText(scBid(profitScenarios[si]))) : '-' }}</strong>
-                <small v-if="profitScenarios[si]">/ {{ formatPct(scBidPct(profitScenarios[si])) }}</small>
-              </span>
+          <!-- 앱 — 웹과 같은 안 고르기 줄(2026-11-09 시안 profit-mock): A~D안(체크 = 그 안으로 확정 · 하나만, 이름 = 그 안 보기, 빈 다음 칸 = 안 하나 더) · 확정필요 · 초기화 -->
+          <div v-if="!isCollapsed('profit') && !webEmbed" class="bida-plans app-plans">
+            <div class="bida-seg" role="tablist">
+              <div
+                v-for="(label, ti) in PROFIT_NAV_LABELS"
+                :key="`aseg-${label}`"
+                :class="['bida-plan', { on: ti === selectedPlan, add: !profitScenarios[ti] }]"
+              >
+                <label v-if="profitScenarios[ti]" :class="['bida-ck', { on: ti === confirmedIdx }]" :title="`${label}안으로 확정`">
+                  <input type="checkbox" :checked="ti === confirmedIdx" :aria-label="`${label}안 확정`" @change="confirmPlan(ti)" />
+                  <i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10" /></svg></i>
+                </label>
+                <button
+                  type="button"
+                  role="tab"
+                  class="bida-plan-name"
+                  :aria-selected="ti === selectedPlan"
+                  :disabled="!profitScenarios[ti] && ti !== profitScenarios.length"
+                  @click="pickPlanTab(ti)"
+                >{{ profitScenarios[ti] ? `${label}안` : `＋${label}` }}</button>
+              </div>
             </div>
+            <span :class="['bida-okname', { none: confirmedIdx < 0 }]">{{ confirmedIdx >= 0 ? `${PROFIT_NAV_LABELS[confirmedIdx]}안 확정` : '확정필요' }}</span>
+            <button v-if="profitScenarios[selectedPlan]" type="button" class="adp-pd-reset" title="이 안의 대출·취득세·법무비 비중을 기본값으로" @click.stop="resetScenarioRates(profitScenarios[selectedPlan])">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>초기화
+            </button>
           </div>
           </div>
           <!-- 산정표 — A안·B안… 생김새가 같아 한 벌만 그리고 값만 갈아 끼운다 -->
           <template v-for="(sc, si) in profitScenarios" :key="sc.label">
-          <div v-if="!isCollapsed('profit') && !webNew" :class="['adp-profit-head-row', { 'is-dim': si !== selectedPlan }]" @pointerdown="webEmbed && (selectedPlan = si)" @focusin="webEmbed && (selectedPlan = si)">
-            <!-- 표가 하나뿐이어도 'A안' 을 낸다 — 둘이 될 때 이름이 생기면 어느 쪽이
-                 먼저 적은 표인지 헷갈린다 -->
-            <span class="adp-profit-label">{{ sc.label }}</span>
-            <!-- 웹은 비고 칸을 뺀다 — 적어 둔 값은 그대로 남는다 -->
-            <input
-              v-if="!webEmbed"
-              v-model="sc.cost.note"
-              class="adp-profit-note"
-              placeholder="비고"
-            />
-            <button type="button" class="adp-pd-reset" title="이 표의 대출·취득세·법무비 비중을 기본값으로" @click.stop="resetScenarioRates(sc)">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" />
-              </svg>초기화
-            </button>
-            <!-- 표 삭제 — 초기화 오른쪽. 표가 둘 이상일 때만 (앱·웹) -->
-            <button
-              v-if="profitScenarios.length > 1"
-              type="button"
-              class="adp-pd-reset adp-pd-del"
-              :aria-label="`${sc.label} 표 삭제`"
-              :title="`${sc.label} 표 삭제`"
-              @click.stop="removeProfitScenarioAt(si)"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
-            </button>
+          <!-- 앱 — 요약 상자 넷(웹과 같은 값). 표 위 안 이름 · 비고 · 초기화 줄은 뺐다(위 안 고르기 줄에 있다, 2026-11-09) -->
+          <div v-if="!isCollapsed('profit') && !webNew && si === selectedPlan" class="bida app-bida">
+            <div class="bida-sum">
+              <div class="bida-kpi">
+                <span class="lab">입찰가</span>
+                <strong>{{ formatMoney(scBid(sc)) }}<small>원</small></strong>
+                <span class="sub">감정가의 {{ formatPct(scBidPct(sc)) }}</span>
+              </div>
+              <div class="bida-kpi">
+                <span class="lab">예상 매도가</span>
+                <strong>{{ formatMoney(scSale(sc)) }}<small>원</small></strong>
+                <span class="sub">필요한 내 돈 {{ cashMoney(scCashOut(sc).total) }}</span>
+              </div>
+              <div class="bida-kpi">
+                <span class="lab">실투자금</span>
+                <strong>{{ formatMoney(scNetInvestment(sc)) }}<small>원</small></strong>
+                <span class="sub">대출 {{ cashMoney(sc.cost.loanAmount ?? 0) }}({{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}) 제외</span>
+              </div>
+              <div class="bida-kpi navy">
+                <span class="lab">{{ sc.label }} 세후 순이익<span v-if="si === confirmedIdx" class="bida-ok">확정</span></span>
+                <strong :class="{ neg: scAfterTaxProfit(sc) < 0 }">{{ formatMoney(scAfterTaxProfit(sc)) }}<small>원</small></strong>
+                <span :class="['sub', 'rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span>
+              </div>
+            </div>
           </div>
-          <table v-if="!isCollapsed('profit') && !webNew" :id="`profit-tbl-${si}`" :class="['adp-table', 'adp-profit-table', 'v2', { alt: si > 0, 'is-dim': si !== selectedPlan }]" @pointerdown="webEmbed && (selectedPlan = si)" @focusin="webEmbed && (selectedPlan = si)">
+          <table v-if="!isCollapsed('profit') && !webNew && si === selectedPlan" :id="`profit-tbl-${si}`" :class="['adp-table', 'adp-profit-table', 'v2', { alt: si > 0, 'is-dim': si !== selectedPlan }]" @pointerdown="webEmbed && (selectedPlan = si)" @focusin="webEmbed && (selectedPlan = si)">
             <thead>
               <tr><th>구분</th><th>상세</th><th class="r">비중 (%)</th><th class="r">금액</th></tr>
             </thead>
@@ -6869,30 +6822,48 @@ const goBack = () => router.back();
               </div>
             </template>
           </section>
+          <!-- 앱 — 돈이 나가는 순서 아래 개인소득세율 · 계산 공식 · 자동 적용 항목(웹 수익분석과 같은 내용, 2026-11-09) -->
+          <div v-if="!isCollapsed('profit') && si === selectedPlan && !webNew" class="bida app-bida app-bida-low">
+            <section class="bida-card bida-taxr">
+              <h3 class="bida-h">개인소득세율<small>종합소득세</small></h3>
+              <div v-for="(t, ti) in TAX_REF" :key="t[1]" :class="['bx-row', { last: ti === TAX_REF.length - 1, cur: ti === taxRefIdx }]">
+                <span class="bx-k">{{ t[1] }}</span>
+                <span class="bx-d"><span v-if="ti === taxRefIdx" class="cur-chip">{{ sc.label }} 구간</span></span>
+                <span class="bx-p"><b class="bx-f pct ro">{{ t[2] }}</b><i>%</i></span>
+                <span class="bx-a"><b class="bx-f ro">{{ t[3] ? `공제 ${t[3].toLocaleString('ko-KR')}만` : '-' }}</b></span>
+              </div>
+            </section>
+            <section class="bida-card bida-formula">
+              <h3 class="bida-h">계산 공식</h3>
+              <dl>
+                <dt>양도차익<small>사업소득금액</small></dt>
+                <dd><em>예상 매도가 − 입찰가 − 필요경비합계</em><span>{{ fmtN(scSale(sc)) }} − {{ fmtN(scBid(sc)) }} − {{ fmtN(scTotalCosts(sc)) }} = <b>{{ fmtN(scGain(sc)) }}</b></span></dd>
+                <dt>사업소득세</dt>
+                <dd><em>사업소득금액 × 세율 − 누진공제</em><span>{{ fmtN(Math.max(0, scGain(sc))) }} × {{ scTaxRate(sc) }}% − {{ fmtN(scTaxDeduct(sc)) }} = <b>{{ fmtN(scTransferTax(sc)) }}</b></span></dd>
+                <dt>지방세</dt>
+                <dd><em>사업소득세 × {{ scLocalTaxRate(sc) }}%</em><span>{{ fmtN(scTransferTax(sc)) }} × {{ scLocalTaxRate(sc) }}% = <b>{{ fmtN(scLocalTax(sc)) }}</b></span></dd>
+                <dt>세후 순이익<small>매도 수익</small></dt>
+                <dd><em>사업소득금액 − 사업소득세 − 지방세</em><span>{{ fmtN(scGain(sc)) }} − {{ fmtN(scTransferTax(sc)) }} − {{ fmtN(scLocalTax(sc)) }} = <b>{{ fmtN(scAfterTaxProfit(sc)) }}</b></span></dd>
+                <dt>실투자금</dt>
+                <dd><em>입찰가 − 대출 + 필요경비합계</em><span>{{ fmtN(scBid(sc)) }} − {{ fmtN(sc.cost.loanAmount ?? 0) }} + {{ fmtN(scTotalCosts(sc)) }} = <b>{{ fmtN(scNetInvestment(sc)) }}</b></span></dd>
+                <dt>수익률</dt>
+                <dd><em>세후 순이익 ÷ 실투자금 × 100</em><span>{{ fmtN(scAfterTaxProfit(sc)) }} ÷ {{ fmtN(scNetInvestment(sc)) }} × 100 = <b>{{ formatPct(scAfterTaxRate(sc)) }}</b></span></dd>
+              </dl>
+            </section>
+            <section class="bida-auto">
+              <h3 class="bida-h">자동 적용 항목</h3>
+              <ul>
+                <li>취득세 · 법무비(채권) — 입찰가의 {{ fmtPctPlain(scPctOfBid(sc, sc.cost.acquisitionTaxAmount)) }}% · {{ fmtPctPlain(scPctOfBid(sc, sc.cost.legalCostAmount)) }}%, 입찰가가 바뀌면 따라 계산</li>
+                <li>중도상환 · 이자 — 대출금 기준, 이자는 연이율의 3개월분</li>
+                <li>사업소득세 — 매매사업자(종합소득세) 기준, 사업소득금액 구간별 세율 · 누진공제 자동</li>
+                <li>지방세 — 사업소득세의 {{ scLocalTaxRate(sc) }}%</li>
+              </ul>
+              <p class="todo">보유주택 수 · 규제지역에 따른 취득세, 낙찰가 구간별 인지 · 채권은 준비 중입니다</p>
+            </section>
+          </div>
           </template>
         </section>
 
-        <section v-if="!webNew" class="adp-card">
-          <header class="adp-card-head" @click="toggleSection('taxRef')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>개인소득세율 <span class="adp-head-note">종합소득세</span></h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('taxRef') }]" alt="" />
-          </header>
-          <table v-if="!isCollapsed('taxRef') && !webNew" class="adp-table adp-tax-ref">
-            <thead>
-              <tr><th>과세표준</th><th class="r">세율</th><th class="r">누진공제</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>1,400만원 이하</td><td class="r">6%</td><td class="r">-</td></tr>
-              <tr><td>5,000만원 이하</td><td class="r">15%</td><td class="r">126만원</td></tr>
-              <tr><td>8,800만원 이하</td><td class="r">24%</td><td class="r">576만원</td></tr>
-              <tr><td>1억5천만원 이하</td><td class="r">35%</td><td class="r">1,544만원</td></tr>
-              <tr><td>3억원 이하</td><td class="r">38%</td><td class="r">1,994만원</td></tr>
-              <tr><td>5억원 이하</td><td class="r">40%</td><td class="r">2,594만원</td></tr>
-              <tr><td>10억원 이하</td><td class="r">42%</td><td class="r">3,594만원</td></tr>
-              <tr><td>10억원 초과</td><td class="r">45%</td><td class="r">6,594만원</td></tr>
-            </tbody>
-          </table>
-        </section>
       </template>
 
       <template v-if="activeTab === 'verify' && webEmbed">
@@ -12854,4 +12825,40 @@ select.adp-pub-input option { text-align: center; }
 .adp-body.is-app :is(.adp-fs-multi, .adp-ind-multi) .adp-agency-option { padding: 3px 7px; min-height: 0; line-height: 1.35; }
 .adp-body.is-app .adp-survey-row .adp-multi-list { display: grid; gap: 3px; }
 .adp-body.is-app .adp-survey-row .adp-multi-item { padding: 5px 10px; }
+
+/* ===== 앱 수익분석 — 웹 꼴(시안 profit-mock, 2026-11-09): 안 고르기 줄 · 요약 넷(2×2) · 클래식 표 · 돈이 나가는 순서 · 세율 · 공식 · 자동 적용 ===== */
+.app-plans { display: flex; align-items: center; gap: 6px; margin: 8px 0 2px; }
+.app-plans .bida-seg { flex: 1 1 auto; min-width: 0; display: flex; gap: 2px; padding: 3px; }
+.app-plans .bida-seg .bida-plan { flex: 1 1 0; min-width: 0; justify-content: center; padding-left: 4px; }
+.app-plans .bida-seg .bida-plan.add { padding-left: 0; }
+.app-plans .bida-plan-name { height: 30px; padding: 0 4px; font-size: 12.5px; white-space: nowrap; }
+.app-plans .bida-plan.add .bida-plan-name { padding-left: 4px; }
+.app-plans .bida-ck { width: 18px; height: 18px; flex: 0 0 auto; }
+.app-plans .bida-ck i { width: 14px; height: 14px; }
+.app-plans .bida-okname { flex: 0 0 auto; font-size: 11px; font-weight: 700; color: #1f7a4a; white-space: nowrap; }
+.app-plans .bida-okname.none { color: #9aa3b2; font-weight: 400; }
+.app-plans .adp-pd-reset { flex: 0 0 auto; }
+.app-bida { gap: 8px; margin: 8px 0; }
+.app-bida .bida-sum { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.app-bida .bida-kpi { gap: 2px; padding: 9px 10px; border-radius: 10px; }
+.app-bida .bida-kpi .lab, .app-bida .bida-kpi .sub { font-size: 11px; }
+.app-bida .bida-kpi strong { font-size: 16px; letter-spacing: -0.3px; }
+.app-bida .bida-kpi strong small { margin-left: 2px; font-size: 11px; }
+.app-bida .bida-kpi .bida-ok { margin-left: 4px; }
+.app-bida .bida-card { padding: 12px; border-radius: 12px; }
+.app-bida .bida-h { font-size: 15px; }
+.app-bida .bida-h small { margin-left: 6px; font-size: 11px; font-weight: 400; color: #9aa3b2; }
+.app-bida .bx-row { grid-template-columns: minmax(0, 1fr) auto 42px 86px; column-gap: 6px; min-height: 32px; font-size: 12.5px; }
+.app-bida .bida-taxr .bx-row.cur { margin: 0 -6px; padding: 0 6px; }
+.app-bida .bx-f.ro { font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.app-bida .bx-f.pct { font-size: 13px; }
+.app-bida .bida-taxr .bx-row.cur .bx-f.ro { font-weight: 800; }
+.app-bida .bida-taxr .cur-chip { font-size: 10.5px; padding: 1px 6px; }
+.app-bida .bida-formula dl { grid-template-columns: 72px minmax(0, 1fr); column-gap: 8px; }
+.app-bida .bida-formula dt { font-size: 12.5px; }
+.app-bida .bida-formula dt small { font-size: 10.5px; }
+.app-bida .bida-formula dd em, .app-bida .bida-formula dd span { font-size: 11.5px; }
+.app-bida .bida-auto { padding: 12px; border-radius: 12px; }
+.app-bida .bida-auto ul { margin: 0; padding-left: 16px; font-size: 12px; line-height: 1.7; color: #374151; }
+.app-bida .bida-auto .todo { margin: 4px 0 0; font-size: 11px; color: #9aa3b2; }
 </style>
