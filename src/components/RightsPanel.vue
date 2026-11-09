@@ -276,7 +276,8 @@ const evLevelTone = computed(() => { const l = res.value?.evict.level; return l 
 .rp-doc-h { display: flex; align-items: center; gap: 6px; }
 .rp-doc-h b { font-size: 13px; font-weight: 800; color: #111827; }
 .rp-doc-h b small { margin-left: 3px; font-size: 11px; font-weight: 500; color: #6b7280; }
-.rp-file { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+/* 올린 파일 이름 위에 가름선 — 서류 이름 줄과 구분(웹 .rt-file 과 같게) */
+.rp-file { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e3e8f0; }
 .rp-name { flex: 1 1 auto; min-width: 0; border: 0; background: none; padding: 0; text-align: left; font-family: inherit; font-size: 12px; color: #2b6df3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .rp-x { flex: 0 0 20px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 20px; min-width: 20px; height: 20px; padding: 0; border: 0; border-radius: 50%; background: #6b7280; color: #fff; font-size: 13px; line-height: 1; cursor: pointer; }
 .rp-x:disabled { opacity: .45; }

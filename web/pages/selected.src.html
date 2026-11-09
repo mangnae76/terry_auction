@@ -1729,7 +1729,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .rt-tag.ok { background: color-mix(in srgb, #15803d 15%, var(--surface)); color: #15803d; }
 .rt-doc p { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--muted); word-break: keep-all; }
 .rt-doc .rt-how { white-space: nowrap; letter-spacing: -0.3px; overflow: hidden; text-overflow: ellipsis; }   /* 한 줄로 — 글자 하한 12 그대로, 자간만 좁힘 */
-.rt-file { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.rt-file { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }   /* 올린 파일 이름 위에 가름선 — 서류 이름 · 안내와 구분(2026-11-09, 앱 RightsPanel 과 같게) */
 .rt-name { min-width: 0; flex: 1; padding: 0; border: 0; background: none; text-align: left; font-size: 13px; color: var(--blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 .rt-name:hover { text-decoration: underline; }
 .rt-x { flex: none; display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: rgba(17, 24, 39, .65); color: #fff; cursor: pointer; }   /* 앱 서류 칸 빼기(.adp-doc-x)와 같은 동그라미 X */
