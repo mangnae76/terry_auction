@@ -83,11 +83,11 @@ const onLogout = async () => {
     </div>
     <div class="amh-row amh-row-bottom">
       <button type="button" class="amh-bell" aria-label="공지" @click="router.push('/news')">
-        <!-- 확성기 — 공지. 새 글이 있으면 종처럼 빨간 점 -->
+        <!-- 확성기 — 공지. 종과 같은 높이로 그린다. 새 글이 있으면 종처럼 빨간 점 -->
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M3.5 10v4a1 1 0 0 0 1 1h2.5l7 4.5v-15L7 9H4.5a1 1 0 0 0-1 1Z" />
-          <path d="M17.5 9a4 4 0 0 1 0 6" />
-          <path d="M7.5 15l1 4.5" />
+          <path d="M3.5 9.5v5a1 1 0 0 0 1 1h2.5l8.5 5V3l-8.5 5.5H4.5a1 1 0 0 0-1 1Z" />
+          <path d="M19 9a4.2 4.2 0 0 1 0 6" />
+          <path d="M7.5 15.5l1.3 5" />
         </svg>
         <i v-if="newsNew" class="amh-bell-dot" />
       </button>
@@ -284,6 +284,11 @@ const onLogout = async () => {
   background: rgba(17, 24, 39, 0.92); color: #fff; font-size: 12px; white-space: nowrap;
 }
 .amh-user-menu-btn:hover { background: #f9fafb; }
+
+/* 넓은 폰(420px 이상) — 로고에 닿지 않는 만큼 날짜 · 결제하기 · 닉네임을 13px로 */
+@media (min-width: 420px) {
+  .amh-cal-btn, .amh-pay, .amh-greet { font-size: 13px; }
+}
 
 @media (max-width: 400px) {
   /* 좁은 손전화 */
