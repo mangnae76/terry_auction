@@ -183,8 +183,8 @@ const onLogout = async () => {
 .amh-brand {
   display: flex; align-items: center; line-height: 0; flex-shrink: 0;
   margin-top: 8px; margin-bottom: -8px;
-  /* 왼쪽 끝을 아래 검색줄의 돋보기와 같은 자리에 둔다 */
-  margin-left: -2px;
+  /* 왼쪽 끝을 아래 검색줄의 돋보기와 같은 자리에 둔다 — 그림 둘레 빈 여백만큼 더 당긴다(재 보니 3.6px 안쪽이었다) */
+  margin-left: -5.5px;
 }
 /* 아이콘 네 개(공지 · 알림 · 달력 · 사람)는 그려진 높이를 같게(약 13.7px) — 그림마다 여백이 달라 칸 크기는
    공지 · 알림 17 · 달력 15 · 사람 19 로 다르다. 좁은 폰에서도 줄이지 않는다 */
