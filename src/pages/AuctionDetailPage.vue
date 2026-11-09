@@ -12811,7 +12811,7 @@ select.adp-pub-input option { text-align: center; }
 .adp-body.is-app .adp-survey-row .adp-multi-item { padding: 5px 10px; }
 
 /* ===== 앱 수익분석 — 웹 꼴(시안 profit-mock, 2026-11-09): 안 고르기 줄 · 요약 넷(2×2) · 클래식 표 · 돈이 나가는 순서 · 세율 · 공식 · 자동 적용 ===== */
-.app-plans { display: flex; align-items: center; gap: 6px; margin: 8px 0 2px; }
+.app-plans { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; }   /* 머리 줄 바로 아래로 올리고 아래 틈을 둔다(고정 띠 아래 선에 붙지 않게) */
 .app-plans .bida-seg { flex: 1 1 auto; min-width: 0; display: flex; gap: 2px; padding: 3px; }
 .app-plans .bida-seg .bida-plan { flex: 1 1 0; min-width: 0; justify-content: center; padding-left: 4px; }
 .app-plans .bida-seg .bida-plan.add { padding-left: 0; }
