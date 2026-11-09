@@ -186,8 +186,10 @@ const onLogout = async () => {
   /* 왼쪽 끝을 아래 검색줄의 돋보기와 같은 자리에 둔다 */
   margin-left: -2px;
 }
+/* 아이콘 네 개(공지 · 알림 · 달력 · 사람)는 그려진 높이를 같게(약 13.7px) — 그림마다 여백이 달라 칸 크기는
+   공지 · 알림 17 · 달력 15 · 사람 19 로 다르다. 좁은 폰에서도 줄이지 않는다 */
 .amh-icon {
-  width: 13px; height: 13px;
+  width: 15px; height: 15px;
   object-fit: contain;
   display: block;
   filter: brightness(0) invert(1);
@@ -295,8 +297,6 @@ const onLogout = async () => {
   /* 아랫줄이 로고에 닿지 않게 틈을 줄인다 */
   .amh-row-bottom { gap: 3px; }
   .amh-cal-btn, .amh-pay, .amh-bell { margin-right: 4px; }
-  .amh-icon { width: 11px; height: 11px; }
   .amh-greet { font-size: 12px; }
-  .amh-greet-icon { width: 14px; height: 14px; }
 }
 </style>
