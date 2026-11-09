@@ -136,7 +136,7 @@ const areaView = ref<'all' | 'near'>('all');
 const ALL_TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'basic', label: '물건정보' },
   { key: 'rights', label: '권리분석' },
-  { key: 'survey', label: '손품+현장' },
+  { key: 'survey', label: '손품조사' },   // 앱 — '손품+현장' 에서 이름을 바꿨다(현장조사는 임장조사 탭으로, 2026-11-09)
   { key: 'verify', label: '가격정보' },
   { key: 'profit', label: '수익분석' },   // 이름은 수익분석으로 통일(2026-11-03) — '입찰가산정'은 쓰지 않는다
   { key: 'field', label: '임장조사' },   // 앱만 — 손품+현장에 있던 현장조사를 옮겼다(2026-11-09)
@@ -3837,7 +3837,7 @@ const sendJeonseToMarket = async (row: PlaceRow) => {
   if (row.contractDate) setMktVal(mk('d', 'jYear'), row.contractDate.slice(0, 10).replace(/\./g, '-'));
   if (String(row.floor ?? '').trim()) setMktVal(mk('d', 'jFloor'), String(row.floor).trim());
   await persistSurvey();
-  flashToast('손품+현장 경매지번 전세 실거래가에 적용하였습니다.', 'success');
+  flashToast('손품조사 경매지번 전세 실거래가에 적용하였습니다.', 'success');
 };
 const sendTradePriceToMarket = async (row: PlaceRow) => {
   const price = parsePriceNumber(row.amount);
@@ -3853,7 +3853,7 @@ const sendTradePriceToMarket = async (row: PlaceRow) => {
     if (pyeong > 0) setMktVal(mk('b', 'unit'), String(Math.round(price / pyeong)));
   }
   await persistSurvey();
-  flashToast('손품+현장 경매지번 실거래가에 적용하였습니다.', 'success');
+  flashToast('손품조사 경매지번 실거래가에 적용하였습니다.', 'success');
 };
 /** ② 경매지번 실거래가를 채운다 — 값은 가격정보의 '경매지번 실거래가' 표에서만 온다.
  *  비행기로 한 줄을 고르면 그 줄이 서고, 고르기 전에는 가장 최근 거래가 선다.
