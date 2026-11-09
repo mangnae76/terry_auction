@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { userMessage } from '../services/userMessage';
-// 내 정보 수정 — 비밀번호·연락처·주소를 고친다.
+// 내 정보 수정 — 비밀번호 · 연락처 · 세금 계산 기준을 고친다(앱 · 웹 같게, 주소는 받지 않는다 2026-11-09).
 // 더보기의 '정보 수정' 알약과 마이페이지의 '내 정보 수정'에서 들어온다.
 import { computed, inject, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -28,7 +28,7 @@ const thisYear = new Date().getFullYear();
 const salesOf = (y: number) => auctionStore.auctions
   .filter((a) => String(a.sellDate ?? '').startsWith(String(y)))
   .reduce((sum, a) => sum + (a.expectedSaleValue || 0), 0);
-// 세금 계산 기준(웹) — 매출(전년도 · 올해)과 올해 다른 소득금액을 직접 적는다. 빈칸은 '안 적음'(매도 기록에서 셈)
+// 세금 계산 기준 — 매출(전년도 · 올해)과 올해 다른 소득금액을 직접 적는다. 빈칸은 '안 적음'(매도 기록에서 셈)
 const salesInput = ref<Record<number, string>>({});
 const otherInput = ref('');
 const numOf = (v: string | undefined): number | null => {
@@ -101,7 +101,7 @@ const submit = async () => {
   saving.value = true;
   try {
     if (wantsPw) await changePassword(currentPw.value, nextPw.value);
-    if (webEmbed) {
+    {
       const sales = { ...(form.value.salesByYear ?? {}) }; const other = { ...(form.value.otherIncomeByYear ?? {}) };
       for (const y of [thisYear - 1, thisYear]) { const n = numOf(salesInput.value[y]); if (n === null) delete sales[y]; else sales[y] = n; }
       { const n = numOf(otherInput.value); if (n === null) delete other[thisYear]; else other[thisYear] = n; }
@@ -130,7 +130,7 @@ const submit = async () => {
     <div class="prf-body">
       <section class="prf-card">
         <h2 class="prf-h1">내 정보 수정</h2>
-        <p class="prf-sub">{{ webEmbed ? '비밀번호 · 연락처 · 세금 계산 기준을 수정합니다.' : '비밀번호·연락처·주소 등 개인정보를 수정합니다.' }}</p>
+        <p class="prf-sub">비밀번호 · 연락처 · 세금 계산 기준을 수정합니다.</p>
         <!-- 현재 비밀번호는 비밀번호를 바꿀 때만 본인 확인에 쓴다(연락처 · 세금 기준은 그냥 저장). 카카오 · 네이버 계정은 비밀번호가 없어 내지 않는다 -->
         <p v-if="canChangePw" class="prf-warn">🔒 비밀번호를 바꿀 때만 현재 비밀번호를 입력해 주세요.</p>
 
@@ -200,15 +200,10 @@ const submit = async () => {
         </div>
         </div>
 
-        <!-- 주소 — 웹은 받지 않는다(앱은 그대로). 저장된 값은 지우지 않는다 -->
-        <div v-if="!webEmbed" class="prf-fld">
-          <small>주소</small>
-          <input v-model="form.address1" class="prf-input" placeholder="예: 경기 성남시 분당구 수내로 181" />
-          <input v-model="form.address2" class="prf-input mt" placeholder="상세주소 — 예: 분당동, 샛별마을" />
-        </div>
+        <!-- 주소는 앱 · 웹 모두 받지 않는다. 저장된 값은 지우지 않는다(2026-11-09) -->
 
-        <!-- 웹 — 세금 계산 기준(사업자 · 주택 · 매출 · 다른 소득). 비운 매출은 매도 기록에서 계산한 값(흐린 글)을 쓴다 -->
-        <template v-if="webEmbed">
+        <!-- 세금 계산 기준(사업자 · 주택 · 매출 · 다른 소득) — 앱 · 웹 같다. 비운 매출은 매도 기록에서 계산한 값(흐린 글)을 쓴다 -->
+        <div class="prf-tax">
           <h3 class="prf-sec">세금 계산 기준 <i class="prf-auto">세금분석이 이 값으로 계산합니다</i></h3>
           <div class="prf-grid3">
             <label class="prf-fld">
@@ -233,7 +228,7 @@ const submit = async () => {
             </label>
           </div>
           <p class="prf-hint">매출을 비우면 매도 기록에서 계산합니다(흐린 숫자). 다른 소득금액은 이 앱 밖의 매출 − 경비로, 종합소득세 구간을 정할 때 더합니다.</p>
-        </template>
+        </div>
 
         <button type="button" :class="['prf-submit', { web: webEmbed }]" :disabled="saving || loading" @click="submit">
           {{ saving ? '저장하는 중…' : '내정보수정' }}
