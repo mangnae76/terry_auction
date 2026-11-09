@@ -119,6 +119,8 @@ const initialTab = (): TabKey => {
   const asked = String(route.query.tab ?? '');
   const wanted = asked === 'field' ? 'survey' : asked;   // 임장경로 '임장조사 열기' — 앱은 손품+현장 탭에 현장 카드가 있다
   if (sonpumMode) return 'survey';
+  // 앱은 가격정보 탭을 뺐다(2026-11-09) — 예전 ?tab=verify 로 와도 물건정보로
+  if (!webEmbed && wanted === 'verify') return 'basic';
   return (TAB_KEYS as string[]).includes(wanted) ? (wanted as TabKey) : 'basic';
 };
 const activeTab = ref<TabKey>(initialTab());
@@ -131,13 +133,15 @@ watch(activeTab, (tab) => {
 });
 // 입지정보 카드 — 전체 / 500m 이내
 const areaView = ref<'all' | 'near'>('all');
-const TABS: Array<{ key: TabKey; label: string }> = [
+const ALL_TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'basic', label: '물건정보' },
   { key: 'rights', label: '권리분석' },
   { key: 'survey', label: '손품+현장' },
   { key: 'verify', label: '가격정보' },
   { key: 'profit', label: '수익분석' },   // 이름은 수익분석으로 통일(2026-11-03) — '입찰가산정'은 쓰지 않는다
 ];
+/** 앱은 가격정보 탭을 통째로 뺐다(2026-11-09). 웹은 그대로 */
+const TABS = ALL_TABS.filter((t) => webEmbed || t.key !== 'verify');
 // 최근 작성 — 지금 고치는 화면 이름(마이페이지 내정보 「최근 작성」에 남는다)
 watch(activeTab, (t) => { store.setEditWhere(sonpumMode ? '손품조사' : `물건상세 › ${TABS.find((x) => x.key === t)?.label ?? ''}`); }, { immediate: true });
 onBeforeUnmount(() => store.setEditWhere(''));
@@ -6890,7 +6894,7 @@ const goBack = () => router.back();
         </section>
       </template>
 
-      <template v-if="activeTab === 'verify'">
+      <template v-if="activeTab === 'verify' && webEmbed">
         <!-- 경매사례 — 인근 매각사례. 동일지번은 손품+현장 급매가로 옮겼다 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('cases')">
