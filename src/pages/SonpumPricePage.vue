@@ -708,14 +708,14 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
     <div class="zone">
       <!-- 앱 — 지도는 한 줄로 접어 두고 누르면 편다 -->
       <button v-if="props.app" type="button" class="map-fold" :aria-expanded="mapOpen" @click="mapOpen = !mapOpen">
-        <span class="mf-t">지도</span><small>반경 {{ radText(radius) }} · 유사물건 {{ mapGroups.length }}곳</small><i>{{ mapOpen ? '접기 ⌃' : '지도 보기 ⌄' }}</i>
+        <span class="pa-tag">근거</span><b class="mf-t">유사물건</b><small>반경 {{ radText(radius) }} · 유사물건 {{ mapGroups.length }}곳</small><i>{{ mapOpen ? '접기 ⌃' : '지도 보기 ⌄' }}</i>
       </button>
       <div v-show="!props.app || mapOpen" class="map">
         <div ref="mapEl" class="map-in" />
         <KakaoMapTools v-if="kTools" :k="kTools.k" :map="kTools.map" :near="webEmbed ? mySpot : null" />
         <button v-if="webEmbed && !fs && !props.app" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="fs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
         <!-- 근거 제목은 지도 왼쪽 위에 — 따로 줄을 두지 않아 지도를 위로 더 보인다 -->
-        <div class="map-title"><span class="pa-tag">근거</span><b>유사물건</b></div>
+        <div v-if="!props.app" class="map-title"><span class="pa-tag">근거</span><b>유사물건</b></div>
         <div v-if="addOpen && !loose" class="add-pop" role="dialog" aria-label="임장경로에 비교 물건 넣기">
           <b>임장경로에 비교 물건 넣기</b>
           <small>이 물건의 임장경로 정류장에 「현장 기록」으로 붙습니다. 기본은 500m 안 가까운 5곳.</small>
@@ -817,8 +817,13 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <span v-if="webEmbed" class="lt-count pa-num">지번 {{ listPlaces }}곳 · 거래 {{ shownRows.length }}건</span>
         <div class="warn-box" role="note">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4M12 17h.01" /></svg>
-          <span v-if="pubMissing && !typedPub">이 물건은 <b>공시지가가 없어</b> 매매가율·전세가·갭이 자동 계산되지 않습니다. 경매물건 행(맨 위 빨간색)의 <b>공시가 칸</b>에 숫자를 직접 입력하면 추정치가 계산됩니다. <span class="ref">(전세가율 1.26 단순 적용)</span></span>
-          <span v-else>이 물건은 <b>공시지가 기준</b> 매매가율·전세가·갭이 자동 계산됩니다. <span class="ref">(전세가율 1.26 단순 적용)</span></span>
+          <!-- 앱 — 짧게(2026-11-09) -->
+          <template v-if="props.app">
+            <span v-if="pubMissing && !typedPub"><b>공시가 없음</b> — 맨 위 빨간 줄 공시가 칸에 적으면 계산합니다.</span>
+            <span v-else><b>공시가 기준</b> 자동 계산 <span class="ref">(전세가율 1.26)</span></span>
+          </template>
+          <span v-else-if="pubMissing && !typedPub">이 물건은 <b>공시지가가 없어</b> 매매가율·전세가·갭이 자동 계산되지 않습니다. 경매물건 행(맨 위 빨간색)의 <b>공시가 칸</b>에 숫자를 직접 입력하면 추정치가 계산됩니다. <span class="ref">(전세가율 1.26 단순 적용)</span></span>
+          <span v-else-if="!props.app">이 물건은 <b>공시지가 기준</b> 매매가율·전세가·갭이 자동 계산됩니다. <span class="ref">(전세가율 1.26 단순 적용)</span></span>
         </div>
         <button v-if="keptNames.length && !props.app" type="button" class="pa-fchip" @click="colFilter.clearAll()">필터 적용 중: {{ keptNames.join(' · ') }} &nbsp;✕ 모두 지우기</button>
       </div>
@@ -1292,15 +1297,17 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 .pa-wrap.app .tile.key { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; padding: 10px 12px; }
 .pa-wrap.app .tile.key .v { font-size: 24px; }
 /* 지도 — 접힌 한 줄, 펴면 240 */
-.map-fold { display: flex; align-items: center; gap: 6px; width: 100%; padding: 10px 12px; border: 1px solid #e8ecf3; border-radius: 10px; background: #f7f9fd; cursor: pointer; text-align: left; }
-.map-fold .mf-t { font-size: 13px; font-weight: 800; color: #374151; }
+/* 상자 없이 제목 줄로 — 위 '결론 이 물건 매도가 예상' 줄과 같은 꼴(근거 칩 · 유사물건 · 오른쪽 접기) */
+.map-fold { display: flex; align-items: center; gap: 8px; width: 100%; padding: 2px 0; border: 0; border-radius: 0; background: none; cursor: pointer; text-align: left; font-family: inherit; }
+.map-fold .mf-t { font-size: 15px; font-weight: 800; color: var(--fg); }
+.map-fold small { margin-left: 2px; }
 .map-fold small { font-size: 11.5px; color: var(--sub); }
 .map-fold i { margin-left: auto; font-style: normal; font-size: 12px; font-weight: 700; color: var(--blue); white-space: nowrap; }
 .pa-wrap.app .map-in { height: 480px; }   /* 접어 두니 펼치면 크게(240 → 480, 2026-11-09) */
 /* 앱 — '임장경로에 ○곳'은 오른쪽 아래 지도 도구(출력 · 인쇄)와 겹쳐, 왼쪽 위 '근거 유사물건' 옆으로 */
 .pa-wrap.app .map-title { padding: 5px 10px 5px 6px; }
 .pa-wrap.app .map-title b { font-size: 14px; }
-.pa-wrap.app .add-btn { left: 128px; right: auto; top: 10px; bottom: auto; height: 32px; padding: 0 10px; font-size: 12px; }
+.pa-wrap.app .add-btn { left: 10px; right: auto; top: 10px; bottom: auto; height: 32px; padding: 0 10px; font-size: 12px; }
 .pa-wrap.app .add-pop { left: 10px; right: auto; top: 50px; bottom: auto; max-height: calc(100% - 60px); }
 .pa-wrap.app .add-msg { left: 10px; right: auto; top: 48px; bottom: auto; }
 /* 거르기 — 반경 · 거래 · 엘베 · 층 · 기준 · 막대 · 단추 차례로 한 줄씩 */

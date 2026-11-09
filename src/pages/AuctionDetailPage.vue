@@ -12837,14 +12837,10 @@ select.adp-pub-input option { text-align: center; }
 .app-price .son-map-go { display: inline-flex; align-items: center; justify-content: center; width: 20px; min-width: 20px; height: 18px; padding: 0; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; font-family: inherit; font-size: 11px; font-weight: 800; line-height: 1; cursor: pointer; }
 .app-price .son-map-go.naver { color: #03a94d; }
 .app-price .son-map-go.planet { color: #2f5bea; }
-/* 앱 손품+현장 — 여러 개 고르는 칸을 펴면 목록이 아래 줄(임차인 · 동대표 단추 등) 위에 겹쳐 떴다.
-   목록을 그 자리에 끼워 아래 줄을 밀어내게 한다(겹치지 않게, 2026-11-09). 바깥 누르면 닫히는 막은 그대로라 목록은 막 위(31)에 둔다 */
-.adp-body.is-app :is(.adp-fs-multi, .adp-ind-multi) .adp-agency-options,
-.adp-body.is-app .adp-survey-row .adp-multi-panel {
-  position: relative; top: auto; left: auto; right: auto; z-index: 31;
-  margin-top: 4px; box-shadow: none;
-}
-/* 목록을 편 줄은 이름 · 체크칸을 위쪽에 맞춘다(가운데로 내려가지 않게) */
-.adp-body.is-app .adp-fs-row:has(.adp-agency-options) { align-items: start; }
-.adp-body.is-app .adp-survey-row:has(.adp-multi-panel) { align-items: flex-start; }
+/* 앱 손품+현장 — 여러 개 고르는 목록에서 고른 줄(파란 바탕)이 붙어 있으면 한 덩어리로 겹쳐 보였다.
+   줄마다 사이를 띄우고 파란 상자 높이를 줄인다(2026-11-09) */
+.adp-body.is-app :is(.adp-fs-multi, .adp-ind-multi) .adp-agency-options { display: grid; gap: 3px; }
+.adp-body.is-app :is(.adp-fs-multi, .adp-ind-multi) .adp-agency-option { padding: 3px 7px; min-height: 0; line-height: 1.35; }
+.adp-body.is-app .adp-survey-row .adp-multi-list { display: grid; gap: 3px; }
+.adp-body.is-app .adp-survey-row .adp-multi-item { padding: 5px 10px; }
 </style>
