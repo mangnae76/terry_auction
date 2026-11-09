@@ -163,7 +163,7 @@ const info = ref<Ebook | null>(null);
               <span :class="isPaidEbook(b) ? 'p' : 'f'">{{ isPaidEbook(b) ? '유료' : '무료' }}</span>
               <span v-if="isUpcomingEbook(b)" class="s">출시예정</span>
               <!-- 칩과 한 줄 — 오른쪽 끝 -->
-              <button v-if="descOf(b).trim()" type="button" class="cs-more" @click="info = b">자세히</button>
+              <button v-if="descOf(b).trim()" type="button" class="cs-more" @click="info = b">자세히 ›</button>
             </div>
             <div class="cs-act">
               <button type="button" :class="['cs-go', { soon: isUpcomingEbook(b) }]" :disabled="busy === b.id" @click="onAct(b)">{{ actLabel(b) }}</button>
