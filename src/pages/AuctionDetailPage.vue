@@ -8162,7 +8162,7 @@ const goBack = () => router.back();
                 <div :class="['cell split', { lit: dmLit('listings') }]" @mouseenter="dmLitEnter('listings')" @mouseleave="dmLitLeave()" @click="dmLitTap('listings')">
                   <div class="cell-head">
                     <!-- 옆 칸 이름(총 세대수)과 같은 글자 요소(small) — 단추로 두면 웹의 단추 글자 규칙을 받아 모양이 달라졌다. 누르면 네이버 매물 -->
-                    <small class="adp-dm-link" role="button" tabindex="0" @click.stop="openListingLookup" @keydown.enter.stop="openListingLookup">총 매물수<svg class="adp-dm-link-ico" viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></small>
+                    <small :class="['adp-dm-link', { app: !webEmbed }]" role="button" tabindex="0" @click.stop="openListingLookup" @keydown.enter.stop="openListingLookup">총 매물수<svg class="adp-dm-link-ico" viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></small>
                     <button
                       type="button"
                       class="adp-dm-info"
@@ -11183,6 +11183,8 @@ tr.tone-take { background: #fff5f5; }
 /* 누르면 네이버 매물로 간다는 표시 — 밑줄 대신 작은 ↗ */
 .adp-dm-link-ico { flex: 0 0 auto; }
 .adp-mkt-cells .cell small.adp-dm-link:hover, .adp-mkt-cells .cell small.adp-dm-link:active { color: #2b6df3; }
+/* 앱 — 링크는 밑줄로 알아보게(2026-11-09 사용자 요청). 웹은 그대로 */
+.adp-mkt-cells .cell small.adp-dm-link.app { text-decoration: underline; text-underline-offset: 2px; }
 .adp-dm-block + .adp-dm-block { margin-top: 10px; }
 .adp-dm-block.boxed + .adp-dm-block.boxed { margin-top: 10px; }
 .adp-dm-head.sec2 { margin-top: 7px; padding-top: 6px; border-top: 1px solid #eef1f6; }
