@@ -2269,6 +2269,7 @@ const toggleSection = (key: string) => {
 .app-flow :deep(.xl-tools) { flex-wrap: wrap; row-gap: 6px; }
 .app-flow :deep(.xl-hint) { flex: 1 1 100%; order: 2; }
 .app-flow :deep(.xl-btn) { order: 3; }
+.app-flow :deep(.xl-tools > button:first-of-type) { margin-left: auto; }   /* 엑셀저장 ~ 항목추가는 표 오른쪽 끝에 맞춘다 */
 .app-flow :deep(.pwm-cap) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* 명도분석 계산에 쓴 값 — 폰에서 글자 · 단추를 한 단 작게 */
 /* 제목 한 줄, 단추는 그 아래 줄(::before 가 줄을 끊는다), 단추 줄 밑에 가로 구분선 */
