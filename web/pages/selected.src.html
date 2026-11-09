@@ -1982,89 +1982,89 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page .pw-shell .pw-wrap.super .pw-card-head { padding-top: 8px !important; padding-bottom: 8px !important; }
 /* 명도 시기별 진행내용 — 왼쪽 칸(낙찰 당일 · 단계 상자)을 넓혀 두 줄 이름을 한 줄로(웹만) */
 /* 왼쪽 칸 폭은 표의 분홍 이름 칸(--pw-lab-w)과 같은 값 — 시작 · 끝 선이 표와 한 줄로 맞는다 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) { --pw-lab-w: 250px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) :is(.pw-br-head, .pw-br-step) { grid-template-columns: calc(var(--pw-lab-w) + 1px) 16px 1fr; }   /* +1 = 표 바깥 테두리 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-br-left b { white-space: nowrap; }
+.app-page[data-k="postwin"] { --pw-lab-w: 250px; }
+.app-page[data-k="postwin"] :is(.pw-br-head, .pw-br-step) { grid-template-columns: calc(var(--pw-lab-w) + 1px) 16px 1fr; }   /* +1 = 표 바깥 테두리 */
+.app-page[data-k="postwin"] .pw-br-left b { white-space: nowrap; }
 /* 단계 상자도 위 '낙찰 당일' 상자처럼 가운데 정렬(번호 + 이름을 한 덩어리로) */
 /* 왼쪽 색 상자(낙찰 당일 · 잔금 납부 · 번호 단계)는 왼쪽 정렬 — 글자 두 자쯤 띄우고 시작 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-br-left { justify-content: flex-start; padding-left: 10px !important; } /* 번호 단계는 알약 글자보다 한 자쯤 왼쪽에서 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-br-pill { justify-content: flex-start; padding-left: 24px !important; text-align: left; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-br-pill .pw-br-txt { flex: 0 1 auto; text-align: left; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-br-left b { flex: 0 0 auto; }
+.app-page[data-k="postwin"] .pw-br-left { justify-content: flex-start; padding-left: 10px !important; } /* 번호 단계는 알약 글자보다 한 자쯤 왼쪽에서 */
+.app-page[data-k="postwin"] .pw-br-pill { justify-content: flex-start; padding-left: 24px !important; text-align: left; }
+.app-page[data-k="postwin"] .pw-br-pill .pw-br-txt { flex: 0 1 auto; text-align: left; }
+.app-page[data-k="postwin"] .pw-br-left b { flex: 0 0 auto; }
 /* 명도 — '명도시작은 언제부터?' 세 상자 · '명도 협상 방법' 세 상자는 좌우를 안으로 몰아 작게, 가운데 정렬 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-bx-row { justify-content: center; gap: 28px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-bx-row .pw-bx-item { flex: 0 0 240px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-gr-row { grid-template-columns: repeat(3, 280px); justify-content: center; column-gap: 48px; }
+.app-page[data-k="postwin"] .pw-bx-row { justify-content: center; gap: 28px; }
+.app-page[data-k="postwin"] .pw-bx-row .pw-bx-item { flex: 0 0 240px; }
+.app-page[data-k="postwin"] .pw-gr-row { grid-template-columns: repeat(3, 280px); justify-content: center; column-gap: 48px; }
 /* 명도 시기별 진행내용 — 두 칸(낙찰 당일 | 잔금 납부 전, 잔금 납부 후 1·2 | 3·4, 5), 가운데 세로 구분선. 두 칸에서는 왼쪽 상자 폭을 줄인다 */
 /* 왼쪽 칸 = 낙찰 당일 · 잔금 납부 전, 오른쪽 칸 = 잔금 납부 후 전부 — 첫 '잔금 납부 후'(.col-break)에서 칸을 넘긴다. 가운데 선은 칸 사이 줄(column-rule) */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-br-grid { display: block; column-count: 2; column-gap: 40px; column-rule: 1px solid #d5dbe5; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-br-grid > .pw-br { break-inside: avoid; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-br-grid > .pw-br.col-break { break-before: column; }
+.app-page[data-k="postwin"] .pw-br-grid { display: block; column-count: 2; column-gap: 40px; column-rule: 1px solid #d5dbe5; }
+.app-page[data-k="postwin"] .pw-br-grid > .pw-br { break-inside: avoid; }
+.app-page[data-k="postwin"] .pw-br-grid > .pw-br.col-break { break-before: column; }
 /* 왼쪽 색 상자(낙찰 당일 · 단계)는 좁게, 오른쪽 설명 상자는 넓게 — 설명이 두 줄로 꺾이지 않게 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-br-grid :is(.pw-br-head, .pw-br-step) { grid-template-columns: 150px 12px minmax(0, 1fr); gap: 6px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-br-grid .pw-br-left b { white-space: normal !important; flex: 0 1 auto !important; min-width: 0; text-align: left; word-break: keep-all; }
+.app-page[data-k="postwin"] .pw-br-grid :is(.pw-br-head, .pw-br-step) { grid-template-columns: 150px 12px minmax(0, 1fr); gap: 6px; }
+.app-page[data-k="postwin"] .pw-br-grid .pw-br-left b { white-space: normal !important; flex: 0 1 auto !important; min-width: 0; text-align: left; word-break: keep-all; }
 /* 명도 협상 방법 — 기본은 왼쪽 · 기술은 오른쪽, 가운데 세로 구분선 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-gr-split { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 56px; align-items: start; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-gr-split::before { content: ""; position: absolute; top: 0; bottom: 10px; left: 50%; width: 1px; background: #d5dbe5; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-gr-split .pw-gr-row { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 12px; }
+.app-page[data-k="postwin"] .pw-gr-split { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 56px; align-items: start; }
+.app-page[data-k="postwin"] .pw-gr-split::before { content: ""; position: absolute; top: 0; bottom: 10px; left: 50%; width: 1px; background: #d5dbe5; }
+.app-page[data-k="postwin"] .pw-gr-split .pw-gr-row { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 12px; }
 /* 명도 협상의 기본 — 점 목록 대신 '기술' 쪽처럼 한 줄씩 네모 상자로 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-gr-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-gr-list li { display: flex; align-items: center; justify-content: center; min-height: 34px; padding: 7px 8px;
+.app-page[data-k="postwin"] .pw-gr-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.app-page[data-k="postwin"] .pw-gr-list li { display: flex; align-items: center; justify-content: center; min-height: 34px; padding: 7px 8px;
   border: 1px solid #c9d3e3; border-radius: 4px; background: #fff; color: #1f2937; text-align: center; line-height: 1.35; }
 /* '명도 협상의 기본 · 기술' 분홍 칩도 같은 폭 — 칩 · 시기별 왼쪽 상자 · 표 분홍 칸의 오른쪽 끝선이 한 줄 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-gr-chip { width: calc(var(--pw-lab-w) + 1px); max-width: none; box-sizing: border-box; }
+.app-page[data-k="postwin"] .pw-gr-chip { width: calc(var(--pw-lab-w) + 1px); max-width: none; box-sizing: border-box; }
 /* 인테리어 '항목추가' 창 — 화면 가로를 다 덮지 말고 가운데 알맞은 크기로, 머리띠 · 하위 탭 아래에 띄운다 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-modal {
+.app-page[data-k="postwin"] .pw-modal {
   left: 50%; right: auto; width: min(480px, calc(100vw - 32px)); transform: translateX(-50%);
   top: calc(var(--stick-top, 0px) + var(--gnb-h, 70px) + var(--subtab-h, 44px) + 24px);
   max-height: calc(100vh - var(--gnb-h, 70px) - var(--subtab-h, 44px) - 64px);
   padding: 16px 20px 18px;
 }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-modal-head strong { font-size: var(--title-fs); }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-modal :is(.pw-modal-sub, .pw-fld small, input, select, textarea, .pw-ebtn) { font-size: 14px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-modal .pw-fld { margin-bottom: 10px; }
+.app-page[data-k="postwin"] .pw-modal-head strong { font-size: var(--title-fs); }
+.app-page[data-k="postwin"] .pw-modal :is(.pw-modal-sub, .pw-fld small, input, select, textarea, .pw-ebtn) { font-size: 14px; }
+.app-page[data-k="postwin"] .pw-modal .pw-fld { margin-bottom: 10px; }
 /* 인테리어 표 — 예상일정의 '~ 완료일' · 연락처가 작게 나오던 것을 위 글과 같은 크기 · 색으로(웹) */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-int-tbl td :is(b, small) { font-size: 14px !important; font-weight: 500 !important; color: inherit !important; }
+.app-page[data-k="postwin"] .pw-int-tbl td :is(b, small) { font-size: 14px !important; font-weight: 500 !important; color: inherit !important; }
 /* 인테리어 현황 표 — 줄 위아래를 넉넉히 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-int-tbl :is(th, td) { padding-top: 13px !important; padding-bottom: 13px !important; }
+.app-page[data-k="postwin"] .pw-int-tbl :is(th, td) { padding-top: 13px !important; padding-bottom: 13px !important; }
 /* 예상일정은 한 줄로('26.10.27 ~ 26.11.03'), 다섯 칸은 고르게 — 날짜 · 업체 칸은 조금 넓게, 줄 바꿈 없이 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-int-tbl td.span :is(b, small) { display: inline !important; margin: 0 !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-int-tbl td.span small::before { content: ' '; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-int-tbl td.span { letter-spacing: 0 !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-int-tbl col { width: 20% !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-int-tbl :is(th, td) { padding-left: 10px !important; padding-right: 10px !important; }
+.app-page[data-k="postwin"] .pw-int-tbl td.span :is(b, small) { display: inline !important; margin: 0 !important; }
+.app-page[data-k="postwin"] .pw-int-tbl td.span small::before { content: ' '; }
+.app-page[data-k="postwin"] .pw-int-tbl td.span { letter-spacing: 0 !important; }
+.app-page[data-k="postwin"] .pw-int-tbl col { width: 20% !important; }
+.app-page[data-k="postwin"] .pw-int-tbl :is(th, td) { padding-left: 10px !important; padding-right: 10px !important; }
 /* 매도·임대 — 중개 의뢰 현황 · 직거래 등록 상자: 글자는 규칙대로 14(제목 16), 칸 높이 · 위아래 여유를 넓힌다 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .agency-table { gap: 12px; }
+.app-page[data-k="postwin"] .agency-table { gap: 12px; }
 /* 업체 · 직거래 상자를 한 줄에 둘씩 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .agency-table { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .adp-agency-item { padding: 12px 16px 14px !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .adp-agency-line { gap: 10px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .adp-agency-line + .adp-agency-line { margin-top: 10px; padding-top: 10px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) :is(.adp-mkt-input, .adp-agency-range input.rng, .adp-agency-trigger) { height: 38px !important; font-size: 14px !important; padding-left: 10px; padding-right: 10px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .adp-agency-range .rng-wrap input.rng { padding-right: 26px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) :is(.adp-agency-range .lab, .adp-agency-fld.note-fld > .lab) { flex-basis: 56px !important; font-size: 14px !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) :is(.adp-agency-range .unit, .adp-agency-range .sep) { font-size: 14px !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .adp-agency-range .unit { right: 9px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) :is(.adp-agency-fld > span, .adp-agency-fld > a.adp-agency-tel-view) { font-size: 15px !important; line-height: 38px !important; height: 38px !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) :is(.adp-agency-range .val, .adp-agency-fld > span.note-txt, .buyers-head .lab, .buyers-view, .buyers-empty) { font-size: 14px !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .adp-agency-trigger .caret { font-size: 12px; }
+.app-page[data-k="postwin"] .agency-table { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+.app-page[data-k="postwin"] .adp-agency-item { padding: 12px 16px 14px !important; }
+.app-page[data-k="postwin"] .adp-agency-line { gap: 10px; }
+.app-page[data-k="postwin"] .adp-agency-line + .adp-agency-line { margin-top: 10px; padding-top: 10px; }
+.app-page[data-k="postwin"] :is(.adp-mkt-input, .adp-agency-range input.rng, .adp-agency-trigger) { height: 38px !important; font-size: 14px !important; padding-left: 10px; padding-right: 10px; }
+.app-page[data-k="postwin"] .adp-agency-range .rng-wrap input.rng { padding-right: 26px; }
+.app-page[data-k="postwin"] :is(.adp-agency-range .lab, .adp-agency-fld.note-fld > .lab) { flex-basis: 56px !important; font-size: 14px !important; }
+.app-page[data-k="postwin"] :is(.adp-agency-range .unit, .adp-agency-range .sep) { font-size: 14px !important; }
+.app-page[data-k="postwin"] .adp-agency-range .unit { right: 9px; }
+.app-page[data-k="postwin"] :is(.adp-agency-fld > span, .adp-agency-fld > a.adp-agency-tel-view) { font-size: 15px !important; line-height: 38px !important; height: 38px !important; }
+.app-page[data-k="postwin"] :is(.adp-agency-range .val, .adp-agency-fld > span.note-txt, .buyers-head .lab, .buyers-view, .buyers-empty) { font-size: 14px !important; }
+.app-page[data-k="postwin"] .adp-agency-trigger .caret { font-size: 12px; }
 /* 상호 · 매도/임대 펼침 목록 — 글자 14, 줄 높이 넉넉히 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .adp-agency-options { min-width: 160px; padding: 6px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .adp-agency-option { font-size: 14px !important; padding: 9px 12px !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .adp-agency-option .ck { font-size: 13px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) :is(.adp-agency-del, .buyers-add) { height: 38px !important; flex-basis: 38px !important; width: 38px; font-size: 16px !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .adp-agency-call { width: 26px; height: 26px; right: 6px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .adp-agency-tel .adp-mkt-input.dial { padding-right: 38px; }
+.app-page[data-k="postwin"] .adp-agency-options { min-width: 160px; padding: 6px; }
+.app-page[data-k="postwin"] .adp-agency-option { font-size: 14px !important; padding: 9px 12px !important; }
+.app-page[data-k="postwin"] .adp-agency-option .ck { font-size: 13px; }
+.app-page[data-k="postwin"] :is(.adp-agency-del, .buyers-add) { height: 38px !important; flex-basis: 38px !important; width: 38px; font-size: 16px !important; }
+.app-page[data-k="postwin"] .adp-agency-call { width: 26px; height: 26px; right: 6px; }
+.app-page[data-k="postwin"] .adp-agency-tel .adp-mkt-input.dial { padding-right: 38px; }
 /* 중개업체 관리 창 — 가로 전체가 아니라 가운데 알맞은 크기로, 머리띠 · 하위 탭 아래에(웹 어디서 열든 — 낙찰이후 · 손품조사) */
-:is(.app-page:is([data-k="postwin"], [data-k="manual"]), body) .abm-box {
+:is(.app-page[data-k="postwin"], body) .abm-box {
   left: 50%; right: auto; width: min(640px, calc(100vw - 32px)); transform: translateX(-50%);
   top: calc(var(--stick-top, 0px) + var(--gnb-h, 70px) + var(--subtab-h, 44px) + 24px);
   max-height: calc(100vh - var(--gnb-h, 70px) - var(--subtab-h, 44px) - 64px);
   padding: 16px 20px 18px;
 }
-:is(.app-page:is([data-k="postwin"], [data-k="manual"]), body) .abm-head strong { font-size: var(--title-fs); }
-:is(.app-page:is([data-k="postwin"], [data-k="manual"]), body) .abm-box :is(.abm-note, .agb-eyebrow, .agb-add, .agb-sort, .agb-fld small, .agb-input, .agb-empty, .agb-save) { font-size: 14px !important; }
-:is(.app-page:is([data-k="postwin"], [data-k="manual"]), body) .abm-box .agb-input { height: 40px; }
+:is(.app-page[data-k="postwin"], body) .abm-head strong { font-size: var(--title-fs); }
+:is(.app-page[data-k="postwin"], body) .abm-box :is(.abm-note, .agb-eyebrow, .agb-add, .agb-sort, .agb-fld small, .agb-input, .agb-empty, .agb-save) { font-size: 14px !important; }
+:is(.app-page[data-k="postwin"], body) .abm-box .agb-input { height: 40px; }
 /* 표 줄 높이 — 위아래를 넉넉히(6 → 10px) */
 .app-page .pw-shell .pw-tbl:not(.edit) td { padding-top: 10px !important; padding-bottom: 10px !important; }
 .app-page .more-shell { min-height: 0 !important; background: transparent !important; padding-bottom: 40px !important; }
@@ -2280,69 +2280,68 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 #appPageView .content { padding-top: 0; }
 /* 낙찰이후 — 선정물건 물건상세처럼: 하위 탭 아래 띠(--band) 위 고정 카드(사건 카드) → 경로 → 내용. 카드는 위에 붙어 있다 */
 /* 사건 카드는 스크롤해도 고정 — 붙박이는 부모 상자 안에서만 붙으니 윗묶음(.pw-fixed-top)은 풀고 바깥(.pw-shell) 흐름에 세운다 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-shell { display: flex !important; flex-direction: column; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-fixed-top { display: contents; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-webhead { order: -2; position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h)); z-index: 25;
+.app-page[data-k="postwin"] .pw-shell { display: flex !important; flex-direction: column; }
+.app-page[data-k="postwin"] .pw-fixed-top { display: contents; }
+.app-page[data-k="postwin"] .pw-webhead { order: -2; position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h)); z-index: 25;
   padding: 6px 0 6px; background: var(--band); }
 /* 띠는 좌우 끝까지 — clip-path 를 쓰면 아래로 펼치는 낙찰목록까지 잘리니 뒤판(::before)으로 깐다 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-webhead::before { content: ''; position: absolute; inset: 0 calc(50% - 50vw); z-index: -1; background: var(--band); }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-crumbrow { order: -1; }
+.app-page[data-k="postwin"] .pw-webhead::before { content: ''; position: absolute; inset: 0 calc(50% - 50vw); z-index: -1; background: var(--band); }
+.app-page[data-k="postwin"] .pw-crumbrow { order: -1; }
 /* 가이드 '낙찰 후 진행 순서' — 사건 카드와 장 탭 사이(장마다 늘). 비면 자리 없음 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flowslot { order: -1; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flowslot > .pw-flowcard { margin: 10px 0 0; }
-.app-page[data-k="manual"] .pw-flowslot > .pw-flowcard { margin: 12px 0 6px; }   /* 매뉴얼 — 흰 띠 아래 12, 장 탭(명도 · 사업자등록 · 세금)과 12 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-objwrap > .pw-obj, .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-objctrl, .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-page-title { display: none !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-objwrap { display: none !important; }
+.app-page[data-k="postwin"] .pw-flowslot { order: -1; }
+.app-page[data-k="postwin"] .pw-flowslot > .pw-flowcard { margin: 10px 0 0; }
+.app-page[data-k="postwin"] .pw-objwrap > .pw-obj, .app-page[data-k="postwin"] .pw-objctrl, .app-page[data-k="postwin"] .pw-page-title { display: none !important; }
+.app-page[data-k="postwin"] .pw-objwrap { display: none !important; }
 /* 낙찰이후 글자 크기 — 큰 제목 18 · 카드 제목 16 · 중제목(표 왼쪽 이름 · 칩 · 단계 이름) 15 · 나머지 글은 모두 14 이상 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-super-head h2 { font-size: var(--title-lg-fs) !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-card-head h2 { font-size: var(--title-fs) !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) :is(.pw-label strong, .pw-labellink strong, .pw-gr-chip, .pw-br-pill .pw-br-txt, .pw-bx-item, .pw-gr-box, .pw-br-left b, .pw-chip) { font-size: 15px !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) :is(
+.app-page[data-k="postwin"] .pw-super-head h2 { font-size: var(--title-lg-fs) !important; }
+.app-page[data-k="postwin"] .pw-card-head h2 { font-size: var(--title-fs) !important; }
+.app-page[data-k="postwin"] :is(.pw-label strong, .pw-labellink strong, .pw-gr-chip, .pw-br-pill .pw-br-txt, .pw-bx-item, .pw-gr-box, .pw-br-left b, .pw-chip) { font-size: 15px !important; }
+.app-page[data-k="postwin"] :is(
   .pw-txt, .pw-note, .pw-count, .pw-nopick, .pw-nopick b, .pw-memo, .pw-qty, .pw-golink,
   .pw-br-txt, .pw-br-item, .pw-br-note, .pw-gr-list li, .pw-sk-item, .pw-tl-day, .pw-tl-span, .pw-tl-label,
   .pw-int-tools .pw-ebtn, .pw-int-sum, .pw-int-sum b, .pw-int-tbl th, .pw-int-tbl td, .pw-empty, .pw-int-empty, .pw-rowstep .lab
 ) { font-size: 14px !important; }
 /* 글자 하한 12 — 카드 번호(①) 10.5 · 명도 단계 번호 11 · 바깥 링크 ↗ 9.5 였다(BUG-0035) */
-.app-page:is([data-k="postwin"], [data-k="manual"]) :is(.pw-no, .pw-br-no, .pw-ext) { font-size: 12px !important; }
+.app-page[data-k="postwin"] :is(.pw-no, .pw-br-no, .pw-ext) { font-size: 12px !important; }
 /* 노란 알림('낙찰 물건이 없으면 체크할 수 없습니다 — …') — 웹 노란 알림 상자 글은 굵기 없이(BUG-0038) */
-.app-page:is([data-k="postwin"], [data-k="manual"]) :is(.pw-nopick, .pw-nopick b) { font-weight: 400 !important; }
+.app-page[data-k="postwin"] :is(.pw-nopick, .pw-nopick b) { font-weight: 400 !important; }
 /* 글자를 키운 만큼 표 칸도 넓힌다 — 비고('동사무소 발급' 등)가 두세 줄로 꺾이지 않게 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-tbl:not(.edit) .pw-col-label { width: var(--pw-lab-w); }
+.app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-label { width: var(--pw-lab-w); }
 /* 분홍 이름 칸 · 비고는 한 줄로 — 줄바꿈은 글에서 이어 쓰고, 칸을 넓혀 꺾이지 않게 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-tbl:not(.edit) :is(.pw-label strong, .pw-labellink strong, .pw-memo) { white-space: nowrap; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-tbl:not(.edit) .pw-col-qty { width: 60px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-tbl:not(.edit) .pw-col-memo { width: 300px; }
+.app-page[data-k="postwin"] .pw-tbl:not(.edit) :is(.pw-label strong, .pw-labellink strong, .pw-memo) { white-space: nowrap; }
+.app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-qty { width: 60px; }
+.app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-memo { width: 300px; }
 /* 좁은 화면 — 이름 · 비고 칸을 줄여 가운데 글이 한 줄에 들어가게 */
 @media (max-width: 1279px) {
-  .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-tbl:not(.edit) .pw-col-label { width: 150px; }
-  .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-tbl:not(.edit) .pw-col-memo { width: 210px; }
+  .app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-label { width: 150px; }
+  .app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-memo { width: 210px; }
 }
 /* 낙찰당일 — '낙찰 후 진행 순서' 상자(탭 맨 위). 웹은 넓으니 여덟 칸을 한 줄로, 글자는 14 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flowcard .pw-flow-map { grid-template-columns: repeat(8, 1fr); gap: 10px 22px; padding: 6px 4px 14px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flowcard .pw-flow-box { font-size: 14px; min-height: 52px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flowcard .pw-flow-box:nth-child(4n):not(.last)::after { content: '▶'; position: absolute; right: -16px; top: 50%; transform: translateY(-50%); font-size: 9px; color: #9aa6bb; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flowcard .pw-flow-box:not(.last)::after { right: -16px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flowcard .pw-flow-map { border-bottom: 0; padding-bottom: 8px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flowcard-head { cursor: default; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flowcard .pw-flow-box { cursor: help; outline: none; transition: background .15s; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flowcard .pw-flow-box:is(:hover, :focus) { background: #e3ebff; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-map { grid-template-columns: repeat(8, 1fr); gap: 10px 22px; padding: 6px 4px 14px; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-box { font-size: 14px; min-height: 52px; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-box:nth-child(4n):not(.last)::after { content: '▶'; position: absolute; right: -16px; top: 50%; transform: translateY(-50%); font-size: 9px; color: #9aa6bb; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-box:not(.last)::after { right: -16px; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-map { border-bottom: 0; padding-bottom: 8px; }
+.app-page[data-k="postwin"] .pw-flowcard-head { cursor: default; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-box { cursor: help; outline: none; transition: background .15s; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-box:is(:hover, :focus) { background: #e3ebff; }
 /* 말풍선 — 상자 아래 가운데. 오른쪽 끝 두 상자는 오른쪽에 맞춰 화면 밖으로 안 나가게 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flow-tip { display: none; position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); z-index: 5;
+.app-page[data-k="postwin"] .pw-flow-tip { display: none; position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); z-index: 5;
   width: max-content; max-width: 340px; padding: 8px 12px; border-radius: 8px; background: #1f2937; color: #fff;
   font-size: 14px; font-weight: 500; line-height: 1.45; text-align: left; white-space: normal; box-shadow: 0 6px 16px rgba(17, 24, 39, .2); pointer-events: none; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flow-box:is(:hover, :focus) .pw-flow-tip { display: block; }
+.app-page[data-k="postwin"] .pw-flow-box:is(:hover, :focus) .pw-flow-tip { display: block; }
 /* 눌러 둔(포커스) 상자가 있어도 다른 상자에 마우스가 가면 그 말풍선 · 색은 바로 지운다 — 잔상이 겹치지 않게 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flow-map:hover .pw-flow-box:focus:not(:hover) { background: #f4f7ff; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flow-map:hover .pw-flow-box:focus:not(:hover) .pw-flow-tip { display: none; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flow-box:nth-child(n+7) .pw-flow-tip { left: auto; right: 0; transform: none; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flow-box:nth-child(-n+1) .pw-flow-tip { left: 0; transform: none; }
+.app-page[data-k="postwin"] .pw-flow-map:hover .pw-flow-box:focus:not(:hover) { background: #f4f7ff; }
+.app-page[data-k="postwin"] .pw-flow-map:hover .pw-flow-box:focus:not(:hover) .pw-flow-tip { display: none; }
+.app-page[data-k="postwin"] .pw-flow-box:nth-child(n+7) .pw-flow-tip { left: auto; right: 0; transform: none; }
+.app-page[data-k="postwin"] .pw-flow-box:nth-child(-n+1) .pw-flow-tip { left: 0; transform: none; }
 /* 낙찰목록 — 단추 바로 아래 오른쪽 끝을 맞춰 펼친다 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-pickanchor { position: relative; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-pickanchor .pw-objlist { left: auto; right: 0; top: calc(100% + 6px); width: 520px; max-width: calc(100vw - 32px); }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-pickbtn { cursor: pointer; background: var(--surface); }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-pickbtn.off { opacity: .5; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-pickbtn img { width: 12px; height: 12px; margin-left: 2px; transition: transform .2s; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-pickbtn img.up { transform: rotate(180deg); }
+.app-page[data-k="postwin"] .pw-pickanchor { position: relative; }
+.app-page[data-k="postwin"] .pw-pickanchor .pw-objlist { left: auto; right: 0; top: calc(100% + 6px); width: 520px; max-width: calc(100vw - 32px); }
+.app-page[data-k="postwin"] .pw-pickbtn { cursor: pointer; background: var(--surface); }
+.app-page[data-k="postwin"] .pw-pickbtn.off { opacity: .5; }
+.app-page[data-k="postwin"] .pw-pickbtn img { width: 12px; height: 12px; margin-left: 2px; transition: transform .2s; }
+.app-page[data-k="postwin"] .pw-pickbtn img.up { transform: rotate(180deg); }
 /* 자금관리 낙찰목록 · 매도목록 — 낙찰이후 '낙찰목록' 단추(.ih-pdf)와 같은 크기 · 글자 */
 /* 웹은 제목 줄 · 탭을 다 숨겨 윗머리(.fin-header)가 빈 껍데기다 — 그 1px 테두리가 경로 줄 밑 흰 줄로 남아 통째로 감춘다 */
 .app-page[data-k="finance"] .fin-header { display: none !important; }
@@ -2404,7 +2403,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 세금신고 내용 — 안쪽 상자들이 좌우 16px 씩 들어가 있어 필터 줄 · 경로 줄과 끝선이 어긋났다. 틀을 16px 씩 벌려 끝선을 맞춘다 */
 .app-page[data-k="finance"] .tax-shell.embedded { margin: 8px -16px 0; }
 /* 낙찰이후가이드 › 세금 — 같은 세금 안내가 좌우 16px 씩 안으로 들어가 다른 장 카드와 끝선이 어긋났다. 안쪽 목록의 여백을 없앤다 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .tax-shell.embedded .tax-list { margin-left: 0 !important; margin-right: 0 !important; }
+.app-page[data-k="postwin"] .tax-shell.embedded .tax-list { margin-left: 0 !important; margin-right: 0 !important; }
 /* 세금신고 연도 드롭다운 — 필터 줄 안, 다른 탭의 기간 단추 자리 */
 /* 기간 단추 묶음(이번달 · 올해 …)과 같은 상자 — 옅은 판 안에 이름 + 흰 드롭다운 */
 .app-page[data-k="finance"] .fin-taxyear { display: inline-flex; align-items: center; gap: 4px; padding: 3px; background: #f1f4f9; border-radius: 8px; }
@@ -4484,7 +4483,7 @@ html, body { overflow-x: clip; }
 /* 탭 줄 밑선은 진하게 */
 .app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top::after { background: var(--boxtab-line) !important; z-index: 3; }
 /* 낙찰이후 — 탭을 눌러도 내용이 떠오르지 않게(장면 이동이 아니다 · 진행절차처럼 바로 바뀐다) */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-body { animation: none !important; }
+.app-page[data-k="postwin"] .pw-body { animation: none !important; }
 /* 박스 탭 밑선은 켜진 탭 위로 지나간다 — 낙찰이후 장 탭과 같게(켜진 탭이 선을 덮지 않는다) */
 /* 2단 밑줄 탭 — 고른 탭 밑줄을 굵게(3px) */
 .subtab::after { height: 3px !important; }
@@ -4493,13 +4492,13 @@ html, body { overflow-x: clip; }
 .pw-chaptabs { margin: 4px 0 4px; border-bottom: 1px solid var(--boxtab-line); overflow-x: auto; scrollbar-width: none; }
 /* 낙찰이후 장 탭(진행절차 · 절차상세 · 가이드) — 손품조사 탭 줄과 같게: 사건 카드 띠 바로 아래 10px, 높이 40, 밑선은 화면 양끝까지, 경로는 탭 줄 오른쪽 */
 /* 사건 카드 — 물건상세 카드와 줄 높이를 같게(첫 줄 32 · 둘째 줄 30(별 자리) · 아래 묶음 78) → 카드 140, 탭 줄 높이가 손품조사와 같다 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-webhead .ih-top { min-height: 28px; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-webhead .ih-line { min-height: 26px; align-items: center; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-webhead .ih-prop { min-height: 56px; box-sizing: border-box; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-chaptabs { position: relative; height: 34px; box-sizing: border-box; margin: 0 !important; border-bottom: 0 !important; overflow: visible !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-chaptabs::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 0; width: 100vw; height: 1px; background: var(--boxtab-line); z-index: 3; pointer-events: none; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-crumbrow { position: relative; z-index: 4; height: 0; margin: 0 !important; padding: 0 !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .pw-crumbrow [data-crumb-slot] { position: absolute; right: -2px; top: 15px; }   /* 탭 줄(10px 아래) 안에서 손품조사 경로와 같은 높이 · 끝 */
+.app-page[data-k="postwin"] .pw-webhead .ih-top { min-height: 28px; }
+.app-page[data-k="postwin"] .pw-webhead .ih-line { min-height: 26px; align-items: center; }
+.app-page[data-k="postwin"] .pw-webhead .ih-prop { min-height: 56px; box-sizing: border-box; }
+.app-page[data-k="postwin"] .pw-chaptabs { position: relative; height: 34px; box-sizing: border-box; margin: 0 !important; border-bottom: 0 !important; overflow: visible !important; }
+.app-page[data-k="postwin"] .pw-chaptabs::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 0; width: 100vw; height: 1px; background: var(--boxtab-line); z-index: 3; pointer-events: none; }
+.app-page[data-k="postwin"] .pw-crumbrow { position: relative; z-index: 4; height: 0; margin: 0 !important; padding: 0 !important; }
+.app-page[data-k="postwin"] .pw-crumbrow [data-crumb-slot] { position: absolute; right: -2px; top: 15px; }   /* 탭 줄(10px 아래) 안에서 손품조사 경로와 같은 높이 · 끝 */
 .pw-chaptabs::-webkit-scrollbar { display: none; }
 /* 좁은 화면 — 줄바꿈 대신 가로로 밀어 본다 */
 
@@ -4524,11 +4523,11 @@ html, body { overflow-x: clip; }
 .app-page[data-k="finance"] .tax-card:not(.grey):not(.red):not(.blue):not(.green):not(.net) { background: #e2edff !important; border-color: #bcd3fa; }
 
 /* 가이드 › 세금(자금관리 '세금 안내'를 옮김) — 웹 글자 규칙: 상자 제목 16 · 중제목 15 · 나머지 14 */
-.app-page:is([data-k="postwin"], [data-k="manual"]) .tax-shell .g-card h2 { font-size: var(--title-fs) !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .tax-shell .g-card h2 i { font-size: 14px !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .tax-shell :is(.g-t, .g-sub) { font-size: 15px !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .tax-shell :is(.g-b, .g-s, .g-lead, .g-table th, .g-table td, .g-ico) { font-size: 14px !important; }
-.app-page:is([data-k="postwin"], [data-k="manual"]) .tax-shell { padding: 0 !important; }
+.app-page[data-k="postwin"] .tax-shell .g-card h2 { font-size: var(--title-fs) !important; }
+.app-page[data-k="postwin"] .tax-shell .g-card h2 i { font-size: 14px !important; }
+.app-page[data-k="postwin"] .tax-shell :is(.g-t, .g-sub) { font-size: 15px !important; }
+.app-page[data-k="postwin"] .tax-shell :is(.g-b, .g-s, .g-lead, .g-table th, .g-table td, .g-ico) { font-size: 14px !important; }
+.app-page[data-k="postwin"] .tax-shell { padding: 0 !important; }
 
 /* 세금 신고 일정 — 글자색은 하나로(종류별 색 빼기), 제목 15 · 나머지 14 */
 .app-page[data-k="finance"] .month-card .ev :is(.ev-when, .ev-title, .ev-note) { color: #111827 !important; }
@@ -4685,7 +4684,7 @@ span.cal-day.has { cursor: help; }
   .g-col a { padding: 5px 0; font-size: 14px; }
   /* 고정은 머리띠 · 하위 탭까지만 */
   .toolbar-shell, body.has-subtabs .toolbar-shell { position: relative; top: auto; }
-  .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-webhead, .app-page[data-k="finance"] .fin-shell .fin-toolbar, .mk-scaffold .mk-bar,
+  .app-page[data-k="postwin"] .pw-webhead, .app-page[data-k="finance"] .fin-shell .fin-toolbar, .mk-scaffold .mk-bar,
   .app-market:is([data-k="dong"], [data-k="case"]) :is(.adm-bar, .adm-tabs-top) { position: relative !important; top: auto !important; }
   /* 하위 탭 — 경로는 감추고 탭은 가로로 밀어 본다(맨 앞 위치 이름도 뺀다 — 머리 메뉴가 접혀 있어 탭 자리가 먼저) */
   .subtabs > .wrap { gap: 0; }
@@ -4739,17 +4738,17 @@ span.cal-day.has { cursor: help; }
   .app-page[data-k="more"] :is(.bil-shell, .bil-body) { padding-left: 14px !important; padding-right: 14px !important; }
   .app-page[data-k="more"] .bil-shell .bil-body { padding: 0 !important; }
   /* 낙찰이후 — 장 탭(낙찰당일 ~ 세금)은 가로로 밀어 보고, 체크표는 이름 칸을 한 줄 위로 올려 할 일 글이 폭을 다 쓰게(BUG-0026) */
-  .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-chaptabs { overflow-x: auto !important; overflow-y: hidden !important; border-bottom: 1px solid var(--boxtab-line) !important; }
-  .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-chaptabs::after { display: none; }
-  .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-chaptabs > button { flex: none; }
-  .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-tbl:not(.edit), .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-tbl:not(.edit) tbody { display: block; width: 100% !important; }
-  .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-tbl:not(.edit) colgroup { display: none; }
-  .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-tbl:not(.edit) tr { display: flex; flex-wrap: wrap; }
-  .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-tbl:not(.edit) td { order: 3; flex: 1 0 100%; box-sizing: border-box; min-width: 0; }
-  .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-tbl:not(.edit) td.pw-label { order: 0; width: auto !important; padding: 8px 12px !important; text-align: left; }
-  .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-tbl:not(.edit) td.pw-txt { order: 1; flex: 1 1 0; }
-  .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-tbl:not(.edit) td.pw-chk { order: 2; flex: 0 0 40px; }
-  .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-tbl:not(.edit) :is(.pw-label strong, .pw-labellink strong, .pw-memo) { white-space: normal; }
+  .app-page[data-k="postwin"] .pw-chaptabs { overflow-x: auto !important; overflow-y: hidden !important; border-bottom: 1px solid var(--boxtab-line) !important; }
+  .app-page[data-k="postwin"] .pw-chaptabs::after { display: none; }
+  .app-page[data-k="postwin"] .pw-chaptabs > button { flex: none; }
+  .app-page[data-k="postwin"] .pw-tbl:not(.edit), .app-page[data-k="postwin"] .pw-tbl:not(.edit) tbody { display: block; width: 100% !important; }
+  .app-page[data-k="postwin"] .pw-tbl:not(.edit) colgroup { display: none; }
+  .app-page[data-k="postwin"] .pw-tbl:not(.edit) tr { display: flex; flex-wrap: wrap; }
+  .app-page[data-k="postwin"] .pw-tbl:not(.edit) td { order: 3; flex: 1 0 100%; box-sizing: border-box; min-width: 0; }
+  .app-page[data-k="postwin"] .pw-tbl:not(.edit) td.pw-label { order: 0; width: auto !important; padding: 8px 12px !important; text-align: left; }
+  .app-page[data-k="postwin"] .pw-tbl:not(.edit) td.pw-txt { order: 1; flex: 1 1 0; }
+  .app-page[data-k="postwin"] .pw-tbl:not(.edit) td.pw-chk { order: 2; flex: 0 0 40px; }
+  .app-page[data-k="postwin"] .pw-tbl:not(.edit) :is(.pw-label strong, .pw-labellink strong, .pw-memo) { white-space: normal; }
   /* 시장분석 › 경매사례 — 기간 단추(3 ~ 24개월)는 박스 안에서 줄을 바꾼다 */
   .app-market.mk-sale .adm-bar > .adm-f { max-width: 100%; min-width: 0; }
   .mk-sale .adm-seg { display: flex; flex-wrap: wrap; }
@@ -5138,11 +5137,10 @@ span.cal-day.has { cursor: help; }
     more: ['mypage', 'alerts', 'billing', ...(SHOW_POINTS ? ['points'] : []), 'support', 'calendar', 'contents'],   /* contents — 마이페이지 › 내콘텐츠(전자책, /my-contents — 콘텐츠 › 내콘텐츠와 같은 화면) */   /* calendar — 마이페이지 › 입찰 캘린더(앱 화면 /bid-calendar) */   /* 공지는 커뮤니티로 옮겼다 · 포인트는 SHOW_POINTS 일 때만(옛 주소 #/more/points 는 내정보로) */
     community: ['notice'],   /* 오류및제안은 게시판으로 옮겼다(2026-11-05) */
     board: ['suggest', 'review'],   /* 게시판 — 오류및제안 · 사용후기(머리 오른쪽 위 '공지' 옆 '게시판'). 가입인사는 뺐다 */   /* 위 메뉴에서 커뮤니티를 뺐다(2026-11-02) — 머리 오른쪽 위 '공지'로 들어온다. FAQ 는 이용가이드로 */
-    manual: ['gdeny', 'gevict', 'biz', 'gtax', 'gcheck'],   /* 매뉴얼 — 하위 탭 경매기초 · 물건고르기는 준비 중이라 잠가 두었다(주소 없음) · 낙찰이후(gdeny 매각불허가 · gevict 명도 · biz 사업자등록 · gtax 세금 장). 처음 열면 낙찰이후 */
   };
   /* 앱 화면을 그대로 띄우는 메뉴 — 열쇠 → 이름 (mountAppPage 의 열쇠와 같다) */
-  const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '마이페이지', community: '공지', board: '게시판', manual: '매뉴얼' }; /* 앱 '더보기' 화면 — 웹 이름은 마이페이지. 커뮤니티는 메뉴에서 빼고 '공지'로 부른다 */
-  /* 공지 · 게시판 — 위 하위 탭 줄 대신 본문 맨 위 박스 탭. 매뉴얼은 시장분석 · 마이페이지처럼 하위 탭 줄(흰 띠)에 */
+  const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '마이페이지', community: '공지', board: '게시판' }; /* 앱 '더보기' 화면 — 웹 이름은 마이페이지. 커뮤니티는 메뉴에서 빼고 '공지'로 부른다 */
+  /* 공지 · 게시판 — 위 하위 탭 줄 대신 본문 맨 위 박스 탭 */
   const BOXTAB_PAGES = ['community', 'board'];
   const PLAIN_ROUTES = ['register', 'trip', 'store', 'mobile'];
   /** 주소 → { route, itemId, itemTab, sub } */
@@ -5158,7 +5156,6 @@ span.cal-day.has { cursor: help; }
     if (head === 'manual' || (head === 'postwin' && ['gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'gcheck'].includes(m[2]))) return { route: 'store', storeTab: 'manual', fromManual: true }; /* 예전 매뉴얼(위 메뉴 · 낙찰이후 가이드) — 이제 콘텐츠 › 매뉴얼로 서비스한다(2026-11-09) */ /* 모바일앱은 스토어 안 탭으로 옮겼다(2026-11-02) */
     if (head === 'mypage') return { route: 'more', sub: 'mypage' }; /* 예전 마이페이지 주소 — 더보기로 */
     if (head === 'market' && m[2] === 'region') return { route: 'market', sub: 'dong' }; /* 예전 '수요공급' 주소 — 지역분석 안 탭으로 합쳤다 */
-    if (head === 'postwin' && ['gwin', 'gdeny', 'gevict', 'biz', 'gtax'].includes(m[2])) return { route: 'manual', sub: m[2] === 'gwin' ? 'gdeny' : m[2] }; /* 낙찰이후 › 가이드 · 매각불허가 — 매뉴얼 › 낙찰이후로 옮겼다(낙찰당일 장은 뺐다) */
     if (head === 'postwin' && m[2] === 'sell') { try { sessionStorage.setItem('pw.flow.sub', 'sell'); } catch (e) { /* 그만 */ } return { route: 'postwin', sub: 'flow' }; } /* 예전 '매도·임대' — 진행절차 안 매물등록 박스 탭 */
     if (head === 'postwin' && m[2] === 'repair') { try { sessionStorage.setItem('pw.flow.sub', 'biz'); } catch (e) { /* 그만 */ } return { route: 'postwin', sub: 'flow' }; } /* 예전 '인테리어' 하위 탭 — 진행절차 안 사업경비 박스 탭으로 */
     if (head === 'finance' && (m[2] === 'fuelMeal' || m[2] === 'itemPurchase')) return { route: 'finance', sub: 'interior' }; /* 예전 유류&식대 · 물품구매 — 사업경비에 함께 보인다 */
@@ -5275,7 +5272,7 @@ span.cal-day.has { cursor: help; }
     ['m1', [['물건목록', 'go-list'], ['입찰 캘린더', 'mega-cal'], ['수익분석', 'mega-item']]],   /* 보관함 · 휴지통은 선정물건 도구 줄에서(2026-11-02 펼침에서 삭제) */
     /* 임장경로 아래 칸은 비운다(2026-11-02 — 임장동선 · 방문기록 · 체크리스트 삭제). 임장경로는 위 메뉴로 바로 연다 */
     ['m2', []],
-    ['m3c', [['진행절차', 'go-postwin'], ['절차별체크', 'go-postwin']]],   /* 가이드는 매뉴얼로 옮겼다 */
+    ['m3c', [['진행절차', 'go-postwin'], ['절차별체크', 'go-postwin']]],   /* 가이드는 콘텐츠 › 매뉴얼로 옮겼다 */
     ['m3f', [['자금입출금', 'go-finance'], ['필요경비', 'go-finance'], ['사업경비', 'go-finance'], ['세금신고', 'go-finance']]],
     ['m3', [['실거래분석', 'go-market'], ['시세예측', 'go-market'], ['랭킹분석', 'go-market'], ['매각분석', 'go-market']]],   /* 경매사례 → 매각분석(2026-11-08) */
     ['m4s', [['전체', 'go-store'], ['전자책', 'go-store'], ['리포트', 'go-store'], ['매뉴얼', 'go-store'], ['모바일앱', 'go-store'], ['내콘텐츠', 'go-store']]],
@@ -5338,7 +5335,7 @@ span.cal-day.has { cursor: help; }
     { const t = $('navTrip'); if (t) { t.classList.toggle('on', S.route === 'trip'); if (S.route === 'trip') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     { const t = $('navMarket'); if (t) { t.classList.toggle('on', S.route === 'market'); if (S.route === 'market') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     /* 자금관리는 마이페이지 아래 — 자금관리 화면에서도 마이페이지에 불이 들어온다 */
-    [['navPostwin', ['postwin']], ['navFinance', ['finance']], ['navManual', ['manual']], ['navMore', ['more']]].forEach(([id, rs]) => { const t = $(id); if (t) { const on = rs.includes(S.route); t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
+    [['navPostwin', ['postwin']], ['navFinance', ['finance']], ['navMore', ['more']]].forEach(([id, rs]) => { const t = $(id); if (t) { const on = rs.includes(S.route); t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
     [['navStore', 'store']].forEach(([id, r]) => { const t = $(id); if (t) { const on = S.route === r; t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
     { const t = $('navMy'); if (t) { t.classList.toggle('on', S.route === 'mypage'); if (S.route === 'mypage') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     /* 물건상세(선정물건 안)에 들어가도 선정물건 메뉴 밑줄은 그대로 */
@@ -6507,7 +6504,6 @@ span.cal-day.has { cursor: help; }
     more: [['mypage', '', '내정보'], ['alerts', '', '알림', 'hide'], ['billing', '', '결제하기'], ['calendar', '', '입찰 캘린더'], ['contents', '', '내콘텐츠'], ['points', '', '포인트', SHOW_POINTS ? '' : 'hide'], ['support', '', '고객센터', 'hide']],   /* 입찰 캘린더 — 결제하기 옆. 고객센터는 탭에서 빼고 바닥 링크(환불정책 옆)로(2026-11-03) */
     community: [['notice', '', '공지']],
     board: [['suggest', '', '오류및제안'], ['review', '', '사용후기']],   /* FAQ 는 이용가이드(/guide/)에 — 같은 목록(supportFaq) */
-    manual: [['basic', '', '경매기초', 'soon'], ['pick', '', '물건고르기', 'soon'], ['gdeny', '', '낙찰이후']],   /* 'soon' — 준비 중, 누르면 알림만(잠금) */
     /* 가격정보는 뺐다 — 시세는 손품조사(시세분석 · 손품결론), 인근 매각사례는 손품결론 아래로 옮겼다(웹). 옛 주소(…/verify)는 손품조사로 */
     item: [['cards', '', '물건카드'], ['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['profit', '', '수익분석'], ['field', '', '임장조사']],
   };
@@ -6519,7 +6515,7 @@ span.cal-day.has { cursor: help; }
   const whereTag = () => '';
   /* 하위 탭 줄을 고른 위 메뉴 글자 아래에서 시작(2026-11-03) — 메뉴를 옮기면 하위 탭도 그 아래로 따라간다.
      칸이 모자라면(오른쪽 끝 메뉴 · 탭이 많을 때) 경로 칸과 겹치지 않을 만큼만 왼쪽으로 당긴다. 위 메뉴가 숨는 좁은 화면은 왼쪽 그대로 */
-  const SUB_MENU_OF = { list: 'navWatch', item: 'navWatch', market: 'navMarket', postwin: 'navPostwin', finance: 'navFinance', manual: 'navManual', more: 'navMore' };
+  const SUB_MENU_OF = { list: 'navWatch', item: 'navWatch', market: 'navMarket', postwin: 'navPostwin', finance: 'navFinance', more: 'navMore' };
   function alignSubTabs() {
     /* 물건등록 — 탭 줄(자동등록 · 직접입력)이 하위 탭 줄 대신 화면 안에 따로 그려진다. 같은 규칙으로 '물건등록' 아래에서 시작 */
     const reg = S.route === 'register' ? document.querySelector('#regBox .reg-tabbar') : null;
@@ -6941,7 +6937,7 @@ span.cal-day.has { cursor: help; }
   }
   /* 앱 '손품+현장' 카드 가운데 현장에서 쓰는 것 — 웹은 이것만 임장조사 탭으로, 나머지는 손품조사 탭으로 */
   const FIELD_CARDS = ['현장조사', '현장사진'];
-  /* 웹에서 감추는 앱 카드 — 현장 체크리스트는 매뉴얼 › 낙찰이후 › 체크리스트로 옮겼다 */
+  /* 웹에서 감추는 앱 카드 — 현장 체크리스트는 콘텐츠 › 매뉴얼(경매 체크리스트 매뉴얼)로 옮겼다 */
   const HIDDEN_CARDS = ['체크리스트'];
   function layoutAppCols(el, tab) {
     if (tab === 'profit') layoutProfit(el);
@@ -7029,8 +7025,8 @@ span.cal-day.has { cursor: help; }
   });
   /* ===== 경로 표시 한 곳 — 어느 화면이든 '홈 › 메뉴 › 하위 탭(› 그 안 탭)' 까지. 하위 탭을 바꾸면 renderSubTabs 가 다시 부른다 ===== */
   /* 낙찰이후 — 장 열쇠는 제 하위 탭(절차상세 · 가이드)에 불이 들어오고, 경로에는 '절차상세 › 명도'처럼 장 이름이 붙는다 */
-  const SUB_PARENT = { postwin: { dpre: 'win', evict: 'win', balance: 'win', drepair: 'win', dsell: 'win', dtax: 'win' }, manual: { gevict: 'gdeny', biz: 'gdeny', gtax: 'gdeny', gcheck: 'gdeny' } };   /* 매각불허가 · 명도 · 사업자등록 · 세금 가이드는 매뉴얼 › 낙찰이후로 */
-  const SUB_CHAP = { postwin: { win: '낙찰당일', dpre: '잔금전', evict: '명도', balance: '잔금·등기', drepair: '인테리어', dsell: '매도', dtax: '세금' }, manual: { gdeny: '매각불허가', gevict: '명도', biz: '사업자등록', gtax: '세금', gcheck: '체크리스트' } };
+  const SUB_PARENT = { postwin: { dpre: 'win', evict: 'win', balance: 'win', drepair: 'win', dsell: 'win', dtax: 'win' } };   /* 매각불허가 · 명도 · 사업자등록 · 세금 가이드는 콘텐츠 › 매뉴얼로 */
+  const SUB_CHAP = { postwin: { win: '낙찰당일', dpre: '잔금전', evict: '명도', balance: '잔금·등기', drepair: '인테리어', dsell: '매도', dtax: '세금' } };
   const subParent = (route, key) => (SUB_PARENT[route] || {})[key] || key;
   const subLabel = (route, key) => ((SUBTABS[route] || []).find((t) => t[0] === subParent(route, key)) || [])[2] || '';
   const subChap = (route, key) => (SUB_CHAP[route] || {})[key] || '';
@@ -8983,7 +8979,6 @@ span.cal-day.has { cursor: help; }
   const MOBILE_LANDING_URL = '';
   /* 웹 이용가이드(머리띠 결제하기 옆) — public/guide/index.html. 비우면 '준비 중' */
   const WEB_GUIDE_URL = '/guide/index.html';   /* /guide/ 가 아니라 파일 주소로 — 잠깐 고장 났던 넘기기(301)를 브라우저가 기억해도 걸리지 않게 */
-  /* ===== 매뉴얼 — 하위 탭(경매기초 · 경매절차)만 열어 두었다. 내용은 나중에 채운다 ===== */
   /* ===== 홈 — 로그인 후 대문(2026-11-03). 배치를 먼저 세우고 칸마다 내용은 하나씩 바꿔 간다 =====
      앱 띠 · 이어서 분석 · 부동산 투자 지표 · 실거래 동향 · 나의 경매 일정 · 공지사항 · 최근 분석 내역.
      투자 지표 · 실거래 동향은 아직 데이터 연결 전이라 '예시'로 표시한다(지어낸 값을 진짜처럼 보이지 않게) */
@@ -9951,7 +9946,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
           .finally(() => { t.disabled = false; t.textContent = '다운로드'; });
         break;
       }
-      case 'go-postwin': case 'go-finance': case 'go-more': case 'go-community': case 'go-board': case 'go-manual': {
+      case 'go-postwin': case 'go-finance': case 'go-more': case 'go-community': case 'go-board': {
         const route = act.slice(3);
         const hit = (SUBTABS[route].find((x) => x[2] === t.dataset.name) || [])[0];
         if (hit) S.pageTab[route] = hit;

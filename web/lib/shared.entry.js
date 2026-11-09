@@ -338,7 +338,7 @@ const BoardPage = {
     return () => { const b = BOARD_KEYS.includes(String(route.query.tab)) ? String(route.query.tab) : 'suggest'; return h('div', { class: 'community-shell' }, [h(SuggestBoard, { key: b, board: b })]); };
   },
 };
-const APP_PAGES = { postwin: '/post-win', finance: '/finance', more: '/more', community: '/community', board: '/board', manual: '/manual' };
+const APP_PAGES = { postwin: '/post-win', finance: '/finance', more: '/more', community: '/community', board: '/board' };
 const APP_PAGE_ROUTES = [
   { path: '/post-win', component: PostWinPage },
   { path: '/finance', component: FinancePage },
@@ -346,8 +346,6 @@ const APP_PAGE_ROUTES = [
   { path: '/more', component: MorePage },
   { path: '/community', component: CommunityPage },
   { path: '/board', component: BoardPage },
-  /* 매뉴얼 — 낙찰이후 화면의 가이드 장(명도 · 사업자등록 · 세금)만, 사건 카드 없이 */
-  { path: '/manual', component: PostWinPage },
   { path: '/trash', component: () => import('../../src/pages/TrashPage.vue') },
   { path: '/archive', component: () => import('../../src/pages/TrashPage.vue') },
   { path: '/bid-calendar', component: () => import('../../src/pages/BidCalendarPage.vue') },
