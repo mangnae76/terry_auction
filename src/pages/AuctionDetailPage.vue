@@ -74,6 +74,7 @@ import { deleteSitePdf, deleteSitePhoto, isPdfEntry, isPdfFile, isPhotoId, loadS
 import { getGeminiKey, isGeminiOn, loadGeminiPrefs } from '../services/geminiPdf';
 import { askRightsAnalysis, DOC_LABELS, type RightsAi, type RightsDocPart } from '../services/geminiRights';
 import { buildRightsFacts } from '../services/rightsFacts';
+import RightsPanel from '../components/RightsPanel.vue';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
 import { geocodeAddress } from '../services/routeOptimizer';
 import {
@@ -7437,9 +7438,29 @@ const goBack = () => router.back();
 
 
       <template v-if="activeTab === 'rights'">
+        <!-- 앱 — 서류 올리기(매각물건명세서 PDF 하나) · 권리분석 결과(요약 · 권리·세입자 · 확인할일). 웹 권리분석 결과와 같은 내용(시안 rights-mock, 2026-11-09).
+             올리기 · 분석 · 저장은 아래 웹 카드와 같은 함수를 쓴다(명세서는 extraPhotos['doc.saleSpec']) -->
+        <RightsPanel
+          v-if="!webEmbed"
+          :ai="rightsAi"
+          :spec-entry="extraList('doc.saleSpec')[0] ?? ''"
+          :spec-name="extraList('doc.saleSpec')[0] ? (isPdfEntry(extraList('doc.saleSpec')[0]) ? (docPdfBusy === extraList('doc.saleSpec')[0] ? '여는 중…' : pdfNameOf(extraList('doc.saleSpec')[0])) : '사진 보기') : ''"
+          :spec-is-pdf="!!extraList('doc.saleSpec')[0] && isPdfEntry(extraList('doc.saleSpec')[0])"
+          :busy="rightsAiBusy"
+          :sec="rightsAiSec"
+          :err="rightsAiErr || extraErr['doc.saleSpec'] || ''"
+          :used-text="auction?.rightsAi ? `${rightsAi?.usedDocs.length ?? 0}장으로 분석 · ${aiAskedAtText}` : ''"
+          @pick="pickPhotoFor('x:doc.saleSpec')"
+          @drop="onDocDrop($event, 'doc.saleSpec')"
+          @remove="removeExtraAt('doc.saleSpec', 0)"
+          @open="isPdfEntry(extraList('doc.saleSpec')[0]) ? openDocPdf(extraList('doc.saleSpec')[0]) : openLightbox(photoSrc(extraList('doc.saleSpec')[0]))"
+          @start="auction?.rightsAi ? onAiHeadClick() : requestRightsAi()"
+          @cancel="cancelRightsAi"
+        />
         <!-- AI 분석 요청 — 서류 다섯 칸(건물등기·매물명세·현황조사·세대열람·송달내역).
-             칸을 누르면 파일을 고르고, 끌어다 놓아도 올라간다. 각 칸은 extraPhotos['doc.*'] 에 담는다 -->
-        <section class="adp-card">
+             칸을 누르면 파일을 고르고, 끌어다 놓아도 올라간다. 각 칸은 extraPhotos['doc.*'] 에 담는다.
+             웹만 — 웹 권리분석 결과(selected.src.html)가 이 카드의 칸을 읽고 눌러 쓴다(화면에선 감춘다). 앱은 위 RightsPanel -->
+        <section v-if="webEmbed" class="adp-card">
           <header class="adp-card-head" @click="!webEmbed && toggleSection('rightsPhotos')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z"/></svg>AI 분석 요청<PhotoCountMark :n="photoAreaCount('rightsPhotos')" /></h2>
             <!-- 웹은 접기 화살표 대신 분석 단추를 머리 오른쪽에 둔다. 몇 장으로 언제 분석했는지는 그 왼쪽에 -->
@@ -7541,8 +7562,9 @@ const goBack = () => router.back();
           </div>
         </section>
 
-        <!-- AI 권리분석 진단 — 권리분석 결과 및 안전성 진단. 말소기준권리·인수/말소 권리 수를 찾아 넣을 자리(값은 다음 단계에서 채운다) -->
-        <section class="adp-card">
+        <!-- AI 권리분석 진단 — 권리분석 결과 및 안전성 진단. 말소기준권리·인수/말소 권리 수를 찾아 넣을 자리(값은 다음 단계에서 채운다).
+             앱은 뺐다(2026-11-09) — 위 권리분석 결과가 대신한다 -->
+        <section v-if="webEmbed" class="adp-card">
           <header class="adp-card-head" @click="toggleSection('rightsDiag')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>AI 권리분석 진단</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsDiag') }]" alt="" />
@@ -7653,7 +7675,7 @@ const goBack = () => router.back();
         </section>
 
         <!-- AI 리스크 분석 요약 — 걸리는 것을 한 줄씩. 없으면 카드도 서지 않는다 -->
-        <section v-if="rightsAi && (rightsAi.risk.summary || rightsAi.risk.items.length)" class="adp-card">
+        <section v-if="webEmbed && rightsAi && (rightsAi.risk.summary || rightsAi.risk.items.length)" class="adp-card">
           <header class="adp-card-head" @click="toggleSection('rightsRisk')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>AI 리스크 분석 요약</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsRisk') }]" alt="" />
@@ -7670,7 +7692,7 @@ const goBack = () => router.back();
         </section>
 
         <!-- AI 권리분석 결론 — 상자 하나 (값은 AI 분석 뒤 채움) -->
-        <section class="adp-card">
+        <section v-if="webEmbed" class="adp-card">
           <header class="adp-card-head" @click="toggleSection('rightsConclusion')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>AI 권리분석 결론</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsConclusion') }]" alt="" />
@@ -9429,7 +9451,8 @@ const goBack = () => router.back();
     />
 
     <!-- AI 분석 중 — 화면을 덮어 다른 손놀림을 막고, 돌아가는 바퀴로 살아 있음을 보인다 -->
-    <div v-if="rightsAiBusy" class="adp-ai-wait" role="status" aria-live="polite">
+    <!-- 웹만 — 앱은 권리분석 결과 칸에 단계 목록이 서고 취소도 그 위에 있다 -->
+    <div v-if="rightsAiBusy && webEmbed" class="adp-ai-wait" role="status" aria-live="polite">
       <div class="adp-ai-wait-card">
         <span class="adp-spin" aria-hidden="true">
           <i
