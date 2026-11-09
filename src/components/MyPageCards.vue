@@ -183,6 +183,15 @@ const go = (c: Card) => {
         <span class="mpc-chip">결제내역</span>
         <span class="mpc-val">{{ freeMember ? '무료회원' : `${PLAN_REST_DAYS}일` }}</span>
       </button>
+      <!-- 앱 — 나의 선정물건은 결제내역 오른쪽에. 건수 아래에 기타설정 카드와 같은 세부(경매 · 공매 수, 종류별 수) -->
+      <button v-if="!webEmbed" type="button" class="mpc-cell" @click="go(PICK_CARDS[0])">
+        <span class="mpc-chip">나의선정물건</span>
+        <span class="mpc-val">{{ (auctionCount + publicSaleCount).toLocaleString('ko-KR') }}<small>건</small></span>
+        <span class="mpc-tallyline mpc-cell-tally">
+          <em class="mpc-tally">{{ PICK_CARDS[0].tally }}</em>
+          <i v-for="t in PICK_CARDS[0].tallies" :key="t" class="mpc-type">{{ t }}</i>
+        </span>
+      </button>
     </div>
 
     <template v-if="webEmbed && recent.length">
@@ -334,4 +343,6 @@ const go = (c: Card) => {
   font-style: normal; font-size: 10.5px; font-weight: 700; color: #4b5563;
   background: #f3f5fa; border-radius: 4px; padding: 3px 6px;
 }
+/* 내 자리 칸 안의 세부 — 건수 아래 가운데로 */
+.mpc-cell-tally { justify-content: center; margin-top: 0; }
 </style>

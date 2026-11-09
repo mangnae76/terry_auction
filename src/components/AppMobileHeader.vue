@@ -80,28 +80,25 @@ const onLogout = async () => {
       <div class="amh-brand">
         <BrandLogo :size="40" tone="white" />
       </div>
-      <!-- 공지 · 알림 — 아랫줄이 로고에 닿지 않게 윗줄 오른쪽에 둔다 -->
-      <div class="amh-top-icons">
-        <button type="button" class="amh-bell" aria-label="공지" @click="router.push('/news')">
-          <!-- 확성기 — 공지. 새 글이 있으면 종처럼 빨간 점 -->
-          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3.5 10v4a1 1 0 0 0 1 1h2.5l7 4.5v-15L7 9H4.5a1 1 0 0 0-1 1Z" />
-            <path d="M17.5 9a4 4 0 0 1 0 6" />
-            <path d="M7.5 15l1 4.5" />
-          </svg>
-          <i v-if="newsNew" class="amh-bell-dot" />
-        </button>
-        <button type="button" class="amh-bell" aria-label="알림" @click="router.push('/notifications')">
-          <!-- 종 — 알릴 것이 있으면 꼭지에 빨간 점이 붙는다 -->
-          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 8.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5Z" />
-            <path d="M10.3 19a2 2 0 0 0 3.4 0" />
-          </svg>
-          <i v-if="alertCount" class="amh-bell-dot" />
-        </button>
-      </div>
     </div>
     <div class="amh-row amh-row-bottom">
+      <button type="button" class="amh-bell" aria-label="공지" @click="router.push('/news')">
+        <!-- 확성기 — 공지. 새 글이 있으면 종처럼 빨간 점 -->
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3.5 10v4a1 1 0 0 0 1 1h2.5l7 4.5v-15L7 9H4.5a1 1 0 0 0-1 1Z" />
+          <path d="M17.5 9a4 4 0 0 1 0 6" />
+          <path d="M7.5 15l1 4.5" />
+        </svg>
+        <i v-if="newsNew" class="amh-bell-dot" />
+      </button>
+      <button type="button" class="amh-bell" aria-label="알림" @click="router.push('/notifications')">
+        <!-- 종 — 알릴 것이 있으면 꼭지에 빨간 점이 붙는다 -->
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 8.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5Z" />
+          <path d="M10.3 19a2 2 0 0 0 3.4 0" />
+        </svg>
+        <i v-if="alertCount" class="amh-bell-dot" />
+      </button>
       <!-- 날짜 — 결제하기 왼쪽. 누르면 입찰 캘린더로 -->
       <button type="button" class="amh-cal-btn" aria-label="입찰 캘린더 열기" @click="router.push('/bid-calendar')">
         <img :src="calendarIcon" alt="" class="amh-icon" />
@@ -219,8 +216,6 @@ const onLogout = async () => {
 }
 
 /* 종과 사람은 손가락이 닿을 자리를 넉넉히 두고 서로 떨어뜨린다 */
-.amh-top-icons { display: inline-flex; align-items: center; gap: 10px; margin-top: 8px; margin-right: -3px; }
-.amh-top-icons .amh-bell { margin-right: 0; }
 .amh-bell {
   position: relative; border: none; background: transparent; padding: 3px; cursor: pointer;
   display: inline-flex; align-items: center; color: #fff; margin-right: 9px;
@@ -294,7 +289,7 @@ const onLogout = async () => {
   /* 좁은 손전화 */
   /* 아랫줄이 로고에 닿지 않게 틈을 줄인다 */
   .amh-row-bottom { gap: 3px; }
-  .amh-cal-btn, .amh-pay { margin-right: 4px; }
+  .amh-cal-btn, .amh-pay, .amh-bell { margin-right: 4px; }
   .amh-icon { width: 11px; height: 11px; }
   .amh-greet { font-size: 12px; }
   .amh-greet-icon { width: 14px; height: 14px; }
