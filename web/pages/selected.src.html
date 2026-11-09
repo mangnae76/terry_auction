@@ -9254,7 +9254,10 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       const m = document.querySelector('main'); if (!m) return;
       /* 지도는 떠 두지 않는다 — 덮개 속 옛 지도가 새 지도와 함께 두 개로 보였고(2026-11-08) 떠 두는 양도 컸다. 지도 칸은 빈 자리(같은 높이)만 남긴다 */
       const cl = m.cloneNode(true);
-      cl.querySelectorAll('.sx-map, .kmap-box, .leaflet-container, .map-wrap .map, .pa .map, #trade-map, #trip-map').forEach((e) => { e.innerHTML = ''; });
+      /* 비운 지도 칸이 높이까지 잃어 새로고침 때 지도 자리가 사라졌다가(표만 보이다가) 다시 나타났다 — 원래 높이 · 옅은 바탕을 그대로 남긴다(2026-11-09) */
+      const MAP_SEL = '.sx-map, .kmap-box, .leaflet-container, .map-wrap .map, .pa .map, #trade-map, #trip-map';
+      const mapH = [...m.querySelectorAll(MAP_SEL)].map((e) => e.offsetHeight);
+      cl.querySelectorAll(MAP_SEL).forEach((e, i) => { e.innerHTML = ''; if (mapH[i]) { e.style.height = `${mapH[i]}px`; e.style.background = '#eef1f6'; } });
       const html = cl.innerHTML.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<iframe[\s\S]*?<\/iframe>/gi, '');
       if (html.length > 3000000) { sessionStorage.removeItem(SNAP_KEY); return; }   /* 너무 크면 떠 두지 않는다 */
       sessionStorage.setItem(SNAP_KEY, JSON.stringify({ hash: location.hash, y: window.scrollY, cls: m.className, html }));
