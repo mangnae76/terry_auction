@@ -10,6 +10,7 @@ import BillingBody from '../components/BillingBody.vue';
 import PointsBody from '../components/PointsBody.vue';
 import NewsBody from '../components/NewsBody.vue';
 import SupportBody from '../components/SupportBody.vue';
+import MyContentsPage from './MyContentsPage.vue';
 import { useAuthStore } from '../stores/authStore';
 import { POINTS_OPEN } from '../services/billingPlans';
 
@@ -43,6 +44,7 @@ const onAuthPill = async () => {
 const ALL_TABS = [
   { key: 'mypage', label: '마이페이지' },
   { key: 'billing', label: '결제하기' },
+  { key: 'mycontents', label: '내콘텐츠' },
   { key: 'points', label: '포인트' },
   { key: 'news', label: '공지' },
   { key: 'support', label: '고객센터' },
@@ -51,8 +53,8 @@ type TabKey = (typeof ALL_TABS)[number]['key'];
 /** 웹에 들어가 있는가 — 앱에서만 공지 탭을 뺀다 */
 const webEmbed = inject('webEmbed', false);
 /** '포인트' 탭은 포인트를 붙일 때까지 뺀다(POINTS_OPEN, 지우지 않음) — 주소로 ?tab=points 가 와도 열리지 않는다.
- *  앱의 '공지'는 머리글 확성기의 공지 화면(/news)으로 옮겨 여기서 뺀다 (웹은 그대로) */
-const TABS = ALL_TABS.filter((t) => (POINTS_OPEN || t.key !== 'points') && (webEmbed || t.key !== 'news'));
+ *  앱의 '공지'는 머리글 확성기의 공지 화면(/news)으로 옮겨 여기서 뺀다. '내콘텐츠'는 앱만(웹은 마이페이지에 따로 있다) */
+const TABS = ALL_TABS.filter((t) => (POINTS_OPEN || t.key !== 'points') && (webEmbed || t.key !== 'news') && (!webEmbed || t.key !== 'mycontents'));
 const tab = ref<TabKey>('mypage');
 
 /** 고른 탭을 주소에 적어 둔다 — 다른 화면에 갔다 돌아와도 보던 탭이 그대로 열린다.
@@ -126,7 +128,8 @@ onMounted(() => {
         </div>
       </div>
 
-      <nav class="quick">
+      <!-- 보이는 탭 수만큼 똑같이 나눈다 -->
+      <nav class="quick" :style="{ gridTemplateColumns: `repeat(${TABS.length}, 1fr)` }">
         <button
           v-for="t in TABS"
           :key="t.key"
@@ -147,6 +150,7 @@ onMounted(() => {
       <BillingBody v-else-if="tab === 'billing'" />
       <PointsBody v-else-if="tab === 'points'" />
       <NewsBody v-else-if="tab === 'news'" />
+      <MyContentsPage v-else-if="tab === 'mycontents'" />
       <SupportBody v-else />
     </div>
 

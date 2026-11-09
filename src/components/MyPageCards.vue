@@ -88,8 +88,9 @@ const WEB_ACCOUNT_ORDER = ['정보수정', 'AI 자동 분석 설정', '결제하
 const APP_AI_CARDS: Card[] = [
   { icon: '🤖', title: 'AI 자동 분석 설정', desc: '켜고 끄기 · 제미나이 API 키 등록', path: '/auctions/import?tab=auto' },
 ];
-/** 앱 — 두 칸씩(왼쪽 | 오른쪽): 정보수정 | 결제하기 → 3일무료체험 | AI 설정 → 결제관리 | 회원탈퇴 (2026-11-09) */
-const APP_ACCOUNT_ORDER = ['정보수정', '결제하기', '3일무료체험', 'AI 자동 분석 설정', '결제관리', ...(POINTS_OPEN ? ['포인트내역'] : []), '회원탈퇴'];
+/** 앱 — 왼쪽 세로줄 정보수정 · 결제하기 · 3일무료체험, 오른쪽 세로줄 AI 설정 · 결제관리 · 회원탈퇴 (2026-11-09).
+ *  칸은 두 칸씩 가로로 채워지므로 왼쪽 · 오른쪽을 번갈아 적는다 */
+const APP_ACCOUNT_ORDER = ['정보수정', 'AI 자동 분석 설정', '결제하기', '결제관리', '3일무료체험', '회원탈퇴', ...(POINTS_OPEN ? ['포인트내역'] : [])];
 const ACCOUNT_CARDS = (webEmbed
   ? WEB_ACCOUNT_ORDER.map((t) => [...ACCOUNT_CARDS_BASE, ...WEB_AI_CARDS].find((c) => c.title === t))
   : APP_ACCOUNT_ORDER.map((t) => [...ACCOUNT_CARDS_BASE, ...APP_AI_CARDS].find((c) => c.title === t))
@@ -152,9 +153,9 @@ const go = (c: Card) => {
 </script>
 
 <template>
-  <div class="mpc">
+  <div :class="['mpc', { 'mpc-app': !webEmbed }]">
     <!-- 내 자리 한눈에 — 누르면 그 화면으로 간다 -->
-    <div class="mpc-sum">
+    <div :class="['mpc-sum', { 'mpc-sum-app': !webEmbed }]">
       <span class="mpc-who">{{ auth.nickname || '게스트' }} 님<em>( {{ loginId }} )</em></span>
       <!-- 웹 — 나의 선정물건은 이름 바로 옆 칸으로(아래 카드 묶음에서는 뺀다) -->
       <button v-if="webEmbed" type="button" class="mpc-cell" @click="go(PICK_CARDS[0])">
@@ -181,15 +182,20 @@ const go = (c: Card) => {
       </button>
       <button type="button" class="mpc-cell" @click="router.push('/payments')">
         <span class="mpc-chip">결제내역</span>
-        <span class="mpc-val">{{ freeMember ? '무료회원' : `${PLAN_REST_DAYS}일` }}</span>
+        <!-- 앱은 단위를 '건'과 같은 작은 글자로 -->
+        <span v-if="!webEmbed && !freeMember" class="mpc-val">{{ PLAN_REST_DAYS.toLocaleString('ko-KR') }}<small>일</small></span>
+        <span v-else class="mpc-val">{{ freeMember ? '무료회원' : `${PLAN_REST_DAYS}일` }}</span>
       </button>
-      <!-- 앱 — 나의 선정물건은 결제내역 오른쪽에. 건수 아래에 기타설정 카드와 같은 세부(경매 · 공매 수, 종류별 수) -->
-      <button v-if="!webEmbed" type="button" class="mpc-cell" @click="go(PICK_CARDS[0])">
+      <!-- 앱 — 나의 선정물건은 결제내역 오른쪽에(사이에 세로 줄). 건수 옆에 기타설정 카드와 같은 세부(경매 · 공매 수, 종류별 수)를 한 줄로 -->
+      <button v-if="!webEmbed" type="button" class="mpc-cell mpc-cell-pick" @click="go(PICK_CARDS[0])">
         <span class="mpc-chip">나의선정물건</span>
-        <span class="mpc-val">{{ (auctionCount + publicSaleCount).toLocaleString('ko-KR') }}<small>건</small></span>
-        <span class="mpc-tallyline mpc-cell-tally">
-          <em class="mpc-tally">{{ PICK_CARDS[0].tally }}</em>
-          <i v-for="t in PICK_CARDS[0].tallies" :key="t" class="mpc-type">{{ t }}</i>
+        <!-- 건수 옆 같은 줄에 세부 -->
+        <span class="mpc-pick-row">
+          <span class="mpc-val">{{ (auctionCount + publicSaleCount).toLocaleString('ko-KR') }}<small>건</small></span>
+          <span class="mpc-tallyline mpc-cell-tally">
+            <em class="mpc-tally">{{ PICK_CARDS[0].tally }}</em>
+            <i v-for="t in PICK_CARDS[0].tallies" :key="t" class="mpc-type">{{ t }}</i>
+          </span>
         </span>
       </button>
     </div>
@@ -309,6 +315,8 @@ const go = (c: Card) => {
 .mpc-val small { font-size: 11px; color: #6b7280; font-weight: 700; }
 
 .mpc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+/* 앱 — 긴 설명이 칸을 밀어 화면 밖으로 넘치지 않게 두 칸을 똑같이 */
+.mpc-app .mpc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 /* 카드 전체가 단추다 — 꺾쇠는 '누를 수 있다'는 표시일 뿐, 어디를 눌러도 같이 간다.
    글이 한 줄이라 그림과 글의 세로 가운데를 맞춘다 */
 .mpc-card {
@@ -345,4 +353,25 @@ const go = (c: Card) => {
 }
 /* 내 자리 칸 안의 세부 — 건수 아래 가운데로 */
 .mpc-cell-tally { justify-content: center; margin-top: 0; }
+/* 앱 — 결제내역은 내용 폭만, 나의선정물건이 남는 폭을 다 쓴다. 두 칸 사이에 세로 줄.
+   두 칸 모두 위에서부터 쌓아 이름표 · 숫자 줄이 가로로 맞고, 세부는 건수 옆 같은 줄에 선다 */
+.mpc-sum-app { display: flex; align-items: stretch; }
+.mpc-sum-app .mpc-cell { flex: 0 0 auto; justify-content: flex-start; padding: 6px 12px; }
+.mpc-sum-app .mpc-cell-pick {
+  flex: 1 1 auto; min-width: 0; align-items: flex-start; padding-left: 12px;
+  border-left: 1px solid #dfe4ee; border-radius: 0;
+}
+.mpc-pick-row { display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
+.mpc-pick-row .mpc-val { flex: 0 0 auto; white-space: nowrap; }
+.mpc-sum-app .mpc-cell-tally { flex-wrap: nowrap; white-space: nowrap; justify-content: flex-start; margin-top: 0; gap: 3px; }
+.mpc-sum-app .mpc-cell-tally .mpc-tally { padding: 3px 5px; font-size: 10px; }
+.mpc-sum-app .mpc-cell-tally .mpc-type { padding: 3px 4px; font-size: 10px; }
+/* 좁은 폰 — 세부 한 줄이 칸 안에 들게 틈 · 안쪽 여백을 줄인다 */
+@media (max-width: 380px) {
+  .mpc-sum-app { padding-left: 4px; padding-right: 4px; }
+  .mpc-sum-app .mpc-cell { padding-left: 8px; padding-right: 8px; }
+  .mpc-pick-row { gap: 5px; }
+  .mpc-sum-app .mpc-cell-tally { gap: 2px; }
+  .mpc-sum-app .mpc-cell-tally .mpc-type { padding: 3px 3px; }
+}
 </style>
