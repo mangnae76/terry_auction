@@ -1352,7 +1352,7 @@ watch(
 /* 숨긴 물건 드롭다운 */
 .wlp-hidden-note { position: relative; display: flex; min-width: 0; }
 /* 보관함 × 7 — 숨긴 물건 수 */
-.wlp-restore-ico { width: 20px; height: 20px; object-fit: contain; display: block; flex: 0 0 auto; }
+.wlp-restore-ico { width: 18px; height: 18px; object-fit: contain; display: block; flex: 0 0 auto; }
 .wlp-restore-x { font-style: normal; font-size: 9.5px; color: #9ca3af; margin: 0 1px 0 2px; }
 .wlp-hidden-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(15, 23, 42, 0.45); }
 /* 보관함 — 버튼 아래 드롭다운이면 화면 밖으로 밀려나서 가운데 팝업으로 띄운다 */
