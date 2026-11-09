@@ -9,6 +9,8 @@ import { useAuthStore } from '../stores/authStore';
 import { newAgencyId, telDigits, useAgencyBook, type AgencyPreset } from '../services/agencyBook';
 import { formatPhone } from '../utils/phone';
 
+/** title — 주면 단추 줄 맨 앞에 목록 제목을 세우고 건수(○곳)를 그 바로 옆에 붙인다(앱 중개업체 관리) */
+defineProps<{ title?: string }>();
 const emit = defineEmits<{ (e: 'saved', count: number): void }>();
 /** 웹 — 업체마다 '협의' 칸을 더 두고, 글자 · 칸을 웹 규격(글자 14 · 칸 40 · 모서리 8)으로 */
 const webEmbed = inject<boolean>('webEmbed', false);
@@ -92,9 +94,10 @@ defineExpose({ save, dirty });
 </script>
 
 <template>
-  <div :class="['agb-panel', { web: webEmbed }]">
+  <div :class="['agb-panel', { web: webEmbed, titled: !!title }]">
     <div class="agb-tools">
-      <span class="agb-eyebrow">{{ rows.length }}곳</span>
+      <b v-if="title" class="agb-listttl">{{ title }}</b>
+      <span :class="['agb-eyebrow', { 'by-title': title }]">{{ rows.length }}곳</span>
       <button type="button" class="agb-add" @click="addRow">＋ 업체 추가</button>
       <!-- 많아지면 찾기 어렵다 — 상호나 지역으로 줄을 세운다 -->
       <button type="button" :class="['agb-sort', { on: sortKey === 'name' }]" @click="sortBy('name')">가나다순</button>
@@ -152,6 +155,20 @@ defineExpose({ save, dirty });
 .agb-panel { display: flex; flex-direction: column; gap: 8px; }
 .agb-tools { display: flex; align-items: center; gap: 6px; }
 .agb-eyebrow { font-size: 10.5px; font-weight: 700; color: #2b6df3; white-space: nowrap; margin-right: auto; }
+/* 목록 제목 + 건수 — 단추들과 한 줄. 건수는 제목 바로 옆 */
+.agb-listttl { flex: 0 0 auto; font-size: 12.5px; font-weight: 800; color: #374151; white-space: nowrap; }
+.agb-eyebrow.by-title { font-size: 12px; }
+/* 제목이 같은 줄에 서면 단추가 줄바꿈되지 않게 조금 촘촘히 — 좁은 폰(360)에서도 한 줄 */
+.titled .agb-tools { gap: 4px; }
+.titled .agb-tools > button { flex: 0 0 auto; white-space: nowrap; }
+.titled .agb-add, .titled .agb-save { padding: 0 7px; font-size: 11px; }
+.titled .agb-sort { padding: 4px 7px; font-size: 11px; }
+@media (max-width: 380px) {
+  .titled .agb-tools { gap: 3px; }
+  .titled .agb-listttl { font-size: 12px; }
+  .titled .agb-add, .titled .agb-save { padding: 0 5px; }
+  .titled .agb-sort { padding: 4px 5px; }
+}
 .agb-add, .agb-save {
   flex: 0 0 auto; height: 26px; padding: 0 10px;
   border: 1px solid #c7d7f8; border-radius: 8px; background: #fff;

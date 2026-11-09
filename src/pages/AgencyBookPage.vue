@@ -5,9 +5,11 @@ import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import AgencyBookPanel from '../components/AgencyBookPanel.vue';
-import { ref } from 'vue';
+import { inject, ref } from 'vue';
 
 const router = useRouter();
+/** 웹에 들어가 있는가 — 앱은 목록 제목을 단추 줄 맨 앞에 붙인다 */
+const webEmbed = inject('webEmbed', false);
 const toastText = ref('');
 const onSaved = (count: number) => {
   toastText.value = `${count}곳을 저장했습니다.`;
@@ -28,9 +30,9 @@ const onSaved = (count: number) => {
       상호를 고르면 전화번호도 따라 들어갑니다.
     </p>
 
-    <p class="agb-list-head">중개업체 리스트</p>
-    <div class="agb-body">
-      <AgencyBookPanel @saved="onSaved" />
+    <p v-if="webEmbed" class="agb-list-head">중개업체 리스트</p>
+    <div :class="['agb-body', { app: !webEmbed }]">
+      <AgencyBookPanel :title="webEmbed ? undefined : '중개업체 리스트'" @saved="onSaved" />
     </div>
 
     <AppMobileBottomNav active="more" />
@@ -54,4 +56,5 @@ const onSaved = (count: number) => {
 .agb-note b { color: #1d3d75; }
 .agb-list-head { margin: 10px 12px 2px; font-size: 12.5px; font-weight: 800; color: #374151; }
 .agb-body { padding: 0 12px; }
+.agb-body.app { margin-top: 10px; }
 </style>
