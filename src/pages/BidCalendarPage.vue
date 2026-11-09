@@ -2,7 +2,7 @@
 // 입찰 캘린더 — 선정해 둔 물건의 입찰일을 달력에 펼쳐 본다.
 import { shownAddressOf } from '../utils/addressName';
 import { BALANCE_DUE_DAYS } from '../utils/auctionDates';
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuctionStore } from '../stores/auctionStore';
@@ -309,10 +309,12 @@ const dayTitle = (key: string) => {
 };
 
 const goDetail = (id: string) => router.push(`/auctions/${id}`);
+/** 웹에 들어가 있는가 — 앱에서만 달력 상자를 넓힌다 */
+const webEmbed = inject('webEmbed', false);
 </script>
 
 <template>
-  <section class="cal-shell">
+  <section :class="['cal-shell', { 'cal-app': !webEmbed }]">
     <header class="cal-header">
       <button type="button" class="pg-back" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
       <h1 class="cal-title">입찰 캘린더</h1>
@@ -495,6 +497,9 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
   border-right: 1px solid #f1f3f7; border-bottom: 1px solid #f1f3f7;
 }
 .cal-cell:nth-child(7n) { border-right: none; }
+/* 앱 — 상자 양옆 여백을 줄여 달력을 키우고, 날짜 숫자는 칸 왼쪽 선에서 조금 띄운다 */
+.cal-app .cal-card { margin: 0 6px; }
+.cal-app .cal-cell { padding-left: 6px; padding-right: 4px; }
 .cal-cell.out { background: #fcfcfd; }
 .cal-cell.out .cal-daynum { visibility: hidden; }
 .cal-daynum {
