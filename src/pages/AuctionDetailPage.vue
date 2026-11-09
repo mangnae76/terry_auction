@@ -5717,8 +5717,9 @@ const goBack = () => router.back();
         <button class="adp-back" type="button" aria-label="뒤로" @click="goBack"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
         <h1 class="adp-page-title">{{ caseLabel || '물건상세' }}</h1>
         <span class="adp-top-right">
+          <!-- 원본 PDF 단추 — 앱은 뺐다(2026-11-09, 사건번호 옆이 좁다). 웹만 -->
           <button
-            v-if="pdfViewUrl"
+            v-if="pdfViewUrl && webEmbed"
             type="button"
             class="adp-pdf-btn"
             :title="auction?.importMeta?.pdfFileName || pdfViewLabel"
