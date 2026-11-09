@@ -36,7 +36,7 @@ const day = (iso: string) => iso.slice(0, 10).replace(/-/g, '.');
 
 <template>
   <section :class="['myc', { app: !webEmbed }]">
-    <header><h3>내콘텐츠</h3><p>무료로 받거나 구매한 콘텐츠입니다. 다시받기로 언제든 PDF를 내려받을 수 있습니다.</p></header>
+    <header><h3>내콘텐츠</h3><p>{{ webEmbed ? '무료로 받거나 구매한 콘텐츠입니다. 다시받기로 언제든 PDF를 내려받을 수 있습니다.' : '다시받기로 언제든 내려받을 수 있습니다.' }}</p></header>
     <p v-if="err" class="empty">{{ err }}</p>
     <p v-else-if="loaded && !rows.length" class="empty">아직 받은 콘텐츠가 없습니다. 콘텐츠 › 전자책에서 무료로 받아 보세요.</p>
     <ul v-else class="list">
@@ -66,6 +66,7 @@ const day = (iso: string) => iso.slice(0, 10).replace(/-/g, '.');
 .list small { flex: 0 0 auto; font-size: 13px; color: #6b7280; }
 /* 앱 — 좁은 폭에 맞춘 여백 · 글자 */
 .app { padding: 16px 14px; }
+.app header p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .app .list li { gap: 10px; }
 .app .list b { max-width: 100%; font-size: 14px; }
 .app .list small { font-size: 12px; }
