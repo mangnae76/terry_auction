@@ -12,7 +12,7 @@ import AppMobileHeader from '../components/AppMobileHeader.vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import AppConfirm from '../components/AppConfirm.vue';
-import { stageBeforeSaleError } from '../utils/auctionDates';
+import { ddayText, stageBeforeSaleError } from '../utils/auctionDates';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import { addressParts } from '../utils/addressName';
 import { bidStageOf as bidStageShared, hasBidResult as hasBidResultShared, stageDates, stageLabelOf, stageToneOf, BID_STAGE_LABELS } from '../utils/stageLabel';
@@ -915,6 +915,8 @@ watch(
             </span>
             <span class="wlp-meta-court">{{ shortCourt(item.courtName) }}</span>
             <span class="wlp-meta-case">{{ item.caseNumber || DASH }}</span>
+            <!-- 매각기일 D-day — 사건번호 바로 옆(웹 목록과 같은 글) -->
+            <em v-if="ddayText(item.eventDate)" class="wlp-meta-dday">{{ ddayText(item.eventDate) }}</em>
           </div>
           <div v-if="!pickMode" class="wlp-card-actions">
             <button
@@ -1525,6 +1527,8 @@ watch(
 .wlp-meta-court { flex: 0 3 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wlp-meta-case { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wlp-meta-date-icon { width: 14px; height: 14px; object-fit: contain; flex-shrink: 0; }
+.wlp-meta-dday { flex: 0 0 auto; font-style: normal; font-weight: 700; color: #2b6df3; white-space: nowrap; }
+.wlp-card-past .wlp-meta-dday { color: #9ca3af; font-weight: 600; }
 .wlp-meta-sep { color: #cbd5e1; flex: 0 0 auto; }
 .wlp-card-actions {
   display: inline-flex;

@@ -23,6 +23,16 @@ export const koreanYmd = (ymd: string): string => {
   return `${s.slice(2, 4)}년 ${Number(s.slice(5, 7))}월 ${Number(s.slice(8, 10))}일`;
 };
 
+/** 매각기일 D-day — 웹 목록과 같은 글: 오늘 'D-DAY', 앞이면 'D-3', 지났으면 'D+2'. 날짜가 없으면 빈 글 */
+export const ddayText = (date?: string, today = new Date()): string => {
+  const s = ymdOf(date);
+  if (!s) return '';
+  const [y, m, d] = s.split('-').map(Number);
+  const base = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const n = Math.round((new Date(y, m - 1, d).getTime() - base.getTime()) / 86400000);
+  return n === 0 ? 'D-DAY' : n > 0 ? `D-${n}` : `D+${-n}`;
+};
+
 const plusDays = (ymd: string, n: number): string => {
   const [y, m, d] = ymd.split('-').map(Number);
   const t = new Date(y, m - 1, d + n);
