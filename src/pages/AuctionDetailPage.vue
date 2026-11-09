@@ -12799,30 +12799,44 @@ select.adp-pub-input option { text-align: center; }
 .bidc-later.boxed { position: relative; padding: 14px 18px; border: 1px solid #e5e9f2; border-radius: 10px; background: #fff; }   /* 위 단계 카드와 같은 꼴 */
 .bidc-later.boxed .lab { color: #2b6df3; font-weight: 800; }
 
-/* ===== 앱 손품+현장 › 시세조사 — 시세분석 아래 참고 호가매물 둘(웹 손품조사와 같은 꼴, 2026-11-09) ===== */
+/* ===== 앱 손품+현장 › 시세조사 — 시세분석 아래 참고 호가매물 둘. 웹 손품조사(#sonAskSlot)와 같은 꼴: 제목 · 곁글 한 줄,
+   매매호가 · 평당가 · 전용면적 · 주소를 가로 한 줄(폭만 폰에 맞춤), 아래 비고 한 줄(2026-11-09) ===== */
 .app-price { display: flex; flex-direction: column; gap: 10px; }
-.app-price .son-lowcase { background: #fff; border: 1px solid #e8ecf3; border-radius: 12px; padding: 12px; }
-.app-price .son-lowcase .adp-mkt-block-head { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
-.app-price .son-lowcase .adp-mkt-block-head .t { display: inline-flex; align-items: center; font-size: 14px; font-weight: 800; color: #111827; }
-.app-price .son-lowcase .adp-mkt-block-head .t::before { content: "참고"; display: inline-flex; align-items: center; height: 20px; margin-right: 6px; padding: 0 7px; border-radius: 5px; background: #eef1f8; color: #374151; font-size: 11px; font-weight: 800; }
+.app-price .son-lowcase { background: #fff; border: 1px solid #e8ecf3; border-radius: 12px; padding: 12px 10px; }
+.app-price .son-lowcase .adp-mkt-block-head { display: flex; align-items: center; flex-wrap: nowrap; gap: 4px; margin: 0 0 8px; }
+.app-price .son-lowcase .adp-mkt-step { transform: scale(.88); transform-origin: right center; }
+.app-price .son-lowcase .adp-mkt-block-head .t { flex: 0 0 auto; display: inline-flex; align-items: center; font-size: 13px; font-weight: 800; color: #111827; white-space: nowrap; }
+.app-price .son-lowcase .adp-mkt-block-head .t::before { content: "참고"; display: inline-flex; align-items: center; height: 20px; margin-right: 4px; padding: 0 5px; border-radius: 5px; background: #eef1f8; color: #374151; font-size: 10.5px; font-weight: 800; }
+.app-price .son-ask-note { flex: 1 1 auto; min-width: 0; font-size: 10.5px; letter-spacing: -0.3px; font-weight: 400; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app-price .son-lowcase .adp-mkt-step { flex: 0 0 auto; margin-left: auto; }
 .app-price .son-lowcase .adp-mkt-cells + .adp-mkt-block-head { margin-top: 14px; }
-.app-price .son-ask-note { flex: 1 1 100%; order: 3; font-size: 11.5px; font-weight: 400; color: #6b7280; }
-.app-price .son-lowcase .adp-mkt-step { margin-left: auto; }
-.app-price .son-auto { display: block; font-size: 13px; font-weight: 400; color: #111827; }
+/* 가로 한 줄 넷 — 주소 칸을 가장 넓게(웹 .9 · .75 · .75 · 2.4 를 폰 폭에 맞춰) */
+.app-price .son-lowcase .adp-mkt-cells.c4 { grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr) minmax(0, .85fr) minmax(0, 1.45fr); gap: 0; }
+.app-price .son-lowcase .adp-mkt-cells .cell { display: flex; flex-direction: column; justify-content: flex-start; min-width: 0; }
+.app-price .son-lowcase .adp-mkt-cells .cell > small { font-size: 11px; font-weight: 700; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app-price .son-lowcase .adp-mkt-cells .cell > :not(small):not(.son-row-links) { box-sizing: border-box; height: 36px; margin: 0; }
+.app-price .son-lowcase .adp-mkt-cells .adp-mkt-input { width: 100%; min-width: 0; height: 36px; margin: 0; padding: 0 4px; border: 0; border-radius: 0; background: transparent; box-shadow: none; text-align: center; font-size: 12px; color: #111827; }
+.app-price .son-lowcase .adp-mkt-cells .adp-mkt-input:focus { outline: none; box-shadow: inset 0 0 0 2px #2b6df3; }
+.app-price .son-lowcase .adp-mkt-cells .adp-mkt-input::placeholder { font-size: 11.5px; color: #9aa3b2; }
+.app-price .son-auto { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 400; color: #111827; white-space: nowrap; overflow: hidden; }
 .app-price .son-auto.son-auto-empty { color: #9aa3b2; }
+.app-price .son-lowcase .adp-mkt-unit { display: flex; align-items: center; gap: 2px; padding-right: 4px; font-size: 11px; }
+.app-price .son-lowcase .adp-mkt-unit .adp-mkt-input { flex: 1; }
+.app-price .son-addr-field { display: flex; align-items: center; gap: 2px; padding-left: 4px; min-width: 0; }
+.app-price .son-addr-field .adp-mkt-input { flex: 1; text-align: left; }
+.app-price .son-addr-head { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: normal; font-size: 12px; color: #111827; }
+.app-price .son-addr-head + .adp-mkt-input { flex: 0 0 52px; width: 52px; }
+.app-price .son-lowcase .adp-mkt-cells .cell.adp-mkt-wide .adp-mkt-input { text-align: left; padding-left: 10px; }
+/* P · N — '주소' 머리 칸 오른쪽(값 줄 높이가 다른 칸과 같게) */
 .app-price .son-lowcase .adp-mkt-cells .cell:has(.son-row-links) { position: relative; }
-.app-price .son-addr-field { display: flex; align-items: center; gap: 4px; }
-.app-price .son-addr-field .adp-mkt-input { flex: 1; min-width: 0; }
-.app-price .son-addr-head { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: normal; font-size: 12.5px; color: #111827; }
-.app-price .son-row-links { display: flex; justify-content: flex-end; gap: 4px; margin: 4px 6px 2px; }   /* 폰 — 입력칸 아래 줄 오른쪽(칸을 가리지 않게) */
-.app-price .son-map-go { display: inline-flex; align-items: center; justify-content: center; width: 24px; min-width: 24px; height: 22px; padding: 0; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; font-family: inherit; font-size: 12px; font-weight: 800; line-height: 1; cursor: pointer; }
+.app-price .son-row-links { position: absolute; top: 7px; right: 4px; display: inline-flex; gap: 2px; }
+.app-price .son-lowcase .adp-mkt-cells .cell > strong { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 400; color: #111827; white-space: nowrap; overflow: hidden; }
+.app-price .son-lowcase .adp-mkt-cells .cell > strong.hi { font-weight: 700; }
+.app-price .son-lowcase .adp-mkt-cells .cell > strong.son-auto-empty { color: #9aa3b2; }
+.app-price .son-lowcase .adp-mkt-cells .cell:has(.son-row-links) > small { padding-right: 46px; }   /* '주소' 글자가 P · N 에 가리지 않게 */
+.app-price .son-map-go { display: inline-flex; align-items: center; justify-content: center; width: 20px; min-width: 20px; height: 18px; padding: 0; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; font-family: inherit; font-size: 11px; font-weight: 800; line-height: 1; cursor: pointer; }
 .app-price .son-map-go.naver { color: #03a94d; }
 .app-price .son-map-go.planet { color: #2f5bea; }
-.app-price .son-lowcase .adp-mkt-cells.c4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }   /* 폰 — 두 칸씩(시안), 비고는 아래 한 줄 */
-.app-price .son-lowcase .adp-mkt-cells.c4 .cell:nth-child(3) { border-left: none; }
-.app-price .son-lowcase .adp-mkt-cells.c4 .cell:nth-child(n+3):not(.adp-mkt-wide) { border-top: 1px solid #e3e8f0; }
-.app-price .son-lowcase .adp-mkt-cells .cell .adp-mkt-input { min-width: 0; max-width: 100%; box-sizing: border-box; }
-
 /* 앱 손품+현장 — 여러 개 고르는 칸을 펴면 목록이 아래 줄(임차인 · 동대표 단추 등) 위에 겹쳐 떴다.
    목록을 그 자리에 끼워 아래 줄을 밀어내게 한다(겹치지 않게, 2026-11-09). 바깥 누르면 닫히는 막은 그대로라 목록은 막 위(31)에 둔다 */
 .adp-body.is-app :is(.adp-fs-multi, .adp-ind-multi) .adp-agency-options,

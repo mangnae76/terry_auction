@@ -1297,6 +1297,12 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 .map-fold small { font-size: 11.5px; color: var(--sub); }
 .map-fold i { margin-left: auto; font-style: normal; font-size: 12px; font-weight: 700; color: var(--blue); white-space: nowrap; }
 .pa-wrap.app .map-in { height: 480px; }   /* 접어 두니 펼치면 크게(240 → 480, 2026-11-09) */
+/* 앱 — '임장경로에 ○곳'은 오른쪽 아래 지도 도구(출력 · 인쇄)와 겹쳐, 왼쪽 위 '근거 유사물건' 옆으로 */
+.pa-wrap.app .map-title { padding: 5px 10px 5px 6px; }
+.pa-wrap.app .map-title b { font-size: 14px; }
+.pa-wrap.app .add-btn { left: 128px; right: auto; top: 10px; bottom: auto; height: 32px; padding: 0 10px; font-size: 12px; }
+.pa-wrap.app .add-pop { left: 10px; right: auto; top: 50px; bottom: auto; max-height: calc(100% - 60px); }
+.pa-wrap.app .add-msg { left: 10px; right: auto; top: 48px; bottom: auto; }
 /* 거르기 — 반경 · 거래 · 엘베 · 층 · 기준 · 막대 · 단추 차례로 한 줄씩 */
 .pa-wrap.app .conds { display: flex !important; flex-direction: column; align-items: stretch; gap: 6px; padding: 8px; }
 .pa-wrap.app .conds > .simrow { width: 100%; box-sizing: border-box; }
