@@ -552,7 +552,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
         const profile = await within(how(auth), 45000);
         if (!profile) return;
         if (T.isAllowedEmail && !T.isAllowedEmail(profile.email)) { await auth.logout(); showErr('이 계정은 사용 권한이 없습니다.'); return; }
-        location.href = '/web?login=1';   // 로그인 끝 — 선정목록으로
+        location.href = `/web?login=1${LD_NEXT}`;   // 로그인 끝 — 선정목록으로
       } catch (e) {
         if (e && e.stuck) { console.warn('[대문 로그인] 시간 안에 끝나지 않음'); showErr(STUCK); return; }
         const a = T && T.useAuthStore ? T.useAuthStore() : null;
@@ -595,7 +595,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
         await authNow();
         el.innerHTML = '';
         panelUnmount = T.mountAppSignup(el, (what) => {
-          if (what === 'ok') { location.href = '/web?login=1'; return; }
+          if (what === 'ok') { location.href = `/web?login=1${LD_NEXT}`; return; }
           if (fromLanding) { backToLogin(); closeVeil(); return; }
           backToLogin();
         });
@@ -612,7 +612,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
         el.innerHTML = '';
         panelUnmount = T.mountAppLogin(el, (what) => {
           if (what === 'signup') { void showSignup(); return; }   // 무료체험 → 가입
-          if (what === 'ok') { location.href = '/web?login=1'; return; }
+          if (what === 'ok') { location.href = `/web?login=1${LD_NEXT}`; return; }
           backToLogin();   // 닫기
         }, open);
       } catch (e) { el.innerHTML = '<p class="wait">불러오지 못했습니다 — 새로고침 뒤 다시 눌러 주세요.</p>'; }
@@ -635,6 +635,8 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
     }
 
     // 숫자 또르륵 — 지금 보이는 값(처음엔 0)에서 목표까지 1.4초, 끝으로 갈수록 천천히. 움직임 줄이기를 켠 사람은 바로 그 숫자
+    /* 로그인 뒤 돌아갈 곳 — /web 이 손님을 보낼 때 붙인 ?next=#/… (공유 링크 등). 주소 모양이 아니면 버린다 */
+    var LD_NEXT = (function () { try { var n = new URLSearchParams(location.search).get('next') || ''; return /^#\/[\w\/-]+$/.test(n) ? n : ''; } catch (e) { return ''; } })();
     function ldCount(el, to, unit) {
       if (!el || !(to > 0)) return;
       const fmt = (v) => `${Math.round(v).toLocaleString('ko-KR')}<span>${unit}</span>`;

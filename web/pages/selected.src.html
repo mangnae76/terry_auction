@@ -27,7 +27,7 @@
       if (!window.TA_INTRO_GATE) return;
       if (/[?&]login=1\b/.test(location.search)) return;
       if (localStorage.getItem('ta.web.in') === '1') return;   // 로그인해 있다(새로고침 · 다시 들어옴) — 대문 없이
-      location.replace('/intro.html');
+      location.replace('/intro.html' + (/^#\/[\w\/-]+$/.test(location.hash) ? '?next=' + encodeURIComponent(location.hash) : ''));   // 보던 주소(공유 링크 등)는 로그인 뒤 돌아오게 넘긴다
     } catch (e) { /* 그만 */ }
   })();
 </script>
@@ -3372,6 +3372,7 @@ img.eb-cv { aspect-ratio: auto; height: auto; max-height: 260px; object-fit: con
 .eb-left { display: flex; flex-direction: column; gap: 8px; width: 170px; }   /* 표지 아래에 받기 단추 */
 .eb-left .eb-cv { width: 170px; }
 .eb-left .st-buy { margin-top: 4px; width: 100%; }
+.eb-share { height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text-2); font-size: 13px; font-weight: 700; cursor: pointer; } .eb-share:hover { border-color: var(--blue); color: var(--blue); } .eb-share svg { width: 15px; height: 15px; }   /* 자세히보기 — 받기 단추 아래 */
 .eb-note { font-size: 12px; line-height: 1.5; color: var(--muted); }   /* 내용 상자 밑 */
 .eb-body { padding: 14px 16px; border-radius: 12px; background: var(--surface-2); font-size: 14px; line-height: 1.8; color: var(--text); white-space: pre-line; word-break: break-word; }   /* 내용 — 줄바꿈 · 빈 줄 그대로 */
 @media (max-width: 560px) { .eb-top { grid-template-columns: 1fr; } .eb-left { justify-self: center; } }
@@ -5125,6 +5126,7 @@ span.cal-day.has { cursor: help; }
     if (head === 'community' && m[2] === 'faq') return { route: 'community', sub: 'notice' }; /* FAQ 탭을 뺐다 — 예전 주소는 공지로(FAQ 는 이용가이드) */
     if (head === 'community' && (m[2] === 'issue' || m[2] === 'suggest')) return { route: 'board', sub: 'suggest' }; /* 예전 공지 › 오류및제안 주소 — 게시판으로 옮겼다 */
     if (head === 'more' && m[2] === 'news') return { route: 'community', sub: 'notice' }; /* 예전 마이페이지 › 공지 — 커뮤니티로 옮겼다 */
+    if (head === 'store' && m[2] === 'eb' && m[3]) return { route: 'store', storeTab: 'all', ebook: m[3] }; /* 콘텐츠 공유 링크 — 그 책 자세히보기 창을 연다(책 목록이 오면) */
     if (head === 'mobile') return { route: 'store', storeTab: 'mobile' }; /* 모바일앱은 스토어 안 탭으로 옮겼다(2026-11-02) */
     if (head === 'mypage') return { route: 'more', sub: 'mypage' }; /* 예전 마이페이지 주소 — 더보기로 */
     if (head === 'market' && m[2] === 'region') return { route: 'market', sub: 'dong' }; /* 예전 '수요공급' 주소 — 지역분석 안 탭으로 합쳤다 */
@@ -5162,6 +5164,7 @@ span.cal-day.has { cursor: help; }
     /* 보고 있던 하위 탭도 주소에 적어 둔다 — 새로고침해도 그 자리에 그대로 선다 */
     itemTab: H0.itemTab || 'basic',
     storeTab: H0.storeTab || '', /* 스토어 탭 — 비면 이 브라우저에 남긴 탭(아래 storeTab 시작값) */
+    ebOpen: H0.ebook || '', /* 공유 링크로 들어온 책 — 목록이 오면 자세히보기 창을 연다 */
   };
   /** 지금 화면 → 주소 */
   const hashOf = () => (S.route === 'item' ? itemHash(S.itemId, S.itemTab)
@@ -6394,7 +6397,7 @@ span.cal-day.has { cursor: help; }
       const kind = { report: '리포트', manual: '매뉴얼', mobile: '모바일앱' }[eb.kind] || '전자책';
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog eb-dlg" role="dialog" aria-modal="true" aria-labelledby="ebT">
         <div class="buy-head"><div><h2 id="ebT">${eb.tag ? `<em>[${esc(eb.tag)}]</em> ` : ''}${esc(eb.title)}</h2><p><span class="st-kind-in">${kind}</span>${ebPriceTag(eb)}${ebSoon(eb) ? '<span class="st-soon">출시예정</span>' : ''}${ebDlCount(eb)}</p></div><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
-        <div class="eb-top"><div class="eb-left">${eb.coverUrl ? `<img class="eb-cv" src="${esc(eb.coverUrl)}" alt="">` : `<div class="eb-cv navy"><strong>${esc(eb.title)}</strong></div>`}${ebAction(eb)}</div>
+        <div class="eb-top"><div class="eb-left">${eb.coverUrl ? `<img class="eb-cv" src="${esc(eb.coverUrl)}" alt="">` : `<div class="eb-cv navy"><strong>${esc(eb.title)}</strong></div>`}${ebAction(eb)}<button type="button" class="eb-share" data-act="ebook-share" data-v="${esc(eb.id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></svg>공유하기</button></div>
           <div class="eb-side">${ebSummary(eb) ? `<p class="eb-sum">${esc(ebSummary(eb))}</p>` : ''}${(eb.desc || '').trim() ? `<div class="eb-body">${ebBodyHtml(eb.desc)}</div>` : ''}<small class="eb-note">회원가입 후 로그인한 회원만 받을 수 있습니다.</small></div></div>
       </div></div>`;
       return;
@@ -8806,6 +8809,13 @@ span.cal-day.has { cursor: help; }
     : ebIsPaid(b) ? `<button type="button" class="st-buy" data-act="ebook-buy" data-v="${esc(b.id)}">구매하기 · ${Number(b.price).toLocaleString('ko-KR')}원</button>`
     : EB.ready.has(b.id) ? `<button type="button" class="st-buy dl" data-act="ebook-dl" data-v="${esc(b.id)}">다운로드</button>`
     : `<button type="button" class="st-buy" data-act="ebook-get" data-v="${esc(b.id)}">무료로받기</button>`);
+  /** 공유 링크로 들어왔으면 그 책 자세히보기 창 — 책 목록이 온 뒤에. 한 번 열면 잊는다 */
+  const ebOpenShared = () => {
+    const id = S.ebOpen; if (!id || S.route !== 'store') return;
+    if (!EB.list.some((b) => b.id === id)) return;
+    S.ebOpen = ''; S.modal = { kind: 'ebinfo', ebook: id }; renderModal();
+    writeHash(false);   /* 주소는 콘텐츠로 되돌린다 — 새로고침해도 창이 다시 뜨지 않게 */
+  };
   let ebmStop = null;   /* 관리 탭에 띄운 앱 화면 — 다시 그리기 전에 걷는다 */   /* 모바일앱 — 위 메뉴에 따로 있던 화면을 탭으로 옮겼다 */
   const storeHtml = () => {
     const adm = (() => { try { return agIsAdmin(); } catch (e) { return false; } })();
@@ -9141,6 +9151,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     if (h.route === 'item') { S.itemId = h.itemId; S.lastItemId = h.itemId; S.itemTab = h.itemTab; }
     if (h.route === 'market') { S.marketTab = h.sub; if (h.saleTab) S.saleTab = h.saleTab; }
     if (h.storeTab) S.storeTab = h.storeTab;
+    if (h.ebook) { S.ebOpen = h.ebook; setTimeout(ebOpenShared, 0); }
     if (APP_PAGE_NAMES[h.route]) { S.pageTab[h.route] = h.sub; S.tabForce = true; }
     S.pop = ''; S.menu = null; render();
     if (moved) toTop();   /* 뒤로 · 앞으로 가기로 다른 화면이 되면 맨 위에서 */
@@ -9383,7 +9394,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     if (T.mountSiteNotice) { try { const el = document.createElement('div'); el.id = 'siteNotice'; document.body.appendChild(el); T.mountSiteNotice(el); } catch (e) { /* 안내만 안 뜬다 */ } }
     window.addEventListener('myturn:login', () => { openAppLogin(); });   /* 점검 화면의 '운영자로그인' */
     window.addEventListener('admins:changed', () => { render(); });   /* 운영자 목록(DB adminConfig)이 오면 운영 단추 · 칩을 다시 그린다 */
-    if (T.subscribeEbooks) { try { T.subscribeEbooks((rows) => { EB.list = Array.isArray(rows) ? rows : []; if (S.route === 'store' && S.storeTab !== 'manage' && S.storeTab !== 'mine' && (S.storeTab !== 'mobile' || EB.list.some((b) => b.kind === 'mobile'))) renderInfo(); }, () => { /* 책 카드만 비어 보인다 */ }); } catch (e) { /* 책 카드만 비어 보인다 */ } }
+    if (T.subscribeEbooks) { try { T.subscribeEbooks((rows) => { EB.list = Array.isArray(rows) ? rows : []; ebOpenShared(); if (S.route === 'store' && S.storeTab !== 'manage' && S.storeTab !== 'mine' && (S.storeTab !== 'mobile' || EB.list.some((b) => b.kind === 'mobile'))) renderInfo(); }, () => { /* 책 카드만 비어 보인다 */ }); } catch (e) { /* 책 카드만 비어 보인다 */ } }
     if (T.useBoardNew) { try { const bn = T.useBoardNew(); T.watch(() => bn.any.value, (v) => { const d = $('noticeDot'); if (d) d.hidden = !v; }, { immediate: true }); } catch (e) { /* 점만 못 띄운다 */ } }
     const fromStore = () => {
       if (!CLOUD.on) return;
@@ -9799,6 +9810,15 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'web-guide': if (WEB_GUIDE_URL) window.open(WEB_GUIDE_URL, '_blank', 'noopener'); else toast('‘이용가이드’는 준비 중입니다.', 'info'); break;   /* 하던 화면은 그대로 두고 새 탭 */
       case 'mobile-slide': showSlide(Number(v) || 0); startSlides(); break;
       case 'mobile-more': if (MOBILE_LANDING_URL) location.href = MOBILE_LANDING_URL; else toast('‘앱 소개 페이지’는 준비 중입니다.', 'info'); break;
+      /* 공유하기 — 폰은 공유 창(카톡 등), PC 는 링크 복사. 링크를 열면 이 책 자세히보기 창이 뜬다 */
+      case 'ebook-share': {
+        const b = EB.list.find((x) => x.id === v); if (!b) break;
+        const url = `${location.origin}/web#/store/eb/${encodeURIComponent(b.id)}`;
+        const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+        if (touch && navigator.share) navigator.share({ title: b.title, text: ebSummary(b) || b.title, url }).catch(() => { /* 닫으면 그만 */ });
+        else copyText(url, '링크를 복사했습니다. 붙여 넣어 공유하세요.');
+        break;
+      }
       case 'ebook-info': if (EB.list.some((b) => b.id === v)) { S.modal = { kind: 'ebinfo', ebook: v }; renderModal(); } break;   /* 콘텐츠 자세히보기 */
       case 'ebook-buy': {
         if (EB.list.some((x) => x.id === v && x.upcoming === true)) { toast('출시예정 콘텐츠입니다. 출시한 뒤 받을 수 있습니다.', 'info'); break; }
