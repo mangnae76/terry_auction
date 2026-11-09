@@ -3352,6 +3352,8 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .st-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .st-meta .st-free, .st-meta .st-price { align-self: auto; }
 .st-tags { display: inline-flex; align-items: center; gap: 6px; }
+.st-dl { display: inline-flex; align-items: center; gap: 3px; margin: -2px 0 4px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; } .st-dl svg { width: 14px; height: 14px; }   /* 받은 수 — 회색 */
+.eb-dlg .buy-head p .st-dl { margin: 0 0 0 4px; }
 .st-soon { padding: 1px 8px; border-radius: 4px; background: #fdecec; color: #b42318; font-size: 12px; font-weight: 700; }   /* 출시예정 칩 */
 .st-buy.soon, .st-buy.soon:hover { border-color: var(--line); background: var(--surface-2); color: var(--muted); opacity: 1; cursor: not-allowed; }   /* 출시예정 — 받기 막음 */   /* 가격 칩 · 종류 칩 나란히 */
 .st-more svg { width: 14px; height: 14px; margin-left: 2px; pointer-events: none; }
@@ -6391,7 +6393,7 @@ span.cal-day.has { cursor: help; }
       if (!eb) { S.modal = null; root.innerHTML = ''; return; }
       const kind = { report: '리포트', manual: '매뉴얼', mobile: '모바일앱' }[eb.kind] || '전자책';
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog eb-dlg" role="dialog" aria-modal="true" aria-labelledby="ebT">
-        <div class="buy-head"><div><h2 id="ebT">${eb.tag ? `<em>[${esc(eb.tag)}]</em> ` : ''}${esc(eb.title)}</h2><p><span class="st-kind-in">${kind}</span>${ebPriceTag(eb)}${ebSoon(eb) ? '<span class="st-soon">출시예정</span>' : ''}</p></div><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
+        <div class="buy-head"><div><h2 id="ebT">${eb.tag ? `<em>[${esc(eb.tag)}]</em> ` : ''}${esc(eb.title)}</h2><p><span class="st-kind-in">${kind}</span>${ebPriceTag(eb)}${ebSoon(eb) ? '<span class="st-soon">출시예정</span>' : ''}${ebDlCount(eb)}</p></div><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
         <div class="eb-top"><div class="eb-left">${eb.coverUrl ? `<img class="eb-cv" src="${esc(eb.coverUrl)}" alt="">` : `<div class="eb-cv navy"><strong>${esc(eb.title)}</strong></div>`}${ebAction(eb)}</div>
           <div class="eb-side">${ebSummary(eb) ? `<p class="eb-sum">${esc(ebSummary(eb))}</p>` : ''}${(eb.desc || '').trim() ? `<div class="eb-body">${ebBodyHtml(eb.desc)}</div>` : ''}<small class="eb-note">회원가입 후 로그인한 회원만 받을 수 있습니다.</small></div></div>
       </div></div>`;
@@ -8795,6 +8797,8 @@ span.cal-day.has { cursor: help; }
   const ebSummary = (b) => (CLOUD.T && CLOUD.T.ebookSummary ? CLOUD.T.ebookSummary(b) : (b.summary || b.desc || ''));
   const ebBodyHtml = (t) => (CLOUD.T && CLOUD.T.ebookBodyHtml ? CLOUD.T.ebookBodyHtml(t) : esc(t || ''));
   const ebIsPaid = (b) => (Number(b.price) || 0) > 0;
+  /* 받은 수 — 회색 아이콘 + 숫자(처음 받은 회원 수). 0이면 숨긴다 */
+  const ebDlCount = (b) => { const n = Number(b.downloads) || 0; return n > 0 ? `<span class="st-dl" title="받은 회원 ${n.toLocaleString('ko-KR')}명"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M5 19h14"/></svg>${n.toLocaleString('ko-KR')}</span>` : ''; };
   const ebPriceTag = (b) => (ebIsPaid(b) ? '<span class="st-price">유료</span>' : '<span class="st-free">무료</span>');   /* 칩은 무료 · 유료만 — 금액은 구매하기 단추에 */
   const ebSoon = (b) => b.upcoming === true;   /* 출시예정 — 카드 · 설명은 보이고 받기는 막는다(규칙도 막는다) */
   const ebSoonText = (b) => (CLOUD.T && CLOUD.T.ebookReleaseText ? CLOUD.T.ebookReleaseText(b) : '출시예정');
@@ -8814,7 +8818,7 @@ span.cal-day.has { cursor: help; }
     /* 무료(0원)는 로그인한 회원 누구나 — 무료로받기 → 다운로드 단추로 바뀌고, 누르면 PDF 를 내려받는다. 유료는 구매하기 창(결제 연동 전이라 결제는 준비 중) */
     /* 카드 — 표지 · 제목 · 한줄설명. 표지 · 제목 · 자세히보기를 누르면 내용(줄바꿈 그대로) 창 */
     const ebCard = (b) => `<article class="st-card">${b.coverUrl ? `<div class="st-cover img" data-act="ebook-info" data-v="${esc(b.id)}"><img src="${esc(b.coverUrl)}" alt="" loading="lazy"></div>` : `<div class="st-cover navy" data-act="ebook-info" data-v="${esc(b.id)}"><strong>${esc(b.title)}</strong></div>`}`
-      + `<div class="st-body"><h3 data-act="ebook-info" data-v="${esc(b.id)}">${b.tag ? `<em>[${esc(b.tag)}]</em> ` : ''}${esc(b.title)}</h3><p>${esc(ebSummary(b))}</p><div class="st-meta"><span class="st-tags"><span class="st-kind-in">${EB_KIND_LABEL[ebKind(b)]}</span>${ebPriceTag(b)}${ebSoon(b) ? '<span class="st-soon">출시예정</span>' : ''}</span>${(b.desc || '').trim() ? `<button type="button" class="st-more" data-act="ebook-info" data-v="${esc(b.id)}">자세히보기<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>` : ''}</div>${ebAction(b)}</div></article>`;   /* 가격 칩 왼쪽 · 자세히보기 오른쪽 끝(받기 단추 끝에 맞춤) */
+      + `<div class="st-body"><h3 data-act="ebook-info" data-v="${esc(b.id)}">${b.tag ? `<em>[${esc(b.tag)}]</em> ` : ''}${esc(b.title)}</h3><p>${esc(ebSummary(b))}</p>${ebDlCount(b)}<div class="st-meta"><span class="st-tags"><span class="st-kind-in">${EB_KIND_LABEL[ebKind(b)]}</span>${ebPriceTag(b)}${ebSoon(b) ? '<span class="st-soon">출시예정</span>' : ''}</span>${(b.desc || '').trim() ? `<button type="button" class="st-more" data-act="ebook-info" data-v="${esc(b.id)}">자세히보기<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>` : ''}</div>${ebAction(b)}</div></article>`;   /* 가격 칩 왼쪽 · 자세히보기 오른쪽 끝(받기 단추 끝에 맞춤) */
     return `<section class="info-box"><div class="info-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>콘텐츠</h2><p>경매 공부와 실전에 바로 쓰는 전자책 · 리포트 · 매뉴얼을 준비하고 있습니다.</p></div>`
       + `<nav class="st-tabs" role="tablist">${STORE_TABS.filter(([, , f]) => f !== 'admin' || adm).map(([k, t, f]) => `<button type="button" role="tab" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}" data-act="store-tab" data-v="${k}">${t}${k === 'mine' && S.loggedIn ? `<span class="st-cnt">${EB.mine.toLocaleString('ko-KR')}</span>` : ''}${f === 'admin' ? '<span class="adm-chip">운영</span>' : ''}</button>`).join('')}</nav>`
       + (tab === 'mobile' ? `${ebooks.length ? `<div class="st-grid">${ebooks.map(ebCard).join('')}</div>` : ''}<div class="st-mobile">${mobileHtml()}</div></section>`
