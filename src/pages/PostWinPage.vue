@@ -28,6 +28,7 @@ import type { AgencyRow, AuctionDetail } from '../types/auction';
 import PostWinTimeline from '../components/PostWinTimeline.vue';
 import PostWinForms from '../components/PostWinForms.vue';
 import ExpenseLedger from '../components/ExpenseLedger.vue';
+import WebScope from '../components/WebScope.vue';
 import { BOOK_HINT } from '../services/expenseBook';
 import PostWinMoney from '../components/PostWinMoney.vue';
 import TaxPage from './TaxPage.vue';
@@ -275,6 +276,28 @@ const flowSub = ref<FlowSub>((() => {
   } catch { return 'steps'; }
 })());
 watch(flowSub, (v) => { try { sessionStorage.setItem('pw.flow.sub', v); } catch { /* 그만 */ } });
+/** 앱 — 낙찰이후 탭은 웹 진행절차의 하위 탭 여섯뿐(2026-11-09 시안 postwin-mock). 예전 탭(낙찰당일 · 명도 · 사업자등록 · 잔금·등기 · 인테리어 · 매도·임대)은 없다.
+ *  예전 탭으로 오는 길(알림 · 주소 · 할 일 단추)은 맞는 하위 탭으로 돌린다 */
+const appFlow = !webEmbed;
+const FLOW_OF_TAB: Partial<Record<string, FlowSub>> = { sell: 'sell', dsell: 'sell', repair: 'biz', drepair: 'biz', dtax: 'tax', gtax: 'tax', evict: 'evict', gevict: 'evict' };
+if (appFlow) {
+  const q = FLOW_OF_TAB[String(route.query.tab ?? '')];
+  if (q) flowSub.value = q;
+  activeTab.value = 'flow';
+  watch(activeTab, (t) => {
+    if (t === 'flow') return;
+    const f = FLOW_OF_TAB[t];
+    if (f) flowSub.value = f;
+    activeTab.value = 'flow';
+  });
+}
+/** 앱 탭 줄 — 하위 탭을 고르면 탭 줄이 보이는 자리까지 올라간다 */
+const goFlowSub = (k: FlowSub) => {
+  flowSub.value = k;
+  const bar = document.querySelector('.pw-tabs');
+  const top = bar ? bar.getBoundingClientRect().top + window.scrollY - 8 : 0;
+  if (window.scrollY > top) window.scrollTo({ top, behavior: 'smooth' });
+};
 // 최근 분석 기록 — 진행절차 안 탭(진행절차 · 명도분석 · 세금분석 · 필요경비 · 사업경비 · 매물등록)에서 고친 것만 '낙찰이후 › 탭'으로 남긴다.
 // 상세 장 · 가이드 장은 경매 진행 단계가 아니라 남기지 않는다
 watch([activeTab, flowSub], ([t, f]) => { store.setEditWhere(t === 'flow' ? `낙찰이후 › ${FLOW_SUBS.find(([k]) => k === f)?.[1] ?? '진행절차'}` : ''); }, { immediate: true });
@@ -783,7 +806,7 @@ const toggleSection = (key: string) => {
 </script>
 
 <template>
-  <section class="pw-shell">
+  <section :class="['pw-shell', { 'app-flow': appFlow }]">
     <div class="pw-fixed-top">
       <header class="pw-header">
         <!-- 웹 명도는 ⓘ 도 편집도 없어 빈 줄만 남으니 감춘다 -->
@@ -807,7 +830,19 @@ const toggleSection = (key: string) => {
         <p v-if="!webEmbed && checkable && !picked" class="pw-nopick">
           낙찰 물건이 없으면 체크할 수 없습니다 — 선정물건에서 단계를 <b>낙찰</b>로 바꿔 주세요.
         </p>
-        <nav class="pw-tabs">
+        <!-- 앱 — 탭 줄은 진행절차의 하위 탭 여섯 -->
+        <nav v-if="appFlow" class="pw-tabs pw-flow-tabs" role="tablist">
+          <button
+            v-for="[k, label] in FLOW_SUBS"
+            :key="k"
+            type="button"
+            role="tab"
+            :aria-selected="flowSub === k"
+            :class="['pw-tab', { active: flowSub === k }]"
+            @click="goFlowSub(k)"
+          >{{ label }}</button>
+        </nav>
+        <nav v-else class="pw-tabs">
           <button
             v-for="t in TABS.filter((x) => webEmbed || x.key !== 'flow')"
             :key="t.key"
@@ -955,7 +990,7 @@ const toggleSection = (key: string) => {
         낙찰 물건이 없으면 체크할 수 없습니다 — 선정물건에서 단계를 <b>낙찰</b>로 바꿔 주세요.
       </p>
       <!-- 웹 진행절차 — 박스 탭 셋: 진행절차(일정 · 해야 할 일) · 명도분석(비용 · 리스크) · 세금분석 -->
-      <nav v-if="activeTab === 'flow'" class="pw-chaptabs" role="tablist">
+      <nav v-if="activeTab === 'flow' && webEmbed" class="pw-chaptabs" role="tablist">
         <button v-for="[k, label] in FLOW_SUBS" :key="k" type="button" role="tab" :aria-selected="flowSub === k" :class="{ on: flowSub === k }" @click="flowSub = k">{{ label }}</button>
       </nav>
       <!-- 웹 — 물건이 없을 때 알림은 탭 줄 아래(탭은 사건 카드 바로 밑, 손품조사와 같은 자리) -->
@@ -965,17 +1000,19 @@ const toggleSection = (key: string) => {
       <section v-if="activeTab === 'flow' && (flowSub === 'need' || flowSub === 'biz')" class="pw-card pw-ledger">
         <header class="pw-card-head"><h2>{{ flowSub === 'need' ? '필요경비' : '사업경비' }}<span class="pw-ledger-cap">{{ BOOK_HINT[flowSub] }}</span></h2></header>
         <div class="pw-card-body">
-          <ExpenseLedger :key="`${picked?.id}-${flowSub}`" :book="flowSub" :auction-id="picked?.id ?? ''" tools />
+          <!-- 앱도 웹과 같은 내용 · 계산(확정안 기준) — WebScope 안만 웹 꼴 -->
+          <WebScope><ExpenseLedger :key="`${picked?.id}-${flowSub}`" :book="flowSub" :auction-id="picked?.id ?? ''" tools /></WebScope>
         </div>
       </section>
-      <PostWinMoney v-if="activeTab === 'flow' && (flowSub === 'evict' || flowSub === 'tax')" :key="`${picked?.id}-${flowSub}`" :auction="picked" :mode="flowSub === 'evict' ? 'evict' : 'tax'" />
+      <WebScope v-if="activeTab === 'flow' && (flowSub === 'evict' || flowSub === 'tax')"><PostWinMoney :key="`${picked?.id}-${flowSub}`" :auction="picked" :mode="flowSub === 'evict' ? 'evict' : 'tax'" /></WebScope>
+      <WebScope v-if="activeTab === 'flow' && flowSub === 'steps'">
       <PostWinTimeline
-        v-if="activeTab === 'flow' && flowSub === 'steps'"
         :auction="picked"
         :progress="todoProgress"
         @save="(a) => store.saveAuction(a)"
         @go="goTodo"
       />
+      </WebScope>
       <div v-if="popOpen" class="pw-todo-veil" @click="closePop" />
       <PostWinForms v-if="formKeys" :key="formStart + formKeys.join()" :auction="picked" :keys="formKeys" :start="formStart || undefined" @close="formKeys = null" />
       <template v-if="hasTable || popOpen">
@@ -2182,4 +2219,44 @@ const toggleSection = (key: string) => {
 .pw-wordlink:hover { color: #1d4ed8; }
 /* 절차진행 바로가기로 온 상자 — 잠깐 파란 테 */
 .pw-card.pw-flash { box-shadow: 0 0 0 2px #2b6df3; transition: box-shadow .3s; }
+
+/* ===== 앱 낙찰이후 — 진행절차 하위 탭 여섯을 폰 폭으로(2026-11-09 시안 postwin-mock). 안의 부품은 웹 꼴(WebScope)이라 배치만 여기서 잡는다 ===== */
+.pw-flow-tabs { display: flex; justify-content: space-between; gap: 2px; overflow-x: auto; }
+.pw-flow-tabs .pw-tab { flex: 0 0 auto; padding-left: 2px; padding-right: 2px; font-size: 12.5px; white-space: nowrap;  }
+.pw-flow-tabs { padding-left: 6px; padding-right: 6px; }
+/* 매물등록 — 직거래 등록 머리: 제목 한 줄, 바로가기 · 행 단추는 다음 줄로(겹치지 않게) */
+.app-flow .pw-card-head:has(.pw-golink) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.app-flow .pw-card-head:has(.pw-golink) h2 { flex: 1 1 100%; white-space: nowrap; }
+.app-flow .pw-card-head:has(.pw-golink) .pw-golink { position: static; }
+/* 카드 머리 — 제목은 한 줄로, 설명은 아래 줄, 단추는 제목 줄 오른쪽 */
+.app-flow :deep(:is(.pwt-head, .pwm-head)) { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.app-flow :deep(:is(.pwt-head, .pwm-head) h2) { flex: 0 0 auto; white-space: nowrap; }
+.app-flow :deep(:is(.pwt-cap, .pwm-cap)) { order: 3; flex: 1 1 100%; font-size: 12px; line-height: 1.5; }
+.app-flow :deep(.pwt-head .pwt-btn) { flex: 0 0 auto; }
+.app-flow :deep(.pwt-head .pwt-btn.deal) { margin-left: auto; }
+.app-flow :deep(.pw-card-head h2) { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; white-space: nowrap; }
+.app-flow :deep(.pw-ledger-cap) { flex: 1 1 100%; margin-left: 0; white-space: normal; font-size: 12px; font-weight: 400; line-height: 1.5; }
+/* 진행절차 — 한 단계: 체크 · 이름/날짜 · 고치기 줄, 아래 해야 할 일 */
+.app-flow :deep(.pwt-colhead) { display: none; }
+.app-flow :deep(.pwt-row) { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "chk main ctrl" "todos todos todos"; align-items: start; gap: 6px 6px; }
+.app-flow :deep(.pwt-chk) { grid-area: chk; margin-top: 3px; }
+.app-flow :deep(.pwt-main) { grid-area: main; min-width: 0; }
+.app-flow :deep(.pwt-ctrl) { grid-area: ctrl; }
+.app-flow :deep(.pwt-todos) { grid-area: todos; min-width: 0; padding-left: 30px; }
+.app-flow :deep(.pwt-meta) { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.app-flow :deep(.pwt-meta .pwt-base) { margin-left: 0; text-align: left; }
+.app-flow :deep(.pwt-name) { white-space: normal; }
+/* 명도분석 — 비교 셋은 글자를 줄여 한 줄에, 비용 카드는 위아래로 */
+.app-flow :deep(.pwm-nav) { gap: 5px; }
+.app-flow :deep(.pwm-nav > div) { padding: 8px 7px; min-width: 0; }
+.app-flow :deep(.pwm-nav small) { font-size: 10.5px; }
+.app-flow :deep(.pwm-nav b) { font-size: 12.5px; line-height: 1.35; word-break: keep-all; }
+.app-flow :deep(.pwm-nav em) { font-size: 10px; }
+.app-flow :deep(:is(.pwm-cmp.three, .pwm-cmp.two, .pwm-finals-grid.three)) { grid-template-columns: minmax(0, 1fr); }
+/* 필요경비 · 사업경비 — 단추 줄은 감싸고, 표는 옆으로 밀어 본다 */
+.app-flow :deep(.xl-tools) { flex-wrap: wrap; row-gap: 6px; }
+.app-flow :deep(.xl-hint) { flex: 1 1 100%; order: 2; }
+.app-flow :deep(.xl-btn) { order: 3; }
+.app-flow .pw-ledger :deep(.pw-card-body) { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.app-flow :deep(.xl-tbl) { min-width: 560px; }
 </style>
