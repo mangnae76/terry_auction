@@ -5154,7 +5154,8 @@ span.cal-day.has { cursor: help; }
     if (head === 'community' && (m[2] === 'issue' || m[2] === 'suggest')) return { route: 'board', sub: 'suggest' }; /* 예전 공지 › 오류및제안 주소 — 게시판으로 옮겼다 */
     if (head === 'more' && m[2] === 'news') return { route: 'community', sub: 'notice' }; /* 예전 마이페이지 › 공지 — 커뮤니티로 옮겼다 */
     if (head === 'store' && m[2] === 'eb' && m[3]) return { route: 'store', storeTab: 'all', ebook: m[3] }; /* 콘텐츠 공유 링크 — 그 책 자세히보기 창을 연다(책 목록이 오면) */
-    if (head === 'mobile') return { route: 'store', storeTab: 'mobile' }; /* 모바일앱은 스토어 안 탭으로 옮겼다(2026-11-02) */
+    if (head === 'mobile') return { route: 'store', storeTab: 'mobile' };
+    if (head === 'manual' || (head === 'postwin' && ['gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'gcheck'].includes(m[2]))) return { route: 'store', storeTab: 'manual', fromManual: true }; /* 예전 매뉴얼(위 메뉴 · 낙찰이후 가이드) — 이제 콘텐츠 › 매뉴얼로 서비스한다(2026-11-09) */ /* 모바일앱은 스토어 안 탭으로 옮겼다(2026-11-02) */
     if (head === 'mypage') return { route: 'more', sub: 'mypage' }; /* 예전 마이페이지 주소 — 더보기로 */
     if (head === 'market' && m[2] === 'region') return { route: 'market', sub: 'dong' }; /* 예전 '수요공급' 주소 — 지역분석 안 탭으로 합쳤다 */
     if (head === 'postwin' && ['gwin', 'gdeny', 'gevict', 'biz', 'gtax'].includes(m[2])) return { route: 'manual', sub: m[2] === 'gwin' ? 'gdeny' : m[2] }; /* 낙찰이후 › 가이드 · 매각불허가 — 매뉴얼 › 낙찰이후로 옮겼다(낙찰당일 장은 뺐다) */
@@ -5173,6 +5174,9 @@ span.cal-day.has { cursor: help; }
     return { route: 'home' };   /* #/ · 빈 주소 — 홈(로그인 후 대문, 2026-11-03). 선정물건은 #/list */
   };
   const H0 = readHash();
+  /* 예전 매뉴얼 주소로 왔으면 콘텐츠 › 매뉴얼 탭을 고른 것으로 남기고 주소를 #/store 로 고친다 */
+  const fromManual = () => { try { store.set('wlp.web.storeTab2', 'manual'); history.replaceState(null, '', '#/store'); } catch (e) { /* 그만 */ } };
+  if (H0.fromManual) fromManual();
   const S = {
     marketTab: H0.route === 'market' ? H0.sub : 'dong', /* 시장분석 하위 탭 */
     saleTab: H0.saleTab || 'near', /* 매각사례 안 박스 탭 — near 인근 · same 동일지번 */
@@ -5191,6 +5195,7 @@ span.cal-day.has { cursor: help; }
     /* 보고 있던 하위 탭도 주소에 적어 둔다 — 새로고침해도 그 자리에 그대로 선다 */
     itemTab: H0.itemTab || 'basic',
     storeTab: H0.storeTab || '', /* 스토어 탭 — 비면 이 브라우저에 남긴 탭(아래 storeTab 시작값) */
+    storeTabPinned: !!H0.storeTab, /* 주소로 고른 탭(#/mobile · 예전 매뉴얼 주소 · 공유 링크) — 로그인 뒤 받은 화면 설정이 덮지 않게 */
     ebOpen: H0.ebook || '', /* 공유 링크로 들어온 책 — 목록이 오면 자세히보기 창을 연다 */
   };
   /** 지금 화면 → 주소 */
@@ -8330,7 +8335,7 @@ span.cal-day.has { cursor: help; }
   /* 로그인 뒤 내 설정 DB 의 화면 설정을 받으면(services/uiPrefSync) — 정렬 · 보기 · 물건등록 방식 · 스토어 탭 · 도우미 접힘을 다시 읽어 그린다 */
   window.addEventListener('ui-prefs:loaded', () => {
     S.layout = store.get('wlp.web.layout', S.layout); S.sort = store.get('wlp.web.sort', S.sort);
-    if (S.storeTab) S.storeTab = store.get('wlp.web.storeTab2', S.storeTab);
+    if (S.storeTab && !S.storeTabPinned) S.storeTab = store.get('wlp.web.storeTab2', S.storeTab);
     try { R.mode = localStorage.getItem('wlp.web.regMode') === 'manual' ? 'manual' : 'auto'; } catch (e) { /* 그만 */ }
     /* 매각분석 — 조회 조건 · 거르기 · 저장 · 제외 표시도 계정 DB 에서 받은 값으로(다른 PC 에서 고른 것 그대로) */
     try {
@@ -9235,7 +9240,8 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     S.route = h.route;
     if (h.route === 'item') { S.itemId = h.itemId; S.lastItemId = h.itemId; S.itemTab = h.itemTab; }
     if (h.route === 'market') { S.marketTab = h.sub; if (h.saleTab) S.saleTab = h.saleTab; }
-    if (h.storeTab) S.storeTab = h.storeTab;
+    if (h.storeTab) { S.storeTab = h.storeTab; S.storeTabPinned = true; }
+    if (h.fromManual) fromManual();
     if (h.ebook) { S.ebOpen = h.ebook; setTimeout(ebOpenShared, 0); }
     if (APP_PAGE_NAMES[h.route]) { S.pageTab[h.route] = h.sub; S.tabForce = true; }
     S.pop = ''; S.menu = null; render();
