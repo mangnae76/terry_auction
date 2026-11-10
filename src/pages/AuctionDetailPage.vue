@@ -5560,17 +5560,29 @@ const cmpPoints = ref<Record<string, { lat: number; lng: number } | null>>({}); 
 const cmpPick = ref('');
 /** 2년 — 시군구 2년치(따로 받는다, 1년은 위 단지 수요분석 것을 같이 쓴다) */
 const cmpRows2y = ref<CaseTradeRow[] | null>(null);
+// 2년치는 그 물건에서 한 번만 받아 둔다 — 1년 ↔ 2년을 오가도 다시 받지 않는다(받는 동안 표가 비었다 차며 아래 상자가 출렁였다, 2026-11-11)
+let cmpRows2yFor = '';
+watch(() => auction.value?.id, () => { cmpRows2y.value = null; cmpRows2yFor = ''; });
 watch([() => auction.value?.id, cmpMonths, () => webEmbed] as const, async ([id, mo, web]) => {
-  cmpRows2y.value = null;
   const a = auction.value;
   if (mo !== 24 || !id || !web || !a?.address || !isApartment.value) return;
+  if (cmpRows2yFor === id && cmpRows2y.value) return;
+  cmpRows2yFor = id;
   const out = await analyzeAddress({ address: a.address, propertyType: priceKind.value, years: 2 }).catch(() => null);
   if (auction.value?.id === id && cmpMonths.value === 24) cmpRows2y.value = out?.allRows ?? [];
 }, { immediate: true });
 const cmpFrom = computed(() => { const w = tradeWindowOf(Date.now(), cmpMonths.value); return `${w.start.getFullYear()}${String(w.start.getMonth() + 1).padStart(2, '0')}${String(w.start.getDate()).padStart(2, '0')}`; });
 const cmpSquash = (v: string) => String(v ?? '').replace(/\s+/g, '');
 /** 범위 · 기간 · 평형 폭으로 고른 후보(반경은 아직 거리로 거르기 전) */
+/** 2년치를 받는 동안엔 바로 전 목록을 그대로 둔다 — 잠깐 비었다가 다시 차며 표 · 아래 상자가 위아래로 출렁이지 않게 */
+let cmpLastCandidates: CompareComplex[] = [];
 const cmpCandidates = computed<CompareComplex[]>(() => {
+  if (cmpMonths.value === 24 && !cmpRows2y.value && cmpLastCandidates.length) return cmpLastCandidates;
+  const out = cmpCandidatesNow();
+  if (out.length) cmpLastCandidates = out;
+  return out;
+});
+const cmpCandidatesNow = (): CompareComplex[] => {
   const myArea = supMyArea.value; const myJibun = supRegion.value?.jibun || supRows.value[0]?.jibun || '';
   if (!myArea || !myJibun) return [];
   const all = cmpMonths.value === 24 ? (cmpRows2y.value ?? []) : supAllRows.value;   // 6개월 · 1년은 1년치에서 기간으로 거른다
@@ -5579,7 +5591,7 @@ const cmpCandidates = computed<CompareComplex[]>(() => {
   const list = complexesOf(src, myArea, myJibun, cmpFrom.value, cmpTol.value, supRegion.value?.dong ?? '');
   if (!list.some((c) => c.mine)) list.push({ jibun: myJibun, name: supName.value, umdNm: supRegion.value?.dong ?? '', area: myArea, jeonseAvg: 0, saleAvg: 0, deals: [], mine: true, buildYear: 0 });
   return list.map((c) => (c.mine ? { ...c, name: supName.value || c.name } : c));
-});
+};
 const cmpMePt = computed(() => (supRegion.value?.lat ? { lat: supRegion.value.lat, lng: supRegion.value.lng } : null));
 /** 반경 범위면 좌표를 아는 단지 중 반경 안만 */
 const cmpList = computed<CompareComplex[]>(() => {
@@ -5662,7 +5674,7 @@ watch(() => `${cmpRange.value}|${cmpCandidates.value.filter((c) => !c.mine).map(
     if (run === cmpRun) cmpSupply.value = { ...cmpSupply.value, [cmpKeyOf(c)]: v };
   });
 });
-watch(() => auction.value?.id, () => { cmpNearby.value = {}; cmpPoints.value = {}; cmpSupply.value = {}; cmpPick.value = ''; });
+watch(() => auction.value?.id, () => { cmpNearby.value = {}; cmpPoints.value = {}; cmpSupply.value = {}; cmpPick.value = ''; cmpLastCandidates = []; });
 // 지도 — 시세분석 지도와 같은 점(웹 pa-pin). 평소엔 점만, 고른 단지는 크게 + 이름표 · 도보 5분 / 10분 원 · 조건별 가장 가까운 시설
 const cmpMapEl = ref<HTMLElement | null>(null);
 let cmpMv: MapView | null = null; let cmpMvP: Promise<void> | null = null; let cmpFitted = '';
