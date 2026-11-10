@@ -25,6 +25,12 @@ export const demandGradeOf = (metric: DemandMetric, ready: boolean, value: numbe
  *  8% 이상(300세대에 월 2건, 2020 활황기 전국 평균)은 매우 활발. 빌라 · 그 밖은 엑셀 기준 그대로(1.5%, 공식 통계 아님) */
 export const APT_TURNOVER_LINE = 3;
 export const APT_TURNOVER_HOT = 8;
+/** 아파트 회전율 ⓘ 단계 — 선마다 어느 해 · 어느 지역 수준인지(APT_TURNOVER_STATS 와 직방 전국 값) */
+export const APT_TURNOVER_STEPS: Array<[string, string]> = [
+  [`${APT_TURNOVER_LINE}% 이상`, '수도권 평균 이상(2023년 경기 2.99% · 인천 3.23%)'],
+  ['5% 이상', '활발 — 2021년 전국 수준(5.36%)'],
+  [`${APT_TURNOVER_HOT}% 이상`, '매우 활발 — 2020년 활황기 전국(7.9%), 같은 평형 300세대에 월 2건'],
+];
 /** 아파트 회전율 ⓘ 표 — 지역별 연 회전율(직방, 국토부 실거래 ÷ 아파트 재고). 2024년 이후 지역별 발표는 없다(2026-11-10 조사) */
 export const APT_TURNOVER_STATS: Array<[string, string]> = [
   ['구분', '서울 · 경기 · 인천 · 전국'],
@@ -71,7 +77,7 @@ export const demandTip = (metric: DemandMetric, what: string, apt = false): Arra
     ['공식', '12개월 거래량 ÷ 총 세대수 × 100'],
     ['의미', `${what} 중 1년에 몇 %가 손바뀜되나`],
     ['기준', `${turnoverLineOf(apt)}% 이상 적합 · 미만 부적합`],
-    ...(apt ? [['활발', `${APT_TURNOVER_HOT}% 이상이면 매우 활발(같은 평형 300세대에 월 2건)`] as [string, string], ...APT_TURNOVER_STATS]
+    ...(apt ? [...APT_TURNOVER_STEPS, ...APT_TURNOVER_STATS]
       : [['참고', `${DEMAND_GRADE_RULES.turnover.b}%는 업계에서 쓰는 기준(공식 통계 아님)`] as [string, string]]),
   ],
   absorb: [
