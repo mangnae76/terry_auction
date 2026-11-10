@@ -829,8 +829,8 @@ button { cursor: pointer; }
 :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) :is(input, textarea)::placeholder { color: var(--faint) !important; }
 :root[data-theme="dark"] #sonAskSlot .adp-mkt-cells .adp-mkt-input { background: transparent !important; }
 /* 지도 위 글(핀 이름표 · 범례 · 전체화면 단추)은 밤에도 까맣게 — 지도 바탕은 밤에도 밝아 흰 · 회색 글이 안 보였다(2026-11-06). 손품조사 시세분석 · 경매사례 둘 다 */
-:root[data-theme="dark"] :is(.sx-map, .pa .map) :is(.pa-pin .lbl, .pa-pin .lbl b, .legend, .legend span, .fs-btn, .map-title b) { color: #18213a !important; }
-:root[data-theme="dark"] :is(.sx-map, .pa .map) .pa-pin.me b { color: #e03e3e !important; }
+:root[data-theme="dark"] :is(.sx-map, .pa .map, .cmp-map) :is(.pa-pin .lbl, .pa-pin .lbl b, .legend, .legend span, .fs-btn, .map-title b) { color: #18213a !important; }
+:root[data-theme="dark"] :is(.sx-map, .pa .map, .cmp-map) .pa-pin.me b { color: #e03e3e !important; }
 /* 경매사례 지도 전체화면 — 왼쪽 떠 있는 흰 상자는 밤에도 낮 색 그대로(흰 바탕에 까만 글) */
 :root[data-theme="dark"] .sx-fs { --surface: #fff; --band: #f3f5f9; --line: #e3e8f0; --card-line: #e8ecf3; --muted: #5f6b82; --faint: #98a2b5; --text: #18213a; --blue-soft: #eaf1ff; --blue: #2563eb; }
 /* 경매사례 표 첫 줄(경매물건) — 밤에는 옅은 붉은 기만 */
@@ -1308,22 +1308,22 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-map.in-fs .fs-btn { display: none; }
 .sx-map .pa-pin { position: relative; }
 /* 지도 핀 — 작은 점 + 그 오른쪽에 '주변' 시설과 같은 흰 상자, 맨 앞에 번호(손품조사 시세분석 · 경매사례 같은 꼴, 2026-11-07) */
-:is(.sx-map, .pa .map) .pa-pin { position: relative; }
-:is(.sx-map, .pa .map) .pa-pin .pin-dot { position: absolute; left: -6px; top: -6px; width: 12px; height: 12px; border-radius: 50%; background: #2b4fd8; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(17, 24, 39, .35); }
-:is(.sx-map, .pa .map) .pa-pin.on .pin-box { left: 18px; }   /* 커진 점에 이름표가 겹치지 않게 */
-:is(.sx-map, .pa .map) .pa-pin .pin-box { position: absolute; left: 10px; top: 0; transform: translateY(-50%); display: flex; align-items: center; gap: 6px; padding: 3px 8px 3px 3px; background: #fff; border: 1.5px solid #2b4fd8; border-radius: 6px; box-shadow: 0 1px 4px rgba(17, 24, 39, .18); white-space: nowrap; font-size: 12px; line-height: 1.3; color: #18213a; text-align: left; cursor: pointer; }
-:is(.sx-map, .pa .map) .pa-pin .pin-box .no { flex: none; display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 4px; box-sizing: border-box; border-radius: 10px; background: #2b4fd8; color: #fff; font-style: normal; font-size: 12px; font-weight: 800; }
-:is(.sx-map, .pa .map) .pa-pin .pin-box .tx { color: #6b7280; }
-:is(.sx-map, .pa .map) .pa-pin .pin-box .tx b { font-weight: 700; color: #18213a; }
-:is(.sx-map, .pa .map) .pa-pin.on .pin-box { border-width: 2px; background: #eef3ff; }
-:is(.sx-map, .pa .map) .pa-pin.on .pin-dot { width: 26px; height: 26px; left: -13px; top: -13px; border-width: 3px; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }   /* 누른 점(지도 · 목록) — 두 배 가까이(2026-11-10) */
-:is(.sx-map, .pa .map) .pa-pin.off :is(.pin-dot, .pin-box .no) { background: #b8bfcc; }
-:is(.sx-map, .pa .map) .pa-pin.off .pin-box { border-color: #b8bfcc; opacity: .7; }
-:is(.sx-map, .pa .map) .pa-pin.off .pin-box .tx { text-decoration: line-through; }
-:is(.sx-map, .pa .map) .pa-pin.me .pin-dot { background: #e03e3e; width: 14px; height: 14px; left: -7px; top: -7px; }
-:is(.sx-map, .pa .map) .pa-pin.me.on .pin-dot { width: 28px; height: 28px; left: -14px; top: -14px; border-width: 3px; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
-:is(.sx-map, .pa .map) .pa-pin.me .pin-box { border-color: #e03e3e; padding-left: 8px; cursor: default; }
-:is(.sx-map, .pa .map) .pa-pin.me .pin-box .tx, :is(.sx-map, .pa .map) .pa-pin.me .pin-box .tx b { color: #e03e3e; }
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin { position: relative; }
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin .pin-dot { position: absolute; left: -6px; top: -6px; width: 12px; height: 12px; border-radius: 50%; background: #2b4fd8; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(17, 24, 39, .35); }
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin.on .pin-box { left: 18px; }   /* 커진 점에 이름표가 겹치지 않게 */
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin .pin-box { position: absolute; left: 10px; top: 0; transform: translateY(-50%); display: flex; align-items: center; gap: 6px; padding: 3px 8px 3px 3px; background: #fff; border: 1.5px solid #2b4fd8; border-radius: 6px; box-shadow: 0 1px 4px rgba(17, 24, 39, .18); white-space: nowrap; font-size: 12px; line-height: 1.3; color: #18213a; text-align: left; cursor: pointer; }
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin .pin-box .no { flex: none; display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 4px; box-sizing: border-box; border-radius: 10px; background: #2b4fd8; color: #fff; font-style: normal; font-size: 12px; font-weight: 800; }
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin .pin-box .tx { color: #6b7280; }
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin .pin-box .tx b { font-weight: 700; color: #18213a; }
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin.on .pin-box { border-width: 2px; background: #eef3ff; }
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin.on .pin-dot { width: 26px; height: 26px; left: -13px; top: -13px; border-width: 3px; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }   /* 누른 점(지도 · 목록) — 두 배 가까이(2026-11-10) */
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin.off :is(.pin-dot, .pin-box .no) { background: #b8bfcc; }
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin.off .pin-box { border-color: #b8bfcc; opacity: .7; }
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin.off .pin-box .tx { text-decoration: line-through; }
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin.me .pin-dot { background: #e03e3e; width: 14px; height: 14px; left: -7px; top: -7px; }
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin.me.on .pin-dot { width: 28px; height: 28px; left: -14px; top: -14px; border-width: 3px; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin.me .pin-box { border-color: #e03e3e; padding-left: 8px; cursor: default; }
+:is(.sx-map, .pa .map, .cmp-map) .pa-pin.me .pin-box .tx, :is(.sx-map, .pa .map, .cmp-map) .pa-pin.me .pin-box .tx b { color: #e03e3e; }
 .sx-map .pa-pin .dot { position: absolute; left: -12px; top: -12px; width: 24px; height: 24px; border-radius: 50%; background: #2b4fd8; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(17, 24, 39, .3); cursor: pointer; display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 800; font-style: normal; line-height: 1; }
 .sx-map .pa-pin.on .dot { left: -15px; top: -15px; width: 30px; height: 30px; font-size: 14px; }
 .sx-map .pa-pin.me .dot { left: -9px; top: -9px; width: 18px; height: 18px; background: #e03e3e; cursor: default; }

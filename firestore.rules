@@ -403,6 +403,10 @@ service cloud.firestore {
     match /cacheBldFacts/{id} {
       allow read, write: if isAllowedUser();
     }
+    // 단지 좌표 + 주변시설(카카오 1km) — 단지 입지비교. 주소가 같으면 값이 같아 모두가 나눠 쓴다(2026-11-10)
+    match /cacheNearby/{id} {
+      allow read, write: if isAllowedUser();
+    }
     // 달 단위 실거래 — 지역·종류·달이 같으면 값이 같아 모두가 나눠 쓴다
     match /cacheTradeMonth/{id} {
       allow read, write: if isAllowedUser();

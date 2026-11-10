@@ -11,6 +11,9 @@ export interface NearbyPlace {
   category: string;
   phone?: string;
   address?: string;
+  /** 좌표 — 지도에 시설을 찍을 때(단지 입지비교). 예전에 저장해 둔 값엔 없을 수 있다 */
+  lat?: number;
+  lng?: number;
 }
 
 const buildHeaders = (): HeadersInit | undefined => {
@@ -76,6 +79,8 @@ const searchByCategory = async (
       category: d.category_name,
       phone: d.phone,
       address: d.road_address_name || d.address_name,
+      lat: Number(d.y) || undefined,
+      lng: Number(d.x) || undefined,
     }));
   } catch {
     return [];
@@ -110,6 +115,8 @@ const searchByKeyword = async (
       category: d.category_name,
       phone: d.phone,
       address: d.road_address_name || d.address_name,
+      lat: Number(d.y) || undefined,
+      lng: Number(d.x) || undefined,
     }));
   } catch {
     return [];

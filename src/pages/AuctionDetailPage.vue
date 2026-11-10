@@ -83,6 +83,8 @@ import RightsPanel from '../components/RightsPanel.vue';
 import SonpumPricePage from './SonpumPricePage.vue';
 import type { CasePropertyType } from '../services/caseTradeAnalysis';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
+import { complexesOf, complexNearbyOf, nearestPlaceOf, rankFromMeters, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
+import { createMapView, type MapView } from '../services/mapView';
 import { geocodeAddress } from '../services/routeOptimizer';
 import {
   eduInfoFiltered500mOf, eduInfoOf, nearbyDisplayOf, naverMapUrl as naverMapUrlOf, pdfNearbyDisplayOf,
@@ -3029,15 +3031,19 @@ const aptAreaRows = computed(() => {
 // 총세대수 · 현재 매물수 · 12개월 거래량 · 해당 세대수로 매물율 · 거래율 · 월평균 거래 · 매물소화기간을 계산한다.
 // 거래량은 이 단지(같은 지번) 국토부 매매(정상 + 직거래, 계약해제 제외), 조회일부터 12개월. 짐작한 값은 넣지 않는다
 const supRows = ref<CaseTradeRow[]>([]);
+/** 같은 동의 실거래 줄 · 내 물건 지역(좌표 · 지번) — 단지 입지비교 */
+const supDongRows = ref<CaseTradeRow[]>([]);
+const supRegion = ref<{ sido: string; sigungu: string; dong: string; jibun: string; lat: number; lng: number } | null>(null);
 const supLoaded = ref(false);
 // 물건이 바뀔 때만 — 배열을 돌려주는 한 함수로 지켜보면 저장할 때마다(물건 객체가 바뀔 때마다) 다시 돌았다
 watch([() => auction.value?.id, () => webEmbed] as const, async ([id, web]) => {
-  supRows.value = []; supLoaded.value = false;
+  supRows.value = []; supLoaded.value = false; supDongRows.value = []; supRegion.value = null;
   const a = auction.value;
   if (!id || !web || !a?.address || !isApartment.value) return;   // 단지 수요분석은 아파트만
   const out = await analyzeAddress({ address: a.address, propertyType: priceKind.value, years: 1 }).catch(() => null);
   if (auction.value?.id !== id) return;
   supRows.value = out?.rows ?? []; supLoaded.value = true;
+  supDongRows.value = out?.dongRows ?? []; supRegion.value = out?.region ?? null;   // 단지 입지비교 — 같은 동 줄 · 내 좌표
 }, { immediate: true });
 const supDeals = computed(() => {
   const w = tradeWindowOf(Date.now(), 12);
@@ -5493,27 +5499,9 @@ const pickRoomType = async (id: string) => {
 // 등수가 남아버린다. 다른 평수를 고르면 비어 있고, 원래 평수로 돌아오면 입력값이 살아난다.
 // 등수 열쇠는 손으로 고른 구간만 — 자동 구간으로 바꾸면 예전에 적어 둔 등수가 안 보인다
 const rankKey = (cond: string) => `${pickedRealUserBand.value?.id ?? ''}:${cond}`;
-/** 입지조건별로 어느 주변시설을 보는지 — 여기 한 줄만 고치면 기준이 바뀐다.
- *  입지조건에서 '일자리'는 뺐다 — 교통이 편하면 일자리 접근성도 좋다(2026-11-10). 남은 조건은 모두 거리로 잰다 */
-const LOCATION_SOURCES: Record<string, Array<keyof NearbyEnvironment>> = {
-  교통: ['subway', 'busStop'],
-  인프라: ['mart', 'hospital', 'commerce', 'academy'],
-  공원: ['park'],
-  유치원: ['daycare'],
-  초등학교: ['school'],
-  학원가: ['academy'],
-};
-/** 도보 1분 ≈ 80m. 5분 안쪽 1등, 10분 안쪽 2등, 그 밖 3등 */
-const WALK_M_PER_MIN = 80;
-const rankFromMeters = (m: number) => (m <= WALK_M_PER_MIN * 5 ? 1 : m <= WALK_M_PER_MIN * 10 ? 2 : 3);
+// 입지조건별 시설 · 도보 거리 → 등수 규칙은 services/complexCompare 한 곳(단지 입지비교와 같이 쓴다)
 /** 그 조건에서 가장 가까운 한 곳까지의 거리 (m). 없으면 0 */
-const nearestMeters = (cond: string) => {
-  const env = nearbyEnv.value;
-  const keys = LOCATION_SOURCES[cond];
-  if (!env || !keys) return 0;
-  const all = keys.flatMap((k) => env[k] ?? []).map((p) => Number(p.distanceMeters) || 0).filter((m) => m > 0);
-  return all.length > 0 ? Math.min(...all) : 0;
-};
+const nearestMeters = (cond: string) => nearestPlaceOf(nearbyEnv.value, cond)?.distanceMeters ?? 0;
 /** 자동 등수 — 잴 수 없는 조건이거나 1km 안에 없으면 빈 값 */
 const autoRankOf = (cond: string) => {
   const m = nearestMeters(cond);
@@ -5530,6 +5518,115 @@ const rankOf = (cond: string) => auction.value?.realUserRanks?.[rankKey(cond)] ?
 const rankValue = (cond: string) => rankOf(cond) || autoRankOf(cond);
 /** 손으로 적어 둔 등수가 하나라도 있나 — 되돌릴 게 없으면 단추를 띄우지 않는다 */
 const hasTypedRank = computed(() => rankConditions.value.some((c) => !!rankOf(c)));
+
+// ===== 웹 손품조사 — 단지 입지비교(2026-11-10 시안 그대로 · 웹 · 아파트만, 개별성 분석 아래) =====
+// 같은 동의 다른 단지를 내 물건과 같은 입지조건 · 같은 규칙(도보 5분 1등 · 10분 2등 · 그 밖 3등)으로 매기고,
+// 단지마다 내 전용면적과 가장 가까운 평형의 최근 12개월 평균 전세가 · 매매가를 옆에 둔다(국토부 · DB). 짐작한 값은 넣지 않는다
+const CMP_COLOR: Record<string, string> = { 초등학교: '#1f9d55', 학원가: '#7c3aed', 인프라: '#d97706', 교통: '#1e3a8a', 공원: '#16a34a', 유치원: '#db2777' };
+const cmpNearby = ref<Record<string, ComplexNearby | null>>({});   // 지번 → 좌표 · 주변시설(null = 못 찾음)
+const cmpPick = ref('');
+const cmpFrom = computed(() => { const w = tradeWindowOf(Date.now(), 12); return `${w.start.getFullYear()}${String(w.start.getMonth() + 1).padStart(2, '0')}${String(w.start.getDate()).padStart(2, '0')}`; });
+const cmpList = computed<CompareComplex[]>(() => {
+  const myArea = supMyArea.value; const myJibun = supRegion.value?.jibun || supRows.value[0]?.jibun || '';
+  if (!myArea || !myJibun) return [];
+  const list = complexesOf(supDongRows.value, myArea, myJibun, cmpFrom.value);
+  if (!list.some((c) => c.mine)) list.push({ jibun: myJibun, name: supName.value, umdNm: '', area: myArea, jeonseAvg: 0, saleAvg: 0, deals: [], mine: true });
+  return list.map((c) => (c.mine ? { ...c, name: supName.value || c.name } : c));
+});
+type CmpRow = CompareComplex & { ranks: Array<number | null>; avg: number | null; sum: number; point: { lat: number; lng: number } | null; places: Array<{ cond: string; name: string; m: number; lat?: number; lng?: number } | null> };
+const cmpRows = computed<CmpRow[]>(() => {
+  const conds = rankConditions.value;
+  const rows = cmpList.value.map((c) => {
+    const nb = c.mine ? null : cmpNearby.value[c.jibun];
+    const env = c.mine ? nearbyEnv.value : nb?.env ?? null;
+    const places = conds.map((cond) => { const p = nearestPlaceOf(env, cond); return p ? { cond, name: p.name, m: p.distanceMeters, lat: p.lat, lng: p.lng } : null; });
+    // 내 물건 — 위 '실사용자 + 입지등수'에 보이는 값 그대로(손으로 고친 등수가 있으면 그 값)
+    const ranks = conds.map((cond, i) => (c.mine ? (Number(rankValue(cond)) || null) : (places[i] ? rankFromMeters(places[i]!.m) : null)));
+    const ready = env && ranks.every((r) => r !== null);
+    const avg = ready ? ranks.reduce<number>((a, b) => a + (b ?? 0), 0) / ranks.length : null;
+    const sum = places.reduce((a, p) => a + (p?.m ?? 9999), 0);
+    const point = c.mine ? (supRegion.value?.lat ? { lat: supRegion.value.lat, lng: supRegion.value.lng } : null) : nb ? { lat: nb.lat, lng: nb.lng } : null;
+    return { ...c, ranks, avg, sum, point, places };
+  });
+  // 등수평균 낮은 순, 같으면 시설까지 거리 합이 짧은 순. 아직 못 잰 단지는 뒤로
+  return rows.sort((a, b) => (a.avg ?? 99) - (b.avg ?? 99) || a.sum - b.sum);
+});
+const cmpPicked = computed(() => cmpRows.value.find((r) => r.jibun === cmpPick.value) ?? cmpRows.value.find((r) => r.mine) ?? null);
+const cmpDist = (r: CmpRow) => {
+  const me = cmpRows.value.find((x) => x.mine)?.point;
+  if (r.mine || !me || !r.point) return '';
+  const R = 6371000; const toR = (d: number) => (d * Math.PI) / 180;
+  const dLat = toR(r.point.lat - me.lat); const dLng = toR(r.point.lng - me.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toR(me.lat)) * Math.cos(toR(r.point.lat)) * Math.sin(dLng / 2) ** 2;
+  return `${((2 * R * Math.asin(Math.sqrt(h))) / 1000).toFixed(1)}km`;
+};
+/** '3억 1,500' — 원 → 억 · 만 */
+const cmpMoney = (won: number) => {
+  if (!(won > 0)) return '-';
+  const man = Math.round(won / 10000); const eok = Math.floor(man / 10000); const rest = man % 10000;
+  return `${eok ? `${eok}억` : ''}${eok && rest ? ' ' : ''}${rest ? rest.toLocaleString('ko-KR') : ''}`;
+};
+const cmpAvgText = (n: number | null) => (n === null ? '-' : String(Math.round(n * 100) / 100));
+// 다른 단지 좌표 · 주변시설 — 처음 여는 화면의 다른 조회가 끝나게 3초 쉬었다가, 두 곳씩. 받아 둔 단지는 이 브라우저 · DB 에서 바로 온다
+let cmpRun = 0;
+watch(() => cmpList.value.filter((c) => !c.mine).map((c) => `${c.umdNm}|${c.jibun}`).join(','), async (key) => {
+  const run = ++cmpRun;
+  if (!key) return;
+  await new Promise((ok) => { window.setTimeout(ok, 3000); });
+  const r = supRegion.value; if (!r || run !== cmpRun) return;
+  const todo = cmpList.value.filter((c) => !c.mine && !(c.jibun in cmpNearby.value));
+  let i = 0;
+  await Promise.all([0, 1].map(async () => {
+    while (i < todo.length && run === cmpRun) {
+      const c = todo[i]; i += 1;
+      const nb = await complexNearbyOf(`${r.sido} ${r.sigungu} ${c.umdNm} ${c.jibun}`).catch(() => null);
+      if (run === cmpRun) cmpNearby.value = { ...cmpNearby.value, [c.jibun]: nb };
+    }
+  }));
+});
+watch(() => auction.value?.id, () => { cmpNearby.value = {}; cmpPick.value = ''; });
+// 지도 — 시세분석 지도와 같은 점(웹 pa-pin). 평소엔 점만, 고른 단지는 크게 + 이름표 · 도보 5분 / 10분 원 · 조건별 가장 가까운 시설
+const cmpMapEl = ref<HTMLElement | null>(null);
+let cmpMv: MapView | null = null; let cmpMvP: Promise<void> | null = null; let cmpFitted = '';
+const cmpEsc = (t: string) => t.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]!));
+const cmpDraw = () => {
+  const mv = cmpMv; if (!mv) return;
+  mv.clear();
+  const rows = cmpRows.value.filter((r) => r.point); const pick = cmpPicked.value;
+  if (pick?.point) {
+    mv.circle(pick.point, WALK_M_PER_MIN * 10, { color: '#2b6df3', weight: 1.4, dash: true, fillOpacity: 0 });
+    mv.circle(pick.point, WALK_M_PER_MIN * 5, { color: '#2b6df3', weight: 1.6, fillOpacity: 0.07 });
+    pick.places.forEach((p) => {
+      if (!p?.lat || !p.lng) return;
+      const color = CMP_COLOR[p.cond] ?? '#6b7280';
+      mv.line([pick.point!, { lat: p.lat, lng: p.lng }], { color, weight: 2, opacity: 0.7 });
+      mv.pin({ lat: p.lat, lng: p.lng }, { className: 'cmp-fac', html: `<i style="background:${color}" title="${cmpEsc(`${p.cond} · ${p.name} ${p.m}m`)}"></i>`, z: 20, interactive: false });
+    });
+  }
+  rows.forEach((r) => {
+    const on = r.jibun === pick?.jibun;
+    const label = `<b>${cmpEsc(r.name || r.jibun)}</b> · 등수평균 ${cmpAvgText(r.avg)} · 전세 ${cmpMoney(r.jeonseAvg)}`;
+    mv.pin(r.point!, {
+      className: `pa-pin${r.mine ? ' me' : ''}${on ? ' on' : ''}`,
+      html: on ? `<i class="pin-dot"></i><span class="pin-box"><span class="tx">${label}</span></span>` : '<i class="pin-dot"></i>',
+      onClick: () => { cmpPick.value = r.jibun; },
+      z: on ? 1000 : r.mine ? 500 : 1,
+    });
+  });
+  const key = rows.map((r) => r.jibun).join(',');
+  if (key && key !== cmpFitted) { cmpFitted = key; mv.fitPoints(rows.map((r) => r.point!), 40, 17, false); }
+};
+const cmpEnsureMap = async () => {
+  await nextTick();
+  if (!cmpMvP && cmpMapEl.value && cmpRows.value.some((r) => r.point)) {
+    const el = cmpMapEl.value;
+    cmpMvP = createMapView(el, { zoomControl: 'topright' }).then((v) => { cmpMv = v; });
+  }
+  if (cmpMvP) { await cmpMvP; cmpDraw(); }
+};
+watch(() => `${cmpPicked.value?.jibun}|${cmpRows.value.map((r) => `${r.jibun}:${r.point ? 1 : 0}:${r.avg}`).join(',')}`, () => { void cmpEnsureMap(); });
+if (sonpumTab) watch(sonpumTab, (t) => { if (t === 'demand') void nextTick(() => { cmpMv?.relayout(); cmpFitted = ''; cmpDraw(); }); });
+onBeforeUnmount(() => { cmpMv?.destroy(); cmpMv = null; cmpMvP = null; });
 /** 손으로 적은 등수를 지운다 — 비우면 거리로 매긴 자동값이 다시 선다.
  *  칸을 하나씩 지우는 길은 원래 있었지만, 폰에서 지우기가 까다로워 보이지 않았다. */
 const resetRanks = async () => {
@@ -8901,6 +8998,64 @@ const goBack = () => router.back();
             <!-- 개별성 적용가 줄은 뺐다 — 웹(2026-11-06) · 앱(2026-11-09) -->
           </div>
           </div>
+
+            <!-- ③ 단지 입지비교 — 웹 · 아파트만(2026-11-10 시안 그대로). 같은 동 단지를 내 물건과 같은 입지조건 · 같은 규칙으로 매기고 평균 전세가 · 매매가를 옆에 -->
+            <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box">
+              <p class="sup-scope"><span class="area">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span> 단지 입지비교</p>
+              <p class="sup-head">③ 단지 입지비교 <small class="cmp-sub">내 물건과 같은 입지조건 · 같은 규칙으로 매긴 입지등수, 평균 전세가 · 매매가는 단지마다 내 전용면적과 가장 가까운 평형의 최근 12개월</small></p>
+              <div ref="cmpMapEl" class="cmp-map">
+                <p v-if="!cmpRows.some((r) => r.point)" class="cmp-wait">{{ supLoaded ? '단지 위치를 찾는 중입니다…' : '실거래를 받는 중입니다…' }}</p>
+              </div>
+              <div class="cmp-legend"><span><i class="me"></i>내 물건</span><span><i></i>비교 단지</span><span v-for="c in rankConditions" :key="c"><i class="sq" :style="{ background: CMP_COLOR[c] ?? '#6b7280' }"></i>{{ c }}</span><span class="dim">원 — 도보 5분(실선) · 10분(점선)</span></div>
+              <div class="son-demand sup-tbl">
+                <div class="adm-table-wrap">
+                  <table class="adm-table cmp-tbl">
+                    <thead><tr>
+                      <th>단지<small>(전용)</small></th><th>거리<small>(내 물건에서)</small></th>
+                      <th v-for="c in rankConditions" :key="c">{{ c }}</th>
+                      <th>등수평균</th><th>평균 전세가<small>(최근 12개월)</small></th><th>평균 매매가<small>(최근 12개월)</small></th>
+                    </tr></thead>
+                    <tbody>
+                      <tr v-for="r in cmpRows" :key="r.jibun" :class="['cmp-row', { mine: r.mine, on: r.jibun === cmpPicked?.jibun }]" tabindex="0" @click="cmpPick = r.jibun" @keydown.enter="cmpPick = r.jibun">
+                        <td class="nm">{{ r.name || r.jibun }}<span v-if="r.mine" class="cmp-tag">내 물건</span><small class="sup-tbl-sub">전용 {{ trunc2(r.area) }}㎡</small></td>
+                        <td class="n">{{ cmpDist(r) || '-' }}</td>
+                        <td v-for="(k, i) in r.ranks" :key="i" class="n"><span v-if="k" :class="['cmp-rk', { r1: k === 1 }]">{{ k }}</span><span v-else class="cmp-dim">{{ r.mine || r.jibun in cmpNearby ? '-' : '…' }}</span></td>
+                        <td class="n"><b class="cmp-avg">{{ cmpAvgText(r.avg) }}</b></td>
+                        <td class="n amt"><b>{{ cmpMoney(r.jeonseAvg) }}</b></td>
+                        <td class="n amt">{{ cmpMoney(r.saleAvg) }}</td>
+                      </tr>
+                      <tr v-if="!cmpRows.length"><td :colspan="rankConditions.length + 5" class="cmp-dim">{{ supLoaded ? '같은 동에 견줄 단지 거래가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <template v-if="cmpPicked">
+                <p class="sup-head cmp-pick">고른 단지 <span class="area cmp-chip">{{ cmpPicked.name || cmpPicked.jibun }}</span> <small class="cmp-sub">지도 점이나 위 표 줄을 누르면 바뀝니다</small></p>
+                <div class="cmp-two">
+                  <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
+                    <thead><tr><th>입지조건</th><th>가장 가까운 곳</th><th>거리</th><th>도보</th><th>입지등수</th></tr></thead>
+                    <tbody>
+                      <tr v-for="(c, i) in rankConditions" :key="c">
+                        <td><i class="cmp-sq" :style="{ background: CMP_COLOR[c] ?? '#6b7280' }"></i>{{ c }}</td>
+                        <td class="lft">{{ cmpPicked.places[i]?.name ?? '-' }}</td>
+                        <td class="n">{{ cmpPicked.places[i] ? `${cmpPicked.places[i]!.m.toLocaleString('ko-KR')}m` : '-' }}</td>
+                        <td class="n">{{ cmpPicked.places[i] ? `${Math.max(1, Math.round(cmpPicked.places[i]!.m / WALK_M_PER_MIN))}분` : '-' }}</td>
+                        <td class="n"><span v-if="cmpPicked.ranks[i]" :class="['cmp-rk', { r1: cmpPicked.ranks[i] === 1 }]">{{ cmpPicked.ranks[i] }}</span><template v-else>-</template></td>
+                      </tr>
+                    </tbody>
+                  </table></div></div>
+                  <div class="son-demand sup-tbl"><div class="adm-table-wrap cmp-deals"><table class="adm-table cmp-tbl">
+                    <thead><tr><th>구분</th><th>계약일</th><th>전용</th><th>층</th><th>금액</th></tr></thead>
+                    <tbody>
+                      <tr v-for="(d, i) in cmpPicked.deals" :key="i">
+                        <td>{{ d.kind === '직거래' ? '매매' : d.kind }}</td><td class="n">{{ d.contractDate }}</td><td class="n">{{ trunc2(d.areaM2) }}㎡</td><td class="n">{{ d.floor ? `${d.floor}층` : '-' }}</td><td class="n amt"><b>{{ cmpMoney(d.price) }}</b></td>
+                      </tr>
+                      <tr v-if="!cmpPicked.deals.length"><td colspan="5" class="cmp-dim">최근 12개월 같은 평형 거래가 없습니다.</td></tr>
+                    </tbody>
+                  </table></div></div>
+                </div>
+              </template>
+            </section>
           </div>
         </section>
 
@@ -11469,6 +11624,34 @@ tr.tone-take { background: #fff5f5; }
 .sup-opinion b { font-size: 15px; font-weight: 800; color: #111827; }
 .sup-opinion span { font-size: 13px; color: #111827; }   /* 의견 글은 검정(2026-11-10) */
 .sup-opinion .wait { color: #9ca3af; }
+/* 단지 입지비교 — 단지 수요분석과 같은 상자 · 표(sup-*), 지도는 시세분석 지도 점(웹 pa-pin) */
+.adp-dm-body > .adp-dm-block.boxed.cmp-box { margin-top: 10px; border: 1px solid #e3e8f0; border-radius: 10px; padding: 14px; background: #fff; }
+.adp-dm-body > .adp-dm-block:has(+ .cmp-box) { border-bottom: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; padding-bottom: 12px; }   /* 개별성 분석이 단락 끝 — 아래 테두리 */
+.cmp-sub { margin-left: 6px; font-size: 12px; font-weight: 400; color: #6b7280; }
+.cmp-map { position: relative; height: 380px; border: 1px solid #e3e8f0; border-radius: 8px; overflow: hidden; background: #eef2f6; margin-bottom: 8px; }
+.cmp-wait { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 13px; color: #6b7280; }
+.cmp-map :deep(.cmp-fac i) { position: absolute; left: -7px; top: -7px; width: 14px; height: 14px; border-radius: 3px; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(17, 24, 39, .35); }
+.cmp-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 2px 12px; font-size: 12px; color: #6b7280; }
+.cmp-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 4px; border-radius: 50%; background: #2b4fd8; vertical-align: -1px; }
+.cmp-legend i.me { background: #e03e3e; }
+.cmp-legend i.sq { border-radius: 2px; }
+.cmp-legend .dim { color: #9ca3af; }
+.cmp-row { cursor: pointer; }
+.sup-tbl .adm-table tbody tr.cmp-row:hover td { background: #f7f9fc; }
+.sup-tbl .adm-table tbody tr.cmp-row.mine td { background: #fff5f5; }
+.sup-tbl .adm-table tbody tr.cmp-row.on td { background: #eaf1ff; }
+.cmp-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: #e03e3e; color: #fff; font-size: 11px; font-weight: 700; vertical-align: 1px; }
+.cmp-rk { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 1px solid #e3e8f0; border-radius: 6px; font-weight: 700; color: #111827; }
+.cmp-rk.r1 { color: #2b6df3; border-color: #b9cdf8; }
+.cmp-avg { font-size: 15px; font-weight: 800; color: #e03e3e; }
+.cmp-dim { color: #9ca3af; }
+.cmp-pick { margin-top: 16px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cmp-chip { display: inline-flex; align-items: center; padding: 3px 11px; border: 1px solid rgba(43, 109, 243, .28); border-radius: 999px; background: rgba(43, 109, 243, .09); color: #2b6df3; font-size: 14px; font-weight: 800; white-space: nowrap; }
+.cmp-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.cmp-two .sup-tbl { margin-top: 0; }
+.cmp-deals { max-height: 330px; overflow-y: auto; }
+.cmp-sq { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 2px; vertical-align: 0; }
+.sup-tbl .adm-table td.lft { text-align: left; }
 /* 단지 표 — 위 동 수요분석 표(AdminRegionDemandPage .adm-table)를 그대로 옮김 */
 .sup-tbl { margin-top: 0; }
 .sup-tbl-head { margin-top: 14px; }
