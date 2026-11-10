@@ -2811,8 +2811,17 @@ const INDIV_GROUPS: IndivGroup[] = [
     ],
   },
 ];
+/** 아파트 단지 개별성 — 건물외부 · 건물내부는 빼고 지하주차장 연결 · 용적률을 넣는다(2026-11-11 사용자). 빌라는 그대로.
+ *  용적률은 정보요약(표제부 · 단지정보) 값이 자동으로 들어가고, 손으로 고칠 수 있다 */
+const APT_INDIV_EXTRA: IndivItem[] = [
+  { id: 'ind.ugLink', label: '지하주차장 연결', options: ['O', 'X'], rate: '5%' },
+  { id: 'ind.far', label: '용적률', text: true, suffix: '%', rate: '5%' },
+];
+const indivGroups = computed<IndivGroup[]>(() => (isApartment.value
+  ? INDIV_GROUPS.map((g, i) => (i === 0 ? { ...g, items: [...g.items.filter((it) => it.id !== 'ind.mgmt' && it.id !== 'ind.inside'), ...APT_INDIV_EXTRA] } : g))
+  : INDIV_GROUPS));
 /** PDF(건축물대장 · 단지정보) · 건축물대장 API 로 자동으로 채우는 항목 — 이름 글자를 블루그레이로(아래 watch 의 자동 채움과 같은 목록) */
-const INDIV_AUTO = new Set(['ind.age', 'ind.parking', 'ind.elevator', 'ind.corridor', 'ind.floorNum']);
+const INDIV_AUTO = new Set(['ind.age', 'ind.parking', 'ind.elevator', 'ind.corridor', 'ind.floorNum', 'ind.far']);
 const indivValue = (id: string) => surveyForm.value.indivValues?.[id] ?? '';
 // 년식 — 사용승인 연월(YYYY-MM)을 휠로 고르고, 옆에 올해 기준 연차를 보여 준다
 const indivAgeOpen = ref(false);
@@ -2882,7 +2891,8 @@ const indivFloorRate = () => {
 // 가격율 — 저장·입력은 숫자만, 표시는 뒤에 %를 붙인다 (indivValues에 '<id>.rate'로 저장)
 // 세대수·주차수처럼 숫자만 들어가는 값은 천단위 콤마로 보여 준다
 const indivDisplay = (item: IndivItem) => {
-  const raw = indivValue(item.id);
+  // 용적률 — 손으로 적은 값이 없으면 정보요약 값(표제부 · 단지정보)
+  const raw = indivValue(item.id) || (item.id === 'ind.far' ? summaryFarText.value.replace(/[^\d.]/g, '') : '');
   if (!raw) return '-';
   if (item.suffix) {
     const num = raw.replace(/[^\d.]/g, '');
@@ -8949,7 +8959,7 @@ const goBack = () => router.back();
           <div class="adp-ind-body">
             <!-- 빌라 개별성 · 호실 개별성 — 넓으면 나란히, 좁으면 위아래 -->
             <div class="adp-ind-pair">
-            <table v-for="g in INDIV_GROUPS" :key="g.title" class="adp-table adp-ind-table">
+            <table v-for="g in indivGroups" :key="g.title" class="adp-table adp-ind-table">
               <colgroup>
                 <col style="width: 96px" /><col /><col style="width: 68px" />
               </colgroup>
