@@ -2314,3 +2314,7 @@ html.is-web {
   justify-content: center;
   line-height: 1;
 }
+
+/* 지도 표식(점 · 이름표 · 주변 시설) 위에서는 손바닥(지도 끌기) 대신 화살표 — 눌리는지 헷갈리지 않게(2026-11-10).
+   mv-pin 은 services/mapView 가 모든 표식에 붙인다. kt-* 는 카카오 지도 도구 막대의 주변 시설 · 학교 · 검색 표식 */
+.mv-pin, .mv-pin *, .kt-near, .kt-school, .kt-found, .kt-found * { cursor: default !important; }

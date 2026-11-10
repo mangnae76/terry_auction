@@ -3022,6 +3022,8 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 /* 굵기도 한 가지 — 값은 모두 굵게(700), 강조 · 이름 · 전화까지 같게(아파트 · 빌라, 앱과 같다 2026-11-10) */
 .it-sum dd, .it-sum dd * { font-weight: 700 !important; }
 .it-tel-ico { margin-right: 3px; vertical-align: -2px; }
+/* 지도 표식 위에서는 손바닥 대신 화살표(앱 style.css 와 같다 2026-11-10) */
+.mv-pin, .mv-pin *, .kt-near, .kt-school, .kt-found, .kt-found * { cursor: default !important; }
 /* 단지정보 면적 종류 — 내 물건 평형(공급면적) */
 .it-apt-mine { color: #2563eb; font-weight: 700; }
 .it-apt-mine small { margin-left: 4px; padding: 0 5px; border-radius: 4px; background: #eef3ff; font-size: 12px; }

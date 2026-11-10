@@ -96,7 +96,7 @@ const addKakaoCss = () => {
 
 const box = (o: PinOpts) => {
   const el = document.createElement('div');
-  el.className = o.className;
+  el.className = `mv-pin ${o.className}`;   // mv-pin — 모든 지도 표식 공통(마우스 화살표, style.css)
   el.innerHTML = o.html;
   if (o.size) { el.style.width = `${o.size[0]}px`; el.style.height = `${o.size[1]}px`; }
   if (o.interactive === false) el.style.pointerEvents = 'none';
@@ -223,7 +223,7 @@ const leafletView = (el: HTMLElement, opts: MapOpts): MapView => {
     },
     pin(p, o) {
       const iconOf = (html: string) => L.divIcon({
-        className: o.className, html,
+        className: `mv-pin ${o.className}`, html,
         iconSize: o.size ?? [0, 0], ...(o.size ? { iconAnchor: [o.size[0] / 2, o.size[1] / 2] as [number, number] } : {}),
       });
       const icon = iconOf(o.html);
