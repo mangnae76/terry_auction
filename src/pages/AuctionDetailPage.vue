@@ -9122,7 +9122,7 @@ const goBack = () => router.back();
 
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
-              <div class="cmp-est-h"><h3><span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span>단지 입지비교</h3>
+              <div class="cmp-est-h"><h3>단지 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span><small class="cmp-q">내 아파트 단지는 몇 등일까?</small></h3>
                 <span class="cmp-est-desc">최근 {{ cmpYears * 12 }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 같은 평형 {{ cmpKind }} 실거래 · 아래 표나 지도에서 단지를 고르면 바뀝니다</span>
               </div>
               <div class="cmp-est">
@@ -11849,7 +11849,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-conds .kindF button.on[data-k="전세"] { background: #b7791f; color: #fff; }
 /* 시세분석 결론 칸 줄 — SonpumPricePage .zone-h · .pa-tag · .est · .tiles · .tile 값 그대로(2026-11-11) */
 .cmp-est-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.cmp-scope-chip { display: inline-flex; align-items: center; margin-right: 6px; padding: 2px 9px; border: 1px solid rgba(43, 109, 243, .28); border-radius: 999px; background: rgba(43, 109, 243, .09); color: #2b6df3; font-size: 12.5px; font-weight: 700; line-height: 1.4; white-space: nowrap; }   /* 지역 칩 — 작게(2026-11-11) */
+.cmp-scope-chip { display: inline-flex; align-items: center; margin-left: 8px; padding: 2px 9px; border: 1px solid rgba(43, 109, 243, .28); border-radius: 999px; background: rgba(43, 109, 243, .09); color: #2b6df3; font-size: 12.5px; font-weight: 700; line-height: 1.4; white-space: nowrap; }   /* 지역 칩 — 작게(2026-11-11) */
+.cmp-q { margin-left: 8px; font-size: 12.5px; font-weight: 400; color: #6b7280; }   /* '누구한테 팔까?'와 같은 꼴의 물음 */
 .cmp-est-h h3 { display: inline-flex; align-items: center; margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
 .cmp-est-tag { font-size: 13px; font-weight: 700; color: #2b4fd8; background: #eef2ff; border-radius: 5px; padding: 3px 8px; }
 .cmp-est-desc { font-size: 12px; color: #6b7280; }
@@ -11890,7 +11891,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-map :deep(.cmp-bub.on .cb b) { font-size: 13px; }
 .cmp-map :deep(.cmp-near) { position: relative; }
 .cmp-map :deep(.cmp-near .kt-near) { position: absolute; left: 0; bottom: 4px; transform: translateX(-50%); font-weight: 400; }   /* 시설 상자 글도 굵기 없음 */
-.fs-btn { position: absolute; left: 10px; top: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(17, 24, 39, .18); font: inherit; font-size: 12.5px; font-weight: 700; color: #111827; cursor: pointer; }
+.fs-btn { position: absolute; left: 10px; top: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(17, 24, 39, .18); font: inherit; font-size: 12.5px; font-weight: 400; color: #111827; cursor: pointer; }   /* 굵기 없음 — 다른 화면 전체화면 단추와 같게(2026-11-11) */
 .fs-btn:hover { color: #2b6df3; }
 /* 전체화면 — 시세분석 전체화면과 같은 꼴: 남색 위 띠(52) · 지도가 아래를 꽉 채우고 · 왼쪽에 흰 상자(모서리 12 · 그림자)가 떠 있다(2026-11-11) */
 .cmp-map.fs { position: fixed; inset: 0; z-index: 2000; border: 0; border-radius: 0; display: grid; grid-template-columns: 340px minmax(0, 1fr); grid-template-rows: 52px minmax(0, 1fr); background: #fff; }
