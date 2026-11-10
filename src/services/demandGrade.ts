@@ -20,9 +20,11 @@ export const demandGradeOf = (metric: DemandMetric, ready: boolean, value: numbe
   return value <= a ? 'A' : value <= b ? 'B' : 'C';
 };
 
-/** 거래 회전율 합격선(연 %) — 아파트는 8%: 같은 평형 300세대에 월 2건(연 24건)이 정상(2026-11-10 사용자 기준).
- *  빌라 · 그 밖은 엑셀 기준 그대로(1.5%) */
-export const APT_TURNOVER_LINE = 8;
+/** 거래 회전율 합격선(연 %) — 아파트는 5%: 전국 아파트가 평범한 해 3~5%라 그 위면 '평균보다 잘 팔리는 단지'.
+ *  8% 이상(300세대에 월 2건, 2020 활황기 전국 평균)은 매우 활발 — ⓘ 에 적는다(2026-11-10 사용자 결정).
+ *  빌라 · 그 밖은 엑셀 기준 그대로(1.5%, 공식 통계 아님) */
+export const APT_TURNOVER_LINE = 5;
+export const APT_TURNOVER_HOT = 8;
 export const turnoverLineOf = (apt: boolean) => (apt ? APT_TURNOVER_LINE : DEMAND_GRADE_RULES.turnover.b);
 
 /** 소수 한 자리 — 0 이면 떼고 정수로('100.0' → '100', '3.6' 그대로). 수요지표 값 공통(2026-11-10) */
@@ -60,7 +62,7 @@ export const demandTip = (metric: DemandMetric, what: string, apt = false): Arra
     ['공식', '12개월 거래량 ÷ 총 세대수 × 100'],
     ['의미', `${what} 중 1년에 몇 %가 손바뀜되나`],
     ['기준', `${turnoverLineOf(apt)}% 이상 적합 · 미만 부적합`],
-    ...(apt ? [['아파트', '같은 평형 300세대에 월 2건(연 8%)이 정상'] as [string, string]] : []),
+    ...(apt ? [['활발', `${APT_TURNOVER_HOT}% 이상이면 매우 활발(같은 평형 300세대에 월 2건)`] as [string, string]] : []),
   ],
   absorb: [
     ['공식', '12개월 거래량 ÷ 총 매물수 × 100'],
