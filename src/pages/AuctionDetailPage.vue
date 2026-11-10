@@ -8402,7 +8402,7 @@ const goBack = () => router.back();
               <p class="sup-head">① 기초수치</p>
               <div class="sup-row">
                 <div class="sup-cell">
-                  <div class="sup-h"><InfoTip :rows="SUP_TIPS.deal" under="box">12개월 거래량</InfoTip></div>
+                  <div class="sup-h"><InfoTip :rows="SUP_TIPS.deal" under="box">총 거래량(해당 평형)</InfoTip></div>
                   <!-- 이 단지(같은 지번) 국토부 매매 자동값 — 정상 + 직거래, 계약해제 제외, 조회일부터 12개월 -->
                   <!-- 총(단지 전체) | 해당(이 평형) — 위 수요분석 총 거래량 '연 | 월'과 같은 꼴. 지표는 해당 평형으로 계산 -->
                   <div class="sup-b"><b v-if="!supLoaded" class="wait">받는 중</b><b v-else><em class="sup-pre">총</em>{{ supDeals.length.toLocaleString('ko-KR') }}<template v-if="supAreaUnits"><em class="sup-bar">|</em><em class="sup-pre">해당 평형</em>{{ supDealCount.toLocaleString('ko-KR') }}</template><em class="sup-u">건</em></b></div>
