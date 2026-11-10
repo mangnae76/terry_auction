@@ -5930,7 +5930,9 @@ const goBack = () => router.back();
               <tr><th>세대수</th><td>{{ auction.aptComplexInfo.households || '-' }}</td><th>동 수</th><td>{{ auction.aptComplexInfo.buildings || '-' }}</td></tr>
               <tr><th>사용승인일</th><td>{{ auction.aptComplexInfo.approvalDate || '-' }}</td><th>시공사</th><td>{{ auction.aptComplexInfo.contractor || '-' }}</td></tr>
               <tr><th>주차 수</th><td>{{ auction.aptComplexInfo.parkingTotal || '-' }}</td><th>세대당 주차</th><td>{{ auction.aptComplexInfo.parkingPerHouse || '-' }}</td></tr>
-              <tr><th>난방 방식</th><td>{{ auction.aptComplexInfo.heatingType || '-' }}</td><th>난방 연료</th><td>{{ auction.aptComplexInfo.heatingFuel || '-' }}</td></tr>
+              <!-- 난방은 뺐고 그 자리에 체납(PDF 체납내역)을 둔다(2026-11-10) -->
+              <tr><th>체납조사일</th><td>{{ auction.arrearsInfo?.surveyDate || '-' }}</td><th>체납금액</th><td>{{ auction.arrearsInfo?.amount || '-' }}</td></tr>
+              <tr v-if="auction.arrearsInfo?.note"><th>체납비고</th><td colspan="3" class="wrap">{{ auction.arrearsInfo.note }}</td></tr>
               <tr><th>용적률</th><td>{{ auction.aptComplexInfo.floorRatio || '-' }}</td><th>건폐율</th><td>{{ auction.aptComplexInfo.buildingCoverage || '-' }}</td></tr>
               <tr><th>최고층</th><td>{{ auction.aptComplexInfo.topFloor || '-' }}</td><th>최저층</th><td>{{ auction.aptComplexInfo.bottomFloor || '-' }}</td></tr>
               <tr><th>관리소</th><td colspan="3"><a v-if="auction.aptComplexInfo.managementPhone" :href="`tel:${auction.aptComplexInfo.managementPhone.replace(/[^\d+]/g, '')}`" class="adp-agency-phone">{{ auction.aptComplexInfo.managementPhone }}</a><span v-else>-</span></td></tr>
@@ -6284,7 +6286,8 @@ const goBack = () => router.back();
           </table>
         </section>
 
-        <section v-if="isApartment && auction?.arrearsInfo" class="adp-card">
+        <!-- 체납내역 — 단지정보가 있으면 그 안에 들어가므로 단지정보가 없을 때만 따로 -->
+        <section v-if="isApartment && auction?.arrearsInfo && !auction?.aptComplexInfo" class="adp-card">
           <header class="adp-card-head" @click="toggleSection('arrears')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3z"/><path d="M12 9v4M12 17h.01"/></svg>체납내역</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('arrears') }]" alt="" />

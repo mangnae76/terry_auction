@@ -6717,7 +6717,7 @@ span.cal-day.has { cursor: help; }
           ${rounds.map((r) => `<dt class="it-round-dt"><span>${esc(r.label)}</span>${r.rate ? `<span class="it-chip pct">${esc(r.rate)}</span>` : ''}${r.status ? `<span class="it-chip ${T.roundToneOf(r.status)}">${esc(r.status)}</span>` : ''}${r.date ? `<span class="it-date ${T.roundToneOf(r.status) === 'st-now' ? 'now' : ''}">${esc(r.date)}</span>` : ''}</dt><dd class="amt ${r.current ? 'now' : ''}">${fm(r.price)}원</dd>`).join('')}
           <dt>보증금 (10%)</dt><dd class="amt deposit">${fm(T.depositAmountOf(a))}원</dd>
         </dl>`;
-      /* 왼쪽: 정보요약 · 기본정보 · (아파트면 단지정보) · 물건현황 · 건축물정보 / 오른쪽: 입지정보 (아파트면 체납내역도 오른쪽) */
+      /* 왼쪽: 정보요약 · 기본정보 · (아파트면 단지정보) · 물건현황 · 건축물정보 / 오른쪽: 입지정보 (단지정보가 없는 아파트면 체납내역도 오른쪽) */
       const left = [
         itCard('doc', '정보요약', `<dl class="it-rows">${summaryRows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`),
         itCard('info', '기본정보', baseRows),
@@ -6727,7 +6727,7 @@ span.cal-day.has { cursor: help; }
       ];
       const right = [
         locationCardHtml(it, a),
-        ...(isApt && a.arrearsInfo ? [arrearsCardHtml(a)] : []),
+        ...(isApt && a.arrearsInfo && !a.aptComplexInfo ? [arrearsCardHtml(a)] : []),   /* 단지정보가 있으면 그 안에 */
       ];
       return `<div class="it-col">${left.join('')}</div><div class="it-col">${right.join('')}</div>`;
     }
@@ -6869,7 +6869,7 @@ span.cal-day.has { cursor: help; }
     if (S.route === 'item' && S.itemId === id) renderItem();
   }
   function aptCardHtml(a) {
-    const c = a.aptComplexInfo; const v = (x) => esc(x || '-'); const T = CLOUD.T || {};
+    const c = a.aptComplexInfo; const r = a.arrearsInfo || {}; const v = (x) => esc(x || '-'); const T = CLOUD.T || {};
     /* 단지명 — PDF 에 없으면 전유부 소재지의 건물명 · 면적 종류 — 내 물건 평형 표시(앱과 같은 aptComplex 모듈) */
     const name = T.complexNameOf ? T.complexNameOf(a) : c.name;
     const areas = T.areaTypePartsOf ? T.areaTypePartsOf(a).map((t) => (t.mine ? `<span class="it-apt-mine">${esc(t.text)}<small>내 물건</small></span>` : esc(t.text))).join(', ') : esc(c.areaTypes || '');
@@ -6878,7 +6878,9 @@ span.cal-day.has { cursor: help; }
       `<tr><th>세대수</th><td>${v(c.households)}</td><th>동 수</th><td>${v(c.buildings)}</td></tr>`,
       `<tr><th>사용승인일</th><td>${v(c.approvalDate)}</td><th>시공사</th><td>${v(c.contractor)}</td></tr>`,
       `<tr><th>주차 수</th><td>${v(c.parkingTotal)}</td><th>세대당 주차</th><td>${v(c.parkingPerHouse)}</td></tr>`,
-      `<tr><th>난방 방식</th><td>${v(c.heatingType)}</td><th>난방 연료</th><td>${v(c.heatingFuel)}</td></tr>`,
+      /* 난방은 뺐고 그 자리에 체납(PDF 체납내역) — 앱과 같다(2026-11-10) */
+      `<tr><th>체납조사일</th><td>${v(r.surveyDate)}</td><th>체납금액</th><td>${v(r.amount)}</td></tr>`,
+      ...(r.note ? [`<tr><th>체납비고</th><td colspan="3">${esc(r.note)}</td></tr>`] : []),
       `<tr><th>용적률</th><td>${v(c.floorRatio)}</td><th>건폐율</th><td>${v(c.buildingCoverage)}</td></tr>`,
       `<tr><th>최고층</th><td>${v(c.topFloor)}</td><th>최저층</th><td>${v(c.bottomFloor)}</td></tr>`,
       `<tr><th>관리소</th><td colspan="3">${c.managementPhone ? `<a class="it-tel" href="tel:${esc(c.managementPhone.replace(/[^\d+]/g, ''))}">${esc(c.managementPhone)}</a>` : '-'}</td></tr>`,
