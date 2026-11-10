@@ -70,7 +70,7 @@ export const DEMAND_TOTAL_TIP: Array<[string, string]> = [
 
 /** 칸 이름 밑 쉬운 말 — 공식을 몰라도 뜻이 들어오게(앱 · 웹 같은 말) */
 export const DEMAND_PLAIN: Record<DemandMetric, string> = {
-  absorb: '얼마나 잘 팔리나',
+  absorb: '1년에 매물이 몇 % 팔리나',
   clear: '다 팔리는 데 걸리는 시간',
   turnover: '동네 거래가 얼마나 도나',
   burden: '매물이 얼마나 쌓였나',
