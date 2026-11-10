@@ -58,6 +58,18 @@ export const openNaverSpot = async (address: string, kind: NaverKind = 'villa') 
   if (w) w.location.href = url; else window.open(url, '_blank');
 };
 
+/** 단지 하나의 매매 매물 — 그 단지를 가운데 둔 지도(17.5), 매매만(웹 손품조사 단지 수요분석 '현재 매물수', 2026-11-10).
+ *  네이버 단지 번호를 몰라 단지 화면으로 바로 갈 수는 없다 — 지도 가운데 단지 표식을 누르면 매물 수가 보인다 */
+export const openNaverComplexListing = async (address: string, kind: NaverKind = 'apt') => {
+  const w = window.open('', '_blank');
+  const p = await geocodeAddress(address).catch(() => null);
+  const url = p
+    ? `https://fin.land.naver.com/map?layer=${LAYER}&tradeTypes=A1&realEstateTypes=${REAL_ESTATE_TYPES[kind]}&center=${naverCoord(p.lng)}-${naverCoord(p.lat)}&zoom=17.5`
+    : 'https://fin.land.naver.com/map';
+  if (!p) { try { void navigator.clipboard?.writeText(address); } catch { /* 복사만 못 한다 */ } }
+  if (w) w.location.href = url; else window.open(url, '_blank');
+};
+
 /** 부동산플래닛 — 주소로 건물을 바로 여는 주소 꼴이 없어 검색어('동 지번')를 복사해 두고 지도를 연다.
  *  검색칸에 붙여넣고 맨 위를 누르면 그 건물 화면. 복사했으면 true */
 export const openPlanetSpot = async (query: string): Promise<boolean> => {

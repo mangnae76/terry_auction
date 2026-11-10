@@ -33,7 +33,7 @@ import { getBuildingFacts } from '../services/buildingFacts';
 import { complexNameOf, totalParkingOf } from '../services/aptComplex';
 import { getComplexAreas, myGroupOf, supplyRowsOf, areaUnitsOf, type ComplexAreas } from '../services/complexAreas';
 import { DEMAND_PLAIN, demandFitText, demandGradeOf, type DemandMetric } from '../services/demandGrade';
-import { openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
+import { openNaverComplexListing, openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
@@ -3078,6 +3078,7 @@ const supStats = computed(() => {
     row('burden', '매물 부담률', DEMAND_PLAIN.burden, burden > 0 ? `${burden.toFixed(1)}%` : '-', burden > 0, burden),
   ];
 });
+const openSupNaver = () => { const addr = auction.value?.address; if (addr) void openNaverComplexListing(addr, 'apt'); };
 const setSupVal = (key: string, v: string | number) => setSumVal(key, String(supNum(String(v)) || ''));
 
 // 주차수 · 엘베 — PDF에 없으면 그 필지의 건축물대장(표제부)에서 채운다. 사람이 넣은 값은 덮지 않는다
@@ -8395,7 +8396,7 @@ const goBack = () => router.back();
                   <div class="sup-h">12개월 거래량</div>
                   <!-- 이 단지(같은 지번) 국토부 매매 자동값 — 정상 + 직거래, 계약해제 제외, 조회일부터 12개월 -->
                   <!-- 총(단지 전체) | 해당(이 평형) — 위 수요분석 총 거래량 '연 | 월'과 같은 꼴. 지표는 해당 평형으로 계산 -->
-                  <div class="sup-b"><b v-if="!supLoaded" class="wait">받는 중</b><b v-else><em class="sup-pre">총</em>{{ supDeals.length.toLocaleString('ko-KR') }}<template v-if="supAreaUnits"><em class="sup-bar">|</em><em class="sup-pre">해당</em>{{ supDealCount.toLocaleString('ko-KR') }}</template><em class="sup-u">건</em></b></div>
+                  <div class="sup-b"><b v-if="!supLoaded" class="wait">받는 중</b><b v-else><em class="sup-pre">총</em>{{ supDeals.length.toLocaleString('ko-KR') }}<template v-if="supAreaUnits"><em class="sup-bar">|</em><em class="sup-pre">해당 평형</em>{{ supDealCount.toLocaleString('ko-KR') }}</template><em class="sup-u">건</em></b></div>
                 </div>
                 <div class="sup-cell">
                   <div class="sup-h">총세대수</div>
@@ -8409,7 +8410,8 @@ const goBack = () => router.back();
                 </div>
                 <div class="sup-cell">
                   <div class="sup-h">현재 매물수</div>
-                  <div class="sup-b"><input class="sup-in" inputmode="numeric" placeholder="입력" aria-label="현재 매물수" :value="supListings ? supListings.toLocaleString('ko-KR') : ''" @change="setSupVal('sup.listings', ($event.target as HTMLInputElement).value)" /></div>
+                  <!-- 위 총 매물수의 '네이버매물'과 같은 단추 — 이 단지를 가운데 둔 네이버 부동산 매매 지도 -->
+                  <div class="sup-b"><input class="sup-in" inputmode="numeric" placeholder="입력" aria-label="현재 매물수" :value="supListings ? supListings.toLocaleString('ko-KR') : ''" @change="setSupVal('sup.listings', ($event.target as HTMLInputElement).value)" /><button type="button" class="sup-nv" :title="`${supName || '이 단지'} — 네이버 부동산 매매 매물`" @click="openSupNaver">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></div>
                 </div>
               </div>
               <p class="sup-head">② 수요지표</p>
@@ -11360,6 +11362,8 @@ tr.tone-take { background: #fff5f5; }
 .sup-b b.wait { font-size: 14px; font-weight: 400; color: #9ca3af; }
 .sup-in { width: 110px; height: 34px; box-sizing: border-box; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; padding: 0 10px; text-align: right; font-family: inherit; font-size: 18px; font-weight: 800; color: #2b6df3; }
 .sup-in:focus { outline: none; border-color: #2b6df3; }
+.sup-nv { display: inline-flex; align-items: center; gap: 2px; height: 20px; margin-left: 6px; padding: 0 6px; border: 1px solid #dde3ee; border-radius: 999px; background: #fff; color: #6b7280; font-family: inherit; font-size: 12px; font-weight: 400; vertical-align: middle; cursor: pointer; } /* 링크일 뿐이라 작게 · 회색 · 굵기 없이(웹 글자 하한 12) */   /* 위 수요분석 '네이버매물'(.nv-btn)과 같은 꼴 */
+.sup-nv:hover { border-color: #2b6df3; color: #2b6df3; }
 .sup-in::placeholder { color: #aebbd6; font-size: 14px; font-weight: 400; }
 .sup-note { margin: -6px 2px 0; font-size: 12px; color: #6b7280; line-height: 1.6; }
 .adp-dm-sub { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 3px 2px 2px; font-size: 13px; font-weight: 800; color: #111827; }
