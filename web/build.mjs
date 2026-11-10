@@ -66,7 +66,10 @@ await build({
 // 페이지 — 맨 위 설명 주석을 떼고, 로고 자리에 앱 로고(SVG)를 끼워 한 장짜리 문서로 만든다
 const src = await readFile(path.join(here, 'pages/selected.src.html'), 'utf8');
 const logo = 'data:image/svg+xml;base64,' + (await readFile(path.join(root, 'src/assets/icones/log/LOGO_MYTURN.svg'))).toString('base64');
-const body = src.replace(/^<!--[\s\S]*?-->\s*/, '').split('{{LOGO_WHITE}}').join(logo);
+// 빌드마다 다른 표 — 새로고침 덮개(떠 둔 화면)가 이 빌드에서 뜬 것인지 가린다. 배포가 바뀌면 앱 화면 모양 이름(data-v)이 달라져
+// 옛 덮개가 모양 없이 글자로만 보였다(2026-11-11)
+const BUILD_ID = String(Date.now());
+const body = src.replace(/^<!--[\s\S]*?-->\s*/, '').split('{{LOGO_WHITE}}').join(logo).split('{{BUILD_ID}}').join(BUILD_ID);
 const doc = `<!doctype html>
 <html lang="ko">
 <head>

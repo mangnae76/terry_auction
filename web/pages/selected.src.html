@@ -9,9 +9,10 @@
   /* 로그인해 있던 탭 — 앱 화면 모양(pdfparse.css)을 맨 앞에서 미리 받기만 한다(붙이는 자리는 그대로). 새로고침 덮개가 기다리는 틈을 줄인다(2026-11-06) */
   /* 새로고침 — 덮개(보던 화면)가 준비될 때까지 새 페이지를 숨긴다. 그 사이 브라우저는 이전 화면을 그대로 둔다(그림 붙잡기).
      덮개가 보이면 바로 풀고, 늦어도 1.2초면 푼다(2026-11-06) */
+  window.__TA_BUILD = '{{BUILD_ID}}';   /* 이 빌드의 표 — 덮개는 같은 빌드에서 뜬 것만 쓴다 */
   try {
     var sn = JSON.parse(sessionStorage.getItem('ta.web.snap') || 'null');
-    if (sn && sn.hash === location.hash && localStorage.getItem('ta.web.in') === '1') {
+    if (sn && sn.hash === location.hash && sn.v === window.__TA_BUILD && localStorage.getItem('ta.web.in') === '1') {
       document.documentElement.classList.add('snap-hold');
       var hs = document.createElement('style'); hs.textContent = 'html.snap-hold body { visibility: hidden; }'; document.head.appendChild(hs);
       setTimeout(function () { document.documentElement.classList.remove('snap-hold'); }, 1200);
@@ -535,8 +536,8 @@ button { cursor: pointer; }
 /* 물건분석 동/지역 표 — 칸 색칠 · 색 세로줄은 빼고, 머리글 글자색만: 세대수 · 매물수 진한 파랑, 회전율 빨강 */
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table :is(th, td) { background: var(--surface) !important; border-left-color: #eef1f6 !important; border-right-color: #eef1f6 !important; box-shadow: none !important; }
 .app-market .son-demand .adm-table tbody tr.cmp-row:hover td { background: var(--surface-2, #f7f9fc) !important; }   /* 단지 입지비교 — 줄을 누르면 고른 줄 색(위 흰 바탕 규칙보다 앞에, 2026-11-11) */
-.app-market .son-demand .adm-table tbody tr.cmp-row.mine td { background: #fff5f5 !important; }
-.app-market .son-demand .adm-table tbody tr.cmp-row.on td { background: var(--blue-soft, #eaf1ff) !important; }
+.app-market .son-demand .adm-table tbody tr.cmp-row.mine td { background: #fff5f5 !important; box-shadow: inset 0 -2px 0 #f3c9c9; }   /* 선정물건 줄 — 시세분석 표 첫 줄(tr.mine)과 같은 연분홍 + 아래 진한 줄 */
+.app-market .son-demand .adm-table tbody tr.cmp-row.on td { background: #fff5f5 !important; box-shadow: inset 0 -2px 0 #e9a3a3; }   /* 고른 줄 — 같은 빨강 계열, 아래 줄을 조금 더 진하게(2026-11-11) */
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th { background: #f7f9fc !important; color: #374151 !important; }
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th.in, :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th.in small { color: #1e3a8a !important; }   /* 세대수 · 매물수(네이버 매물수) — 검정에 가까운 파랑 */
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table td.nm { color: #1e3a8a !important; }   /* 동 이름(검암동)도 같은 파랑 */
@@ -4964,7 +4965,8 @@ span.cal-day.has { cursor: help; }
       var link = document.querySelector('link[data-tapdf]');
       if (!link) { link = document.createElement('link'); link.rel = 'stylesheet'; link.href = (/\/web$/.test(location.pathname) ? '/web/' : '') + 'pdfparse.css'; link.setAttribute('data-tapdf', '1'); document.head.appendChild(link); }
       var s = JSON.parse(sessionStorage.getItem('ta.web.snap') || 'null');
-      if (!s || s.hash !== location.hash) { document.documentElement.classList.remove('snap-hold'); return; }
+      /* 다른 빌드에서 뜬 덮개는 쓰지 않는다 — 배포 뒤 첫 새로고침에서 앱 화면이 모양 없이(글자만) 보였다(2026-11-11) */
+      if (!s || s.hash !== location.hash || s.v !== window.__TA_BUILD) { document.documentElement.classList.remove('snap-hold'); return; }
       var m = document.querySelector('main'); if (!m) { document.documentElement.classList.remove('snap-hold'); return; }
       var c = document.createElement('div');
       c.className = 'snap-cover ' + (s.cls || ''); c.setAttribute('aria-hidden', 'true'); c.inert = true;
@@ -9322,12 +9324,12 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       /* 지도는 떠 두지 않는다 — 덮개 속 옛 지도가 새 지도와 함께 두 개로 보였고(2026-11-08) 떠 두는 양도 컸다. 지도 칸은 빈 자리(같은 높이)만 남긴다 */
       const cl = m.cloneNode(true);
       /* 비운 지도 칸이 높이까지 잃어 새로고침 때 지도 자리가 사라졌다가(표만 보이다가) 다시 나타났다 — 원래 높이 · 옅은 바탕을 그대로 남긴다(2026-11-09) */
-      const MAP_SEL = '.sx-map, .kmap-box, .leaflet-container, .map-wrap .map, .pa .map, #trade-map, #trip-map';
+      const MAP_SEL = '.sx-map, .kmap-box, .leaflet-container, .map-wrap .map, .pa .map, .cmp-map, #trade-map, #trip-map';
       const mapH = [...m.querySelectorAll(MAP_SEL)].map((e) => e.offsetHeight);
       cl.querySelectorAll(MAP_SEL).forEach((e, i) => { e.innerHTML = ''; if (mapH[i]) { e.style.height = `${mapH[i]}px`; e.style.background = '#eef1f6'; } });
       const html = cl.innerHTML.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<iframe[\s\S]*?<\/iframe>/gi, '');
       if (html.length > 3000000) { sessionStorage.removeItem(SNAP_KEY); return; }   /* 너무 크면 떠 두지 않는다 */
-      sessionStorage.setItem(SNAP_KEY, JSON.stringify({ hash: location.hash, y: window.scrollY, cls: m.className, html }));
+      sessionStorage.setItem(SNAP_KEY, JSON.stringify({ hash: location.hash, y: window.scrollY, cls: m.className, html, v: window.__TA_BUILD }));
     } catch (e) { /* 못 떠 두면 예전처럼 */ }
   });
   (() => {
