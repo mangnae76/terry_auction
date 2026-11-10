@@ -68,7 +68,8 @@ import { cached, cachedEntryOrStale, loadOrFail, cacheKey, readCache, writeCache
 // 셈은 화면 밖에 따로 둔다 — 표로 매번 확인할 수 있게 (profitMath.test.ts · registryAnalysis.test.ts)
 import { taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxProfitOf } from '../services/profitMath';
 import { baseDateOf, isTakenOver, normalizeYmd } from '../services/registryAnalysis';
-import { VWORLD_KEY_EXPIRES, PRICE_YEAR } from '../services/vworldApi';
+import { VWORLD_KEY_EXPIRES, PRICE_YEAR, fetchApartUnits } from '../services/vworldApi';
+import { parseAddressParts } from '../services/addressLookup';
 import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
 import { addressParts, buildingNameOf, hasBuildingName, isUnitToken } from '../utils/addressName';
@@ -3049,11 +3050,29 @@ const supNum = (v: string) => Number(String(v ?? '').replace(/[^\d]/g, '')) || 0
 /** 총세대수 — 자동값만(정보요약 세대수: PDF 단지정보 · 건축물대장). 손으로 적지 않는다 */
 const supHouseholds = computed(() => supNum(sumVal('sum.units')));
 const supListings = computed(() => supNum(sumVal('sup.listings')));
-const supAreaUnits = computed(() => supNum(sumVal('sup.areaUnits')));
-/** 해당 세대수를 적으면 그 평형(이 물건 전용면적과 같은 거래)만 센다 */
-const supMyArea = computed(() => Number(auction.value?.buildingAreaM2) || 0);
+/** 빌라 — 공동주택가격 호실 목록에서 이 호실 전용면적(공부상)과 같은 세대 수. 아파트는 건축물대장 공급면적 무리(complexAreas) */
+const supVilla = ref<{ exclusive: number; count: number } | null>(null);
+watch([() => auction.value?.id, () => webEmbed, isApartment] as const, async ([id, web, apt]) => {
+  supVilla.value = null;
+  const a = auction.value;
+  if (!id || !web || apt || !a?.address) return;
+  const region = await resolveRegionFromAddress(a.address).catch(() => null);
+  if (!region?.bCode10 || !region.jibun || auction.value?.id !== id) return;
+  const units = await fetchApartUnits(region.bCode10, region.jibun).catch(() => []);
+  const p = parseAddressParts(a.address);
+  const dk = (v: string) => v.trim().replace(/동$/, '');
+  // 동까지 맞는 호실 → 없으면 그 호수가 하나뿐일 때만(빌라는 공시가격에 동 이름이 비어 있거나 다르게 적힌다)
+  const sameHo = p.ho ? units.filter((u) => u.ho.replace(/\D/g, '') === p.ho) : [];
+  const mine = sameHo.find((u) => !p.buildingDong || dk(u.dong) === dk(p.buildingDong)) ?? (sameHo.length === 1 ? sameHo[0] : undefined);
+  if (!mine || auction.value?.id !== id) return;
+  supVilla.value = { exclusive: mine.areaM2, count: units.filter((u) => u.areaM2.toFixed(2) === mine.areaM2.toFixed(2)).length };
+}, { immediate: true });
+/** 해당 세대수 — 자동값만(짐작하지 않는다). 모르면 0 → 총세대수 기준 */
+const supAreaUnits = computed(() => (isApartment.value ? myGroupOf(complexAreas.value)?.count ?? 0 : supVilla.value?.count ?? 0));
+/** 그 평형의 공부상 전용면적 — 거래는 전용면적만 있어 이 값과 같은 거래를 센다 */
+const supMyArea = computed(() => (isApartment.value ? complexAreas.value?.mine?.exclusive : supVilla.value?.exclusive) || Number(auction.value?.buildingAreaM2) || 0);
 const supDealCount = computed(() => (supAreaUnits.value && supMyArea.value
-  ? supDeals.value.filter((r) => Math.abs(r.areaM2 - supMyArea.value) < 0.05).length
+  ? supDeals.value.filter((r) => Math.abs(r.areaM2 - supMyArea.value) < 0.005).length
   : supDeals.value.length));
 const supBase = computed(() => supAreaUnits.value || supHouseholds.value);
 const supStats = computed(() => {
@@ -8389,12 +8408,13 @@ const goBack = () => router.back();
                   <div class="sup-b"><b><template v-if="supHouseholds">{{ supHouseholds.toLocaleString('ko-KR') }}<em class="sup-u">세대</em></template><template v-else>-</template></b></div>
                 </div>
                 <div class="sup-cell">
-                  <div class="sup-h">현재 매물수</div>
-                  <div class="sup-b"><input class="sup-in" inputmode="numeric" placeholder="입력" aria-label="현재 매물수" :value="supListings ? supListings.toLocaleString('ko-KR') : ''" @change="setSupVal('sup.listings', ($event.target as HTMLInputElement).value)" /></div>
+                  <div class="sup-h">해당 세대수</div>
+                  <!-- 자동값 — 아파트는 이 호실과 공급면적이 같은 세대(건축물대장), 빌라는 전용면적이 같은 세대(공동주택가격) -->
+                  <div class="sup-b"><b><template v-if="supAreaUnits">{{ supAreaUnits.toLocaleString('ko-KR') }}<em class="sup-u">세대</em></template><template v-else>-</template></b></div>
                 </div>
                 <div class="sup-cell">
-                  <div class="sup-h">해당 세대수</div>
-                  <div class="sup-b"><input class="sup-in" inputmode="numeric" placeholder="입력" aria-label="해당 세대수 — 보는 평형의 세대수" :value="supAreaUnits ? supAreaUnits.toLocaleString('ko-KR') : ''" @change="setSupVal('sup.areaUnits', ($event.target as HTMLInputElement).value)" /></div>
+                  <div class="sup-h">현재 매물수</div>
+                  <div class="sup-b"><input class="sup-in" inputmode="numeric" placeholder="입력" aria-label="현재 매물수" :value="supListings ? supListings.toLocaleString('ko-KR') : ''" @change="setSupVal('sup.listings', ($event.target as HTMLInputElement).value)" /></div>
                 </div>
               </div>
               <p class="sup-head">② 수요지표</p>
@@ -8406,7 +8426,7 @@ const goBack = () => router.back();
               </div>
               <p class="sup-note">
                 <template v-if="supAreaUnits">거래율은 이 평형(전용 {{ trunc2(supMyArea) }}㎡) 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건을 해당 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 나눈 값입니다.</template>
-                <template v-else>거래율은 12개월 거래량을 총세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 나눈 값입니다. 해당 세대수(보는 평형의 세대수)를 적으면 그 평형 기준으로 다시 계산합니다.</template>
+                <template v-else>거래율은 12개월 거래량을 총세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 나눈 값입니다. 해당 세대수를 알면 그 평형 기준으로 계산합니다.</template>
               </p>
             </section>
 
