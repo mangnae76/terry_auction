@@ -9140,7 +9140,6 @@ const goBack = () => router.back();
 
             <!-- ③ 단지 입지비교 — 웹 · 아파트만(2026-11-10 시안 그대로). 같은 동 단지를 내 물건과 같은 입지조건 · 같은 규칙으로 매기고 평균 전세가 · 매매가를 옆에 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box o-cmp">
-              <p class="sup-head"><small class="cmp-sub cmp-sub0">선정물건과 같은 입지조건 · 같은 규칙으로 매긴 입지등수, 평균 전세가 · 매매가는 단지마다 선정물건 전용면적과 가장 가까운 평형의 최근 12개월</small></p>
 
               <!-- 지도 — 시세분석 지도와 같은 도구 막대(주변 · 로드뷰 …) · 전체화면. 전체화면이면 body 로 옮겨 화면을 채우고 오른쪽에 단지 목록 -->
               <div class="cmp-map-slot">
@@ -11813,7 +11812,7 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-body.cmp-order > * { order: 10; }
 .adp-dm-body.cmp-order > .o-persona { order: 1; }
 .adp-dm-body.cmp-order > .o-est { order: 2; }
-.adp-dm-body.cmp-order > .o-cmp { order: 3; }
+.adp-dm-body.cmp-order > .o-cmp { order: 3; margin-top: 18px !important; }   /* 칸 줄 상자와 지도 상자 사이를 띄운다(2026-11-11) */
 .adp-dm-body.cmp-order > .o-indh { order: 4; }
 .adp-dm-body.cmp-order > .o-ind { order: 5; }
 .adp-dm-body.cmp-order > .o-demand { order: 6; margin-top: 10px; }
