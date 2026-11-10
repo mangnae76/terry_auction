@@ -67,21 +67,18 @@ const callPage = async (pnu: string, pageNo: number, stdrYear?: string): Promise
   return json.apartHousingPrices?.field ?? [];
 };
 
-/** 한 지번의 가장 늦은 기준연도 줄 전부.
- *  연도 없이 부르면 오래된 해부터 1,000줄씩 와서, 큰 단지(1,129세대 × 10년 = 11,290줄)는 첫 쪽에 2020년만 담긴다
- *  (2026타경50132 — 2026년 3억 4,500만 원 대신 2020년 2억 9,300만 원, 2026-11-10). 올해 → 작년 → 재작년 순으로 연도를 붙여 부른다 */
+/** 공시가격은 무조건 올해(그해 1월 1일 기준) 값만 쓴다 — 지난해 값으로 메우지 않는다(사용자 결정, 2026-11-10).
+ *  연도 없이 부르면 오래된 해부터 1,000줄씩 와서, 큰 단지(1,129세대 × 10년 = 11,290줄)는 첫 쪽에 2020년만 담겼다
+ *  (2026타경50132 — 2026년 3억 4,500만 원 대신 2020년 2억 9,300만 원). 올해 연도를 붙이고 쪽을 넘겨 다 받는다 */
+export const PRICE_YEAR = String(new Date().getFullYear());
 const callOnce = async (pnu: string): Promise<PriceRow[]> => {
-  const now = new Date().getFullYear();
-  for (const year of [now, now - 1, now - 2]) {
-    const rows: PriceRow[] = [];
-    for (let page = 1; page <= 5; page += 1) {
-      const got = await callPage(pnu, page, String(year));
-      rows.push(...got);
-      if (got.length < 1000) break;
-    }
-    if (rows.length > 0) return rows;
+  const rows: PriceRow[] = [];
+  for (let page = 1; page <= 5; page += 1) {
+    const got = await callPage(pnu, page, PRICE_YEAR);
+    rows.push(...got);
+    if (got.length < 1000) break;
   }
-  return callPage(pnu, 1);
+  return rows.filter((r) => String(r.stdrYear ?? '') === PRICE_YEAR);
 };
 
 /** 한 지번의 호실 한 줄 — 가장 늦은 기준연도 값 */
@@ -94,7 +91,7 @@ export interface ApartUnit { dong: string; ho: string; areaM2: number; price: nu
 export const fetchApartUnits = async (bCode10: string, lotText: string): Promise<ApartUnit[]> => {
   const pnu = buildPnu(bCode10, lotText);
   if (!pnu) return [];
-  const key = `aptUnitsY_${pnu}`;   // 'Y' — 기준연도를 붙여 받은 판(2026-11-10)
+  const key = `aptUnits${PRICE_YEAR}_${pnu}`;   // 올해 판 — 해가 바뀌면 새로 받는다(2026-11-10)
   const hit = await browserCacheGet<ApartUnit[]>(key, PRICE_TTL);
   if (hit) return hit;
   let rows = await callOnce(pnu);
@@ -134,8 +131,8 @@ export const fetchApartHousingPrice = async (params: {
   const pnu = buildPnu(params.bCode10, params.lotText);
   if (!pnu) return null;
 
-  // 'y' — 기준연도를 붙여 받은 판(2026-11-10). 예전 판은 큰 단지에서 2020년 값을 담았다
-  const id = cacheKey(pnu, params.dong ?? '-', params.ho ?? '-', Math.round((params.areaM2 ?? 0) * 100), 'y');
+  // 열쇠에 올해를 넣는다 — 해가 바뀌면 새로 받는다(예전 판은 큰 단지에서 2020년 값을 담았다, 2026-11-10)
+  const id = cacheKey(pnu, params.dong ?? '-', params.ho ?? '-', Math.round((params.areaM2 ?? 0) * 100), `y${PRICE_YEAR}`);
   const hit = await readCache<ApartPrice | null>('cacheAptPrice', id, PRICE_TTL);
   if (hit) return hit;
 

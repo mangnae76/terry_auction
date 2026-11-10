@@ -356,12 +356,19 @@ const parseAptComplexInfo = (text: string): import('../types/auction').AptComple
     }
     return min;
   })();
-  const section = text.slice(idx + 4, endIdx).replace(/([가-힣])\s+(?=[가-힣])/g, '$1');
+  // 한글 사이 띄어쓰기를 지운다('난방 방식' → '난방방식'). 그러면 '단지명 안산파크푸르지오'도 '단지명안산파크푸르지오'로 붙으므로
+  // 이름 뒤 띄어쓰기는 없어도 되게(\s*) 읽는다 — 예전 \s+ 는 한글로 시작하는 값(단지명 · 난방 · 편의시설 …)을 모두 놓쳤다(2026-11-10)
+  // 탱크옥션 PDF 의 보이지 않는 글자(\u0001 — 면적 종류 쉼표 뒤)는 띄어쓰기로 바꾼다
+  const section = text.slice(idx + 4, endIdx)
+    .replace(/[\u0001-\u0008\u000b\u000c\u000e-\u001f]/g, ' ')
+    .replace(/([가-힣])\s+(?=[가-힣])/g, '$1');
+  // 값은 다음 이름표나 줄 끝에서 끊는다 — 줄 끝을 넘으면 사용승인일 · 난방 · 전기차충전소처럼 줄 끝에 있는 값을 놓쳤다
   const get = (label: string, end?: string[]): string => {
-    const re = new RegExp(`${label}\\s+(.+?)\\s*(?=${(end ?? []).concat([
+    const re = new RegExp(`${label}\\s*([^\\n]*?)\\s*(?=${(end ?? []).concat([
       '단지명', '세대수', '동\\s*수', '사용승인일', '시공사', '주차\\s*수', '세대당\\s*주차',
       '난방\\s*방식', '난방\\s*연료', '용적율', '용적률', '건폐율', '최고층', '최저층',
-      '관리소번호', '편의시설', '교육시설', '휴식\\/공원', '면적\\s*종류', '전기차충전소', '$',
+      '관리소\\s*번호', '편의시설', '교육시설', '휴식\\/공원', '면적\\s*종류', '전기차충전소',
+      '체납조사', '체납금액', '\\n', '$',
     ]).join('|')})`);
     const m = section.match(re);
     return m?.[1]?.replace(/\s+/g, ' ').trim() ?? '';
@@ -380,7 +387,7 @@ const parseAptComplexInfo = (text: string): import('../types/auction').AptComple
     buildingCoverage: get('건폐율'),
     topFloor: get('최고층'),
     bottomFloor: get('최저층'),
-    managementPhone: get('관리소번호'),
+    managementPhone: get('관리소\\s*번호'),
     facilities: get('편의시설'),
     schools: get('교육시설'),
     restPark: get('휴식\\/공원'),
@@ -394,7 +401,7 @@ const parseAptComplexInfo = (text: string): import('../types/auction').AptComple
 
 const parseArrearsInfo = (text: string): import('../types/auction').ArrearsInfo | null => {
   const idx = text.indexOf('체납내역');
-  if (idx < 0) return null;
+  if (idx < 0) return parseArrearsInComplex(text);
   const endIdx = (() => {
     const candidates = ['건축물정보', '인근역세권', '행정기관'];
     let min = text.length;
@@ -409,12 +416,22 @@ const parseArrearsInfo = (text: string): import('../types/auction').ArrearsInfo 
   const amountMatch = section.match(/체납금액\s+([^\n비]+)/);
   const noteMatch = section.match(/비고\s*([\s\S]+?)(?=$|건축물정보|인근역세권)/);
   const note = noteMatch?.[1]?.replace(/\s+/g, ' ').trim() ?? '';
-  if (!surveyDateMatch && !amountMatch && !note) return null;
+  if (!surveyDateMatch && !amountMatch && !note) return parseArrearsInComplex(text);
   return {
     surveyDate: surveyDateMatch?.[1] ?? '',
     amount: amountMatch?.[1]?.trim() ?? '',
     note,
   };
+};
+
+/** 단지정보 안의 '체납조사(본건) … 체납금액 …' 꼴(2026타경50132) — 체납내역 칸이 따로 없는 PDF */
+const parseArrearsInComplex = (text: string): import('../types/auction').ArrearsInfo | null => {
+  const flat = text.replace(/[\u0001-\u0008\u000b\u000c\u000e-\u001f]/g, ' ');
+  const stop = '(?=\\s*(?:체납금액|체납조사|관리소\\s*번호|편의시설|교육시설|휴식|면적\\s*종류|전기차|비고)|\\n|$)';
+  const survey = flat.match(new RegExp(`체납\\s*조사\\s*(?:\\(\\s*본\\s*건\\s*\\))?\\s*([^\\n]*?)\\s*${stop}`))?.[1]?.trim() ?? '';
+  const amount = flat.match(new RegExp(`체납\\s*금액\\s*([^\\n]*?)\\s*${stop}`))?.[1]?.trim() ?? '';
+  if (!survey && !amount) return null;
+  return { surveyDate: survey, amount, note: '' };
 };
 
 const PDF_NEARBY_LABEL_MAP: Record<string, keyof import('../types/auction').PdfNearbyEnv> = {

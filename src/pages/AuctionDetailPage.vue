@@ -65,7 +65,7 @@ import { cached, cachedEntryOrStale, loadOrFail, cacheKey, readCache, writeCache
 // 셈은 화면 밖에 따로 둔다 — 표로 매번 확인할 수 있게 (profitMath.test.ts · registryAnalysis.test.ts)
 import { taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxProfitOf } from '../services/profitMath';
 import { baseDateOf, isTakenOver, normalizeYmd } from '../services/registryAnalysis';
-import { VWORLD_KEY_EXPIRES } from '../services/vworldApi';
+import { VWORLD_KEY_EXPIRES, PRICE_YEAR } from '../services/vworldApi';
 import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
 import { addressParts, hasBuildingName, isUnitToken } from '../utils/addressName';
@@ -5920,7 +5920,7 @@ const goBack = () => router.back();
           </header>
           <table v-if="!isCollapsed('apt')" class="adp-table adp-kv-table">
             <colgroup>
-              <col style="width: 70px" />
+              <col style="width: 84px" />   <!-- '체납조사(본건)'이 들어가는 폭 -->
               <col />
               <col style="width: 70px" />
               <col />
@@ -5931,11 +5931,11 @@ const goBack = () => router.back();
               <tr><th>사용승인일</th><td>{{ auction.aptComplexInfo.approvalDate || '-' }}</td><th>시공사</th><td>{{ auction.aptComplexInfo.contractor || '-' }}</td></tr>
               <tr><th>주차 수</th><td>{{ auction.aptComplexInfo.parkingTotal || '-' }}</td><th>세대당 주차</th><td>{{ auction.aptComplexInfo.parkingPerHouse || '-' }}</td></tr>
               <!-- 난방은 뺐고 그 자리에 체납(PDF 체납내역)을 둔다(2026-11-10) -->
-              <tr><th>체납조사일</th><td>{{ auction.arrearsInfo?.surveyDate || '-' }}</td><th>체납금액</th><td>{{ auction.arrearsInfo?.amount || '-' }}</td></tr>
+              <tr><th>체납조사(본건)</th><td>{{ auction.arrearsInfo?.surveyDate || '-' }}</td><th>체납금액</th><td>{{ auction.arrearsInfo?.amount || '-' }}</td></tr>
               <tr v-if="auction.arrearsInfo?.note"><th>체납비고</th><td colspan="3" class="wrap">{{ auction.arrearsInfo.note }}</td></tr>
               <tr><th>용적률</th><td>{{ auction.aptComplexInfo.floorRatio || '-' }}</td><th>건폐율</th><td>{{ auction.aptComplexInfo.buildingCoverage || '-' }}</td></tr>
               <tr><th>최고층</th><td>{{ auction.aptComplexInfo.topFloor || '-' }}</td><th>최저층</th><td>{{ auction.aptComplexInfo.bottomFloor || '-' }}</td></tr>
-              <tr><th>관리소</th><td colspan="3"><a v-if="auction.aptComplexInfo.managementPhone" :href="`tel:${auction.aptComplexInfo.managementPhone.replace(/[^\d+]/g, '')}`" class="adp-agency-phone">{{ auction.aptComplexInfo.managementPhone }}</a><span v-else>-</span></td></tr>
+              <tr><th>관리소번호</th><td colspan="3"><a v-if="auction.aptComplexInfo.managementPhone" :href="`tel:${auction.aptComplexInfo.managementPhone.replace(/[^\d+]/g, '')}`" class="adp-agency-phone">{{ auction.aptComplexInfo.managementPhone }}</a><span v-else>-</span></td></tr>
               <tr v-if="auction.aptComplexInfo.facilities"><th>편의시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.facilities }}</td></tr>
               <tr v-if="auction.aptComplexInfo.schools"><th>교육시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.schools }}</td></tr>
               <tr v-if="auction.aptComplexInfo.restPark"><th>휴식/공원</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.restPark }}</td></tr>
@@ -6277,8 +6277,8 @@ const goBack = () => router.back();
                   <template v-else-if="officialPdfNote">{{ officialPdfNote }} <span class="adp-na">(PDF)</span></template>
                   <span v-else class="adp-na">PDF에 공시가격 없음</span>
                   /
-                  <template v-if="officialPriceAuto">공동주택가격 {{ formatMoney(officialPriceAuto) }}원 <span class="adp-na">({{ officialPriceYear ? `${officialPriceYear}년 · ` : '' }}시세분석)</span></template>
-                  <span v-else-if="officialPriceDone" class="adp-na">공동주택가격 못 찾음</span>
+                  <template v-if="officialPriceAuto">공동주택가격 {{ formatMoney(officialPriceAuto) }}원 <span class="adp-na">({{ officialPriceYear ? `${officialPriceYear}-01-01 기준 · ` : '' }}검증)</span></template>
+                  <span v-else-if="officialPriceDone" class="adp-na">{{ PRICE_YEAR }}-01-01 기준 공동주택가격 없음</span>
                   <span v-else class="adp-na">공동주택가격 조회 중…</span>
                 </td>
               </tr>
