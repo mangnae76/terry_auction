@@ -5461,11 +5461,6 @@ const ROOM_TYPES = [
     conditions: ['교통', '인프라', '공원'],
   },
   {
-    id: '1.5', label: '1.5룸',
-    details: [{ who: '1인가구', kinds: [] }, { who: '2인가구', kinds: ['신혼'] }],
-    conditions: ['교통', '인프라', '공원'],
-  },
-  {
     id: '2', label: '2룸',
     details: [{ who: '1인가구', kinds: [] }, { who: '2인가구', kinds: ['신혼', '중장년'] }],
     conditions: ['교통', '인프라', '공원'],
@@ -5480,16 +5475,14 @@ const ROOM_TYPES = [
     details: [{ who: '3인가족', kinds: [] }, { who: '4인가족', kinds: [] }],
     conditions: ['초등학교', '학원가', '인프라', '교통'],
   },
-  {
-    id: '4', label: '4룸',
-    details: [{ who: '4인가족', kinds: [] }, { who: '5인가족', kinds: [] }],
-    conditions: ['초등학교', '학원가', '인프라', '교통'],
-  },
 ];
 const roomOpen = ref(false);
-const selectedRoomType = computed(
-  () => ROOM_TYPES.find((r) => r.id === auction.value?.realUserRoomId) ?? null,
-);
+/** 1.5룸 · 4룸은 뺐다(2026-11-11 사용자) — 예전에 고른 물건은 2룸 · 3룸으로 본다 */
+const ROOM_ALIAS: Record<string, string> = { '1.5': '2', '4': '3' };
+const selectedRoomType = computed(() => {
+  const id = auction.value?.realUserRoomId ?? '';
+  return ROOM_TYPES.find((r) => r.id === (ROOM_ALIAS[id] ?? id)) ?? null;
+});
 const pickRoomType = async (id: string) => {
   roomOpen.value = false;
   if (!auction.value) return;
@@ -8426,6 +8419,18 @@ const goBack = () => router.back();
           </header>
           <div v-if="!isCollapsed('demand')" class="adp-dm-body">
             <!-- 1. 수요분석 — 손품분석에서는 지역분석 수요분석(수요분석 상자 · 동 표)이 대신한다(slot 'son-demand') -->
+            <!-- 매매수요 조사 맨 위 — 선정물건 면적 · 룸수 · 세대구성 · 입지조건(웹 · 아파트, 2026-11-11). 룸수를 고르면 아래 단지 입지비교 조건 · 등수가 같이 바뀐다 -->
+              <div v-if="cmpOn" class="cmp-persona top">
+                <!-- 칸마다 이름 + 회색 상자(값), 칸 사이 세로 칸막이. 룸수만 고르는 칸(고른 것은 검정 굵게) — 글 크기 14로 같게(2026-11-11) -->
+                <span class="grp"><span class="k">면적<small>공급(전용)</small></span><span class="val">{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2 || supMyArea) }}</span></span>
+                <i class="sep" aria-hidden="true" />
+                <span class="grp"><span class="k">룸수</span><span class="pa-seg" role="radiogroup" aria-label="룸수"><button v-for="r in ROOM_TYPES" :key="r.id" type="button" role="radio" :class="{ on: selectedRoomType?.id === r.id }" :aria-checked="selectedRoomType?.id === r.id" @click="pickRoomType(selectedRoomType?.id === r.id ? '' : r.id)">{{ r.label }}</button></span></span>
+                <i class="sep" aria-hidden="true" />
+                <span class="grp"><span class="k">세대구성</span><span class="val">{{ cmpWho || '룸수를 고르세요' }}</span></span>
+                <i class="sep" aria-hidden="true" />
+                <span class="grp"><span class="k">입지조건</span><span class="val">{{ rankConditions.join(' · ') || '-' }}</span></span>
+                <button type="button" :class="['cmp-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 고친 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동값으로</button>
+              </div>
             <slot v-if="sonpumMode" name="son-demand" />
             <template v-if="!sonpumMode">
             <div class="adp-dm-head">
@@ -9122,16 +9127,7 @@ const goBack = () => router.back();
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box">
               <p class="sup-scope"><span class="area">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span> 단지 입지비교</p>
               <p class="sup-head">② 단지 입지비교 <small class="cmp-sub">선정물건과 같은 입지조건 · 같은 규칙으로 매긴 입지등수, 평균 전세가 · 매매가는 단지마다 선정물건 전용면적과 가장 가까운 평형의 최근 12개월</small></p>
-              <!-- 룸수 → 세대구성 → 입지조건(예전 ① 실사용자 + 입지등수에서 옮김). 룸수를 고르면 표 머리 조건 · 등수가 같이 바뀐다 -->
-              <div class="cmp-persona">
-                <!-- 면적 — 선정물건 공급(전용). 단위는 손품조사 탭 줄 '평 / ㎡' 단추를 따른다 -->
-                <span class="k">면적<small>공급(전용)</small></span><span class="who">{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2 || supMyArea) }}</span>
-                <span class="k">룸수</span>
-                <span class="pa-seg pa-out" role="radiogroup" aria-label="룸수"><button v-for="r in ROOM_TYPES" :key="r.id" type="button" role="radio" :class="{ on: selectedRoomType?.id === r.id }" :aria-checked="selectedRoomType?.id === r.id" @click="pickRoomType(selectedRoomType?.id === r.id ? '' : r.id)">{{ r.label }}</button></span>
-                <span class="k">세대구성</span><span class="who">{{ cmpWho || '룸수를 고르세요' }}</span>
-                <span class="conds">입지조건 {{ rankConditions.join(' · ') || '-' }}</span>
-                <button type="button" :class="['cmp-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 고친 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동값으로</button>
-              </div>
+
               <!-- 지도 — 시세분석 지도와 같은 도구 막대(주변 · 로드뷰 …) · 전체화면. 전체화면이면 body 로 옮겨 화면을 채우고 오른쪽에 단지 목록 -->
               <div class="cmp-map-slot">
               <Teleport to="body" :disabled="!cmpFs">
@@ -11789,15 +11785,17 @@ tr.tone-take { background: #fff5f5; }
 .sup-opinion b { font-size: 15px; font-weight: 800; color: #111827; }
 .sup-opinion span { font-size: 13px; color: #111827; }   /* 의견 글은 검정(2026-11-10) */
 .sup-opinion .wait { color: #9ca3af; }
-/* 룸수 · 세대구성 줄 — 단지 입지비교 머리(예전 ① 실사용자 + 입지등수에서 옮김) */
+/* 면적 · 룸수 · 세대구성 · 입지조건 줄 — 단지 입지비교 머리(예전 ① 실사용자 + 입지등수에서 옮김). 이름(회색) + 회색 상자 값(검정 굵게), 칸 사이 세로 칸막이 */
 .cmp-persona { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 12px; padding: 8px 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-size: 14px; }
-.cmp-persona .k { font-weight: 700; color: #6b7280; }
+.cmp-persona .grp { display: inline-flex; align-items: center; gap: 8px; }
+.cmp-persona.top { margin: 4px 0 10px; padding: 10px 14px; border-color: #e3e8f0; border-radius: 10px; }   /* 매매수요 조사 맨 위 한 줄 */
+.cmp-persona .k { font-size: 14px; font-weight: 700; color: #6b7280; white-space: nowrap; }
 .cmp-persona .k small { margin-left: 2px; font-size: 12px; font-weight: 400; }
-.cmp-persona .who { font-weight: 700; color: #111827; }
-.cmp-persona .conds { font-size: 13px; color: #6b7280; }
+.cmp-persona .val { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 6px; background: #f3f5f9; font-size: 14px; font-weight: 700; color: #111827; white-space: nowrap; }
+.cmp-persona .sep { width: 1px; height: 22px; background: #dde3ee; }
 .cmp-persona .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
-.cmp-persona .pa-seg button { border: none; background: transparent; border-radius: 5px; height: 26px; padding: 0 11px; font: inherit; font-size: 14px; color: #6b7280; cursor: pointer; white-space: nowrap; }
-.cmp-persona .pa-seg button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
+.cmp-persona .pa-seg button { border: none; background: transparent; border-radius: 5px; height: 26px; padding: 0 11px; font: inherit; font-size: 14px; font-weight: 400; color: #6b7280; cursor: pointer; white-space: nowrap; }
+.cmp-persona .pa-seg button.on { background: #fff; color: #111827; font-weight: 700; box-shadow: 0 1px 2px rgba(17, 24, 39, .12); }   /* 고른 룸수 — 파랑 대신 검정 굵게 */
 .cmp-reset { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 7px; background: #fff; font: inherit; font-size: 12.5px; color: #111827; cursor: pointer; }
 .cmp-reset.off { color: #c3c9d4; cursor: default; }
 input.cmp-rk.in { padding: 0; font: inherit; font-weight: 700; text-align: center; border-color: #2b6df3; background: #fff; }
