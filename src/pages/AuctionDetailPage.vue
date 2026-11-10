@@ -5946,7 +5946,8 @@ const goBack = () => router.back();
             <!-- 관리소번호 — PDF 단지정보, 누르면 전화 -->
             <div v-if="isApartment" class="adp-base-row">
               <dt>관리소번호</dt>
-              <dd><a v-if="auction?.aptComplexInfo?.managementPhone" :href="`tel:${auction.aptComplexInfo.managementPhone.replace(/[^\d+]/g, '')}`" class="adp-agency-phone">{{ auction.aptComplexInfo.managementPhone }}</a><template v-else>-</template></dd>
+              <!-- 관할법원과 같은 전화 아이콘 -->
+              <dd><a v-if="auction?.aptComplexInfo?.managementPhone" :href="`tel:${auction.aptComplexInfo.managementPhone.replace(/[^\d+]/g, '')}`" class="adp-tel" title="전화 걸기"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z" /></svg>{{ auction.aptComplexInfo.managementPhone }}</a><template v-else>-</template></dd>
             </div>
           </dl>
         </section>
@@ -6012,7 +6013,7 @@ const goBack = () => router.back();
               <tr v-if="auction.aptComplexInfo.facilities"><th>편의시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.facilities }}</td></tr>
               <tr v-if="auction.aptComplexInfo.schools"><th>교육시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.schools }}</td></tr>
               <tr v-if="auction.aptComplexInfo.restPark"><th>휴식/공원</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.restPark }}</td></tr>
-              <tr v-if="auction.aptComplexInfo.areaTypes"><th>면적 종류</th><td colspan="3" class="wrap"><template v-for="(t, i) in aptAreaRows" :key="t.text">{{ i ? ', ' : '' }}<span :class="{ 'adp-apt-mine': t.mine }">{{ t.text }}{{ t.count ? ` ${t.count.toLocaleString('ko-KR')}세대` : '' }}<small v-if="t.mine">내 물건</small></span></template></td></tr>
+              <tr v-if="auction.aptComplexInfo.areaTypes"><th>면적종류</th><td colspan="3" class="wrap"><template v-for="(t, i) in aptAreaRows" :key="t.text">{{ i ? ', ' : '' }}<span :class="{ 'adp-apt-mine': t.mine }">{{ t.text }}{{ t.count ? ` ${t.count.toLocaleString('ko-KR')}세대` : '' }}<small v-if="t.mine">내 물건</small></span></template></td></tr>
               <tr v-if="auction.aptComplexInfo.evCharger"><th>전기차충전소</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.evCharger }}</td></tr>
             </tbody>
           </table>
@@ -12175,6 +12176,8 @@ tr.tone-take { background: #fff5f5; }
 .adp-agency-line { margin: 2px 0; font-size: 11.5px; color: #374151; line-height: 1.5; }
 .adp-agency-zip { color: #6b7280; }
 .adp-agency-phone { color: #2b6df3; text-decoration: none; font-weight: 700; }
+/* 정보요약 값은 모두 까만색 한 가지 — 파란 강조 · 회색 기준일 · 전화 링크까지(2026-11-10, 사용자 결정) */
+.adp-sum-rows dd, .adp-sum-rows dd * { color: #111827 !important; }
 /* 실사용자 표 — 아파트 전용 · 공급면적 두 줄(고르는 칸 대신) */
 .adp-ruser-area { display: grid; justify-items: center; align-content: center; gap: 4px; font-size: 12.5px; font-weight: 700; color: #111827; white-space: nowrap; text-align: center; }   /* 룸수(3룸) 글자와 같은 크기, 칸 가운데 */
 /* 줄 앞 '전용' · '공급' — 좁은 칸에 들어가게 작고 옅게 */

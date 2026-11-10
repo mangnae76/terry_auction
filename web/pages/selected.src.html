@@ -3015,6 +3015,9 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .it-hi { color: #2b6df3; font-weight: 800; }
 .it-dept { margin-left: 5px; color: #4b5563; }
 .it-tel { margin-left: 6px; color: #2563eb; font-weight: 700; text-decoration: none; }
+/* 정보요약 값은 모두 까만색 한 가지 — 파란 강조 · 회색 기준일 · 전화 링크까지(앱과 같다 2026-11-10) */
+.it-sum dd, .it-sum dd * { color: #111827 !important; }
+.it-tel-ico { margin-right: 3px; vertical-align: -2px; }
 /* 단지정보 면적 종류 — 내 물건 평형(공급면적) */
 .it-apt-mine { color: #2563eb; font-weight: 700; }
 .it-apt-mine small { margin-left: 4px; padding: 0 5px; border-radius: 4px; background: #eef3ff; font-size: 12px; }
@@ -6632,6 +6635,8 @@ span.cal-day.has { cursor: help; }
   };
   const secIc = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${SEC_IC[k] || ''}</svg>`;
   const itCard = (ic, title, body, wide, extra = '') => `<section class="it-card ${wide ? 'wide' : ''}"><div class="it-head"><h2>${secIc(ic)}${title}</h2>${extra}</div>${body}</section>`;
+  /* 전화 아이콘 — 정보요약 관할법원 · 관리소번호(앱 adp-tel 과 같은 그림) */
+  const TEL_ICO = '<svg class="it-tel-ico" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>';
   const kvTable = (rows, cols = 2, cls = '') => `<table class="it-kv cols${cols} ${cls}"><tbody>${rows.join('')}</tbody></table>`;
   const itRows = (rows) => `<dl class="it-rows">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v || '<span class="it-none">-</span>'}</dd>`).join('')}</dl>`;
   const itEmpty = (t) => `<div class="it-empty">${t || '웹에는 아직 연결되지 않은 자료입니다 — 앱 물건상세에서 확인해 주세요.'}</div>`;
@@ -6706,7 +6711,7 @@ span.cal-day.has { cursor: help; }
       const arr = a.arrearsInfo || {};
       /* 정보요약은 보기만 — 값은 PDF · 건축물대장에서 온 물건 자료(DB)라 고칠 까닭이 없어 편집을 뺐다(2026-11-02) */
       const summaryRows = [
-        ['관할법원', `${esc(sv('sum.court') || '-')}${sv('sum.courtDept') ? `<span class="it-dept">${esc(sv('sum.courtDept'))}</span>` : ''}${sv('sum.courtPhone') ? ` <a class="it-tel" href="tel:${esc(sv('sum.courtPhone').replace(/[^0-9+]/g, ''))}">${esc(sv('sum.courtPhone'))}</a>` : ''}`],
+        ['관할법원', `${esc(sv('sum.court') || '-')}${sv('sum.courtDept') ? `<span class="it-dept">${esc(sv('sum.courtDept'))}</span>` : ''}${sv('sum.courtPhone') ? ` <a class="it-tel" href="tel:${esc(sv('sum.courtPhone').replace(/[^0-9+]/g, ''))}">${TEL_ICO}${esc(sv('sum.courtPhone'))}</a>` : ''}`],
         ['사용승인', hi(`${esc(sv('sum.approval') || '-')}${age ? ` / ${age}` : ''}`)],
         ['전용면적(㎡/평)', hi(T.summaryAreaText(sv('sum.exclusiveArea')))],
         /* 공급면적은 아파트만 — 전용 아래 따로, 같은 꼴. 건축물대장(전용 + 주건축물 공용)이 먼저(2026-11-10) */
@@ -6721,7 +6726,7 @@ span.cal-day.has { cursor: help; }
         isApt ? ['세대수(총/해당면적)', `${sv('sum.units') ? `${Number(sv('sum.units')).toLocaleString('ko-KR')}세대` : '-'} / ${areaUnits ? `${Number(areaUnits).toLocaleString('ko-KR')}세대` : '-'}`]
           : ['세대수', sv('sum.units') ? `${Number(sv('sum.units')).toLocaleString('ko-KR')}세대` : '-'],
         ...(isApt ? [['공동주택가격', pubText], ['체납조사(본건)', esc(arr.surveyDate || '-')], ['체납금액', esc(arr.amount || '-')],
-          ['관리소번호', mgr ? `<a class="it-tel" href="tel:${esc(mgr.replace(/[^\d+]/g, ''))}">${esc(mgr)}</a>` : '-']] : []),
+          ['관리소번호', mgr ? `<a class="it-tel" href="tel:${esc(mgr.replace(/[^\d+]/g, ''))}">${TEL_ICO}${esc(mgr)}</a>` : '-']] : []),
       ];
       /* 기본정보 — 소유자·채무자·채권자·차수 / 감정가 · 회차별 최저가(비율·결과·날짜) · 보증금 */
       const fm = (n) => (n > 0 ? Number(n).toLocaleString('ko-KR') : '0');
@@ -6737,7 +6742,7 @@ span.cal-day.has { cursor: help; }
         </dl>`;
       /* 왼쪽: 정보요약 · 기본정보 · (아파트면 단지정보) · 물건현황 · 건축물정보 / 오른쪽: 입지정보 (단지정보가 없는 아파트면 체납내역도 오른쪽) */
       const left = [
-        itCard('doc', '정보요약', `<dl class="it-rows">${summaryRows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`),
+        itCard('doc', '정보요약', `<dl class="it-rows it-sum">${summaryRows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`),
         itCard('info', '기본정보', baseRows),
         ...(isApt && a.aptComplexInfo ? [aptCardHtml(it, a)] : []),
         statusCardHtml(it, a),
@@ -6925,7 +6930,7 @@ span.cal-day.has { cursor: help; }
       `<tr><th>최고층</th><td>${v(c.topFloor)}</td><th>최저층</th><td>${v(c.bottomFloor)}</td></tr>`,
       `<tr><th>관리소번호</th><td colspan="3">${c.managementPhone ? `<a class="it-tel" href="tel:${esc(c.managementPhone.replace(/[^\d+]/g, ''))}">${esc(c.managementPhone)}</a>` : '-'}</td></tr>`,
       ...[['편의시설', c.facilities], ['교육시설', c.schools], ['휴식/공원', c.restPark]].filter(([, x]) => x).map(([k, x]) => `<tr><th>${k}</th><td colspan="3">${esc(x)}</td></tr>`),
-      ...(c.areaTypes ? [`<tr><th>면적 종류</th><td colspan="3">${areas}</td></tr>`] : []),
+      ...(c.areaTypes ? [`<tr><th>면적종류</th><td colspan="3">${areas}</td></tr>`] : []),
       ...(c.evCharger ? [`<tr><th>전기차충전소</th><td colspan="3">${esc(c.evCharger)}</td></tr>`] : []),
     ], 4));
   }
