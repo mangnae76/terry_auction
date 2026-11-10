@@ -7613,7 +7613,7 @@ span.cal-day.has { cursor: help; }
     const won = (v) => (Number(v) > 0 ? `<td class="r num">${agWon(v)}</td>` : '<td>-</td>');
     const off = sxIsOff(r); const rk = sxRowKey(r); const lk = sxLotKey(r['소재지']);
     /* 줄을 누르면 지도의 그 지번 점을 고른다(다시 누르면 풀림) — 지도에서 점을 눌러도 이 줄들이 같이 골라진다 */
-    return `<tr class="${[same ? 'lot' : '', off ? 'off' : '', lk && SXG.focus === lk ? 'focus' : ''].filter(Boolean).join(' ')}" data-act="sx-row" data-v="${esc(lk)}" data-r="${esc(rk)}"><td class="ck-td"><input type="checkbox" data-act="sx-drop" data-v="${esc(rk)}" ${off ? 'checked' : ''} aria-label="${esc(String(r['사건번호'] || ''))} 제외"></td><td class="num">${esc(String(r['사건번호'] || '-'))}</td><td class="num">${agDate(r['매각일'])}</td>${won(r['감정가'])}${won(r['최저가'])}${won(r['매각가'])}${won(sxPerPy(r))}`
+    return `<tr class="${[same ? 'lot' : '', off ? 'off' : '', (same ? SXG.meOpen : lk && SXG.focus === lk) ? 'focus' : ''].filter(Boolean).join(' ')}" data-act="sx-row" data-v="${esc(lk)}" data-r="${esc(rk)}"><td class="ck-td"><input type="checkbox" data-act="sx-drop" data-v="${esc(rk)}" ${off ? 'checked' : ''} aria-label="${esc(String(r['사건번호'] || ''))} 제외"></td><td class="num">${esc(String(r['사건번호'] || '-'))}</td><td class="num">${agDate(r['매각일'])}</td>${won(r['감정가'])}${won(r['최저가'])}${won(r['매각가'])}${won(sxPerPy(r))}`
       + `<td>${rate}</td><td class="num">${int(r['유찰회수'], '회')}</td><td class="num">${int(r['응찰자수'], '명')}</td>`
       + `${sxAreaCell(m2)}${sxElevCell(full)}<td class="num">${built}</td><td class="num">${age}</td>${sxDistCell(full)}<td class="num">${fl}</td><td class="l" title="${esc(full)}"><div class="sx-addr"><span class="addr">${addr || '-'}</span>${same ? '<span class="chips"><span class="same">경매지번</span></span>' : ''}</div></td></tr>`;
   }
@@ -9924,7 +9924,10 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'sx-row': {
         /* 지역으로이고 기준이 없으면 — 누른 줄의 매각물건을 기준으로 */
         if (S.route === 'market' && saleMode === 'region' && !sxRef && t.dataset.r) { const r = (sxRows() || []).find((x) => sxRowKey(x) === t.dataset.r); if (r) { sxSetRef(r); break; } }
-        if (!v) break; SXG.meOpen = false; SXG.focus = SXG.focus === v ? '' : v; const p = SXG.spots[v]; if (SXG.focus && p && SXG.mv) SXG.mv.focus(p, 16); sxDrawMap(); sxPaintList(); break; }
+        if (!v) break;
+        /* 경매지번(같은 건물) 줄 — 빨간 점이 커지고 이름표(시세분석과 같다 2026-11-10) */
+        if (t.classList.contains('lot')) { SXG.focus = ''; SXG.meOpen = !SXG.meOpen; sxDrawMap(); sxPaintList(); break; }
+        SXG.meOpen = false; SXG.focus = SXG.focus === v ? '' : v; const p = SXG.spots[v]; if (SXG.focus && p && SXG.mv) SXG.mv.focus(p, 16); sxDrawMap(); sxPaintList(); break; }
       case 'sxm-fs': sxSetFs(!SXG.fs); break;
       case 'sxm-go': { const g = SXG.groups.find((x) => x.k === v); SXG.meOpen = false; SXG.focus = SXG.focus === v ? '' : v; if (g && SXG.focus && SXG.mv) SXG.mv.focus(g.p, 16); sxDrawMap(); sxPaintList(); break; }
       case 'sxm-set': { const k = t.dataset.k; if (k === 'basis' && v === 'range' && SXM.basis !== 'range') sxRcFromSim(); SXM[k] = k === 'radius' ? Number(v) : v; sxSaveM(); if ($('sxResults')) agPaintTable(); else sxDrawMap(); break; }
