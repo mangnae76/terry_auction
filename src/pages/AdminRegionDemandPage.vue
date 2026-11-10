@@ -805,7 +805,7 @@ const downloadCsv = () => {
 .adm-nav.dm .adm-nav-scope { color: #111827; }
 .adm-nav.dm .adm-nav-scope .area { color: #2b6df3; }
 /* 지역 · 단지 이름 칩 — 단지 수요분석(.sup-scope .area)과 같은 꼴 */
-.scope-chip { display: inline-flex; align-items: center; margin-right: 4px; padding: 3px 11px; border: 1px solid rgba(43, 109, 243, .28); border-radius: 999px; background: rgba(43, 109, 243, .09); line-height: 1.3; }
+.scope-chip { display: inline-flex; align-items: center; margin-right: 4px; padding: 3px 11px; border: 1px solid rgba(43, 109, 243, .28); border-radius: 999px; background: rgba(43, 109, 243, .09); line-height: 1.3; white-space: nowrap; }
 .dm-row { display: grid; gap: 12px; }
 .dm-row.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 16px; }
 /* 두 줄 제목 — 앱 매매수요의 ① 기초수치 · ② 수요지표와 같은 이름 */

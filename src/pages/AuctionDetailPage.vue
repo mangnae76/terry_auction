@@ -8447,7 +8447,7 @@ const goBack = () => router.back();
             <!-- 웹 단지 수요분석 — 단지 수급(2026-11-10 시험, 웹만). 위 동 수요분석 표 바로 아래에 붙여 둘을 한 묶음으로(입지/개별성 위). 위 수요분석(AdminRegionDemandPage)의 ① 기초수치 · ② 수요지표와 같은 틀 · 글자 · 칸 크기 -->
             <!-- 아파트만 — 빌라는 단지 개념이 없다 -->
             <section v-if="webEmbed && isApartment" class="adp-dm-block boxed sup-dm">
-              <p class="sup-scope"><span class="area">{{ supName || '이' }}</span> 단지 수요분석</p>
+              <p class="sup-scope"><span class="area">{{ supName || '단지' }}</span> 수요분석</p>
               <p class="sup-head">① 기초수치</p>
               <div class="sup-row">
                 <div :class="['sup-cell', { lit: supLit('deal') }]" @mouseenter="supLitKey = 'deal'" @mouseleave="supLitKey = ''">
@@ -11438,7 +11438,7 @@ tr.tone-take { background: #fff5f5; }
 /* 웹 단지 시장분석 — 수요분석(AdminRegionDemandPage .adm-nav-scope · .dm-*)과 같은 값 */
 .sup-dm { padding: 14px 16px 12px; margin-top: 10px; }   /* 위 동 수요분석 상자와 띄운다 */
 .sup-scope { margin: 0 0 14px; font-size: 15px; font-weight: 800; color: #111827; }   /* 위 "○○동 수요분석"(웹에서 15px)과 같게 */
-.sup-scope .area { display: inline-flex; align-items: center; margin-right: 4px; padding: 3px 11px; border: 1px solid rgba(43, 109, 243, .28); border-radius: 999px; background: rgba(43, 109, 243, .09); color: #2b6df3; line-height: 1.3; }   /* 단지명 칩 — 위 동 수요분석 .scope-chip 과 같은 꼴 */
+.sup-scope .area { display: inline-flex; align-items: center; margin-right: 4px; padding: 3px 11px; border: 1px solid rgba(43, 109, 243, .28); border-radius: 999px; background: rgba(43, 109, 243, .09); color: #2b6df3; line-height: 1.3; white-space: nowrap; }   /* 단지명 칩 — 위 동 수요분석 .scope-chip 과 같은 꼴 */
 .sup-head { margin: 0 0 8px 2px; font-size: 14px; font-weight: 700; color: #111827; }
 .sup-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
 .sup-cell { min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; transition: background .12s, border-color .12s; }
