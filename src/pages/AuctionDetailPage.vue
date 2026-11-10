@@ -30,6 +30,7 @@ import {
   FIELD_CHECKLIST, FIELD_EXTERIOR_CHECKS, FIELD_INTERIOR_CHECKS, FIELD_MANAGE_CHECKS, FIELD_SAFETY_CHECKS, FIELD_COMFORT_CHECKS,
 } from '../services/fieldChecklist';
 import { getBuildingFacts } from '../services/buildingFacts';
+import { complexNameOf, totalParkingOf, areaTypePartsOf } from '../services/aptComplex';
 import { DEMAND_PLAIN } from '../services/demandGrade';
 import { openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
@@ -5911,6 +5912,37 @@ const goBack = () => router.back();
           </div>
         </section>
 
+        <!-- 단지정보(아파트) — PDF 단지정보. 기본정보 바로 아래(2026-11-10) -->
+        <section v-if="isApartment && auction?.aptComplexInfo" class="adp-card">
+          <header class="adp-card-head" @click="toggleSection('apt')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M10 21v-5h4v5"/></svg>단지정보</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('apt') }]" alt="" />
+          </header>
+          <table v-if="!isCollapsed('apt')" class="adp-table adp-kv-table">
+            <colgroup>
+              <col style="width: 70px" />
+              <col />
+              <col style="width: 70px" />
+              <col />
+            </colgroup>
+            <tbody>
+              <tr><th>단지명</th><td colspan="3">{{ complexNameOf(auction) || '-' }}</td></tr>
+              <tr><th>세대수</th><td>{{ auction.aptComplexInfo.households || '-' }}</td><th>동 수</th><td>{{ auction.aptComplexInfo.buildings || '-' }}</td></tr>
+              <tr><th>사용승인일</th><td>{{ auction.aptComplexInfo.approvalDate || '-' }}</td><th>시공사</th><td>{{ auction.aptComplexInfo.contractor || '-' }}</td></tr>
+              <tr><th>주차 수</th><td>{{ auction.aptComplexInfo.parkingTotal || '-' }}</td><th>세대당 주차</th><td>{{ auction.aptComplexInfo.parkingPerHouse || '-' }}</td></tr>
+              <tr><th>난방 방식</th><td>{{ auction.aptComplexInfo.heatingType || '-' }}</td><th>난방 연료</th><td>{{ auction.aptComplexInfo.heatingFuel || '-' }}</td></tr>
+              <tr><th>용적률</th><td>{{ auction.aptComplexInfo.floorRatio || '-' }}</td><th>건폐율</th><td>{{ auction.aptComplexInfo.buildingCoverage || '-' }}</td></tr>
+              <tr><th>최고층</th><td>{{ auction.aptComplexInfo.topFloor || '-' }}</td><th>최저층</th><td>{{ auction.aptComplexInfo.bottomFloor || '-' }}</td></tr>
+              <tr><th>관리소</th><td colspan="3"><a v-if="auction.aptComplexInfo.managementPhone" :href="`tel:${auction.aptComplexInfo.managementPhone.replace(/[^\d+]/g, '')}`" class="adp-agency-phone">{{ auction.aptComplexInfo.managementPhone }}</a><span v-else>-</span></td></tr>
+              <tr v-if="auction.aptComplexInfo.facilities"><th>편의시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.facilities }}</td></tr>
+              <tr v-if="auction.aptComplexInfo.schools"><th>교육시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.schools }}</td></tr>
+              <tr v-if="auction.aptComplexInfo.restPark"><th>휴식/공원</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.restPark }}</td></tr>
+              <tr v-if="auction.aptComplexInfo.areaTypes"><th>면적 종류</th><td colspan="3" class="wrap"><template v-for="(t, i) in areaTypePartsOf(auction)" :key="t.text">{{ i ? ', ' : '' }}<span v-if="t.mine" class="adp-apt-mine">{{ t.text }}<small>내 물건</small></span><template v-else>{{ t.text }}</template></template></td></tr>
+              <tr v-if="auction.aptComplexInfo.evCharger"><th>전기차충전소</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.evCharger }}</td></tr>
+            </tbody>
+          </table>
+        </section>
+
         <!-- 입지정보 — 인근역세권·교육환경·주변환경을 한 카드로 묶는다 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('areaInfo')">
@@ -6192,7 +6224,7 @@ const goBack = () => router.back();
                   </tr>
                   <tr>
                     <th>구조</th><td>{{ auction?.buildingHeader?.unitStructure || auction?.structureType || '-' }}</td>
-                    <th>총 주차수</th><td>{{ auction?.buildingHeader?.unitTotalParking || auction?.buildingHeader?.parking || '-' }}</td>
+                    <th>총 주차수</th><td>{{ (auction && totalParkingOf(auction)) || '-' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -6236,11 +6268,11 @@ const goBack = () => router.back();
             </colgroup>
             <tbody>
               <tr><th rowspan="2">공시가격</th><td>{{ fullAddress }}</td></tr>
-              <!-- 웹과 같다 — PDF 금액이 먼저. 없으면 PDF 표기 / 공동주택가격(시세분석과 같은 브이월드 조회) -->
+              <!-- 웹과 같다 — PDF 금액(없으면 PDF 표기) / 공동주택가격(시세분석과 같은 브이월드 조회). 아파트도 빌라와 같이 둘 다 -->
               <tr>
-                <td v-if="auction?.officialPriceValue">공동주택공시가 {{ formatMoney(auction?.officialPriceValue) }}원 <span class="adp-na">(PDF)</span></td>
-                <td v-else>
-                  <template v-if="officialPdfNote">{{ officialPdfNote }} <span class="adp-na">(PDF)</span></template>
+                <td>
+                  <template v-if="auction?.officialPriceValue">공동주택공시가 {{ formatMoney(auction?.officialPriceValue) }}원 <span class="adp-na">(PDF)</span></template>
+                  <template v-else-if="officialPdfNote">{{ officialPdfNote }} <span class="adp-na">(PDF)</span></template>
                   <span v-else class="adp-na">PDF에 공시가격 없음</span>
                   /
                   <template v-if="officialPriceAuto">공동주택가격 {{ formatMoney(officialPriceAuto) }}원 <span class="adp-na">({{ officialPriceYear ? `${officialPriceYear}년 · ` : '' }}시세분석)</span></template>
@@ -6248,36 +6280,6 @@ const goBack = () => router.back();
                   <span v-else class="adp-na">공동주택가격 조회 중…</span>
                 </td>
               </tr>
-            </tbody>
-          </table>
-        </section>
-
-        <section v-if="isApartment && auction?.aptComplexInfo" class="adp-card">
-          <header class="adp-card-head" @click="toggleSection('apt')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M10 21v-5h4v5"/></svg>단지정보</h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('apt') }]" alt="" />
-          </header>
-          <table v-if="!isCollapsed('apt')" class="adp-table adp-kv-table">
-            <colgroup>
-              <col style="width: 70px" />
-              <col />
-              <col style="width: 70px" />
-              <col />
-            </colgroup>
-            <tbody>
-              <tr><th>단지명</th><td colspan="3">{{ auction.aptComplexInfo.name || '-' }}</td></tr>
-              <tr><th>세대수</th><td>{{ auction.aptComplexInfo.households || '-' }}</td><th>동 수</th><td>{{ auction.aptComplexInfo.buildings || '-' }}</td></tr>
-              <tr><th>사용승인일</th><td>{{ auction.aptComplexInfo.approvalDate || '-' }}</td><th>시공사</th><td>{{ auction.aptComplexInfo.contractor || '-' }}</td></tr>
-              <tr><th>주차 수</th><td>{{ auction.aptComplexInfo.parkingTotal || '-' }}</td><th>세대당 주차</th><td>{{ auction.aptComplexInfo.parkingPerHouse || '-' }}</td></tr>
-              <tr><th>난방 방식</th><td>{{ auction.aptComplexInfo.heatingType || '-' }}</td><th>난방 연료</th><td>{{ auction.aptComplexInfo.heatingFuel || '-' }}</td></tr>
-              <tr><th>용적률</th><td>{{ auction.aptComplexInfo.floorRatio || '-' }}</td><th>건폐율</th><td>{{ auction.aptComplexInfo.buildingCoverage || '-' }}</td></tr>
-              <tr><th>최고층</th><td>{{ auction.aptComplexInfo.topFloor || '-' }}</td><th>최저층</th><td>{{ auction.aptComplexInfo.bottomFloor || '-' }}</td></tr>
-              <tr><th>관리소</th><td colspan="3"><a v-if="auction.aptComplexInfo.managementPhone" :href="`tel:${auction.aptComplexInfo.managementPhone.replace(/[^\d+]/g, '')}`" class="adp-agency-phone">{{ auction.aptComplexInfo.managementPhone }}</a><span v-else>-</span></td></tr>
-              <tr v-if="auction.aptComplexInfo.facilities"><th>편의시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.facilities }}</td></tr>
-              <tr v-if="auction.aptComplexInfo.schools"><th>교육시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.schools }}</td></tr>
-              <tr v-if="auction.aptComplexInfo.restPark"><th>휴식/공원</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.restPark }}</td></tr>
-              <tr v-if="auction.aptComplexInfo.areaTypes"><th>면적 종류</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.areaTypes }}</td></tr>
-              <tr v-if="auction.aptComplexInfo.evCharger"><th>전기차충전소</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.evCharger }}</td></tr>
             </tbody>
           </table>
         </section>
@@ -12086,6 +12088,9 @@ tr.tone-take { background: #fff5f5; }
 .adp-agency-line { margin: 2px 0; font-size: 11.5px; color: #374151; line-height: 1.5; }
 .adp-agency-zip { color: #6b7280; }
 .adp-agency-phone { color: #2b6df3; text-decoration: none; font-weight: 700; }
+/* 단지정보 면적 종류 — 내 물건 평형(공급면적) */
+.adp-apt-mine { color: #2b6df3; font-weight: 700; }
+.adp-apt-mine small { margin-left: 3px; padding: 0 4px; border-radius: 4px; background: #eef3ff; font-size: 10px; font-weight: 700; }
 .adp-agency-phone:active { color: #1e40af; }
 .adp-agency-area { margin: 4px 0 0; font-size: 11px; color: #6b7280; line-height: 1.5; word-break: keep-all; }
 .adp-table .b-blue { color: #2b6df3; font-weight: 700; }

@@ -53,7 +53,9 @@ export { agoText } from '../../src/utils/agoText';   /* '방금 · ○분 전' �
 export { editLogTag, editLogDesc } from '../../src/services/editLogText';
 export { userMessage, aiErrorText } from '../../src/services/userMessage';   /* 화면 오류 문장 — 오류 원문(영어 · 코드)은 내보내지 않는다(앱과 같은 모듈) */   /* 최근 분석 · 최근 작성 한 줄 — 꼬리표 칩 · 설명(마이페이지와 같은 글) */
 /* 주소 → 공동주택 공시가격 — 웹 물건현황(PDF에 금액이 없을 때). 손품조사 시세분석과 같은 조회 */
-export { lookupAddress } from '../../src/services/addressLookup';   /* '방금 · ○분 전' — 웹 물건상세 저장 표시 */
+export { lookupAddress } from '../../src/services/addressLookup';
+/* 단지명 · 총 주차수 · 내 평형 — 물건정보 단지정보 · 건축물정보에서 PDF 칸이 비었을 때(앱과 같은 규칙) */
+export { complexNameOf, totalParkingOf, areaTypePartsOf } from '../../src/services/aptComplex';
 /* 시도 · 시군구 표(법정동 코드) · 시군구의 동 이름(최근 실거래) — 경매사례 지역 고르기 · 도우미 동 추가 */
 export { SIDO_NAMES, districtsOf, REGION_GROUPS } from '../../src/services/regionCodes';
 export { resolveRegionFromAddress } from '../../src/services/regionResolver';   /* 주소 → 시군구 코드(손품조사 경매사례 탭이 물건 주소로 지역을 고른다) */

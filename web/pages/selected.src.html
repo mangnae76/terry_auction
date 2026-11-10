@@ -3015,6 +3015,9 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .it-hi { color: #2b6df3; font-weight: 800; }
 .it-dept { margin-left: 5px; color: #4b5563; }
 .it-tel { margin-left: 6px; color: #2563eb; font-weight: 700; text-decoration: none; }
+/* 단지정보 면적 종류 — 내 물건 평형(공급면적) */
+.it-apt-mine { color: #2563eb; font-weight: 700; }
+.it-apt-mine small { margin-left: 4px; padding: 0 5px; border-radius: 4px; background: #eef3ff; font-size: 12px; }
 .it-name { color: #2b6df3; font-weight: 700; }
 .it-round { padding: 5px 14px; border-radius: 999px; background: #2563eb; color: #fff; font-size: 14px; font-weight: 800; }
 .it-round-dt { gap: 4px; flex-wrap: wrap; }
@@ -6714,16 +6717,16 @@ span.cal-day.has { cursor: help; }
           ${rounds.map((r) => `<dt class="it-round-dt"><span>${esc(r.label)}</span>${r.rate ? `<span class="it-chip pct">${esc(r.rate)}</span>` : ''}${r.status ? `<span class="it-chip ${T.roundToneOf(r.status)}">${esc(r.status)}</span>` : ''}${r.date ? `<span class="it-date ${T.roundToneOf(r.status) === 'st-now' ? 'now' : ''}">${esc(r.date)}</span>` : ''}</dt><dd class="amt ${r.current ? 'now' : ''}">${fm(r.price)}원</dd>`).join('')}
           <dt>보증금 (10%)</dt><dd class="amt deposit">${fm(T.depositAmountOf(a))}원</dd>
         </dl>`;
-      /* 왼쪽: 정보요약 · 기본정보 · 물건현황 · 건축물정보 / 오른쪽: 입지정보 (아파트면 단지정보 · 체납내역도 오른쪽) */
+      /* 왼쪽: 정보요약 · 기본정보 · (아파트면 단지정보) · 물건현황 · 건축물정보 / 오른쪽: 입지정보 (아파트면 체납내역도 오른쪽) */
       const left = [
         itCard('doc', '정보요약', `<dl class="it-rows">${summaryRows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`),
         itCard('info', '기본정보', baseRows),
+        ...(isApt && a.aptComplexInfo ? [aptCardHtml(a)] : []),
         statusCardHtml(it, a),
         buildingCardHtml(a),
       ];
       const right = [
         locationCardHtml(it, a),
-        ...(isApt && a.aptComplexInfo ? [aptCardHtml(a)] : []),
         ...(isApt && a.arrearsInfo ? [arrearsCardHtml(a)] : []),
       ];
       return `<div class="it-col">${left.join('')}</div><div class="it-col">${right.join('')}</div>`;
@@ -6819,7 +6822,7 @@ span.cal-day.has { cursor: help; }
         `<tr><th>전용면적</th><td>${v(h.unitExclusiveArea || ex)}</td><th>공용면적</th><td>${v(h.unitCommonArea)}</td></tr>`,
         `<tr><th>층</th><td>${v(h.unitFloor)}</td><th>층수(지하/지상)</th><td>${v(h.floors)}</td></tr>`,
         `<tr><th>사용승인일자</th><td>${v(h.approvalDate || a.approvalDate)}</td><th>승강기(비상/승용)</th><td>${v(h.elevator)}</td></tr>`,
-        `<tr><th>구조</th><td>${v(h.unitStructure || a.structureType)}</td><th>총 주차수</th><td>${v(h.unitTotalParking || h.parking)}</td></tr>`,
+        `<tr><th>구조</th><td>${v(h.unitStructure || a.structureType)}</td><th>총 주차수</th><td>${v(CLOUD.T && CLOUD.T.totalParkingOf ? CLOUD.T.totalParkingOf(a) : (h.unitTotalParking || h.parking))}</td></tr>`,
       ], 4, 'it-unit');
     }
     if (!out) {
@@ -6839,19 +6842,17 @@ span.cal-day.has { cursor: help; }
   /* 물건현황 공시가격 — PDF 금액이 먼저. 없으면 PDF 표기(공시가 1~2억) / 공동주택가격(손품조사 시세분석과 같은 브이월드 조회) */
   function statusCardHtml(it, a) {
     const full = a.address || a.roadAddress || '';
-    let price;
-    if (a.officialPriceValue) price = `공동주택공시가 ${Number(a.officialPriceValue).toLocaleString('ko-KR')}원 <span class="it-na">(PDF)</span>`;
-    else {
-      /* 표기가 없을 때 남는 '1억 미만'은 물건을 만들 때 넣는 기본값이라 PDF 값으로 보이지 않는다 — '1억 이상'은 PDF 에서만 온다 */
-      const note = a.officialPriceNote || (a.officialPriceBand === '1억 이상' ? '공시가 1억 이상' : '');
-      const pdfPart = note ? `${esc(note)} <span class="it-na">(PDF)</span>` : '<span class="it-na">PDF에 공시가격 없음</span>';
-      const pub = CLOUD.pubPrice.get(it.id);
-      if (!pub && CLOUD.T && CLOUD.T.lookupAddress && full) fetchPubFor(it.id);
-      const pubPart = !pub || pub.busy ? '<span class="it-na">공동주택가격 조회 중…</span>'
-        : pub.price ? `공동주택가격 ${Number(pub.price).toLocaleString('ko-KR')}원 <span class="it-na">(${pub.year ? `${esc(pub.year)}년 · ` : ''}시세분석)</span>`
-          : '<span class="it-na">공동주택가격 못 찾음</span>';
-      price = `${pdfPart} / ${pubPart}`;
-    }
+    /* 아파트도 빌라와 같이 — PDF 금액(없으면 PDF 표기) / 공동주택가격 둘 다 */
+    /* 표기가 없을 때 남는 '1억 미만'은 물건을 만들 때 넣는 기본값이라 PDF 값으로 보이지 않는다 — '1억 이상'은 PDF 에서만 온다 */
+    const note = a.officialPriceNote || (a.officialPriceBand === '1억 이상' ? '공시가 1억 이상' : '');
+    const pdfPart = a.officialPriceValue ? `공동주택공시가 ${Number(a.officialPriceValue).toLocaleString('ko-KR')}원 <span class="it-na">(PDF)</span>`
+      : note ? `${esc(note)} <span class="it-na">(PDF)</span>` : '<span class="it-na">PDF에 공시가격 없음</span>';
+    const pub = CLOUD.pubPrice.get(it.id);
+    if (!pub && CLOUD.T && CLOUD.T.lookupAddress && full) fetchPubFor(it.id);
+    const pubPart = !pub || pub.busy ? '<span class="it-na">공동주택가격 조회 중…</span>'
+      : pub.price ? `공동주택가격 ${Number(pub.price).toLocaleString('ko-KR')}원 <span class="it-na">(${pub.year ? `${esc(pub.year)}년 · ` : ''}시세분석)</span>`
+        : '<span class="it-na">공동주택가격 못 찾음</span>';
+    const price = `${pdfPart} / ${pubPart}`;
     return itCard('status', '물건현황', `<table class="it-kv cols2"><tbody><tr><th rowspan="2">공시가격</th><td>${esc(full)}</td></tr><tr><td>${price}</td></tr></tbody></table>`);
   }
   /* 공동주택가격 — 물건마다 한 번(창을 열어 둔 동안). 호실 단위 캐시는 브이월드 쪽에 있다 */
@@ -6868,9 +6869,12 @@ span.cal-day.has { cursor: help; }
     if (S.route === 'item' && S.itemId === id) renderItem();
   }
   function aptCardHtml(a) {
-    const c = a.aptComplexInfo; const v = (x) => esc(x || '-');
+    const c = a.aptComplexInfo; const v = (x) => esc(x || '-'); const T = CLOUD.T || {};
+    /* 단지명 — PDF 에 없으면 전유부 소재지의 건물명 · 면적 종류 — 내 물건 평형 표시(앱과 같은 aptComplex 모듈) */
+    const name = T.complexNameOf ? T.complexNameOf(a) : c.name;
+    const areas = T.areaTypePartsOf ? T.areaTypePartsOf(a).map((t) => (t.mine ? `<span class="it-apt-mine">${esc(t.text)}<small>내 물건</small></span>` : esc(t.text))).join(', ') : esc(c.areaTypes || '');
     return itCard('apt', '단지정보', kvTable([
-      `<tr><th>단지명</th><td colspan="3">${v(c.name)}</td></tr>`,
+      `<tr><th>단지명</th><td colspan="3">${v(name)}</td></tr>`,
       `<tr><th>세대수</th><td>${v(c.households)}</td><th>동 수</th><td>${v(c.buildings)}</td></tr>`,
       `<tr><th>사용승인일</th><td>${v(c.approvalDate)}</td><th>시공사</th><td>${v(c.contractor)}</td></tr>`,
       `<tr><th>주차 수</th><td>${v(c.parkingTotal)}</td><th>세대당 주차</th><td>${v(c.parkingPerHouse)}</td></tr>`,
@@ -6878,7 +6882,9 @@ span.cal-day.has { cursor: help; }
       `<tr><th>용적률</th><td>${v(c.floorRatio)}</td><th>건폐율</th><td>${v(c.buildingCoverage)}</td></tr>`,
       `<tr><th>최고층</th><td>${v(c.topFloor)}</td><th>최저층</th><td>${v(c.bottomFloor)}</td></tr>`,
       `<tr><th>관리소</th><td colspan="3">${c.managementPhone ? `<a class="it-tel" href="tel:${esc(c.managementPhone.replace(/[^\d+]/g, ''))}">${esc(c.managementPhone)}</a>` : '-'}</td></tr>`,
-      ...[['편의시설', c.facilities], ['교육시설', c.schools], ['휴식/공원', c.restPark], ['면적 종류', c.areaTypes], ['전기차충전소', c.evCharger]].filter(([, x]) => x).map(([k, x]) => `<tr><th>${k}</th><td colspan="3">${esc(x)}</td></tr>`),
+      ...[['편의시설', c.facilities], ['교육시설', c.schools], ['휴식/공원', c.restPark]].filter(([, x]) => x).map(([k, x]) => `<tr><th>${k}</th><td colspan="3">${esc(x)}</td></tr>`),
+      ...(c.areaTypes ? [`<tr><th>면적 종류</th><td colspan="3">${areas}</td></tr>`] : []),
+      ...(c.evCharger ? [`<tr><th>전기차충전소</th><td colspan="3">${esc(c.evCharger)}</td></tr>`] : []),
     ], 4));
   }
   function arrearsCardHtml(a) {

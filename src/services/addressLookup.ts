@@ -47,6 +47,21 @@ export const parseAddressParts = (address: string | undefined | null): AddressPa
   return { head, lot, ho, buildingDong };
 };
 
+/** 주소에서 건물명 — 지번 뒤, 동 · 층 · 호 앞 토막.
+ *   '경기도 안산시 상록구 성포동 747 안산파크푸르지오 101동 23층2301호' → '안산파크푸르지오' */
+export const buildingNameFromAddress = (address: string | undefined | null): string => {
+  const parts = String(address ?? '').trim().split(/\s+/).filter(Boolean);
+  let last = -1;
+  parts.forEach((t, i) => { if (/^\d+(-\d+)?$/.test(t)) last = i; });
+  if (last < 0) return '';
+  const name: string[] = [];
+  for (const t of parts.slice(last + 1)) {
+    if (/^(\d{1,4}|[가-힣A-Za-z]{1,3})동$|\d+층|\d+호|^\(/.test(t)) break;
+    name.push(t.replace(/,$/, ''));
+  }
+  return name.join(' ');
+};
+
 export interface PlaceLookup {
   parts: AddressParts;
   /** 카카오가 푼 지역 — 못 풀면 null */
