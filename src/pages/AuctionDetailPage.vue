@@ -5555,14 +5555,6 @@ const cmpRows = computed<CmpRow[]>(() => {
   return rows.sort((a, b) => (a.avg ?? 99) - (b.avg ?? 99) || a.sum - b.sum);
 });
 const cmpPicked = computed(() => cmpRows.value.find((r) => r.jibun === cmpPick.value) ?? cmpRows.value.find((r) => r.mine) ?? null);
-const cmpDist = (r: CmpRow) => {
-  const me = cmpRows.value.find((x) => x.mine)?.point;
-  if (r.mine || !me || !r.point) return '';
-  const R = 6371000; const toR = (d: number) => (d * Math.PI) / 180;
-  const dLat = toR(r.point.lat - me.lat); const dLng = toR(r.point.lng - me.lng);
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toR(me.lat)) * Math.cos(toR(r.point.lat)) * Math.sin(dLng / 2) ** 2;
-  return `${((2 * R * Math.asin(Math.sqrt(h))) / 1000).toFixed(1)}km`;
-};
 /** '3억 1,500' — 원 → 억 · 만 */
 const cmpMoney = (won: number) => {
   if (!(won > 0)) return '-';
@@ -9045,7 +9037,7 @@ const goBack = () => router.back();
                   <button v-for="r in cmpRows" :key="r.jibun" type="button" :class="['cmp-fs-row', { on: r.jibun === cmpPicked?.jibun, mine: r.mine }]" @click="cmpFsGo(r)">
                     <b>{{ r.name || r.jibun }}<span v-if="r.mine" class="cmp-tag">내 물건</span></b>
                     <span>등수평균 <em class="cmp-avg">{{ cmpAvgText(r.avg) }}</em> · 전세 <em>{{ cmpMoney(r.jeonseAvg) }}</em></span>
-                    <span class="dim">전용 {{ trunc2(r.area) }}㎡{{ cmpDist(r) ? ` · ${cmpDist(r)}` : '' }}</span>
+                    <span class="dim">전용 {{ trunc2(r.area) }}㎡{{ r.buildYear ? ` · ${r.buildYear}년` : '' }}</span>
                   </button>
                   <div v-if="cmpPicked" class="cmp-fs-places">
                     <span v-for="(p, i) in cmpPicked.places" :key="i"><i>{{ p?.ic ?? '·' }}</i>{{ rankConditions[i] }} <b>{{ p ? `${p.name} ${p.m.toLocaleString('ko-KR')}m` : '-' }}</b><em v-if="cmpPicked.ranks[i]" :class="['cmp-rk', { r1: cmpPicked.ranks[i] === 1 }]">{{ cmpPicked.ranks[i] }}</em></span>
@@ -9060,7 +9052,7 @@ const goBack = () => router.back();
                   <table class="adm-table cmp-tbl">
                     <colgroup><col style="width: 200px" /></colgroup>
                     <thead><tr>
-                      <th>단지<small>(전용)</small></th><th>연식<small>(건축년도)</small></th><th>거리<small>(내 물건에서)</small></th>
+                      <th>단지<small>(전용)</small></th><th>연식<small>(건축년도)</small></th>
                       <th v-for="c in rankConditions" :key="c">{{ c }}</th>
                       <th>등수평균</th><th>평균 전세가<small>(최근 12개월)</small></th><th>평균 매매가<small>(최근 12개월)</small></th>
                     </tr></thead>
@@ -9068,13 +9060,12 @@ const goBack = () => router.back();
                       <tr v-for="r in cmpRows" :key="r.jibun" :class="['cmp-row', { mine: r.mine, on: r.jibun === cmpPicked?.jibun }]" tabindex="0" @click="cmpPick = r.jibun" @keydown.enter="cmpPick = r.jibun">
                         <td class="nm">{{ r.name || r.jibun }}<span v-if="r.mine" class="cmp-tag">내 물건</span><small class="sup-tbl-sub">전용 {{ trunc2(r.area) }}㎡</small></td>
                         <td class="n">{{ r.buildYear ? `${r.buildYear}년` : '-' }}</td>
-                        <td class="n">{{ cmpDist(r) || '-' }}</td>
                         <td v-for="(k, i) in r.ranks" :key="i" class="n"><span v-if="k" :class="['cmp-rk', { r1: k === 1 }]">{{ k }}</span><span v-else class="cmp-dim">{{ r.mine || r.jibun in cmpNearby ? '-' : '…' }}</span></td>
                         <td class="n"><b class="cmp-avg">{{ cmpAvgText(r.avg) }}</b></td>
                         <td class="n amt"><b>{{ cmpMoney(r.jeonseAvg) }}</b></td>
                         <td class="n amt">{{ cmpMoney(r.saleAvg) }}</td>
                       </tr>
-                      <tr v-if="!cmpRows.length"><td :colspan="rankConditions.length + 6" class="cmp-dim">{{ supLoaded ? '같은 동에 견줄 단지 거래가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
+                      <tr v-if="!cmpRows.length"><td :colspan="rankConditions.length + 5" class="cmp-dim">{{ supLoaded ? '같은 동에 견줄 단지 거래가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
                     </tbody>
                   </table>
                 </div>
