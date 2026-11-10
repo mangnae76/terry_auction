@@ -11678,7 +11678,7 @@ tr.tone-take { background: #fff5f5; }
 .cmp-wait { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 13px; color: #6b7280; pointer-events: none; }
 .cmp-map :deep(.cmp-bub) { position: relative; cursor: pointer; }
 .cmp-map :deep(.cmp-bub .cb) { position: absolute; left: -10px; bottom: 9px; display: grid; min-width: 78px; border: 1.5px solid #2b4fd8; border-radius: 4px; background: #fff; box-shadow: 0 2px 6px rgba(17, 24, 39, .22); text-align: center; white-space: nowrap; overflow: visible; }
-.cmp-map :deep(.cmp-bub .cb b) { padding: 3px 8px 2px; font-size: 12px; font-weight: 800; color: #18213a; }
+.cmp-map :deep(.cmp-bub .cb b) { padding: 3px 8px 2px; font-size: 12px; font-weight: 400; color: #18213a; }   /* 말풍선 글은 모두 굵기 없음(2026-11-10) */
 .cmp-map :deep(.cmp-bub .cb span) { padding: 2px 8px 3px; background: #2b4fd8; color: #fff; font-size: 11.5px; font-weight: 400; }   /* 아래 띠(전세 · 등수) 굵기 없음(2026-11-10) */
 .cmp-map :deep(.cmp-bub .cb::after) { content: ''; position: absolute; left: 4px; bottom: -9px; border: 5px solid transparent; border-top: 5px solid #2b4fd8; border-left: 5px solid #2b4fd8; }   /* 말풍선 꼬리 — 왼쪽 아래, 끝이 단지 위치 */
 .cmp-map :deep(.cmp-bub.me .cb) { border-color: #f05a28; }
@@ -11688,7 +11688,7 @@ tr.tone-take { background: #fff5f5; }
 .cmp-map :deep(.cmp-bub.me.on .cb) { box-shadow: 0 0 0 3px rgba(240, 90, 40, .25), 0 3px 10px rgba(17, 24, 39, .3); }
 .cmp-map :deep(.cmp-bub.on .cb b) { font-size: 13px; }
 .cmp-map :deep(.cmp-near) { position: relative; }
-.cmp-map :deep(.cmp-near .kt-near) { position: absolute; left: 0; bottom: 4px; transform: translateX(-50%); }
+.cmp-map :deep(.cmp-near .kt-near) { position: absolute; left: 0; bottom: 4px; transform: translateX(-50%); font-weight: 400; }   /* 시설 상자 글도 굵기 없음 */
 .fs-btn { position: absolute; left: 10px; top: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(17, 24, 39, .18); font: inherit; font-size: 12.5px; font-weight: 700; color: #111827; cursor: pointer; }
 .fs-btn:hover { color: #2b6df3; }
 /* 전체화면 — 위 띠 · 왼쪽 지도 · 오른쪽 단지 목록(시세분석 전체화면과 같은 짜임) */
