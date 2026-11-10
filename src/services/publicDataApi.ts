@@ -872,6 +872,8 @@ interface MonthFetchResult {
   rows: Record<string, unknown>[];
   error?: string;
   typeLabel: string;
+  /** 정상 응답(resultCode 000)을 받아 저장한 달 — 0건이어도 믿는다(2026-11-10). 없으면 예전에 저장한 것이라 0건은 다시 받는다 */
+  checked?: number;
 }
 
 const fetchRealTradeRowsForMonth = async (
@@ -1010,7 +1012,9 @@ const monthCacheTtl = (dealYmd: string) => {
   const month = Number(dealYmd.slice(4, 6));
   if (!(year > 1900) || !(month >= 1 && month <= 12)) return 24 * 60 * 60 * 1000;
   const age = (now.getFullYear() * 12 + now.getMonth()) - (year * 12 + (month - 1));
-  return age <= 2 ? 24 * 60 * 60 * 1000 : 365 * 24 * 60 * 60 * 1000;
+  // 최근 석 달은 새벽 적재(jobs/trade-nightly, 매일 01:17)가 DB 의 달 문서를 날마다 새로 받는다 — 앱은 36시간 넘게 묵었을 때만(적재가 하루 빠졌을 때) 다시 받는다.
+  // 예전엔 하루로 두어 그날 처음 연 사람이 새벽에 받은 달을 또 받았다(2026-11-10)
+  return age <= 2 ? 36 * 60 * 60 * 1000 : 365 * 24 * 60 * 60 * 1000;
 };
 
 /** 한 달치 실거래 — 지역·종류·달이 같으면 누가 묻든 결과가 같다.
@@ -1036,13 +1040,15 @@ const fetchMonthWithRetry = async (
   const id = cacheKey(lawdCd5, path, dealYmd);
   if (deniedPaths().includes(path)) return { rows: [], error: '403 (data.go.kr 해당 데이터셋 활용신청/승인 필요 — 오늘은 다시 부르지 않음)', typeLabel: '' };
   const hit = await readCache<MonthFetchResult>('cacheTradeMonth', id, monthCacheTtl(dealYmd));
-  // 빈 달은 믿지 않고 다시 받는다 — 예전에 오류 응답이 '0건'으로 저장된 것이 남아 있을 수 있다
-  if (hit && !hit.error && hit.rows.length > 0) return hit;
+  // 빈 달은 정상 응답으로 확인된 것(checked)만 믿는다 — 표 없이 예전에 저장된 0건은 오류 응답이 '0건'으로 굳은 것일 수 있어 다시 받는다.
+  // 예전엔 0건이면 늘 다시 받아, 거래 없는 달이 많은 빌라 · 작은 구는 열 때마다 국토부를 불렀다(2026-11-10)
+  if (hit && !hit.error && (hit.rows.length > 0 || hit.checked)) return hit;
   let last: MonthFetchResult = { rows: [], error: '미조회', typeLabel: '' };
   for (let i = 0; i < tries; i += 1) {
     if (isQuotaBlocked()) return { rows: [], error: QUOTA_EXCEEDED_MSG, typeLabel: '' };
     last = await fetchRealTradeRowsForMonth(path, lawdCd5, dealYmd);
     if (!last.error) {
+      last = { ...last, checked: 1 };   // 정상 응답 — 0건이어도 다음엔 믿는다
       void writeCache('cacheTradeMonth', id, last);
       return last;
     }

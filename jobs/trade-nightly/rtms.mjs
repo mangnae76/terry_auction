@@ -129,7 +129,8 @@ export const fetchMonth = async ({ path, lawdCd5, ymd, serviceKey, fetchImpl = f
     calls += 1;
     raw.push(...asArray((await getPage(pageUrl(p), fetchImpl))?.response?.body?.items?.item));
   }
-  return { result: { rows: raw.map((r) => ({ ...r, __typeLabel: typeLabel })), typeLabel }, calls };
+  // checked — 정상 응답(000)으로 받은 달. 앱은 이 표가 있으면 0건도 믿고 다시 부르지 않는다(publicDataApi fetchMonthWithRetry)
+  return { result: { rows: raw.map((r) => ({ ...r, __typeLabel: typeLabel })), typeLabel, checked: 1 }, calls };
 };
 
 /** 대문 숫자 셈 — 문서(지역 × 종류 × 달)마다 불러 더한다. 같은 지역 · 같은 달은 문서 한 장이라 겹치지 않는다.
