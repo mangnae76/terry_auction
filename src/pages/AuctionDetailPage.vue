@@ -5680,7 +5680,8 @@ const cmpDraw = () => {
       className: `cmp-bub${r.mine ? ' me' : ''}${on ? ' on' : ''}`,
       // 첫 줄 — 단지 이름 | 등수평균, 아래 띠 — 평균 전세가(2026-11-10)
       // 아래 띠 — 평균 전세가 | 연식(건축년도)
-      html: `<div class="cb"><b>${cmpEsc(r.name || r.jibun)}<i></i>${r.avg === null ? '-' : `${cmpAvgText(r.avg)}등`}</b><span>${eok}${r.buildYear ? `<i></i>${r.buildYear}년` : ''}</span></div>`,
+      // 이름이 길면 말줄임(…) — 마우스를 대면 전체 이름. 등수는 굵게(2026-11-11)
+      html: `<div class="cb"><b><span class="nm" title="${cmpEsc(r.name || r.jibun)}">${cmpEsc(r.name || r.jibun)}</span><i></i><em>${r.avg === null ? '-' : `${cmpAvgText(r.avg)}등`}</em></b><span>${eok}${r.buildYear ? `<i></i>${r.buildYear}년` : ''}</span></div>`,
       onClick: () => { cmpPick.value = cmpKeyOf(r); },
       z: on ? 1000 : r.mine ? 500 : 10,
     });
@@ -11885,13 +11886,15 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-map :deep(.cmp-bub) { position: relative; cursor: pointer; }
 .cmp-map :deep(.cmp-bub .cb) { position: absolute; left: -10px; bottom: 9px; display: grid; min-width: 78px; border: 1.5px solid #2b4fd8; border-radius: 4px; background: #fff; box-shadow: 0 2px 6px rgba(17, 24, 39, .22); text-align: center; white-space: nowrap; overflow: visible; }
 .cmp-map :deep(.cmp-bub .cb b) { display: flex; align-items: center; justify-content: center; padding: 3px 8px 2px; font-size: 12px; font-weight: 400; color: #18213a; }
+.cmp-map :deep(.cmp-bub .cb b .nm) { max-width: 6em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }   /* 긴 단지 이름은 …(안산파크푸르지오 → 안산파크푸…) */
+.cmp-map :deep(.cmp-bub .cb b em) { font-style: normal; font-weight: 700; }   /* 등수만 굵게 */
 .cmp-map :deep(.cmp-bub .cb b i) { width: 1px; height: 10px; margin: 0 6px; background: #c3c9d4; }   /* 이름 | 등수 세로 칸막이 */
-.cmp-map :deep(.cmp-bub .cb span) { display: flex; align-items: center; justify-content: center; }
-.cmp-map :deep(.cmp-bub .cb span i) { width: 1px; height: 10px; margin: 0 6px; background: rgba(255, 255, 255, .55); }   /* 전세 | 연식 */   /* 말풍선 글은 모두 굵기 없음(2026-11-10) */
-.cmp-map :deep(.cmp-bub .cb span) { padding: 2px 8px 3px; background: #2b4fd8; color: #fff; font-size: 11.5px; font-weight: 400; }   /* 아래 띠(전세 · 등수) 굵기 없음(2026-11-10) */
+.cmp-map :deep(.cmp-bub .cb > span) { display: flex; align-items: center; justify-content: center; }
+.cmp-map :deep(.cmp-bub .cb > span i) { width: 1px; height: 10px; margin: 0 6px; background: rgba(255, 255, 255, .55); }   /* 전세 | 연식 */   /* 말풍선 글은 모두 굵기 없음(2026-11-10) */
+.cmp-map :deep(.cmp-bub .cb > span) { padding: 2px 8px 3px; background: #2b4fd8; color: #fff; font-size: 11.5px; font-weight: 400; }   /* 아래 띠(전세 · 등수) 굵기 없음(2026-11-10) */
 .cmp-map :deep(.cmp-bub .cb::after) { content: ''; position: absolute; left: 4px; bottom: -9px; border: 5px solid transparent; border-top: 5px solid #2b4fd8; border-left: 5px solid #2b4fd8; }   /* 말풍선 꼬리 — 왼쪽 아래, 끝이 단지 위치 */
 .cmp-map :deep(.cmp-bub.me .cb) { border-color: #f05a28; }
-.cmp-map :deep(.cmp-bub.me .cb span) { background: #f05a28; }
+.cmp-map :deep(.cmp-bub.me .cb > span) { background: #f05a28; }
 .cmp-map :deep(.cmp-bub.me .cb::after) { border-top-color: #f05a28; border-left-color: #f05a28; }
 .cmp-map :deep(.cmp-bub.on .cb) { border-width: 2.5px; box-shadow: 0 0 0 3px rgba(43, 79, 216, .22), 0 3px 10px rgba(17, 24, 39, .3); }
 .cmp-map :deep(.cmp-bub.me.on .cb) { box-shadow: 0 0 0 3px rgba(240, 90, 40, .25), 0 3px 10px rgba(17, 24, 39, .3); }
@@ -11935,7 +11938,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-kind.m { background: #eef7f1; color: #22a55a; }
 .cmp-row { cursor: pointer; }
 .sup-tbl .adm-table tbody tr.cmp-row:hover td { background: #f7f9fc; }
-.sup-tbl .adm-table tbody tr.cmp-row.mine td { background: #fff5f5; box-shadow: inset 0 -2px 0 #f3c9c9; }
+.sup-tbl .adm-table tbody tr.cmp-row.mine td { background: #fff5f5; box-shadow: inset 0 -2px 0 #efb7b7; }
 .sup-tbl .adm-table tbody tr.cmp-row.on td { background: #eef2ff; box-shadow: none; }   /* 고른 줄 연파랑 — 시세분석과 같게 */
 .cmp-tag { display: inline-block; margin-right: 4px; padding: 1px 4px; border-radius: 3px; background: #e03e3e; color: #fff; font-size: 8.5px; font-weight: 400; vertical-align: 2px; }   /* 선정물건 — 시세분석 표 첫 줄 .kind.me 와 같은 네모 칩(모서리 3) */
 .cmp-rk { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 1px solid #e3e8f0; border-radius: 6px; font-weight: 700; color: #111827; }
