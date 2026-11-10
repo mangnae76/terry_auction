@@ -3118,7 +3118,7 @@ const openSupNaver = () => { const addr = auction.value?.address; if (addr) void
 /** 종합 의견 — 매물수(해당평형)를 넣었을 때만 */
 const supOpinion = computed(() => {
   const base = supBase.value; const deals = supDealCount.value; const listings = supListings.value;
-  return demandOpinionOf(base > 0 ? (listings / base) * 100 : 0, base > 0 ? (deals / base) * 100 : 0, supLoaded.value && base > 0 && listings > 0, true, listings > 0 ? (deals / listings) * 100 : 0);   // 단지 수요분석은 아파트만 — 회전율 선 8%
+  return demandOpinionOf(listings > 0 ? (deals / listings) * 100 : 0, base > 0 ? (deals / base) * 100 : 0, supLoaded.value && base > 0 && listings > 0, true);   // 단지 수요분석은 아파트만 — 회전율 선 5%
 });
 /** 아래 표 한 줄 — 위 동 수요분석 표와 같은 칸. 해당평형(전용면적이 같은 거래) 기준, 평균가는 정상거래만 */
 const supRow = computed(() => {
@@ -3739,7 +3739,7 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
     ['의미', '매물이 적을수록 경쟁이 덜하다'],
   ] },
   gClear: { arrow: '62%', rows: [
-    ['기준', 'A 6개월↓ · B 6~12개월 · C 12개월↑'],
+    ['기준', 'A 6개월↓ · B 6~10개월 · C 10개월 초과'],
     ['의미', '짧을수록 빨리 팔린다'],
   ] },
   gAbsorb: { arrow: '87%', rows: [

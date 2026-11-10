@@ -9,7 +9,7 @@ export const DEMAND_GRADE_RULES: Record<DemandMetric, { a: number; b: number; hi
   turnover: { a: 3, b: 1.5, higher: true },   // 연간 회전율(%) — A 3%↑ · B 1.5%↑
   absorb: { a: 180, b: 120, higher: true },   // 연간 매물 소화율(%) — A 180%↑ · B 120%↑
   burden: { a: 3, b: 5, higher: false },      // 매물율(%) — A 3%↓ · B 5%↓
-  clear: { a: 6, b: 12, higher: false },      // 매물 소화기간(개월) — A 6↓ · B 12↓
+  clear: { a: 6, b: 10, higher: false },      // 매물 소화기간(개월) — A 6↓ · B 10↓(소화율 120% 와 같은 선 = 1,200 ÷ 120, 2026-11-10)
 };
 
 /** 값이 준비되지 않았으면 '-' */
@@ -41,13 +41,14 @@ export const DEMAND_PASS_TEXT: Record<DemandMetric, string> = {
 /** 막대 뒤 합격선 글 — 아파트 회전율만 8% */
 export const demandPassText = (m: DemandMetric, apt = false) => (m === 'turnover' ? `${turnoverLineOf(apt)}% 이상 적합` : DEMAND_PASS_TEXT[m]);
 
-/** 종합 의견 — 매물율(5% 선) × 거래 회전율(1.5% 선, 아파트 8%) 네 칸. 등급 대신 한 줄(2026-11-10 사용자 시안 'Level 3 · 저매물 / 저거래').
- *  선은 DEMAND_PASS_TEXT 와 같은 합격선. 둘 중 하나라도 값이 없으면 null */
-// '고거래'는 회전율과 매물 소화율이 둘 다 적합일 때만 — 회전율만 넘고 매물이 안 팔리면(소화율 미달) 활발하다고 하지 않는다(2026-11-10)
-export const demandOpinionOf = (burden: number, turnover: number, ready: boolean, apt = false, absorb = Infinity): { level: number; title: string; text: string } | null => {
+/** 종합 의견 — 매물(소화기간 10개월 선) × 거래(회전율 1.5% 선, 아파트 5%) 네 칸. 등급 대신 한 줄(2026-11-10 사용자 시안 'Level 3 · 저매물 / 저거래').
+ *  매물이 많고 적음은 세대수가 아니라 팔리는 속도로 본다 — 1년치가 쌓였으면 세대수 대비 적어도 '고매물'(2026-11-10 사용자 결정, 성포동 329건 · 329건).
+ *  소화기간 = 1,200 ÷ 소화율 이라 소화율로 받는다(거래 0건이면 소화율 0 → 고매물). 선은 DEMAND_PASS_TEXT 와 같은 합격선. 값이 없으면 null */
+export const demandOpinionOf = (absorb: number, turnover: number, ready: boolean, apt = false): { level: number; title: string; text: string } | null => {
   if (!ready) return null;
-  const lowListing = burden <= DEMAND_GRADE_RULES.burden.b;
-  const highDeal = turnover >= turnoverLineOf(apt) && absorb >= DEMAND_GRADE_RULES.absorb.b;
+  const clearMonths = absorb > 0 ? 1200 / absorb : Infinity;
+  const lowListing = clearMonths <= DEMAND_GRADE_RULES.clear.b;
+  const highDeal = turnover >= turnoverLineOf(apt);
   if (lowListing && highDeal) return { level: 1, title: '저매물 / 고거래', text: '매물은 적고 거래는 활발한 구간입니다.' };
   if (!lowListing && highDeal) return { level: 2, title: '고매물 / 고거래', text: '매물은 많지만 거래도 활발한 구간입니다.' };
   if (lowListing) return { level: 3, title: '저매물 / 저거래', text: '매물은 적지만 거래도 둔한 구간입니다.' };
@@ -69,7 +70,7 @@ export const demandTip = (metric: DemandMetric, what: string, apt = false): Arra
   absorb: [
     ['공식', '12개월 거래량 ÷ 총 매물수 × 100'],
     ['의미', '나와 있는 매물 중 한 해에 몇 %가 팔리나'],
-    ['기준', '120% 이상 적합 · 미만 부적합'],
+    ['기준', `${DEMAND_GRADE_RULES.absorb.b}% 이상 적합 · 미만 부적합`],
   ],
   burden: [
     ['공식', '총 매물수 ÷ 총 세대수 × 100'],
@@ -81,7 +82,8 @@ export const demandTip = (metric: DemandMetric, what: string, apt = false): Arra
   clear: [
     ['공식', '총 매물수 ÷ 월평균 거래량'],
     ['의미', '총 누적 매물이 다 팔리는 데 걸리는 달 수'],
-    ['기준', '12개월 이하 적합 · 초과 부적합'],
+    ['기준', `${DEMAND_GRADE_RULES.clear.b}개월 이하 적합 · 초과 부적합`],
+    ['관계', `소화율 ${DEMAND_GRADE_RULES.absorb.b}%와 같은 선(1,200 ÷ ${DEMAND_GRADE_RULES.absorb.b})`],
   ],
 } as Record<DemandMetric, Array<[string, string]>>)[metric];
 
