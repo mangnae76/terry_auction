@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupBySupply, myGroupOf, supplyRowsOf, type ComplexAreas } from './complexAreas';
+import { areaUnitsOf, groupBySupply, myGroupOf, sameExclusiveCountOf, supplyRowsOf, type ComplexAreas } from './complexAreas';
 
 // 2026타경50132 안산파크푸르지오 — 건축물대장 전유공용면적(2026-11-10). 같은 전용 59.99 안에서도 공급이 83.18 · 83.21 로 갈린다
 const supplies = [
@@ -14,9 +14,15 @@ describe('complexAreas', () => {
   it('공급면적이 같은 호실끼리만 센다 — 타입 · 평형으로 묶지 않는다', () => {
     expect(areas.groups.map((g) => `${g.supply.toFixed(2)}:${g.count}`)).toEqual(['83.18:122', '83.21:1', '115.77:407', '115.96:132']);
   });
-  it('해당면적 세대수 — 내 호실과 공급이 같은 호실 수', () => {
+  it('해당 세대수 — 내 호실과 전용면적이 같은 세대(네이버 25평 123세대와 같다)', () => {
     expect(myGroupOf(areas)?.count).toBe(122);
-    expect(myGroupOf({ ...areas, mine: null })).toBeNull();
+    expect(sameExclusiveCountOf(areas)).toBe(123);
+    expect(sameExclusiveCountOf({ ...areas, mine: null })).toBe(0);
+  });
+  it('정보요약 — 예전 자동값(122)은 바꾸고, 사람이 적은 값은 지킨다', () => {
+    expect(areaUnitsOf(areas, '122', '')).toBe('123');
+    expect(areaUnitsOf(areas, '', '')).toBe('123');
+    expect(areaUnitsOf(areas, '100', '')).toBe('100');
   });
   it('면적종류 줄 — 공급㎡(평) · 내 호실', () => {
     expect(supplyRowsOf(areas).map((r) => `${r.text} ${r.count}${r.mine ? '*' : ''}`)).toEqual([

@@ -31,7 +31,7 @@ import {
 } from '../services/fieldChecklist';
 import { getBuildingFacts } from '../services/buildingFacts';
 import { complexNameOf, totalParkingOf } from '../services/aptComplex';
-import { getComplexAreas, myGroupOf, supplyRowsOf, areaUnitsOf, type ComplexAreas } from '../services/complexAreas';
+import { getComplexAreas, supplyRowsOf, areaUnitsOf, sameExclusiveCountOf, type ComplexAreas } from '../services/complexAreas';
 import { DEMAND_PLAIN, demandFitText, demandGradeOf, demandTip, type DemandMetric } from '../services/demandGrade';
 import { openNaverComplexListing, openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
@@ -2999,7 +2999,6 @@ watch([() => auction.value?.id, isApartment] as const, async ([id, apt]) => {   
   complexAreas.value = got;
   // 물건 문서 정보요약에도 남긴다 — 빈 칸일 때만(공급면적은 예전에 PDF 공용까지 더해 넣은 틀린 값도 바꾼다). 사람이 적은 값은 덮지 않는다
   const a = auction.value;
-  const group = myGroupOf(got);
   const supply = got?.mine?.supply || 0;   // 이 호실 건축물대장 값만 — 다른 호실 값으로 메우지 않는다
   if (!a.basicSummary) a.basicSummary = {};
   const v = a.basicSummary;
@@ -3008,10 +3007,11 @@ watch([() => auction.value?.id, isApartment] as const, async ([id, apt]) => {   
   const oldWrong = ex > 0 && common > 0 ? (ex + common).toFixed(2) : '';
   let changed = false;
   if (supply > 0 && (!v['sum.supplyArea'] || v['sum.supplyArea'] === oldWrong) && v['sum.supplyArea'] !== supply.toFixed(2)) { v['sum.supplyArea'] = supply.toFixed(2); changed = true; }
-  // 해당면적 세대수 = 내 호실과 공급면적이 같은 호실 수. 자동으로 넣은 값엔 표('sum.areaUnitsAuto')를 남겨 다음에 고칠 수 있게.
-  // 예전 자동값(전용면적이 같은 호실 수 — 공급이 다른 호실까지 셌다, 50132 는 123)도 바꾼다. 사람이 적은 값은 덮지 않는다
+  // 해당면적 세대수 = 내 호실과 전용면적이 같은 호실 수(네이버 평형과 같은 묶음, 50132 는 123). 자동으로 넣은 값엔 표('sum.areaUnitsAuto')를 남겨 다음에 고칠 수 있게.
+  // 잠깐 쓰던 자동값(공급면적이 같은 호실 수 · 122)도 바꾼다. 사람이 적은 값은 덮지 않는다
+  const sameEx = sameExclusiveCountOf(got);
   const units = areaUnitsOf(got, v['sum.areaUnits'] ?? '', v['sum.areaUnitsAuto'] ?? '');
-  if (group?.count && units === String(group.count) && v['sum.areaUnits'] !== units) { v['sum.areaUnits'] = units; v['sum.areaUnitsAuto'] = '1'; changed = true; }
+  if (sameEx && units === String(sameEx) && v['sum.areaUnits'] !== units) { v['sum.areaUnits'] = units; v['sum.areaUnitsAuto'] = '1'; changed = true; }
   if (changed) void store.saveAuction(a, { silent: true });
 }, { immediate: true });
 /** 해당면적 세대수 — 사람이 적은 값이 먼저, 아니면 공급면적이 같은 호실 수(건축물대장) */
@@ -3051,7 +3051,7 @@ const supNum = (v: string) => Number(String(v ?? '').replace(/[^\d]/g, '')) || 0
 const supHouseholds = computed(() => supNum(sumVal('sum.units')));
 const supListings = computed(() => supNum(sumVal('sup.listings')));
 /** 해당 세대수 — 자동값만(짐작하지 않는다). 모르면 0 → 총세대수 기준 */
-const supAreaUnits = computed(() => myGroupOf(complexAreas.value)?.count ?? 0);   // 이 호실과 공급면적이 같은 세대(건축물대장)
+const supAreaUnits = computed(() => sameExclusiveCountOf(complexAreas.value));   // 이 호실과 공급면적이 같은 세대(건축물대장)
 /** 그 평형의 공부상 전용면적 — 거래는 전용면적만 있어 이 값과 같은 거래를 센다 */
 const supMyArea = computed(() => complexAreas.value?.mine?.exclusive || Number(auction.value?.buildingAreaM2) || 0);
 const supDealCount = computed(() => (supAreaUnits.value && supMyArea.value
@@ -3083,7 +3083,7 @@ const supStats = computed(() => {
 const SUP_TIPS: Record<'deal' | 'units' | 'areaUnits' | 'listings', Array<[string, string]>> = {
   deal: [['출처', '국토부 아파트 매매 실거래 — 이 단지(같은 지번)'], ['기간', '조회일부터 지난 12개월'], ['셈', '정상 + 직거래, 계약해제 제외'], ['해당평형', '이 호실과 전용면적이 같은 거래']],
   units: [['출처', 'PDF 단지정보 · 건축물대장 세대수']],
-  areaUnits: [['출처', '건축물대장 전유공용면적'], ['기준', '이 호실과 공급면적이 같은 세대']],
+  areaUnits: [['출처', '건축물대장 전유공용면적'], ['기준', '이 호실과 전용면적이 같은 세대(네이버 평형과 같은 묶음)']],
   listings: [['입력', '네이버 부동산에서 이 평형(해당평형) 매매 매물을 세어 적는다'], ['단추', '네이버매물 — 이 단지를 가운데 둔 매매 지도']],
 };
 /** 칸에 마우스를 대면 그 값과 이어진 칸이 같이 빨갛게 — 위 동 수요분석(DM_LIT_LINKS)과 같은 짝.
@@ -8430,10 +8430,11 @@ const goBack = () => router.back();
               <p class="sup-head">① 기초수치</p>
               <div class="sup-row">
                 <div :class="['sup-cell', { lit: supLit('deal') }]" @mouseenter="supLitKey = 'deal'" @mouseleave="supLitKey = ''">
-                  <div class="sup-h"><InfoTip :rows="SUP_TIPS.deal" under="box">거래량</InfoTip></div>
+                  <div class="sup-h"><InfoTip :rows="SUP_TIPS.deal" under="box">{{ supAreaUnits ? '거래량(해당평형)' : '거래량' }}</InfoTip></div>
                   <!-- 이 단지(같은 지번) 국토부 매매 자동값 — 정상 + 직거래, 계약해제 제외, 조회일부터 12개월 -->
                   <!-- 연(단지 전체 12개월) | 해당평형(이 평형) — 위 수요분석 총 거래량 '연 | 월'과 같은 꼴. 지표는 해당 평형으로 계산 -->
-                  <div class="sup-b"><b v-if="!supLoaded" class="wait">받는 중</b><b v-else><em class="sup-pre">연</em>{{ supDeals.length.toLocaleString('ko-KR') }}<template v-if="supAreaUnits"><em class="sup-bar">|</em><em class="sup-pre">연</em>{{ supDealCount.toLocaleString('ko-KR') }}<em class="sup-paren">(해당평형)</em><em class="sup-bar">|</em><em class="sup-pre">월</em>{{ (supDealCount / 12).toFixed(1) }}<em class="sup-paren">(해당평형)</em></template><em v-if="!supAreaUnits" class="sup-u">건</em></b></div>
+                  <div class="sup-b"><b v-if="!supLoaded" class="wait">받는 중</b><b v-else-if="supAreaUnits"><em class="sup-pre">단지 총 연</em>{{ supDeals.length.toLocaleString('ko-KR') }}<em class="sup-u">건</em><em class="sup-bar">|</em><em class="sup-pre">연</em>{{ supDealCount.toLocaleString('ko-KR') }}<em class="sup-u">건</em><em class="sup-bar">|</em><em class="sup-pre">월</em>{{ (supDealCount / 12).toFixed(1) }}<em class="sup-u">건</em></b>
+                    <b v-else><em class="sup-pre">연</em>{{ supDeals.length.toLocaleString('ko-KR') }}<em class="sup-u">건</em><em class="sup-bar">|</em><em class="sup-pre">월</em>{{ (supDeals.length / 12).toFixed(1) }}<em class="sup-u">건</em></b></div>
                 </div>
                 <div :class="['sup-cell', { lit: supLit('units') }]" @mouseenter="supLitKey = 'units'" @mouseleave="supLitKey = ''">
                   <div class="sup-h"><InfoTip :rows="SUP_TIPS.units" under="box">총 세대수</InfoTip></div>
@@ -8442,7 +8443,7 @@ const goBack = () => router.back();
                 </div>
                 <div :class="['sup-cell', { lit: supLit('areaUnits') }]" @mouseenter="supLitKey = 'areaUnits'" @mouseleave="supLitKey = ''">
                   <div class="sup-h"><InfoTip :rows="SUP_TIPS.areaUnits" under="box">해당 세대수</InfoTip></div>
-                  <!-- 자동값 — 이 호실과 공급면적이 같은 세대(건축물대장) -->
+                  <!-- 자동값 — 이 호실과 전용면적이 같은 세대(건축물대장) -->
                   <div class="sup-b"><b><template v-if="supAreaUnits">{{ supAreaUnits.toLocaleString('ko-KR') }}<em class="sup-u">세대</em></template><template v-else>-</template></b></div>
                 </div>
                 <div :class="['sup-cell', { lit: supLit('listings') }]" @mouseenter="supLitKey = 'listings'" @mouseleave="supLitKey = ''">

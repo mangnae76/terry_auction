@@ -605,7 +605,7 @@ const downloadCsv = () => {
               />
               <button type="button" class="nv-btn" :title="`${listingRow.umdNm}만 보기 — 네이버 부동산 매매 매물`" @click="openDongListing(listingRow)">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button>
             </div>
-            <div v-else :class="['dm-body', { 'has-note': c.note }]"><b :class="{ wait: c.wait }"><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" /></b><small v-if="c.note" class="dm-note">{{ c.note }}</small></div>
+            <div v-else :class="['dm-body', { 'has-note': c.note }]"><b :class="{ wait: c.wait }"><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" unit="건" /><UnitText v-else :text="c.value" /></b><small v-if="c.note" class="dm-note">{{ c.note }}</small></div>
           </div>
         </div>
         <p class="dm-block-head">② 수요지표</p>

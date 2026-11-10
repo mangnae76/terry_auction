@@ -84,12 +84,19 @@ export const supplyRowsOf = (areas: ComplexAreas | null | undefined): Array<{ te
   }));
 };
 
-/** 정보요약 해당면적 세대수 — 사람이 적은 값이 먼저, 아니면 공급면적이 같은 호실 수.
- *  자동 표('sum.areaUnitsAuto')가 있거나, 예전 자동값(전용이 같은 호실 수 — 공급이 다른 호실까지 셌다)과 같으면 자동값으로 본다 */
-export const areaUnitsOf = (areas: ComplexAreas | null | undefined, stored: string, autoFlag: string): string => {
-  const g = myGroupOf(areas);
+/** 해당 세대수 — 이 호실과 전용면적(건축물대장)이 같은 세대 수. 실거래가 전용면적으로만 갈리고 네이버 평형(25평 123세대)도
+ *  같은 전용을 한 평형으로 묶어, 공급면적이 0.03㎡ 다른 세대(83.21㎡)도 넣는다(2026-11-10 사용자 확인). 내 호실을 모르면 0 */
+export const sameExclusiveCountOf = (areas: ComplexAreas | null | undefined): number => {
   const mine = areas?.mine;
-  const sameExclusive = mine ? (areas?.groups ?? []).filter((x) => x.exclusive.toFixed(2) === mine.exclusive.toFixed(2)).reduce((n, x) => n + x.count, 0) : 0;
-  const auto = autoFlag === '1' || !stored || (sameExclusive > 0 && stored === String(sameExclusive));
-  return auto && g ? String(g.count) : stored;
+  if (!areas || !mine) return 0;
+  return areas.groups.filter((x) => x.exclusive.toFixed(2) === mine.exclusive.toFixed(2)).reduce((n, x) => n + x.count, 0);
+};
+
+/** 정보요약 해당면적 세대수 — 사람이 적은 값이 먼저, 아니면 전용면적이 같은 호실 수(sameExclusiveCountOf).
+ *  자동 표('sum.areaUnitsAuto')가 있거나, 예전 자동값(공급면적이 같은 호실 수 · 122)과 같으면 자동값으로 본다 */
+export const areaUnitsOf = (areas: ComplexAreas | null | undefined, stored: string, autoFlag: string): string => {
+  const n = sameExclusiveCountOf(areas);
+  const oldSupply = myGroupOf(areas)?.count ?? 0;
+  const auto = autoFlag === '1' || !stored || (oldSupply > 0 && stored === String(oldSupply));
+  return auto && n ? String(n) : stored;
 };
