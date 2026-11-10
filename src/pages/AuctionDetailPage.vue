@@ -3081,7 +3081,7 @@ const supStats = computed(() => {
 });
 /** 단지 수요분석 기초수치 ⓘ — 값이 어디서 왔는지 */
 const SUP_TIPS: Record<'deal' | 'units' | 'areaUnits' | 'listings', Array<[string, string]>> = {
-  deal: [['출처', '국토부 아파트 매매 실거래 — 이 단지(같은 지번)'], ['기간', '조회일부터 지난 12개월'], ['셈', '정상 + 직거래, 계약해제 제외'], ['해당 평형', '이 호실과 전용면적이 같은 거래']],
+  deal: [['출처', '국토부 아파트 매매 실거래 — 이 단지(같은 지번)'], ['기간', '조회일부터 지난 12개월'], ['셈', '정상 + 직거래, 계약해제 제외'], ['해당평형', '이 호실과 전용면적이 같은 거래']],
   units: [['출처', 'PDF 단지정보 · 건축물대장 세대수']],
   areaUnits: [['출처', '건축물대장 전유공용면적'], ['기준', '이 호실과 공급면적이 같은 세대']],
   listings: [['입력', '네이버 부동산에서 이 단지 매매 매물을 세어 적는다'], ['단추', '네이버매물 — 이 단지를 가운데 둔 매매 지도']],
@@ -8402,10 +8402,10 @@ const goBack = () => router.back();
               <p class="sup-head">① 기초수치</p>
               <div class="sup-row">
                 <div class="sup-cell">
-                  <div class="sup-h"><InfoTip :rows="SUP_TIPS.deal" under="box">총 거래량(해당 평형)</InfoTip></div>
+                  <div class="sup-h"><InfoTip :rows="SUP_TIPS.deal" under="box">총 거래량(해당평형)</InfoTip></div>
                   <!-- 이 단지(같은 지번) 국토부 매매 자동값 — 정상 + 직거래, 계약해제 제외, 조회일부터 12개월 -->
                   <!-- 총(단지 전체) | 해당(이 평형) — 위 수요분석 총 거래량 '연 | 월'과 같은 꼴. 지표는 해당 평형으로 계산 -->
-                  <div class="sup-b"><b v-if="!supLoaded" class="wait">받는 중</b><b v-else><em class="sup-pre">총</em>{{ supDeals.length.toLocaleString('ko-KR') }}<template v-if="supAreaUnits"><em class="sup-bar">|</em><em class="sup-pre">해당 평형</em>{{ supDealCount.toLocaleString('ko-KR') }}</template><em class="sup-u">건</em></b></div>
+                  <div class="sup-b"><b v-if="!supLoaded" class="wait">받는 중</b><b v-else><em class="sup-pre">총</em>{{ supDeals.length.toLocaleString('ko-KR') }}<template v-if="supAreaUnits"><em class="sup-bar">|</em><em class="sup-pre">해당평형</em>{{ supDealCount.toLocaleString('ko-KR') }}</template><em class="sup-u">건</em></b></div>
                 </div>
                 <div class="sup-cell">
                   <div class="sup-h"><InfoTip :rows="SUP_TIPS.units" under="box">총 세대수</InfoTip></div>
