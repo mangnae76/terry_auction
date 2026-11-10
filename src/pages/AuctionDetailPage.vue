@@ -8418,7 +8418,7 @@ const goBack = () => router.back();
                   <div class="sup-h"><InfoTip :rows="SUP_TIPS.deal" under="box">총 거래량</InfoTip></div>
                   <!-- 이 단지(같은 지번) 국토부 매매 자동값 — 정상 + 직거래, 계약해제 제외, 조회일부터 12개월 -->
                   <!-- 연(단지 전체 12개월) | 해당평형(이 평형) — 위 수요분석 총 거래량 '연 | 월'과 같은 꼴. 지표는 해당 평형으로 계산 -->
-                  <div class="sup-b"><b v-if="!supLoaded" class="wait">받는 중</b><b v-else><em class="sup-pre">연</em>{{ supDeals.length.toLocaleString('ko-KR') }}<template v-if="supAreaUnits"><em class="sup-bar">|</em><em class="sup-pre">연</em>{{ supDealCount.toLocaleString('ko-KR') }}<em class="sup-paren">(해당평형)</em><em class="sup-bar">|</em><em class="sup-pre">월</em>{{ (supDealCount / 12).toFixed(1) }}</template><em class="sup-u">건</em></b></div>
+                  <div class="sup-b"><b v-if="!supLoaded" class="wait">받는 중</b><b v-else><em class="sup-pre">연</em>{{ supDeals.length.toLocaleString('ko-KR') }}<template v-if="supAreaUnits"><em class="sup-bar">|</em><em class="sup-pre">연</em>{{ supDealCount.toLocaleString('ko-KR') }}<em class="sup-paren">(해당평형)</em><em class="sup-bar">|</em><em class="sup-pre">월</em>{{ (supDealCount / 12).toFixed(1) }}<em class="sup-paren">(해당평형)</em></template><em v-if="!supAreaUnits" class="sup-u">건</em></b></div>
                 </div>
                 <div :class="['sup-cell', { lit: supLit('units') }]" @mouseenter="supLitKey = 'units'" @mouseleave="supLitKey = ''">
                   <div class="sup-h"><InfoTip :rows="SUP_TIPS.units" under="box">총 세대수</InfoTip></div>
