@@ -21,3 +21,17 @@ describe('complexCompare', () => {
     expect(out.map((c) => `${c.name}:${c.area}:${c.jeonseAvg}:${c.saleAvg}:${c.mine}:${c.buildYear}`)).toEqual(['파크:59.98:350000000:0:true:2018', '예술인:61.38:180000000:0:false:0']);
   });
 });
+
+import { academyClusterOf } from './kakaoNearby';
+describe('학원가', () => {
+  const at = (dLatM: number, dLngM: number, i: number) => ({ name: `학원${i}`, distance: '', distanceMeters: 1, category: '', lat: 37.3 + dLatM / 110540, lng: 126.8 + dLngM / (111320 * Math.cos((37.3 * Math.PI) / 180)) });
+  it('200m 안 10곳 이상 모인 곳만 — 그 가운데까지 거리', () => {
+    const cluster = Array.from({ length: 10 }, (_, i) => at(300 + (i % 3) * 20, 0 + i * 10, i));
+    const lone = [at(50, 0, 99)];
+    const out = academyClusterOf(37.3, 126.8, [...lone, ...cluster]);
+    expect(out).toHaveLength(1);
+    expect(out[0].name).toBe('학원가 · 학원 10곳');
+    expect(out[0].distanceMeters).toBeGreaterThan(300);
+    expect(academyClusterOf(37.3, 126.8, [...lone, ...cluster.slice(0, 9)])).toEqual([]);
+  });
+});

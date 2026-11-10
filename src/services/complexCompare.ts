@@ -18,7 +18,8 @@ export const LOCATION_SOURCES: Record<string, Array<keyof NearbyEnvironment>> = 
   공원: ['park'],
   유치원: ['daycare'],
   초등학교: ['school'],
-  학원가: ['academy'],
+  // 학원가 — 학원 하나가 아니라 200m 안 10곳 이상 모인 곳(kakaoNearby academyClusterOf, 2026-11-10)
+  학원가: ['academyCluster'],
 };
 /** 도보 1분 ≈ 80m. 5분 안쪽 1등, 10분 안쪽 2등, 그 밖 3등 */
 export const WALK_M_PER_MIN = 80;
@@ -36,6 +37,7 @@ export const PLACE_ICON: Partial<Record<keyof NearbyEnvironment, { ic: string; c
   school: { ic: '🏫', color: '#7c3aed', label: '초등학교' },
   daycare: { ic: '🧒', color: '#a855f7', label: '어린이집' },
   academy: { ic: '📚', color: '#6d28d9', label: '학원' },
+  academyCluster: { ic: '📚', color: '#6d28d9', label: '학원가' },
   subway: { ic: '🚇', color: '#2563eb', label: '지하철' },
   busStop: { ic: '🚌', color: '#0891b2', label: '버스정류장' },
   mart: { ic: '🛒', color: '#ea580c', label: '마트' },
@@ -50,7 +52,7 @@ export type ComplexNearby = { lat: number; lng: number; env: NearbyEnvironment }
 const NEARBY_TTL = 30 * 24 * 60 * 60 * 1000;
 /** 주소 하나의 좌표 + 주변시설 — 이 브라우저 → DB → 카카오 순. 못 찾으면 null */
 export const complexNearbyOf = async (address: string): Promise<ComplexNearby | null> => {
-  const key = cacheKey('nb2', address);   // nb2 — 인프라에 큰 공원 · 상업지역을 더한 뒤(예전 nb 는 없다)
+  const key = cacheKey('nb3', address);   // nb3 — 인프라(큰 공원 · 상업지역) · 학원가(밀집)를 더한 뒤
   const local = await browserCacheGet<ComplexNearby>(key, NEARBY_TTL);
   if (local) return local;
   const shared = await readCache<ComplexNearby>('cacheNearby', key, NEARBY_TTL);

@@ -58,6 +58,7 @@ const searchByCategory = async (
   categoryCode: string,
   radius = 1000,
   size = 15,
+  page = 1,
 ): Promise<NearbyPlace[]> => {
   const params = new URLSearchParams({
     category_group_code: categoryCode,
@@ -65,6 +66,7 @@ const searchByCategory = async (
     y: String(lat),
     radius: String(radius),
     size: String(size),
+    page: String(page),
     sort: 'distance',
   });
   try {
@@ -145,7 +147,33 @@ export interface NearbyEnvironment {
   bigPark?: NearbyPlace[];
   /** 가까운 상업지역(도시계획 용도지역, 브이월드) — 하나. 안에 있으면 1m */
   commercialZone?: NearbyPlace[];
+  /** 학원가 — 200m 안 학원 10곳 이상 모인 곳의 가운데(하나). 없으면 빈 배열 */
+  academyCluster?: NearbyPlace[];
 }
+
+/** 학원가 — 반경 200m 안에 학원이 10곳 이상 모인 곳(2026-11-10 사용자 기준). 학원 하나로는 학원가로 보지 않는다.
+ *  1km 안 학원(카카오 학원 업종, 최대 45곳)마다 200m 안 학원 수를 세고, 10곳 이상인 무리의 가운데(그 무리 좌표 평균) 중
+ *  이 점에서 가장 가까운 곳 하나. 없으면 빈 배열 */
+export const ACADEMY_CLUSTER_RADIUS = 200;
+export const ACADEMY_CLUSTER_MIN = 10;
+const meterBetween = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+  const kx = 111320 * Math.cos((a.lat * Math.PI) / 180);
+  return Math.hypot((a.lng - b.lng) * kx, (a.lat - b.lat) * 110540);
+};
+export const academyClusterOf = (lat: number, lng: number, academies: NearbyPlace[]): NearbyPlace[] => {
+  const pts = academies.filter((p) => p.lat && p.lng) as Array<NearbyPlace & { lat: number; lng: number }>;
+  let best: NearbyPlace | null = null;
+  pts.forEach((seed) => {
+    const near = pts.filter((p) => meterBetween(seed, p) <= ACADEMY_CLUSTER_RADIUS);
+    if (near.length < ACADEMY_CLUSTER_MIN) return;
+    const c = { lat: near.reduce((a, p) => a + p.lat, 0) / near.length, lng: near.reduce((a, p) => a + p.lng, 0) / near.length };
+    const m = Math.max(1, Math.round(meterBetween({ lat, lng }, c)));
+    if (!best || m < best.distanceMeters) {
+      best = { name: `학원가 · 학원 ${near.length}곳`, distanceMeters: m, distance: m >= 1000 ? `${(m / 1000).toFixed(2)}km` : `${m}m`, category: '교육 > 학원가', lat: c.lat, lng: c.lng };
+    }
+  });
+  return best ? [best] : [];
+};
 
 export const fetchNearbyEnvironment = async (
   lat: number,
@@ -190,10 +218,14 @@ export const fetchNearbyEnvironment = async (
     searchByCategory(lng, lat, 'FD6', radius, 15),
   ]);
   // 인프라 — 큰 병원 · 큰 공원 · 상업지역(2026-11-10). 병원 업종 15곳은 의원이 먼저 차서 종합병원이 밀린다 — '종합병원'으로 한 번 더 찾는다
-  const [bigHospital, commercialZone] = await Promise.all([
+  // 학원가 — 학원을 세 쪽(45곳)까지 받아 200m 안 10곳 이상 모인 곳을 찾는다
+  const [bigHospital, commercialZone, academy2, academy3] = await Promise.all([
     searchByKeyword(lng, lat, '종합병원', radius, 15).then((items) => items.filter((p) => /종합병원|대학병원/.test(p.category))),
     fetchCommercialZone(lat, lng),
+    academy.length >= 15 ? searchByCategory(lng, lat, 'AC5', radius, 15, 2) : Promise.resolve([] as NearbyPlace[]),
+    academy.length >= 15 ? searchByCategory(lng, lat, 'AC5', radius, 15, 3) : Promise.resolve([] as NearbyPlace[]),
   ]);
+  const allAcademy = dedupe([...academy, ...academy2, ...academy3]);
   const bigPark = park.filter((p) => /공원$|공원\s|수목원|숲$/.test(p.name) && !/어린이|소공원|쌈지|놀이터|주차장|화장실|입구|정류장/.test(p.name));
   return {
     busStop: dedupe(busStop),
@@ -212,5 +244,6 @@ export const fetchNearbyEnvironment = async (
     commerce: dedupe(commerce),
     bigPark: dedupe(bigPark),
     commercialZone,
+    academyCluster: academyClusterOf(lat, lng, allAcademy),
   };
 };

@@ -83,7 +83,7 @@ import RightsPanel from '../components/RightsPanel.vue';
 import SonpumPricePage from './SonpumPricePage.vue';
 import type { CasePropertyType } from '../services/caseTradeAnalysis';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
-import { complexesOf, complexNearbyOf, nearestPlaceOf, PLACE_ICON, rankFromMeters, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
+import { complexesOf, complexNearbyOf, LOCATION_SOURCES, nearestPlaceOf, PLACE_ICON, rankFromMeters, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
 import KakaoMapTools from '../components/KakaoMapTools.vue';
 import { createMapView, type MapView } from '../services/mapView';
 import { geocodeAddress } from '../services/routeOptimizer';
@@ -5503,15 +5503,16 @@ const rankKey = (cond: string) => `${pickedRealUserBand.value?.id ?? ''}:${cond}
 // 입지조건별 시설 · 도보 거리 → 등수 규칙은 services/complexCompare 한 곳(단지 입지비교와 같이 쓴다)
 /** 그 조건에서 가장 가까운 한 곳까지의 거리 (m). 없으면 0 */
 const nearestMeters = (cond: string) => nearestPlaceOf(nearbyEnv.value, cond)?.distanceMeters ?? 0;
-/** 자동 등수 — 잴 수 없는 조건이거나 1km 안에 없으면 빈 값 */
+/** 자동 등수 — 주변시설을 받았는데 1km 안에 없으면 3등(도보 10분 밖), 아직 못 받았거나 잴 수 없는 조건이면 빈 값(2026-11-10) */
 const autoRankOf = (cond: string) => {
   const m = nearestMeters(cond);
-  return m > 0 ? String(rankFromMeters(m)) : '';
+  if (m > 0) return String(rankFromMeters(m));
+  return nearbyEnv.value && cond in LOCATION_SOURCES ? '3' : '';
 };
 /** 자동 등수의 근거 — '버스정류장 120m · 도보 2분' */
 const autoRankNote = (cond: string) => {
   const m = nearestMeters(cond);
-  if (!(m > 0)) return '';
+  if (!(m > 0)) return nearbyEnv.value && cond in LOCATION_SOURCES ? '1km 안에 없음' : '';
   return `가장 가까운 곳 ${m}m · 도보 ${Math.max(1, Math.round(m / WALK_M_PER_MIN))}분`;
 };
 const rankOf = (cond: string) => auction.value?.realUserRanks?.[rankKey(cond)] ?? '';
@@ -5542,7 +5543,8 @@ const cmpRows = computed<CmpRow[]>(() => {
     const env = c.mine ? nearbyEnv.value : nb?.env ?? null;
     const places = conds.map((cond) => { const p = nearestPlaceOf(env, cond); const ic = p ? PLACE_ICON[p.src] : undefined; return p ? { cond, name: p.name, m: p.distanceMeters, lat: p.lat, lng: p.lng, ic: ic?.ic ?? '📍', color: ic?.color ?? '#6b7280' } : null; });
     // 내 물건 — 위 '실사용자 + 입지등수'에 보이는 값 그대로(손으로 고친 등수가 있으면 그 값)
-    const ranks = conds.map((cond, i) => (c.mine ? (Number(rankValue(cond)) || null) : (places[i] ? rankFromMeters(places[i]!.m) : null)));
+    // 주변시설을 받았는데 1km 안에 없으면 3등(위 자동 등수와 같은 규칙)
+    const ranks = conds.map((cond, i) => (c.mine ? (Number(rankValue(cond)) || null) : (places[i] ? rankFromMeters(places[i]!.m) : env && cond in LOCATION_SOURCES ? 3 : null)));
     const ready = env && ranks.every((r) => r !== null);
     const avg = ready ? ranks.reduce<number>((a, b) => a + (b ?? 0), 0) / ranks.length : null;
     const sum = places.reduce((a, p) => a + (p?.m ?? 9999), 0);
