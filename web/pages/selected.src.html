@@ -7373,17 +7373,20 @@ span.cal-day.has { cursor: help; }
     if (meSpot) mv.circle(meSpot, SXM.radius, { color: '#2b4fd8', weight: 1.6, dash: true, fillOpacity: 0.06 });
     /* 점과 이름표를 한 표식으로 — 줌할 때 이름표가 점과 함께 움직인다(시세분석과 같게) */
     const html = (label, no = '') => `<i class="pin-dot"></i><span class="pin-box">${no ? `<em class="no">${no}</em>` : ''}<span class="tx">${label}</span></span>`;   /* 손품조사 시세분석 지도와 같은 상자 꼴 */
+    /* 평소엔 점만 — 이름표(주소 · 금액)는 누른 점 하나에만(지도가 무거워지지 않게, 시세분석과 같다 2026-11-10) */
+    const dotOnly = '<i class="pin-dot"></i>';
     groups.forEach((g) => {
       const on = SXG.focus === g.k;
       const sub = [g.range, g.dist != null ? `${g.dist.toLocaleString('ko-KR')}m` : ''].filter(Boolean).join(' · ');
       const off = g.list.every((r) => sxIsOff(r));   /* 그 건물 매각을 다 '제외'하면 핀도 회색(시세분석과 같게) */
-      mv.pin(g.p, { className: `pa-pin${on ? ' on' : ''}${off ? ' off' : ''}`, html: html(`<b>${esc(g.name)} ${g.list.length}건</b>${sub ? `<br>${sub}` : ''}`, String(g.no)), onClick: () => {
+      mv.pin(g.p, { className: `pa-pin${on ? ' on' : ''}${off ? ' off' : ''}`, html: on ? html(`<b>${esc(g.name)} ${g.list.length}건</b>${sub ? `<br>${sub}` : ''}`, String(g.no)) : dotOnly, onClick: () => {
         /* 지역으로이고 기준이 없으면 — 그 지번의 가장 최근 매각을 기준으로 */
         if (S.route === 'market' && saleMode === 'region' && !sxRef) { const r = [...g.list].sort((a, b) => String(b['매각일'] || '').localeCompare(String(a['매각일'] || '')))[0]; if (r) { sxSetRef(r); return; } }
-        SXG.focus = on ? '' : g.k; sxDrawMap(); sxPaintList();
+        SXG.meOpen = false; SXG.focus = on ? '' : g.k; sxDrawMap(); sxPaintList();   /* 이름표는 누른 점 하나만 */
       }, z: on ? 50 : 1 });
     });
-    if (meSpot) mv.pin(meSpot, { className: 'pa-pin me', html: html(`<b>${esc(me && me.__ref ? `기준물건 ${me.caseNo}` : ((me && me.bld) || '경매물건'))}</b>${same ? `<br><b>같은건물 ${same}건</b>` : ''}`), z: 1000 });
+    /* 빨간 점(경매물건 · 기준물건)도 눌렀을 때만 이름표 */
+    if (meSpot) mv.pin(meSpot, { className: 'pa-pin me', html: SXG.meOpen ? html(`<b>${esc(me && me.__ref ? `기준물건 ${me.caseNo}` : ((me && me.bld) || '경매물건'))}</b>${same ? `<br><b>같은건물 ${same}건</b>` : ''}`) : dotOnly, onClick: () => { const was = SXG.focus; SXG.focus = ''; SXG.meOpen = !SXG.meOpen; sxDrawMap(); if (was) sxPaintList(); }, z: 1000 });
     if (SXG.tools) SXG.tools.setNear(meSpot || null);
     /* 내 물건 · 반경이 바뀔 때만 다시 맞춘다(지도를 옮겨 둔 것을 함부로 되돌리지 않게) */
     const fk = `${saleItemId}|${sxRef ? sxRowKey(sxRef) : ''}|${SXM.radius}|${meSpot ? `${meSpot.lat},${meSpot.lng}` : groups.length ? 'pts' : ''}`;

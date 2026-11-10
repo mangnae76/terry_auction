@@ -435,6 +435,8 @@ watch(enriching, (v) => { if (!v) saveSoon(); });
 // ===== 지도 — 카카오맵(못 열면 브이월드) 위에 반경 원 · 선정물건 · 유사물건(지번마다 한 점) =====
 const mapEl = ref<HTMLElement | null>(null);
 const focus = ref('');
+/** 지도 빨간 점(내 물건) 이름표를 펼쳤나 — 누를 때만 */
+const meOpen = ref(false);
 let mv: MapView | null = null;
 let mvP: Promise<void> | null = null;
 // 카카오맵이면 오른쪽 지도 도구 막대(로드뷰 · 지적도 · 재기 · 검색 …)를 붙인다 — 카카오 물건은 Vue 가 감싸지 않게 markRaw
@@ -522,6 +524,8 @@ const drawMap = () => {
   const html = (label: string, no = '') => (webEmbed
     ? `<i class="pin-dot"></i><span class="pin-box">${no ? `<em class="no">${no}</em>` : ''}<span class="tx">${label}</span></span>`
     : `<i class="dot">${no}</i><span class="lbl">${label}</span>`);
+  // 평소엔 점만 — 이름표(주소 · 금액)는 누른 점 하나에만 띄운다. 지도가 무거워지지 않게(2026-11-10)
+  const dotOnly = (no = '') => (webEmbed ? '<i class="pin-dot"></i>' : `<i class="dot">${no}</i>`);
   mapGroups.value.forEach((g) => {
     const on = focus.value === g.jibun;
     // 웹 — 그 건물 거래를 표에서 다 '제외'하면 핀도 회색(평균에서 빠졌다는 표시)
@@ -532,12 +536,18 @@ const drawMap = () => {
     const range = lo === hi ? eok(lo) : `${(lo / 1e8).toFixed(2)}~${eok(hi)}`;
     mv!.pin(g.spot, {
       className: `pa-pin${on ? ' on' : ''}${off ? ' off' : ''}`,
-      html: html(`<b>${esc(g.name)} ${live.length}건</b><br>${range} · ${g.dist}m`, String(orderOf.value[g.jibun] ?? '')),
-      onClick: () => { focus.value = on ? '' : g.jibun; },
+      html: on ? html(`<b>${esc(g.name)} ${live.length}건</b><br>${range} · ${g.dist}m`, String(orderOf.value[g.jibun] ?? '')) : dotOnly(String(orderOf.value[g.jibun] ?? '')),
+      onClick: () => { meOpen.value = false; focus.value = on ? '' : g.jibun; },   // 이름표는 누른 점 하나만
       z: on ? 50 : 1,
     });
   });
-  mv.pin(m, { className: 'pa-pin me', html: html(`<b>${meName.value}</b>${sameCount.value ? `<br>${webEmbed ? `<b>같은건물 ${sameCount.value}건</b>` : `같은 건물 ${sameCount.value}건`}` : ''}`)   /* 웹 — '같은건물' 붙여 쓰고 굵게 */, z: 1000 });
+  // 내 물건(빨간 점)도 눌렀을 때만 이름표
+  mv.pin(m, {
+    className: 'pa-pin me',
+    html: meOpen.value ? html(`<b>${meName.value}</b>${sameCount.value ? `<br>${webEmbed ? `<b>같은건물 ${sameCount.value}건</b>` : `같은 건물 ${sameCount.value}건`}` : ''}`) : dotOnly(),   /* 웹 — '같은건물' 붙여 쓰고 굵게 */
+    onClick: () => { focus.value = ''; meOpen.value = !meOpen.value; },
+    z: 1000,
+  });
 };
 const fitMap = () => {
   const m = mySpot.value;
@@ -555,7 +565,7 @@ const ensureMap = async () => {
 watch(mySpot, () => { void ensureMap(); });
 watch(radius, fitMap);
 // 점 · 원이 실제로 바뀔 때만 다시 그린다 — 공시가 · 엘베가 들어올 때마다 지도를 통째로 다시 그리지 않게
-const mapKey = computed(() => `${dropped.value.join('~')}|${radius.value}|${focus.value}|${sameCount.value}|${mySpot.value?.lat}|${mapGroups.value.map((g) => `${g.jibun}:${g.list.length}:${g.range}:${orderOf.value[g.jibun] ?? ''}`).join(',')}`);
+const mapKey = computed(() => `${dropped.value.join('~')}|${radius.value}|${focus.value}|${meOpen.value}|${sameCount.value}|${mySpot.value?.lat}|${mapGroups.value.map((g) => `${g.jibun}:${g.list.length}:${g.range}:${orderOf.value[g.jibun] ?? ''}`).join(',')}`);
 watch(mapKey, drawMap);
 // 숨은 탭에서 처음 그려지면 크기를 모른다 — 보일 때 다시 잰다
 const sonTab = inject<Ref<string> | null>('sonpumTab', null);
