@@ -9108,8 +9108,8 @@ const goBack = () => router.back();
                 <p class="sup-head cmp-pick">고른 단지 <span class="area cmp-chip">{{ cmpPicked.name || cmpPicked.jibun }}</span> <small class="cmp-sub">지도 점이나 위 표 줄을 누르면 바뀝니다</small></p>
                 <div class="cmp-two">
                   <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
-                    <!-- 가장 가까운 곳 칸을 넓히고(이름이 잘리지 않게) 나머지는 좁게(2026-11-11) -->
-                    <colgroup><col style="width: 76px" /><col /><col style="width: 72px" /><col style="width: 56px" /><col style="width: 70px" /></colgroup>
+                    <!-- 가장 가까운 곳 칸을 조금 넓게(약 44%), 나머지는 고르게(2026-11-11) -->
+                    <colgroup><col style="width: 16%" /><col /><col style="width: 14%" /><col style="width: 12%" /><col style="width: 14%" /></colgroup>
                     <thead><tr><th>입지조건</th><th>가장 가까운 곳</th><th>거리</th><th>도보</th><th>입지등수</th></tr></thead>
                     <tbody>
                       <tr v-for="(c, i) in rankConditions" :key="c">
