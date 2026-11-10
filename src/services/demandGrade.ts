@@ -9,7 +9,7 @@ export const DEMAND_GRADE_RULES: Record<DemandMetric, { a: number; b: number; hi
   turnover: { a: 3, b: 1.5, higher: true },   // 연간 회전율(%) — A 3%↑ · B 1.5%↑
   absorb: { a: 180, b: 120, higher: true },   // 연간 매물 소화율(%) — A 180%↑ · B 120%↑
   burden: { a: 3, b: 5, higher: false },      // 매물 부담률(%) — A 3%↓ · B 5%↓
-  clear: { a: 6, b: 12, higher: false },      // 매물 소진기간(개월) — A 6↓ · B 12↓
+  clear: { a: 6, b: 12, higher: false },      // 매물 소화기간(개월) — A 6↓ · B 12↓
 };
 
 /** 값이 준비되지 않았으면 '-' */
@@ -61,7 +61,7 @@ export const demandTotalGrade = (grades: DemandGrade[]): DemandGrade => {
 
 /** 종합 말풍선 — 앱 매매수요(dmTipData.total)와 같은 줄 */
 export const DEMAND_TOTAL_TIP: Array<[string, string]> = [
-  ['대상', '매물 소화율 · 매물 소진기간 · 거래 회전율 · 매물 부담률'],
+  ['대상', '매물 소화율 · 매물 소화기간 · 거래 회전율 · 매물 부담률'],
   ['공식', '네 등급을 A 3 · B 2 · C 1로 바꿔 평균을 낸다'],
   ['기준', '평균 2.5↑ A · 1.5↑ B · 그 아래 C'],
   ['조건', '네 등급 중 셋 이상 매겨져야 종합등급이 나온다'],

@@ -32,7 +32,7 @@ import {
 import { getBuildingFacts } from '../services/buildingFacts';
 import { complexNameOf, totalParkingOf } from '../services/aptComplex';
 import { getComplexAreas, myGroupOf, supplyRowsOf, areaUnitsOf, type ComplexAreas } from '../services/complexAreas';
-import { DEMAND_PLAIN } from '../services/demandGrade';
+import { DEMAND_PLAIN, demandFitText, demandGradeOf, type DemandMetric } from '../services/demandGrade';
 import { openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -68,8 +68,7 @@ import { cached, cachedEntryOrStale, loadOrFail, cacheKey, readCache, writeCache
 // 셈은 화면 밖에 따로 둔다 — 표로 매번 확인할 수 있게 (profitMath.test.ts · registryAnalysis.test.ts)
 import { taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxProfitOf } from '../services/profitMath';
 import { baseDateOf, isTakenOver, normalizeYmd } from '../services/registryAnalysis';
-import { VWORLD_KEY_EXPIRES, PRICE_YEAR, fetchApartUnits } from '../services/vworldApi';
-import { parseAddressParts } from '../services/addressLookup';
+import { VWORLD_KEY_EXPIRES, PRICE_YEAR } from '../services/vworldApi';
 import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
 import { addressParts, buildingNameOf, hasBuildingName, isUnitToken } from '../utils/addressName';
@@ -3034,7 +3033,7 @@ const supLoaded = ref(false);
 watch([() => auction.value?.id, () => webEmbed] as const, async ([id, web]) => {
   supRows.value = []; supLoaded.value = false;
   const a = auction.value;
-  if (!id || !web || !a?.address) return;
+  if (!id || !web || !a?.address || !isApartment.value) return;   // 단지 수요분석은 아파트만
   const out = await analyzeAddress({ address: a.address, propertyType: priceKind.value, years: 1 }).catch(() => null);
   if (auction.value?.id !== id) return;
   supRows.value = out?.rows ?? []; supLoaded.value = true;
@@ -3050,40 +3049,34 @@ const supNum = (v: string) => Number(String(v ?? '').replace(/[^\d]/g, '')) || 0
 /** 총세대수 — 자동값만(정보요약 세대수: PDF 단지정보 · 건축물대장). 손으로 적지 않는다 */
 const supHouseholds = computed(() => supNum(sumVal('sum.units')));
 const supListings = computed(() => supNum(sumVal('sup.listings')));
-/** 빌라 — 공동주택가격 호실 목록에서 이 호실 전용면적(공부상)과 같은 세대 수. 아파트는 건축물대장 공급면적 무리(complexAreas) */
-const supVilla = ref<{ exclusive: number; count: number } | null>(null);
-watch([() => auction.value?.id, () => webEmbed, isApartment] as const, async ([id, web, apt]) => {
-  supVilla.value = null;
-  const a = auction.value;
-  if (!id || !web || apt || !a?.address) return;
-  const region = await resolveRegionFromAddress(a.address).catch(() => null);
-  if (!region?.bCode10 || !region.jibun || auction.value?.id !== id) return;
-  const units = await fetchApartUnits(region.bCode10, region.jibun).catch(() => []);
-  const p = parseAddressParts(a.address);
-  const dk = (v: string) => v.trim().replace(/동$/, '');
-  // 동까지 맞는 호실 → 없으면 그 호수가 하나뿐일 때만(빌라는 공시가격에 동 이름이 비어 있거나 다르게 적힌다)
-  const sameHo = p.ho ? units.filter((u) => u.ho.replace(/\D/g, '') === p.ho) : [];
-  const mine = sameHo.find((u) => !p.buildingDong || dk(u.dong) === dk(p.buildingDong)) ?? (sameHo.length === 1 ? sameHo[0] : undefined);
-  if (!mine || auction.value?.id !== id) return;
-  supVilla.value = { exclusive: mine.areaM2, count: units.filter((u) => u.areaM2.toFixed(2) === mine.areaM2.toFixed(2)).length };
-}, { immediate: true });
 /** 해당 세대수 — 자동값만(짐작하지 않는다). 모르면 0 → 총세대수 기준 */
-const supAreaUnits = computed(() => (isApartment.value ? myGroupOf(complexAreas.value)?.count ?? 0 : supVilla.value?.count ?? 0));
+const supAreaUnits = computed(() => myGroupOf(complexAreas.value)?.count ?? 0);   // 이 호실과 공급면적이 같은 세대(건축물대장)
 /** 그 평형의 공부상 전용면적 — 거래는 전용면적만 있어 이 값과 같은 거래를 센다 */
-const supMyArea = computed(() => (isApartment.value ? complexAreas.value?.mine?.exclusive : supVilla.value?.exclusive) || Number(auction.value?.buildingAreaM2) || 0);
+const supMyArea = computed(() => complexAreas.value?.mine?.exclusive || Number(auction.value?.buildingAreaM2) || 0);
 const supDealCount = computed(() => (supAreaUnits.value && supMyArea.value
   ? supDeals.value.filter((r) => Math.abs(r.areaM2 - supMyArea.value) < 0.005).length
   : supDeals.value.length));
 const supBase = computed(() => supAreaUnits.value || supHouseholds.value);
+/** 아래 수요지표 — 위 동 수요분석과 같은 네 지표 · 같은 순서(중요한 것부터, 짝끼리) · 같은 등급 규칙(services/demandGrade).
+ *  기준은 해당 평형(해당 세대수를 모르면 단지 전체) */
 const supStats = computed(() => {
   const base = supBase.value; const deals = supDealCount.value; const listings = supListings.value;
   const monthly = deals / 12;
-  return {
-    listingRate: base > 0 && listings > 0 ? `${((listings / base) * 100).toFixed(1)}%` : '-',
-    dealRate: base > 0 && supLoaded.value ? `${((deals / base) * 100).toFixed(1)}%` : '-',
-    monthly: supLoaded.value ? `${monthly.toFixed(1)}건` : '-',
-    absorb: listings > 0 && monthly > 0 ? `${(listings / monthly).toFixed(1)}개월` : '-',
+  const ready = supLoaded.value;
+  const absorb = listings > 0 ? (deals / listings) * 100 : 0;
+  const clear = listings > 0 && monthly > 0 ? listings / monthly : 0;
+  const turnover = base > 0 ? (deals / base) * 100 : 0;
+  const burden = base > 0 && listings > 0 ? (listings / base) * 100 : 0;
+  const row = (id: DemandMetric, label: string, plain: string, value: string, ok: boolean, n: number) => {
+    const grade = demandGradeOf(id, ok, n);
+    return { id, label, plain, value, grade, fit: demandFitText(grade) };
   };
+  return [
+    row('absorb', '매물 소화율', DEMAND_PLAIN.absorb, ready && listings > 0 ? `${absorb.toFixed(1)}%` : '-', ready && listings > 0, absorb),
+    row('clear', '매물 소화기간', DEMAND_PLAIN.clear, clear > 0 ? `${clear.toFixed(1)}개월` : '-', clear > 0, clear),
+    row('turnover', '거래 회전율', '단지 거래가 얼마나 도나', ready && base > 0 ? `${turnover.toFixed(1)}%` : '-', ready && base > 0, turnover),
+    row('burden', '매물 부담률', DEMAND_PLAIN.burden, burden > 0 ? `${burden.toFixed(1)}%` : '-', burden > 0, burden),
+  ];
 });
 const setSupVal = (key: string, v: string | number) => setSumVal(key, String(supNum(String(v)) || ''));
 
@@ -3668,7 +3661,7 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
     ['적정', '6M 이하 ↓ (짧을수록 좋다)'],
   ] },
   total: { arrow: '72%', rows: [
-    ['대상', '매물 소화율 · 매물 소진기간 · 거래 회전율 · 매물 부담률'],
+    ['대상', '매물 소화율 · 매물 소화기간 · 거래 회전율 · 매물 부담률'],
     ['공식', '네 등급을 A 3 · B 2 · C 1로 바꿔 평균을 낸다'],
     ['기준', '평균 2.5↑ A · 1.5↑ B · 그 아래 C'],
     ['조건', '네 등급 중 셋 이상 매겨져야 종합등급이 나온다'],
@@ -3706,7 +3699,7 @@ const dmMonthly = computed(() => deal12mValue.value / 12);   // 월평균 거래
 const dmTurnover = computed(() => (dmUnits.value > 0 ? (deal12mValue.value / dmUnits.value) * 100 : 0));
 // 매물 부담률 = 총매물수 ÷ 총세대수 × 100 (내놓은 물건이 동네에서 차지하는 비중)
 const dmBurden = computed(() => (dmUnits.value > 0 ? (dmListings.value / dmUnits.value) * 100 : 0));
-// 매물 소진기간 = 총매물수 ÷ 거래량 (지금 매물이 다 팔리는 데 걸리는 시간).
+// 매물 소화기간 = 총매물수 ÷ 거래량 (지금 매물이 다 팔리는 데 걸리는 시간).
 // 월평균으로 나눠 '달 수'로 셈한다 — 연평균으로 나눈 '해 수'에 12를 곱한 것과 같은 값이다.
 // 화면에는 둘 다 적는다 ('111M / 9Y 3M').
 const dmClearMonths = computed(() => (dmMonthly.value > 0 ? dmListings.value / dmMonthly.value : 0));
@@ -3983,7 +3976,7 @@ const DM_LIT_LINKS: Record<string, string[]> = {
   turn: ['turn', 'deal', 'units'],        // 거래 회전율 = 거래량 ÷ 총세대수
   absorb: ['absorb', 'deal', 'listings'], // 매물 소화율 = 거래량 ÷ 총매물수
   burden: ['burden', 'listings', 'units'], // 매물 부담률 = 총매물수 ÷ 총세대수
-  clear: ['clear', 'listings', 'deal'],   // 매물 소진기간 = 총매물수 ÷ 월평균 거래량
+  clear: ['clear', 'listings', 'deal'],   // 매물 소화기간 = 총매물수 ÷ 월평균 거래량
   // 수치 칸은 거꾸로 — 그 값을 쓰는 지표들이 켜진다
   deal: ['deal', 'turn', 'absorb', 'clear'],
   units: ['units', 'turn', 'burden'],
@@ -8305,7 +8298,7 @@ const goBack = () => router.back();
                 </div>
                 <div :class="['cell split calc', { lit: dmLit('clear') }]" @mouseenter="dmLitEnter('clear')" @mouseleave="dmLitLeave()" @click="dmLitTap('clear')">
                   <div class="cell-head">
-                    <small>매물 소진기간</small>
+                    <small>매물 소화기간</small>
                     <button
                       type="button"
                       class="adp-dm-info"
@@ -8393,7 +8386,8 @@ const goBack = () => router.back();
 
 
             <!-- 웹 ① 단지 수요분석 — 단지 수급(2026-11-10 시험, 웹만). 위 수요분석(AdminRegionDemandPage)의 ① 기초수치 · ② 수요지표와 같은 틀 · 글자 · 칸 크기 -->
-            <section v-if="webEmbed" class="adp-dm-block boxed sup-dm">
+            <!-- 아파트만 — 빌라는 단지 개념이 없다 -->
+            <section v-if="webEmbed && isApartment" class="adp-dm-block boxed sup-dm">
               <p class="sup-scope"><span class="area">{{ supName || '이' }}</span> 단지 수요분석</p>
               <p class="sup-head">① 기초수치</p>
               <div class="sup-row">
@@ -8410,7 +8404,7 @@ const goBack = () => router.back();
                 </div>
                 <div class="sup-cell">
                   <div class="sup-h">해당 세대수</div>
-                  <!-- 자동값 — 아파트는 이 호실과 공급면적이 같은 세대(건축물대장), 빌라는 전용면적이 같은 세대(공동주택가격) -->
+                  <!-- 자동값 — 이 호실과 공급면적이 같은 세대(건축물대장) -->
                   <div class="sup-b"><b><template v-if="supAreaUnits">{{ supAreaUnits.toLocaleString('ko-KR') }}<em class="sup-u">세대</em></template><template v-else>-</template></b></div>
                 </div>
                 <div class="sup-cell">
@@ -8420,20 +8414,20 @@ const goBack = () => router.back();
               </div>
               <p class="sup-head">② 수요지표</p>
               <div class="sup-row">
-                <div class="sup-cell"><div class="sup-h">매물률<em class="sup-plain">매물이 얼마나 쌓였나</em></div><div class="sup-b"><b><UnitText :text="supStats.listingRate" /></b></div></div>
-                <div class="sup-cell"><div class="sup-h">거래율<em class="sup-plain">단지 거래가 얼마나 도나</em></div><div class="sup-b"><b><UnitText :text="supStats.dealRate" /></b></div></div>
-                <div class="sup-cell"><div class="sup-h">월평균 거래<em class="sup-plain">한 달에 몇 건 팔리나</em></div><div class="sup-b"><b><UnitText :text="supStats.monthly" /></b></div></div>
-                <div class="sup-cell"><div class="sup-h">매물소화기간<em class="sup-plain">다 팔리는 데 걸리는 시간</em></div><div class="sup-b"><b><UnitText :text="supStats.absorb" /></b></div></div>
+                <div v-for="c in supStats" :key="c.id" class="sup-cell">
+                  <div class="sup-h">{{ c.label }}<em class="sup-plain">{{ c.plain }}</em></div>
+                  <div class="sup-b"><b><UnitText :text="c.value" /><template v-if="c.grade !== '-'"><em class="sup-bar">|</em><span :class="['sup-gd', `g-${c.grade}`]">{{ c.grade }}</span><span :class="['sup-fit', { bad: c.fit === '부적합' }]">/ {{ c.fit }}</span></template></b></div>
+                </div>
               </div>
               <p class="sup-note">
-                <template v-if="supAreaUnits">거래율은 이 평형(전용 {{ trunc2(supMyArea) }}㎡) 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건을 해당 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 나눈 값입니다.</template>
-                <template v-else>거래율은 12개월 거래량을 총세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 나눈 값입니다. 해당 세대수를 알면 그 평형 기준으로 계산합니다.</template>
+                <template v-if="supAreaUnits">수요지표는 이 평형(전용 {{ trunc2(supMyArea) }}㎡) 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 해당 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 계산합니다. 계산식 · 등급은 위 동 수요분석과 같습니다.</template>
+                <template v-else>수요지표는 단지 전체 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 총세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 계산합니다. 계산식 · 등급은 위 동 수요분석과 같습니다.</template>
               </p>
             </section>
 
             <!-- ① 실사용자 + 입지등수 (웹은 ②) -->
             <div class="adp-dm-block boxed">
-            <div class="adp-dm-sub">{{ webEmbed ? '②' : '①' }} 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>초기화</button></div>
+            <div class="adp-dm-sub">{{ webEmbed && isApartment ? '②' : '①' }} 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>초기화</button></div>
             <table :class="['adp-table adp-ruser-table', { tight: !webEmbed }]">
               <colgroup v-if="webEmbed">
               <col style="width: 20%" /><col style="width: 15%" /><col style="width: 21%" /><col style="width: 17%" /><col style="width: 12%" /><col style="width: 15%" />
@@ -8591,7 +8585,7 @@ const goBack = () => router.back();
             <!-- ② 개별성 분석 (웹은 ③) -->
             <div class="adp-dm-block boxed">
             <div class="adp-dm-sub">
-              {{ webEmbed ? '③' : '②' }} 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
+              {{ webEmbed && isApartment ? '③' : '②' }} 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
               <button v-if="!editingSurvey.individuality" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
             </div>
@@ -11356,6 +11350,12 @@ tr.tone-take { background: #fff5f5; }
 .sup-b b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; display: inline-flex; align-items: center; }
 .sup-pre { margin-right: 3px; font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; }   /* YmCount '연 · 월'과 같은 꼴 */
 .sup-bar { margin: 0 7px; font-style: normal; font-weight: 400; color: #c3c9d4; }
+.sup-gd { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 13px; font-weight: 800; line-height: 1; }   /* 위 수요분석 등급 동그라미와 같은 꼴 */
+.sup-gd.g-A { background: #fde2e2; color: #c22e2e; }
+.sup-gd.g-B { background: #cfdeff; color: #1d4ed8; }
+.sup-gd.g-C { background: #e5e7eb; color: #111827; }
+.sup-fit { margin-left: 3px; font-size: 12px; font-weight: 800; color: #1f7a45; }
+.sup-fit.bad { color: #c22e2e; }
 .sup-u { margin-left: 2px; font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; }   /* UnitText 단위와 같은 꼴('세대'는 UnitText 단위 목록에 없다) */
 .sup-b b.wait { font-size: 14px; font-weight: 400; color: #9ca3af; }
 .sup-in { width: 110px; height: 34px; box-sizing: border-box; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; padding: 0 10px; text-align: right; font-family: inherit; font-size: 18px; font-weight: 800; color: #2b6df3; }
@@ -11621,8 +11621,8 @@ tr.tone-take { background: #fff5f5; }
   white-space: normal; word-break: keep-all; overflow-wrap: anywhere;
   line-height: 1.25; text-align: center;
 }
-/* 매물 소진기간의 '/' — 앞뒤를 한 칸씩 띄운다 */
-/* 매물 소진기간 — '91M / 7Y 7M'.
+/* 매물 소화기간의 '/' — 앞뒤를 한 칸씩 띄운다 */
+/* 매물 소화기간 — '91M / 7Y 7M'.
    숫자·단위는 붙이고, 슬래시 앞뒤와 '7Y' 다음에만 한 칸 띄운다 */
 .adp-dm-block .adp-mkt-cells .cell strong .num.adp-dm-slash { min-width: 0; margin: 0 5px; font-weight: 400; color: #c3cbd8; } /* 소진기간 '111M / 9Y 3M' 의 빗금은 회색 — 숫자만 파랑 */
 /* 소진기간 · 연월의 단위 글자(Y · M · 연 · 월)는 회색 */

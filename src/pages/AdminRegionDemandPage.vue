@@ -295,7 +295,7 @@ const DM_LIT_LINKS: Record<DmId, DmId[]> = {
   turn: ['turn', 'deal', 'units'],          // 거래 회전율 = 거래량 ÷ 총세대수
   absorb: ['absorb', 'deal', 'listings'],   // 매물 소화율 = 거래량 ÷ 총매물수
   burden: ['burden', 'listings', 'units'],  // 매물 부담률 = 총매물수 ÷ 총세대수
-  clear: ['clear', 'listings', 'deal'],     // 매물 소진기간 = 총매물수 ÷ 월평균 거래량
+  clear: ['clear', 'listings', 'deal'],     // 매물 소화기간 = 총매물수 ÷ 월평균 거래량
   deal: ['deal', 'turn', 'absorb', 'clear'],
   units: ['units', 'turn', 'burden'],
   listings: ['listings', 'absorb', 'burden', 'clear'],
@@ -340,7 +340,7 @@ const dmResults = computed(() => {
   return [
     // 가장 중요한 지표(내놓으면 팔리나)를 맨 앞에, 짝(같은 뜻을 개월로)인 소진기간을 바로 옆에 — 소화율 → 소진기간 → 회전율 → 부담률
     { id: 'absorb' as DmId, label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', kindWhat.value), plain: DEMAND_PLAIN.absorb },
-    { id: 'clear' as DmId, label: '매물 소진기간', value: v.clearMonths > 0 ? `${v.clearMonths.toFixed(1)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', kindWhat.value), plain: DEMAND_PLAIN.clear },
+    { id: 'clear' as DmId, label: '매물 소화기간', value: v.clearMonths > 0 ? `${v.clearMonths.toFixed(1)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', kindWhat.value), plain: DEMAND_PLAIN.clear },
     { id: 'turn' as DmId, label: '거래 회전율', value: unitsPct(v.turnover, false), grade: v.grades.turnover, tip: demandTip('turnover', kindWhat.value), plain: DEMAND_PLAIN.turnover },
     { id: 'burden' as DmId, label: '매물 부담률', value: unitsPct(v.burden, true), grade: v.grades.burden, tip: demandTip('burden', kindWhat.value), plain: DEMAND_PLAIN.burden },
   ];
@@ -476,7 +476,7 @@ const load = async () => {
 /** 엑셀에서 열 수 있게 — 쉼표가 든 값은 따옴표로 감싼다 */
 const downloadCsv = () => {
   if (rows.value.length === 0) return;
-  const head = ['소속 구', '읍면동', '총세대수', '총매물수', `총거래량(최근 ${months.value}개월)`, '평균가', '회전율(%)', '매물소화율(%)', '매물부담률(%)', '매물소진기간(개월)', '평균전용(㎡)', '평균건축연수', '평균평당가', '직거래·해제'];
+  const head = ['소속 구', '읍면동', '총세대수', '총매물수', `총거래량(최근 ${months.value}개월)`, '평균가', '회전율(%)', '매물소화율(%)', '매물부담률(%)', '매물소화기간(개월)', '평균전용(㎡)', '평균건축연수', '평균평당가', '직거래·해제'];
   const body = rows.value.map((r) => [
     r.sigungu, r.umdNm,
     r.units || '', r.listings || '',
@@ -587,8 +587,7 @@ const downloadCsv = () => {
       <!-- 앱 매매수요와 같은 짜임 — 위 ① 수치(거래량 · 세대수 · 매물수) 3칸, 아래 ② 지표 4칸. 두 줄은 시작과 끝이 같다.
            칸에 마우스를 대면 그 값과 이어진 칸이 같이 빨갛게 켜진다(앱 DM_LIT_LINKS 와 같은 짝) -->
       <section v-if="webEmbed && rows.length > 0" class="adm-nav dm">
-        <!-- 손품조사(embedded)는 동 이름만 — 아래 '○○ 단지 수요분석'과 짝(2026-11-10) -->
-        <p class="adm-nav-scope"><span><span class="area">{{ embedded && dongFilter ? dongFilter : dmArea }}</span> 수요분석</span><SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
+        <p class="adm-nav-scope"><span><span class="area">{{ dmArea }}</span> 수요분석</span><SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
         <p class="dm-block-head">① 기초수치</p>
         <div class="dm-row c3">
           <div v-for="c in dmInputs" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
@@ -665,8 +664,8 @@ const downloadCsv = () => {
               <th>평균 전용면적<small>(㎡)</small></th>
               <th>평균 건축연수<small>(년)</small></th>
               <th>매물 소화율<small>(%)</small></th>
-              <th v-if="webEmbed">매물<br>소진기간</th>
-              <th v-else>매물 소진기간</th>
+              <th v-if="webEmbed">매물<br>소화기간</th>
+              <th v-else>매물 소화기간</th>
               <th :class="{ turn: webEmbed }">회전율<small>(%)</small></th>
               <th>매물 부담률<small>(%)</small></th>
             </tr>
@@ -713,7 +712,7 @@ const downloadCsv = () => {
       <!-- 웹은 표 밑 셈 설명을 뺀다(요약 칸의 ⓘ 말풍선에 같은 내용이 있다) -->
       <p v-if="!webEmbed && rows.length > 0" class="adm-foot">
         회전율 = 1년 거래량 ÷ 세대수 &nbsp;·&nbsp; 소화율 = 1년 거래량 ÷ 매물수 &nbsp;·&nbsp;
-        부담률 = 매물수 ÷ 세대수 &nbsp;·&nbsp; 소진기간 = 매물수 ÷ 월평균 거래량.
+        부담률 = 매물수 ÷ 세대수 &nbsp;·&nbsp; 소화기간 = 매물수 ÷ 월평균 거래량.
         총 세대수는 건축물대장에서 자동으로 채웁니다(연립·다세대 · 아파트는 세대수, 오피스텔은 호수). 파란 칸(총 매물수)은 손으로 적습니다 — 적어 두면 다음에도 남습니다.
       </p>
     </div>
@@ -879,7 +878,7 @@ const downloadCsv = () => {
 /* 소수점 아래 자리도 폭을 잡아 둔다 — 없는 줄과 있는 줄의 전체 너비가
    달라지면 가운데 정렬 때문에 끝선이 어긋난다 */
 .adm-table td.deal b { display: inline-block; width: 11px; text-align: left; font-weight: inherit; }
-/* 매물 소진기간 — '96개월 / 8년' 한 줄로(해 환산이 아래로 떨어지지 않게) */
+/* 매물 소화기간 — '96개월 / 8년' 한 줄로(해 환산이 아래로 떨어지지 않게) */
 .adm-table td.clear { line-height: 1.25; white-space: nowrap; }
 .adm-table td.clear em { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-left: 1px; }
 .adm-table td.clear small { font-size: inherit; font-weight: inherit; color: inherit; }
