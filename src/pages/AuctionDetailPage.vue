@@ -8487,8 +8487,8 @@ const goBack = () => router.back();
                 <span v-else class="wait">현재 매물수(해당평형)를 넣으면 종합 의견이 나옵니다.</span>
               </div>
               <p class="sup-note">
-                <template v-if="supAreaUnits">수요지표는 이 평형(전용 {{ trunc2(supMyArea) }}㎡) 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 해당평형 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 계산합니다. 계산식 · 합격선은 위 동 수요분석과 같습니다.</template>
-                <template v-else>수요지표는 단지 전체 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 총 세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 계산합니다. 계산식 · 합격선은 위 동 수요분석과 같습니다.</template>
+                <template v-if="supAreaUnits">수요지표는 이 평형(전용 {{ trunc2(supMyArea) }}㎡) 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 해당평형 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 계산합니다.</template>
+                <template v-else>수요지표는 단지 전체 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 총 세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 계산합니다.</template>
               </p>
               <!-- 위 동 수요분석 표와 같은 칸 · 꾸밈(son-demand 안이라 웹 공통 꾸밈도 같이 받는다). 해당평형 한 줄 -->
               <p class="sup-head sup-tbl-head">③ 상세수치</p>
