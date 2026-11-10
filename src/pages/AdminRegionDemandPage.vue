@@ -286,6 +286,8 @@ const navStats = computed(() => {
 });
 /** 말풍선 속 종류 이름 */
 const kindWhat = computed(() => (kind.value === 'apt' ? '아파트' : kind.value === 'officetel' ? '오피스텔' : '연립·다세대'));
+/** 지표 ⓘ '의미' 줄의 범위 — '성포동 전체 아파트'(수요분석이 보는 동을 따라간다, 2026-11-10) */
+const tipScope = computed(() => `${dongFilter.value || dmArea.value} 전체 ${kindWhat.value}`);
 /** 제목 — '인천광역시 서해구' (읍면동을 고르면 '… 검암동') 뒤에 '수요분석' */
 const dmArea = computed(() => [loadedLabel.value, dongFilter.value].filter(Boolean).join(' '));
 // ===== 웹 요약 — 앱 매매수요(① 수치 · ② 지표)와 같은 칸 · 같은 연계 =====
@@ -344,10 +346,10 @@ const dmResults = computed(() => {
   const unitsPct = (x: number, needsListings: boolean) => (waiting && (!needsListings || v.listings > 0) ? '받는 중' : pct(x));
   return [
     // 가장 중요한 지표(내놓으면 팔리나)를 맨 앞에, 짝(같은 뜻을 개월로)인 소진기간을 바로 옆에 — 소화율 → 소진기간 → 회전율 → 부담률
-    { id: 'absorb' as DmId, metric: 'absorb' as const, label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', kindWhat.value, kind.value === 'apt'), plain: DEMAND_PLAIN.absorb },
-    { id: 'clear' as DmId, metric: 'clear' as const, label: '매물 소화기간', value: v.clearMonths > 0 ? `${dec1(v.clearMonths)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', kindWhat.value, kind.value === 'apt'), plain: DEMAND_PLAIN.clear },
-    { id: 'turn' as DmId, metric: 'turnover' as const, label: '거래 회전율', value: unitsPct(v.turnover, false), grade: v.grades.turnover, tip: demandTip('turnover', kindWhat.value, kind.value === 'apt'), plain: DEMAND_PLAIN.turnover },
-    { id: 'burden' as DmId, metric: 'burden' as const, label: '매물율', value: unitsPct(v.burden, true), grade: v.grades.burden, tip: demandTip('burden', kindWhat.value, kind.value === 'apt'), plain: DEMAND_PLAIN.burden },
+    { id: 'absorb' as DmId, metric: 'absorb' as const, label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.absorb },
+    { id: 'clear' as DmId, metric: 'clear' as const, label: '매물 소화기간', value: v.clearMonths > 0 ? `${dec1(v.clearMonths)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.clear },
+    { id: 'turn' as DmId, metric: 'turnover' as const, label: '거래 회전율', value: unitsPct(v.turnover, false), grade: v.grades.turnover, tip: demandTip('turnover', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.turnover },
+    { id: 'burden' as DmId, metric: 'burden' as const, label: '매물율', value: unitsPct(v.burden, true), grade: v.grades.burden, tip: demandTip('burden', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.burden },
   ];
 });
 const areaText = (n: number) => (n > 0 ? dec1(n) : '-');
