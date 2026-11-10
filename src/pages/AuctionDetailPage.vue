@@ -8423,11 +8423,15 @@ const goBack = () => router.back();
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V10M9 21V4M15 21v-7M21 21v-11"/></svg>매매수요 조사</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('demand') }]" alt="" />
           </header>
-          <div v-if="!isCollapsed('demand')" class="adp-dm-body">
+          <!-- 웹 · 아파트 손품조사(cmpOn) — 보이는 순서: 실사용자 → 전세 칸 줄 → 단지 입지비교 → 입지/개별성 → 지역 수요분석 → 단지 수요분석(2026-11-11).
+               테두리 규칙이 앞뒤 형제(+)를 보므로 마크업 순서는 그대로 두고 flex order 로만 바꾼다 -->
+          <div v-if="!isCollapsed('demand')" :class="['adp-dm-body', { 'cmp-order': cmpOn }]">
             <!-- 1. 수요분석 — 손품분석에서는 지역분석 수요분석(수요분석 상자 · 동 표)이 대신한다(slot 'son-demand') -->
             <!-- 매매수요 조사 맨 위 — 선정물건 면적 · 룸수 · 세대구성 · 입지조건(웹 · 아파트, 2026-11-11). 룸수를 고르면 아래 단지 입지비교 조건 · 등수가 같이 바뀐다 -->
-              <div v-if="cmpOn" class="cmp-persona top">
-                <b class="ttl">실사용자</b>
+              <div v-if="cmpOn" class="cmp-persona top o-persona">
+                <!-- 이름 — 사람 표식 + '누구한테 팔까?'(이 집을 살 · 살 사람이 누구인지 정하는 줄) -->
+                <b class="ttl"><i class="ttl-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6" /><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6" /></svg></i>실사용자<small>누구한테 팔까?</small></b>
+                <div class="inner">
                 <!-- 칸마다 이름 + 회색 상자(값), 칸 사이 세로 칸막이. 룸수만 고르는 칸(고른 것은 검정 굵게) — 글 크기 14로 같게(2026-11-11) -->
                 <span class="grp"><span class="k">면적<small>공급(전용)</small></span><span class="val">{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2 || supMyArea) }}</span></span>
                 <i class="sep" aria-hidden="true" />
@@ -8438,8 +8442,10 @@ const goBack = () => router.back();
                 <i class="sep" aria-hidden="true" />
                 <span class="grp"><span class="k">입지조건</span><span class="val stack"><span v-for="t in CMP_COND_ALL" :key="t" :class="{ on: t === (cmpConds.join(' · ') || '룸수를 고르세요'), ph: t === '룸수를 고르세요' }" :aria-hidden="t !== (cmpConds.join(' · ') || '룸수를 고르세요')">{{ t }}</span></span></span>
                 <button type="button" :class="['cmp-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 고친 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동값으로</button>
+                </div>
               </div>
-            <slot v-if="sonpumMode" name="son-demand" />
+            <!-- 지역 수요분석(손품조사가 slot 으로 넣는다) — 순서를 정하려고 이 화면의 상자로 감싼다(slot 내용엔 이 화면 스타일이 닿지 않는다) -->
+            <div v-if="sonpumMode" class="o-demand"><slot name="son-demand" /></div>
             <template v-if="!sonpumMode">
             <div class="adp-dm-head">
               <strong class="adp-dm-title">1. <span class="adp-dm-area">{{ surveyAreaLabel }}</span> 수요분석</strong>
@@ -8657,7 +8663,7 @@ const goBack = () => router.back();
 
             <!-- 웹 단지 수요분석 — 단지 수급(2026-11-10 시험, 웹만). 위 동 수요분석 표 바로 아래에 붙여 둘을 한 묶음으로(입지/개별성 위). 위 수요분석(AdminRegionDemandPage)의 ① 기초수치 · ② 수요지표와 같은 틀 · 글자 · 칸 크기 -->
             <!-- 아파트만 — 빌라는 단지 개념이 없다 -->
-            <section v-if="webEmbed && isApartment" class="adp-dm-block boxed sup-dm">
+            <section v-if="webEmbed && isApartment" class="adp-dm-block boxed sup-dm o-sup">
               <p class="sup-scope"><span class="area">{{ supName || '단지' }}</span> 수요분석</p>
               <p class="sup-head">① 기초수치</p>
               <div class="sup-row">
@@ -8730,7 +8736,7 @@ const goBack = () => router.back();
               </div>
             </section>
 
-            <div class="adp-dm-head sec2">
+            <div class="adp-dm-head sec2 o-indh">
               <strong class="adp-dm-title">{{ sonpumMode ? '' : '2. ' }}입지/개별성<small>(구역내등수)</small></strong>
             </div>
 
@@ -8892,8 +8898,8 @@ const goBack = () => router.back();
 
             </div>
 
-            <!-- ② 개별성 분석 (웹은 ③) -->
-            <div class="adp-dm-block boxed">
+            <!-- ② 개별성 분석 (웹 · 아파트 손품조사는 ①) -->
+            <div class="adp-dm-block boxed o-ind">
             <div class="adp-dm-sub">
               {{ cmpOn ? '①' : '②' }} 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
               <button v-if="!editingSurvey.individuality" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
@@ -9114,7 +9120,7 @@ const goBack = () => router.back();
           </div>
 
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
-            <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box">
+            <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
               <div class="cmp-est-h"><h3>{{ cmpEst?.name ?? '단지' }} {{ cmpKind }}가</h3>
                 <span class="cmp-est-desc">최근 {{ cmpYears * 12 }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 같은 평형 {{ cmpKind }} 실거래 · 아래 표나 지도에서 단지를 고르면 바뀝니다</span>
               </div>
@@ -9132,9 +9138,9 @@ const goBack = () => router.back();
             </section>
 
             <!-- ③ 단지 입지비교 — 웹 · 아파트만(2026-11-10 시안 그대로). 같은 동 단지를 내 물건과 같은 입지조건 · 같은 규칙으로 매기고 평균 전세가 · 매매가를 옆에 -->
-            <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box">
+            <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box o-cmp">
               <p class="sup-scope"><span class="area">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span> 단지 입지비교</p>
-              <p class="sup-head">② 단지 입지비교 <small class="cmp-sub">선정물건과 같은 입지조건 · 같은 규칙으로 매긴 입지등수, 평균 전세가 · 매매가는 단지마다 선정물건 전용면적과 가장 가까운 평형의 최근 12개월</small></p>
+              <p class="sup-head"><small class="cmp-sub cmp-sub0">선정물건과 같은 입지조건 · 같은 규칙으로 매긴 입지등수, 평균 전세가 · 매매가는 단지마다 선정물건 전용면적과 가장 가까운 평형의 최근 12개월</small></p>
 
               <!-- 지도 — 시세분석 지도와 같은 도구 막대(주변 · 로드뷰 …) · 전체화면. 전체화면이면 body 로 옮겨 화면을 채우고 오른쪽에 단지 목록 -->
               <div class="cmp-map-slot">
@@ -11797,8 +11803,22 @@ tr.tone-take { background: #fff5f5; }
 /* 면적 · 룸수 · 세대구성 · 입지조건 줄 — 단지 입지비교 머리(예전 ① 실사용자 + 입지등수에서 옮김). 이름(회색) + 회색 상자 값(검정 굵게), 칸 사이 세로 칸막이 */
 .cmp-persona { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 12px; padding: 8px 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-size: 14px; }
 .cmp-persona .grp { display: inline-flex; align-items: center; gap: 8px; }
-.cmp-persona .ttl { flex: 0 0 100%; font-size: 14px; font-weight: 700; color: #111827; }   /* 줄 이름 — 면적 위(2026-11-11) */
-.cmp-persona.top { margin: 4px 0 10px; padding: 10px 14px; border-color: #e3e8f0; border-radius: 10px; }   /* 매매수요 조사 맨 위 한 줄 */
+.cmp-persona .ttl { flex: 0 0 100%; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #111827; }   /* 줄 이름 — 면적 위(2026-11-11) */
+.cmp-persona .ttl-ic { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #eef2ff; color: #2b6df3; }
+.cmp-persona .ttl small { margin-left: 4px; font-size: 12.5px; font-weight: 400; color: #6b7280; }
+/* 면적 ~ 자동값으로 — 안쪽 상자 하나로 묶는다 */
+.cmp-persona .inner { flex: 0 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; }
+/* 웹 · 아파트 손품조사 보이는 순서(마크업 순서는 그대로) */
+.adp-dm-body.cmp-order { display: flex; flex-direction: column; }
+.adp-dm-body.cmp-order > * { order: 10; }
+.adp-dm-body.cmp-order > .o-persona { order: 1; }
+.adp-dm-body.cmp-order > .o-est { order: 2; }
+.adp-dm-body.cmp-order > .o-cmp { order: 3; }
+.adp-dm-body.cmp-order > .o-indh { order: 4; }
+.adp-dm-body.cmp-order > .o-ind { order: 5; }
+.adp-dm-body.cmp-order > .o-demand { order: 6; margin-top: 10px; }
+.adp-dm-body.cmp-order > .o-sup { order: 7; }
+.cmp-persona.top { margin: 4px 0 10px; padding: 10px 14px; border-color: #e3e8f0; border-radius: 10px; background: #f7f9fc; }   /* 매매수요 조사 맨 위 — 바깥 상자(옅은 바탕) 안에 이름 줄 + 안쪽 상자 */
 .cmp-persona .k { font-size: 14px; font-weight: 700; color: #6b7280; white-space: nowrap; }
 .cmp-persona .k small { margin-left: 2px; font-size: 12px; font-weight: 400; }
 .cmp-persona .val { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 6px; background: #f3f5f9; font-size: 14px; font-weight: 700; color: #111827; white-space: nowrap; }
@@ -11848,6 +11868,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .adp-dm-body > .adp-dm-block.boxed.cmp-box { margin-top: 10px; border: 1px solid #e3e8f0; border-radius: 10px; padding: 14px; background: #fff; }
 .adp-dm-body > .adp-dm-block:has(+ .cmp-box) { border-bottom: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; padding-bottom: 12px; }   /* 개별성 분석이 단락 끝 — 아래 테두리 */
 .cmp-sub { margin-left: 6px; font-size: 12px; font-weight: 400; color: #6b7280; }
+.cmp-sub.cmp-sub0 { margin-left: 0; }   /* 단지 입지비교가 입지/개별성 위로 올라가 번호(②)는 뺐다 — 제목은 위 칩 줄 */
 .cmp-map { position: relative; z-index: 0; isolation: isolate; border: 1px solid #e3e8f0; border-radius: 10px; overflow: hidden; background: #eef2f6; }   /* 지도 안 z-index 를 이 상자에 가둔다(시세분석 .map 과 같게) */
 .cmp-map-in { height: 620px; }   /* 시세분석 지도(SonpumPricePage .map-in)와 같은 높이 · 둥글기(2026-11-10) */
 .cmp-map-slot { margin: 0 -8px 6px; }   /* 상자 안쪽 여백이 시세분석 카드보다 8px 넓어 — 지도 폭을 시세분석 지도와 같게 */
