@@ -8443,12 +8443,8 @@ const goBack = () => router.back();
             </div>
 
             </template>
-            <div class="adp-dm-head sec2">
-              <strong class="adp-dm-title">{{ sonpumMode ? '' : '2. ' }}입지/개별성<small>(구역내등수)</small></strong>
-            </div>
 
-
-            <!-- 웹 ① 단지 수요분석 — 단지 수급(2026-11-10 시험, 웹만). 위 수요분석(AdminRegionDemandPage)의 ① 기초수치 · ② 수요지표와 같은 틀 · 글자 · 칸 크기 -->
+            <!-- 웹 단지 수요분석 — 단지 수급(2026-11-10 시험, 웹만). 위 동 수요분석 표 바로 아래에 붙여 둘을 한 묶음으로(입지/개별성 위). 위 수요분석(AdminRegionDemandPage)의 ① 기초수치 · ② 수요지표와 같은 틀 · 글자 · 칸 크기 -->
             <!-- 아파트만 — 빌라는 단지 개념이 없다 -->
             <section v-if="webEmbed && isApartment" class="adp-dm-block boxed sup-dm">
               <p class="sup-scope"><span class="area">{{ supName || '이' }}</span> 단지 수요분석</p>
@@ -8522,9 +8518,14 @@ const goBack = () => router.back();
               </div>
             </section>
 
-            <!-- ① 실사용자 + 입지등수 (웹은 ②) -->
+            <div class="adp-dm-head sec2">
+              <strong class="adp-dm-title">{{ sonpumMode ? '' : '2. ' }}입지/개별성<small>(구역내등수)</small></strong>
+            </div>
+
+
+            <!-- ① 실사용자 + 입지등수 -->
             <div class="adp-dm-block boxed">
-            <div class="adp-dm-sub">{{ webEmbed && isApartment ? '②' : '①' }} 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>초기화</button></div>
+            <div class="adp-dm-sub">① 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>초기화</button></div>
             <table :class="['adp-table adp-ruser-table', { tight: !webEmbed }]">
               <colgroup v-if="webEmbed">
               <col style="width: 20%" /><col style="width: 15%" /><col style="width: 21%" /><col style="width: 17%" /><col style="width: 12%" /><col style="width: 15%" />
@@ -8682,7 +8683,7 @@ const goBack = () => router.back();
             <!-- ② 개별성 분석 (웹은 ③) -->
             <div class="adp-dm-block boxed">
             <div class="adp-dm-sub">
-              {{ webEmbed && isApartment ? '③' : '②' }} 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
+              ② 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
               <button v-if="!editingSurvey.individuality" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
             </div>
@@ -11435,9 +11436,9 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-block .adp-dm-result > em { display: inline-block; min-width: 14px; text-align: left; }
 .adp-dm-block .adp-dm-judge { flex: 0 0 34px; text-align: right; }
 /* 웹 단지 시장분석 — 수요분석(AdminRegionDemandPage .adm-nav-scope · .dm-*)과 같은 값 */
-.sup-dm { padding: 14px 16px 12px; }
+.sup-dm { padding: 14px 16px 12px; margin-top: 10px; }   /* 위 동 수요분석 상자와 띄운다 */
 .sup-scope { margin: 0 0 14px; font-size: 15px; font-weight: 800; color: #111827; }   /* 위 "○○동 수요분석"(웹에서 15px)과 같게 */
-.sup-scope .area { color: #2b6df3; }
+.sup-scope .area { display: inline-flex; align-items: center; margin-right: 4px; padding: 3px 11px; border: 1px solid rgba(43, 109, 243, .28); border-radius: 999px; background: rgba(43, 109, 243, .09); color: #2b6df3; line-height: 1.3; }   /* 단지명 칩 — 위 동 수요분석 .scope-chip 과 같은 꼴 */
 .sup-head { margin: 0 0 8px 2px; font-size: 14px; font-weight: 700; color: #111827; }
 .sup-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
 .sup-cell { min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; transition: background .12s, border-color .12s; }
@@ -11459,7 +11460,7 @@ tr.tone-take { background: #fff5f5; }
 /* 단지 종합 의견 — 위 동 수요분석 .dm-opinion 과 같은 꼴 */
 .sup-opinion { display: grid; gap: 4px; margin: 4px 0 12px; padding: 14px 18px; border: 1px solid #e3e8f0; border-radius: 12px; background: #fff; }
 .sup-opinion b { font-size: 15px; font-weight: 800; color: #111827; }
-.sup-opinion span { font-size: 13px; color: #6b7280; }
+.sup-opinion span { font-size: 13px; color: #111827; }   /* 의견 글은 검정(2026-11-10) */
 .sup-opinion .wait { color: #9ca3af; }
 /* 단지 표 — 위 동 수요분석 표(AdminRegionDemandPage .adm-table)를 그대로 옮김 */
 .sup-tbl { margin-top: 12px; }

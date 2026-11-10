@@ -62,10 +62,14 @@ export const demandOpinionOf = (absorb: number, turnover: number, ready: boolean
   const clearMonths = absorb > 0 ? 1200 / absorb : Infinity;
   const lowListing = clearMonths <= DEMAND_GRADE_RULES.clear.b;
   const highDeal = turnover >= turnoverLineOf(apt);
-  if (lowListing && highDeal) return { level: 1, title: '저매물 / 고거래', text: '매물은 적고 거래는 활발한 구간입니다.' };
-  if (!lowListing && highDeal) return { level: 2, title: '고매물 / 고거래', text: '매물은 많지만 거래도 활발한 구간입니다.' };
-  if (lowListing) return { level: 3, title: '저매물 / 저거래', text: '매물은 적지만 거래도 둔한 구간입니다.' };
-  return { level: 4, title: '고매물 / 저거래', text: '매물은 쌓이고 거래도 둔한 구간입니다.' };
+  // 거래가 얼마나 활발한지 한 낱말 — 아파트 3~5% 다소 · 5~8% · 8%↑ 매우(ⓘ 단계와 같다), 빌라 1.5~3% 다소 · 3%↑
+  const lively = apt
+    ? (turnover >= APT_TURNOVER_HOT ? '매우 활발' : turnover >= 5 ? '활발' : '다소 활발')
+    : (turnover >= DEMAND_GRADE_RULES.turnover.a ? '활발' : '다소 활발');
+  if (lowListing && highDeal) return { level: 1, title: '저매물 / 고거래', text: `매물은 적고 거래는 ${lively}합니다.` };
+  if (!lowListing && highDeal) return { level: 2, title: '고매물 / 고거래', text: `매물은 많지만 거래도 ${lively}합니다.` };
+  if (lowListing) return { level: 3, title: '저매물 / 저거래', text: '매물은 적지만 거래도 둔합니다.' };
+  return { level: 4, title: '고매물 / 저거래', text: '매물은 쌓이고 거래도 둔합니다.' };
 };
 
 /** A·B 는 적합, C 는 부적합 */

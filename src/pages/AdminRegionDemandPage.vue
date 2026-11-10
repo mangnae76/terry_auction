@@ -290,6 +290,8 @@ const kindWhat = computed(() => (kind.value === 'apt' ? '아파트' : kind.value
 const tipScope = computed(() => `${dongFilter.value || dmArea.value} 전체 ${kindWhat.value}`);
 /** 제목 — '인천광역시 서해구' (읍면동을 고르면 '… 검암동') 뒤에 '수요분석' */
 const dmArea = computed(() => [loadedLabel.value, dongFilter.value].filter(Boolean).join(' '));
+/** 제목 칩 — 시 · 도는 빼고 시군구 · 동만('경기도 안산시 상록구 성포동' → '안산시 상록구 성포동', 2026-11-10) */
+const dmAreaShort = computed(() => dmArea.value.replace(/^\S+(특별자치시|특별자치도|특별시|광역시|도)\s+(?=\S)/, ''));
 // ===== 웹 요약 — 앱 매매수요(① 수치 · ② 지표)와 같은 칸 · 같은 연계 =====
 type DmId = 'deal' | 'units' | 'listings' | 'turn' | 'absorb' | 'burden' | 'clear';
 /** 칸을 짚으면 켜지는 칸 — 앱 AuctionDetailPage 의 DM_LIT_LINKS 와 같다 */
@@ -594,7 +596,7 @@ const downloadCsv = () => {
       <!-- 앱 매매수요와 같은 짜임 — 위 ① 수치(거래량 · 세대수 · 매물수) 3칸, 아래 ② 지표 4칸. 두 줄은 시작과 끝이 같다.
            칸에 마우스를 대면 그 값과 이어진 칸이 같이 빨갛게 켜진다(앱 DM_LIT_LINKS 와 같은 짝) -->
       <section v-if="webEmbed && rows.length > 0" class="adm-nav dm">
-        <p class="adm-nav-scope"><span><span class="area">{{ dmArea }}</span> 수요분석</span><SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
+        <p class="adm-nav-scope"><span><span class="area scope-chip">{{ dmAreaShort }}</span> 수요분석</span><SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
         <p class="dm-block-head">① 기초수치</p>
         <div class="dm-row c3">
           <div v-for="c in dmInputs" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
@@ -802,6 +804,8 @@ const downloadCsv = () => {
 /* 웹 수요분석 요약 — 제목은 지역(파랑) + '수요분석'(검정). 위 3칸 · 아래 4칸, 두 줄 시작과 끝을 맞춘다 */
 .adm-nav.dm .adm-nav-scope { color: #111827; }
 .adm-nav.dm .adm-nav-scope .area { color: #2b6df3; }
+/* 지역 · 단지 이름 칩 — 단지 수요분석(.sup-scope .area)과 같은 꼴 */
+.scope-chip { display: inline-flex; align-items: center; margin-right: 4px; padding: 3px 11px; border: 1px solid rgba(43, 109, 243, .28); border-radius: 999px; background: rgba(43, 109, 243, .09); line-height: 1.3; }
 .dm-row { display: grid; gap: 12px; }
 .dm-row.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 16px; }
 /* 두 줄 제목 — 앱 매매수요의 ① 기초수치 · ② 수요지표와 같은 이름 */
@@ -833,7 +837,7 @@ const downloadCsv = () => {
 /* 종합 의견 — 수요지표 아래 한 줄 상자(사용자 시안) */
 .dm-opinion { display: grid; gap: 4px; margin-top: 12px; padding: 14px 18px; border: 1px solid #e3e8f0; border-radius: 12px; background: #fff; }
 .dm-opinion b { font-size: 15px; font-weight: 800; color: #111827; }
-.dm-opinion span { font-size: 13px; color: #6b7280; }
+.dm-opinion span { font-size: 13px; color: #111827; }   /* 의견 글은 검정(2026-11-10) */
 .dm-opinion .wait { color: #9ca3af; }
 /* 합격선 글 — 등급 대신(2026-11-10). 작고 회색, 한 줄 */
 .dm-cell .pass { font-size: 12px; font-weight: 700; color: #6b7280; white-space: nowrap; }
