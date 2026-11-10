@@ -32,7 +32,7 @@ import {
 import { getBuildingFacts } from '../services/buildingFacts';
 import { complexNameOf, totalParkingOf } from '../services/aptComplex';
 import { getComplexAreas, myGroupOf, supplyRowsOf, areaUnitsOf, type ComplexAreas } from '../services/complexAreas';
-import { DEMAND_PLAIN, demandFitText, demandGradeOf, type DemandMetric } from '../services/demandGrade';
+import { DEMAND_PLAIN, demandFitText, demandGradeOf, demandTip, type DemandMetric } from '../services/demandGrade';
 import { openNaverComplexListing, openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -47,6 +47,7 @@ import PhotoCountMark from '../components/PhotoCountMark.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 import UnitText from '../components/UnitText.vue';
+import InfoTip from '../components/InfoTip.vue';
 import DateWheelPicker from '../components/DateWheelPicker.vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import {
@@ -3078,6 +3079,13 @@ const supStats = computed(() => {
     row('burden', '매물 부담률', DEMAND_PLAIN.burden, burden > 0 ? `${burden.toFixed(1)}%` : '-', burden > 0, burden),
   ];
 });
+/** 단지 수요분석 기초수치 ⓘ — 값이 어디서 왔는지 */
+const SUP_TIPS: Record<'deal' | 'units' | 'areaUnits' | 'listings', Array<[string, string]>> = {
+  deal: [['출처', '국토부 아파트 매매 실거래 — 이 단지(같은 지번)'], ['기간', '조회일부터 지난 12개월'], ['셈', '정상 + 직거래, 계약해제 제외'], ['해당 평형', '이 호실과 전용면적이 같은 거래']],
+  units: [['출처', 'PDF 단지정보 · 건축물대장 세대수']],
+  areaUnits: [['출처', '건축물대장 전유공용면적'], ['기준', '이 호실과 공급면적이 같은 세대']],
+  listings: [['입력', '네이버 부동산에서 이 단지 매매 매물을 세어 적는다'], ['단추', '네이버매물 — 이 단지를 가운데 둔 매매 지도']],
+};
 const openSupNaver = () => { const addr = auction.value?.address; if (addr) void openNaverComplexListing(addr, 'apt'); };
 const setSupVal = (key: string, v: string | number) => setSumVal(key, String(supNum(String(v)) || ''));
 
@@ -3652,8 +3660,9 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
   burden: { arrow: '87%', rows: [
     ['공식', '총 매물수 ÷ 총 세대수 × 100'],
     ['의미', '연립·다세대 중 몇 %가 매물로 나와 있나'],
-    ['기준', 'A 3%↓ · B 3~5% · C 5%↑'],
+    ['기준', 'A 3%↓ · B 3~5% · C 5% 초과'],
     ['적정', '3% 이하 ↓ (낮을수록 좋다)'],
+    ['위험', '5%가 넘으면 매물이 쌓였다 — 부적합'],
   ] },
   clear: { arrow: '37%', rows: [
     ['공식', '총 매물수 ÷ 연평균 거래량 (×12 = 달 수)'],
@@ -3673,7 +3682,7 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
     ['', '3~5% 비교적 활발 · 5%↑ 상당히 활발'],
   ] },
   gBurden: { arrow: '37%', rows: [
-    ['기준', 'A 3%↓ · B 3~5% · C 5~10% · D 10%↑'],
+    ['기준', 'A 3%↓ · B 3~5% · C 5% 초과(부적합)'],
     ['의미', '매물이 적을수록 경쟁이 덜하다'],
   ] },
   gClear: { arrow: '62%', rows: [
@@ -8393,23 +8402,23 @@ const goBack = () => router.back();
               <p class="sup-head">① 기초수치</p>
               <div class="sup-row">
                 <div class="sup-cell">
-                  <div class="sup-h">12개월 거래량</div>
+                  <div class="sup-h"><InfoTip :rows="SUP_TIPS.deal" under="box">12개월 거래량</InfoTip></div>
                   <!-- 이 단지(같은 지번) 국토부 매매 자동값 — 정상 + 직거래, 계약해제 제외, 조회일부터 12개월 -->
                   <!-- 총(단지 전체) | 해당(이 평형) — 위 수요분석 총 거래량 '연 | 월'과 같은 꼴. 지표는 해당 평형으로 계산 -->
                   <div class="sup-b"><b v-if="!supLoaded" class="wait">받는 중</b><b v-else><em class="sup-pre">총</em>{{ supDeals.length.toLocaleString('ko-KR') }}<template v-if="supAreaUnits"><em class="sup-bar">|</em><em class="sup-pre">해당 평형</em>{{ supDealCount.toLocaleString('ko-KR') }}</template><em class="sup-u">건</em></b></div>
                 </div>
                 <div class="sup-cell">
-                  <div class="sup-h">총 세대수</div>
+                  <div class="sup-h"><InfoTip :rows="SUP_TIPS.units" under="box">총 세대수</InfoTip></div>
                   <!-- 자동값(PDF 단지정보 · 건축물대장) — 손으로 적지 않는다 -->
                   <div class="sup-b"><b><template v-if="supHouseholds">{{ supHouseholds.toLocaleString('ko-KR') }}<em class="sup-u">세대</em></template><template v-else>-</template></b></div>
                 </div>
                 <div class="sup-cell">
-                  <div class="sup-h">해당 세대수</div>
+                  <div class="sup-h"><InfoTip :rows="SUP_TIPS.areaUnits" under="box">해당 세대수</InfoTip></div>
                   <!-- 자동값 — 이 호실과 공급면적이 같은 세대(건축물대장) -->
                   <div class="sup-b"><b><template v-if="supAreaUnits">{{ supAreaUnits.toLocaleString('ko-KR') }}<em class="sup-u">세대</em></template><template v-else>-</template></b></div>
                 </div>
                 <div class="sup-cell">
-                  <div class="sup-h">현재 매물수</div>
+                  <div class="sup-h"><InfoTip :rows="SUP_TIPS.listings" under="box">현재 매물수</InfoTip></div>
                   <!-- 위 총 매물수의 '네이버매물'과 같은 단추 — 이 단지를 가운데 둔 네이버 부동산 매매 지도 -->
                   <div class="sup-b"><input class="sup-in" inputmode="numeric" placeholder="입력" aria-label="현재 매물수" :value="supListings ? supListings.toLocaleString('ko-KR') : ''" @change="setSupVal('sup.listings', ($event.target as HTMLInputElement).value)" /><button type="button" class="sup-nv" :title="`${supName || '이 단지'} — 네이버 부동산 매매 매물`" @click="openSupNaver">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></div>
                 </div>
@@ -8417,7 +8426,8 @@ const goBack = () => router.back();
               <p class="sup-head">② 수요지표</p>
               <div class="sup-row">
                 <div v-for="c in supStats" :key="c.id" class="sup-cell">
-                  <div class="sup-h">{{ c.label }}<em class="sup-plain">{{ c.plain }}</em></div>
+                  <!-- ⓘ — 위 동 수요분석과 같은 말풍선(services/demandGrade) -->
+                  <div class="sup-h"><InfoTip :rows="demandTip(c.id, supAreaUnits ? '이 평형' : '이 단지')" under="box">{{ c.label }}</InfoTip><em class="sup-plain">{{ c.plain }}</em></div>
                   <div class="sup-b"><b><UnitText :text="c.value" /><template v-if="c.grade !== '-'"><em class="sup-bar">|</em><span :class="['sup-gd', `g-${c.grade}`]">{{ c.grade }}</span><span :class="['sup-fit', { bad: c.fit === '부적합' }]">/ {{ c.fit }}</span></template></b></div>
                 </div>
               </div>
