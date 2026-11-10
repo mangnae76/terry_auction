@@ -66,10 +66,13 @@ const loadDistrict = async (lawdCd5: string, propertyType: CasePropertyType, yea
   // ① 이 브라우저 → ② DB(조각으로 나눠 둔 것, 다른 기기 · 다른 사람이 받아 둔 것) → ③ 국토부에서 새로(194번쯤). 하루 지나면 새로
   // 대문 숫자(모아 둔 실거래 · 단지) — 불러온 시군구를 하루 한 번 집계에 더한다(services/landingStats)
   const statKey = cacheKey(lawdCd5, propertyType);
+  // 전월세를 못 받은 채 저장된 것(rentMissed — 키 미등록 403 때)은 다시 받는다. 매매 달은 달 문서(cacheTradeMonth)에서 바로 와 국토부를 거의 안 부른다.
+  // 예전엔 하루 동안 그대로 써서, 전월세 키가 풀린 뒤에도 상록구 아파트 전월세가 0건으로 보였다(2026-11-10)
+  const whole = (v: Payload | null) => !!v && !(v.rentMissed ?? 0);
   const local = await browserCacheGet<Payload>(`place_${key}`, CACHE_TTL.place);
-  if (local) { void noteDistrictStats(statKey, local); return local; }
+  if (whole(local)) { void noteDistrictStats(statKey, local!); return local!; }
   const shared = await readChunkedCache<Payload>('cachePlaceHistoryV2', key, CACHE_TTL.place);
-  if (shared) { void browserCachePut(`place_${key}`, shared); void noteDistrictStats(statKey, shared); return shared; }
+  if (whole(shared)) { void browserCachePut(`place_${key}`, shared); void noteDistrictStats(statKey, shared!); return shared!; }
   const fresh = await fetchPlaceHistory({ lawdCd5, propertyType, years });
   if (fresh.missedMonths === 0) void noteDistrictStats(statKey, fresh);
   // 매매를 몇 달이라도 못 받았으면 남기지 않는다 — 덜 받은 값이 하루 동안 굳는다.
