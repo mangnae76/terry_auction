@@ -32,7 +32,7 @@ import {
 import { getBuildingFacts } from '../services/buildingFacts';
 import { complexNameOf, totalParkingOf } from '../services/aptComplex';
 import { getComplexAreas, supplyRowsOf, areaUnitsOf, sameExclusiveCountOf, type ComplexAreas } from '../services/complexAreas';
-import { DEMAND_PLAIN, dec1, demandFitText, demandGradeOf, demandOpinionOf, demandPassText, demandTip, type DemandMetric } from '../services/demandGrade';
+import { DEMAND_PLAIN, dec1, demandFitText, demandGradeOf, demandLineText, demandOpinionOf, demandPassOf, demandPassText, demandTip, type DemandMetric } from '../services/demandGrade';
 import { openNaverComplexListing, openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -3070,7 +3070,8 @@ const supStats = computed(() => {
   const burden = base > 0 && listings > 0 ? (listings / base) * 100 : 0;
   const row = (id: DemandMetric, label: string, plain: string, value: string, ok: boolean, n: number) => {
     const grade = demandGradeOf(id, ok, n);
-    return { id, label, plain, value, grade, fit: demandFitText(grade) };
+    const pass = ok ? (demandPassOf(id, n, true) ? 'ok' : 'ng') : '';   // 합격선 기호 ✓ · ✕ — 값이 없으면 기호 없이
+    return { id, label, plain, value, grade, fit: demandFitText(grade), pass };
   };
   // 중요한 것부터 — 종합 의견을 정하는 거래 회전율 · 매물율을 앞에, 그다음 짝인 매물 소화율 · 소화기간(2026-11-10)
   return [
@@ -3081,7 +3082,7 @@ const supStats = computed(() => {
 });
 /** 단지 수요분석 기초수치 ⓘ — 값이 어디서 왔는지 */
 const SUP_TIPS: Record<'deal' | 'units' | 'areaUnits' | 'listings', Array<[string, string]>> = {
-  deal: [['출처', '국토부 아파트 매매 실거래 — 이 단지(같은 지번)'], ['기간', '조회일부터 지난 12개월'], ['셈', '정상 + 직거래, 계약해제 제외'], ['해당평형', '이 호실과 전용면적이 같은 거래']],
+  deal: [['출처', '국토부 아파트 매매 실거래 — 이 단지(같은 지번)'], ['기간', '조회일부터 지난 12개월'], ['계산', '정상 + 직거래, 계약해제 제외'], ['해당평형', '이 호실과 전용면적이 같은 거래']],
   units: [['출처', 'PDF 단지정보 · 건축물대장 세대수']],
   areaUnits: [['출처', '건축물대장 전유공용면적'], ['기준', '이 호실과 전용면적이 같은 세대(네이버 평형과 같은 묶음)']],
   listings: [['입력', '네이버 부동산에서 이 평형(해당평형) 매매 매물을 세어 적는다'], ['단추', '네이버매물 — 이 단지를 가운데 둔 매매 지도']],
@@ -8478,7 +8479,7 @@ const goBack = () => router.back();
                 <div v-for="c in supStats" :key="c.id" :class="['sup-cell', { lit: supLit(c.id) }]" @mouseenter="supLitKey = c.id" @mouseleave="supLitKey = ''">
                   <!-- ⓘ — 위 동 수요분석과 같은 말풍선(services/demandGrade) -->
                   <div class="sup-h"><InfoTip :rows="supTip(c.id)" under="box">{{ c.label }}</InfoTip><em class="sup-plain">{{ c.plain }}</em></div>
-                  <div class="sup-b"><b><UnitText :text="c.value" /><em class="sup-bar">|</em><span class="sup-pass">{{ demandPassText(c.id, true) }}</span></b></div>
+                  <div class="sup-b"><b><UnitText :text="c.value" /><em class="sup-bar">|</em><span :class="['sup-pass', c.pass]" :title="demandPassText(c.id, true)"><i v-if="c.pass" class="mk">{{ c.pass === 'ok' ? '✓' : '✕' }}</i>{{ demandLineText(c.id, true) }}</span></b></div>
                 </div>
               </div>
               <!-- 종합 의견 — 위 동 수요분석과 같은 상자 -->
@@ -8491,6 +8492,7 @@ const goBack = () => router.back();
                 <template v-else>수요지표는 단지 전체 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 총 세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 계산합니다. 계산식 · 합격선은 위 동 수요분석과 같습니다.</template>
               </p>
               <!-- 위 동 수요분석 표와 같은 칸 · 꾸밈(son-demand 안이라 웹 공통 꾸밈도 같이 받는다). 해당평형 한 줄 -->
+              <p class="sup-head sup-tbl-head">③ 상세수치</p>
               <div class="son-demand sup-tbl">
                 <div class="adm-table-wrap">
                   <table class="adm-table even">
@@ -11469,7 +11471,8 @@ tr.tone-take { background: #fff5f5; }
 .sup-opinion span { font-size: 13px; color: #111827; }   /* 의견 글은 검정(2026-11-10) */
 .sup-opinion .wait { color: #9ca3af; }
 /* 단지 표 — 위 동 수요분석 표(AdminRegionDemandPage .adm-table)를 그대로 옮김 */
-.sup-tbl { margin-top: 12px; }
+.sup-tbl { margin-top: 0; }
+.sup-tbl-head { margin-top: 14px; }
 .sup-tbl .adm-table-wrap { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; overflow: hidden; }
 .sup-tbl .adm-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .sup-tbl .adm-table th, .sup-tbl .adm-table td {
@@ -11536,7 +11539,10 @@ tr.tone-take { background: #fff5f5; }
 .sup-tbl .adm-cell:focus { outline: none; border-color: #2b6df3; }
 .sup-tbl .adm-table td.units { text-align: right; color: #111827; font-weight: 600; }
 .sup-tbl-sub { display: block; font-size: 12px; font-weight: 400; color: #6b7280; }
-.sup-pass { font-size: 12px; font-weight: 700; color: #6b7280; white-space: nowrap; }   /* 합격선 글 — 등급 대신(위 수요분석 .pass 와 같은 꼴) */
+.sup-pass { font-size: 12px; font-weight: 700; color: #6b7280; white-space: nowrap; }   /* 합격선 기호 — 위 수요분석 .pass 와 같은 꼴 */
+.sup-pass.ok { color: #1f7a45; }
+.sup-pass.ng { color: #c22e2e; }
+.sup-pass .mk { margin-right: 3px; font-style: normal; font-weight: 800; }
 .sup-u { margin-left: 2px; font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; }   /* UnitText 단위와 같은 꼴('세대'는 UnitText 단위 목록에 없다) */
 .sup-b b.wait { font-size: 14px; font-weight: 400; color: #9ca3af; }
 .sup-in { width: 110px; height: 34px; box-sizing: border-box; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; padding: 0 10px; text-align: right; font-family: inherit; font-size: 18px; font-weight: 800; color: #2b6df3; }

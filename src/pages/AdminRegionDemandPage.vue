@@ -14,7 +14,7 @@ import { fetchDongUnitCount, peekDongUnitCount } from '../services/dongUnits';
 import { runLimited } from '../utils/runLimited';
 import { openNaverDongListing } from '../services/naverListing';
 import { dealCountTip, type TipRow } from '../services/tipRows';
-import { DEMAND_PLAIN, dec1, demandGradeOf, demandOpinionOf, demandPassText, demandTip, tallyDongUnits } from '../services/demandGrade';
+import { DEMAND_PLAIN, dec1, demandGradeOf, demandLineText, demandOpinionOf, demandPassOf, demandPassText, demandTip, tallyDongUnits } from '../services/demandGrade';
 import InfoTip from '../components/InfoTip.vue';
 import SnapChip from '../components/SnapChip.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
@@ -348,12 +348,15 @@ const dmResults = computed(() => {
   const unitsPct = (x: number, needsListings: boolean) => (waiting && (!needsListings || v.listings > 0) ? '받는 중' : pct(x));
   return [
     // 중요한 것부터 — 종합 의견을 정하는 거래 회전율 · 매물율을 앞에, 그다음 짝인 매물 소화율 · 소화기간(2026-11-10)
-    { id: 'turn' as DmId, metric: 'turnover' as const, label: '거래 회전율', value: unitsPct(v.turnover, false), grade: v.grades.turnover, tip: demandTip('turnover', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.turnover },
-    { id: 'burden' as DmId, metric: 'burden' as const, label: '매물율', value: unitsPct(v.burden, true), grade: v.grades.burden, tip: demandTip('burden', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.burden },
-    { id: 'absorb' as DmId, metric: 'absorb' as const, label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.absorb },
-    { id: 'clear' as DmId, metric: 'clear' as const, label: '매물 소화기간', value: v.clearMonths > 0 ? `${dec1(v.clearMonths)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.clear },
+    { id: 'turn' as DmId, metric: 'turnover' as const, num: v.turnover, label: '거래 회전율', value: unitsPct(v.turnover, false), grade: v.grades.turnover, tip: demandTip('turnover', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.turnover },
+    { id: 'burden' as DmId, metric: 'burden' as const, num: v.burden, label: '매물율', value: unitsPct(v.burden, true), grade: v.grades.burden, tip: demandTip('burden', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.burden },
+    { id: 'absorb' as DmId, metric: 'absorb' as const, num: v.absorb, label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.absorb },
+    { id: 'clear' as DmId, metric: 'clear' as const, num: v.clearMonths, label: '매물 소화기간', value: v.clearMonths > 0 ? `${dec1(v.clearMonths)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.clear },
   ];
 });
+/** 합격 표시 — 값이 없거나('-') 받는 중이면 기호 없이 회색 */
+const passCls = (c: { metric: 'turnover' | 'absorb' | 'burden' | 'clear'; num: number; value: string }) =>
+  (c.value === '-' || c.value === '받는 중' ? '' : demandPassOf(c.metric, c.num, kind.value === 'apt') ? 'ok' : 'ng');
 const areaText = (n: number) => (n > 0 ? dec1(n) : '-');
 /** 건축연수 — 햇수식 N년차(올해 − 평균 건축연도 + 1), 위 navStats.age 와 같은 셈 */
 const ageText = (buildYear: number) => (buildYear > 1800 ? String(buildingAgeOf(Math.round(buildYear))) : '-');
@@ -621,7 +624,7 @@ const downloadCsv = () => {
         <div class="dm-row c4">
           <div v-for="c in dmResults" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
             <div class="dm-head"><InfoTip :rows="c.tip" under="box">{{ c.label }}</InfoTip><em class="dm-plain">{{ c.plain }}</em></div>
-            <div class="dm-body"><b :class="{ wait: c.value === '받는 중' }"><UnitText :text="c.value" /><em class="nbar">|</em><span class="pass">{{ demandPassText(c.metric, kind === 'apt') }}</span></b></div>
+            <div class="dm-body"><b :class="{ wait: c.value === '받는 중' }"><UnitText :text="c.value" /><em class="nbar">|</em><span :class="['pass', passCls(c)]" :title="demandPassText(c.metric, kind === 'apt')"><i v-if="passCls(c)" class="mk">{{ passCls(c) === 'ok' ? '✓' : '✕' }}</i>{{ demandLineText(c.metric, kind === 'apt') }}</span></b></div>
           </div>
         </div>
               <!-- 종합 의견 — 등급 대신 매물율 × 회전율 네 칸 한 줄(2026-11-10). 매물수를 넣어야 나온다 -->
@@ -656,6 +659,7 @@ const downloadCsv = () => {
         </template>
       </div>
 
+      <p v-if="webEmbed && rows.length > 0" class="dm-block-head">③ 상세수치</p>
       <div v-if="rows.length > 0" class="adm-table-wrap">
         <!-- 지역분석 안 탭(embedded)은 시군구 하나만 보므로 '소속 구' 칸은 뺀다 — 모든 줄이 같은 값이다 -->
         <table :class="['adm-table', { even: embedded }]">
@@ -841,6 +845,10 @@ const downloadCsv = () => {
 .dm-opinion .wait { color: #9ca3af; }
 /* 합격선 글 — 등급 대신(2026-11-10). 작고 회색, 한 줄 */
 .dm-cell .pass { font-size: 12px; font-weight: 700; color: #6b7280; white-space: nowrap; }
+/* 합격선 기호 — ✓ 적합(초록) · ✕ 부적합(빨강), 기준은 부등호(2026-11-10) */
+.dm-cell .pass.ok { color: #1f7a45; }
+.dm-cell .pass.ng { color: #c22e2e; }
+.dm-cell .pass .mk { margin-right: 3px; font-style: normal; font-weight: 800; }
 .adm-sum {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   margin: 18px 2px 10px; font-size: 12.5px; color: #6b7280; font-weight: 600;

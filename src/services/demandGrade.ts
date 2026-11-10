@@ -54,6 +54,20 @@ export const DEMAND_PASS_TEXT: Record<DemandMetric, string> = {
 /** 막대 뒤 합격선 글 — 아파트 회전율만 3%(빌라 1.5%) */
 export const demandPassText = (m: DemandMetric, apt = false) => (m === 'turnover' ? `${turnoverLineOf(apt)}% 이상 적합` : DEMAND_PASS_TEXT[m]);
 
+/** 합격선 기호 — 막대 뒤 짧은 표시('≥3%' · '≤5%' · '≥120%' · '≤10개월'). 말로 된 기준은 ⓘ · title 에(2026-11-10) */
+export const demandLineText = (m: DemandMetric, apt = false) => {
+  const R = DEMAND_GRADE_RULES;
+  if (m === 'turnover') return `≥${turnoverLineOf(apt)}%`;
+  if (m === 'clear') return `≤${R.clear.b}개월`;
+  return `${R[m].higher ? '≥' : '≤'}${R[m].b}%`;
+};
+/** 이 값이 합격선을 넘었나 — 기호 옆 ✓(적합) · ✕(부적합) */
+export const demandPassOf = (m: DemandMetric, value: number, apt = false) => {
+  const R = DEMAND_GRADE_RULES[m];
+  const line = m === 'turnover' ? turnoverLineOf(apt) : R.b;
+  return R.higher ? value >= line : value <= line;
+};
+
 /** 종합 의견 — 매물(소화기간 10개월 선) × 거래(회전율 1.5% 선, 아파트 3%) 네 칸. 등급 대신 한 줄(2026-11-10 사용자 시안 'Level 3 · 저매물 / 저거래').
  *  매물이 많고 적음은 세대수가 아니라 팔리는 속도로 본다 — 1년치가 쌓였으면 세대수 대비 적어도 '고매물'(2026-11-10 사용자 결정, 성포동 329건 · 329건).
  *  소화기간 = 1,200 ÷ 소화율 이라 소화율로 받는다(거래 0건이면 소화율 0 → 고매물). 선은 DEMAND_PASS_TEXT 와 같은 합격선. 값이 없으면 null */
@@ -66,10 +80,11 @@ export const demandOpinionOf = (absorb: number, turnover: number, ready: boolean
   const lively = apt
     ? (turnover >= APT_TURNOVER_HOT ? '매우 활발' : turnover >= 5 ? '활발' : '다소 활발')
     : (turnover >= DEMAND_GRADE_RULES.turnover.a ? '활발' : '다소 활발');
-  if (lowListing && highDeal) return { level: 1, title: '저매물 / 고거래', text: `매물은 적고 거래는 ${lively}합니다.` };
-  if (!lowListing && highDeal) return { level: 2, title: '고매물 / 고거래', text: `매물은 많지만 거래도 ${lively}합니다.` };
-  if (lowListing) return { level: 3, title: '저매물 / 저거래', text: '매물은 적지만 거래도 둔합니다.' };
-  return { level: 4, title: '고매물 / 저거래', text: '매물은 쌓이고 거래도 둔합니다.' };
+  // 뒤 한 문장 — 그 구간에서 가격이 어느 쪽으로 가기 쉬운지(단정하지 않는다, 2026-11-10)
+  if (lowListing && highDeal) return { level: 1, title: '저매물 / 고거래', text: `매물은 적고 거래는 ${lively}합니다. 매도자 우위라 가격이 오르기 쉽습니다.` };
+  if (!lowListing && highDeal) return { level: 2, title: '고매물 / 고거래', text: `매물은 많지만 거래도 ${lively}합니다. 균형 구간이라 가격은 보합이기 쉽습니다.` };
+  if (lowListing) return { level: 3, title: '저매물 / 저거래', text: '매물은 적지만 거래도 둔합니다. 관망 구간이라 가격이 정체되기 쉽습니다.' };
+  return { level: 4, title: '고매물 / 저거래', text: '매물은 쌓이고 거래도 둔합니다. 매수자 우위라 가격이 내리기 쉽습니다.' };
 };
 
 /** A·B 는 적합, C 는 부적합 */
