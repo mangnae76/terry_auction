@@ -49,6 +49,8 @@ export interface CaseTradeResult {
   rows: CaseTradeRow[];
   /** 같은 동의 모든 거래 — 유사물건 · 조건분석 평균을 여기서 거른다(국토부를 더 부르지 않는다) */
   dongRows: CaseTradeRow[];
+  /** 시군구 전체 거래 — 단지 입지비교의 반경(500m · 1km) 범위가 동을 넘을 때(2026-11-11) */
+  allRows?: CaseTradeRow[];
   /** 시군구 전체로 받아 둔 거래 수 — 얼마나 큰 자료에서 추렸는지 */
   scanned: number;
   /** 세 번 눌러도 못 받은 달 수 */
@@ -225,6 +227,7 @@ export const analyzeAddress = async (
       ...empty,
       rows: pickHere(rows, { umdNm: overrides.umdNm ?? hit.region?.dong, lot, name }),
       dongRows: dong ? rows.filter((r) => squash(r.umdNm) === dong) : [],
+      allRows: rows,
       scanned: rows.length,
       missedMonths: data.missedMonths,
     };

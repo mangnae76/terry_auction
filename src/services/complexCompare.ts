@@ -50,6 +50,24 @@ export const PLACE_ICON: Partial<Record<keyof NearbyEnvironment, { ic: string; c
 
 export type ComplexNearby = { lat: number; lng: number; env: NearbyEnvironment };
 const NEARBY_TTL = 30 * 24 * 60 * 60 * 1000;
+/** 주소 하나의 좌표만 — 반경 범위로 단지를 고를 때(주변시설은 범위 안 단지만 받는다). 이 브라우저 → DB → 카카오 순 */
+export const complexPointOf = async (address: string): Promise<{ lat: number; lng: number } | null> => {
+  const key = cacheKey('pt', address);
+  const local = await browserCacheGet<{ lat: number; lng: number }>(key, NEARBY_TTL);
+  if (local) return local;
+  const shared = await readCache<{ lat: number; lng: number }>('cacheNearby', key, NEARBY_TTL);
+  if (shared) { void browserCachePut(key, shared); return shared; }
+  const p = await geocodeAddress(address, { quick: true }).catch(() => null);
+  if (!p) return null;
+  const out = { lat: p.lat, lng: p.lng };
+  void browserCachePut(key, out); void writeCache('cacheNearby', key, out);
+  return out;
+};
+/** 두 점 사이 직선거리(m) */
+export const metersBetween = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+  const kx = 111320 * Math.cos((a.lat * Math.PI) / 180);
+  return Math.hypot((a.lng - b.lng) * kx, (a.lat - b.lat) * 110540);
+};
 /** 주소 하나의 좌표 + 주변시설 — 이 브라우저 → DB → 카카오 순. 못 찾으면 null */
 export const complexNearbyOf = async (address: string): Promise<ComplexNearby | null> => {
   const key = cacheKey('nb3', address);   // nb3 — 인프라(큰 공원 · 상업지역) · 학원가(밀집)를 더한 뒤
@@ -88,9 +106,9 @@ const t2 = (n: number) => Math.floor(n * 100 + 1e-6) / 100;
 const modeOf = (xs: number[]) => { const c = new Map<number, number>(); xs.forEach((x) => c.set(x, (c.get(x) ?? 0) + 1)); return [...c.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]?.[0] ?? 0; };
 const squash = (s: string) => String(s ?? '').replace(/\s+/g, '');
 
-/** 같은 동의 실거래 → 단지 목록. 단지마다 내 전용면적과 가장 가까운 평형(±5㎡ 안) 하나, 그 평형의 전세 · 매매가 한 건이라도 있어야 넣는다.
+/** 실거래 → 단지 목록. 단지마다 내 전용면적과 가장 가까운 평형(±tol㎡ 안, 기본 5) 하나, 그 평형의 전세 · 매매가 한 건이라도 있어야 넣는다.
  *  fromYmd8 — 이 날짜(YYYYMMDD)부터의 거래만(조회일부터 12개월) */
-export const complexesOf = (rows: CaseTradeRow[], myArea: number, myJibun: string, fromYmd8: string): CompareComplex[] => {
+export const complexesOf = (rows: CaseTradeRow[], myArea: number, myJibun: string, fromYmd8: string, tol = 5, myUmd = ''): CompareComplex[] => {
   const by = new Map<string, CaseTradeRow[]>();
   rows.forEach((r) => {
     if (!r.jibun || !['매매', '직거래', '전세'].includes(r.kind)) return;
@@ -102,14 +120,15 @@ export const complexesOf = (rows: CaseTradeRow[], myArea: number, myJibun: strin
   by.forEach((list) => {
     // 평형은 전용면적 소수 둘째 자리까지(버림 — 화면 trunc2 와 같게) 같은 것끼리
     const areas = [...new Set(list.map((r) => t2(r.areaM2)))];
-    const near = areas.filter((a) => Math.abs(a - myArea) <= 5).sort((a, b) => Math.abs(a - myArea) - Math.abs(b - myArea))[0];
+    const near = areas.filter((a) => Math.abs(a - myArea) <= tol).sort((a, b) => Math.abs(a - myArea) - Math.abs(b - myArea))[0];
     if (near === undefined) return;
     const same = list.filter((r) => t2(r.areaM2) === near).sort((a, b) => b.contractDate.localeCompare(a.contractDate));
     out.push({
       jibun: list[0].jibun, name: list.find((r) => r.name)?.name ?? '', umdNm: list[0].umdNm, area: near,
       jeonseAvg: avg(same.filter((r) => r.kind === '전세').map((r) => r.price)),
       saleAvg: avg(same.filter((r) => r.kind !== '전세').map((r) => r.price)),
-      deals: same, mine: squash(list[0].jibun) === squash(myJibun),
+      // 선정물건 — 지번이 같고(동까지 주면 동도 같아야 — 반경 범위에선 다른 동의 같은 지번이 섞인다)
+      deals: same, mine: squash(list[0].jibun) === squash(myJibun) && (!myUmd || squash(list[0].umdNm) === squash(myUmd)),
       // 단지 안에서 가장 많이 적힌 건축년도(동마다 다를 수 있다 — 가장 흔한 해)
       buildYear: modeOf(list.map((r) => r.buildYear ?? 0).filter((y) => y > 1900)),
     });

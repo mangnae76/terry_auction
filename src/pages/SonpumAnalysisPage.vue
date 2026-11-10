@@ -43,6 +43,13 @@ provide('sonpumTab', tab);
 // 시세분석 ④ 호가분석 자리(#sonAskSlot)가 생겼는지 — 손품조사 화면이 네이버 매물조사를 거기로 옮길지 정한다
 const sonAskReady = ref(false);
 provide('sonAskReady', sonAskReady);
+// 면적 단위 — 아파트만, 탭 줄 오른쪽 '↻ 평 / ↻ ㎡' 단추 하나로 이 화면 면적 글이 한꺼번에 바뀐다(2026-11-11 사용자 요청, 네이버 꼴).
+// 아파트는 공급면적이 먼저 — '83.17㎡ (59.98)'처럼 공급에만 단위를 붙이고 괄호 안 전용은 숫자만. 고른 단위는 새로고침 · 다른 물건에서도 그대로
+const AREA_UNIT_KEY = 'son.areaUnit';
+const areaUnit = ref<'m2' | 'py'>(readLS(AREA_UNIT_KEY) === 'py' ? 'py' : 'm2');
+watch(areaUnit, (v) => writeLS(AREA_UNIT_KEY, v));
+provide('sonAreaUnit', areaUnit);
+const isApt = computed(() => /아파트/.test(auction.value?.propertyType ?? ''));
 const priceSeen = ref(false);
 watch(tab, (v) => { if (v === 'price') priceSeen.value = true; }, { immediate: true });
 // 웹 경로에 지금 탭 — '홈 › 시장분석 › 손품분석 › 수요분석'
@@ -107,6 +114,8 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
           <button type="button" role="tab" :class="{ on: tab === 'price' }" :aria-selected="tab === 'price'" @click="tab = 'price'">시세분석</button>
           <button v-if="saleOn" type="button" role="tab" :class="{ on: tab === 'sale' }" :aria-selected="tab === 'sale'" @click="tab = 'sale'">매각분석<span class="adm-chip">운영</span></button>
         </nav>
+        <!-- 면적 단위 — 아파트만. 누르면 다른 단위로(지금 ㎡ 면 '평') -->
+        <button v-if="isApt" type="button" class="son-unit" :title="areaUnit === 'm2' ? '면적을 평으로' : '면적을 ㎡로'" @click="areaUnit = areaUnit === 'm2' ? 'py' : 'm2'"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7" /><path d="M20 5v6h-6" /></svg>{{ areaUnit === 'm2' ? '평' : '㎡' }}</button>
         <div id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
 
@@ -138,6 +147,9 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
 <style scoped>
 .son { display: flex; flex-direction: column; gap: 10px; }
 .son-tabbar .adm-crumb-slot { margin-left: auto; }
+.son-unit { align-self: center; display: inline-flex; align-items: center; gap: 4px; height: 32px; margin-left: auto; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font: inherit; font-size: 14px; color: #111827; cursor: pointer; }   /* 면적 단위 — 네이버 '↻ 평' 꼴 */
+.son-unit:hover { border-color: #2b6df3; color: #2b6df3; }
+.son-unit + .adm-crumb-slot { margin-left: 8px; }
 .adm-crumb-slot { align-self: center; }
 .son-empty, .son-msg { margin: 0; padding: 24px; border: 1px dashed #dde3ee; border-radius: 12px; background: #fff; color: #6b7280; font-size: 14px; text-align: center; }
 .son-tabbar { position: relative; display: flex !important; align-items: flex-end; gap: 12px; }
