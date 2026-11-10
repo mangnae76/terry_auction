@@ -11341,7 +11341,7 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-block .adp-dm-judge { flex: 0 0 34px; text-align: right; }
 /* 웹 단지 시장분석 — 수요분석(AdminRegionDemandPage .adm-nav-scope · .dm-*)과 같은 값 */
 .sup-dm { padding: 14px 16px 12px; }
-.sup-scope { margin: 0 0 14px; font-size: 18px; font-weight: 800; color: #111827; }
+.sup-scope { margin: 0 0 14px; font-size: 15px; font-weight: 800; color: #111827; }   /* 위 "○○동 수요분석"(웹에서 15px)과 같게 */
 .sup-scope .area { color: #2b6df3; }
 .sup-head { margin: 0 0 8px 2px; font-size: 14px; font-weight: 700; color: #111827; }
 .sup-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
