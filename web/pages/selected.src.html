@@ -6710,7 +6710,9 @@ span.cal-day.has { cursor: help; }
         ['사용승인', hi(`${esc(sv('sum.approval') || '-')}${age ? ` / ${age}` : ''}`)],
         ['전용면적(㎡/평)', hi(T.summaryAreaText(sv('sum.exclusiveArea')))],
         /* 공급면적은 아파트만 — 전용 아래 따로, 같은 꼴. 건축물대장(전용 + 주건축물 공용)이 먼저(2026-11-10) */
-        ...(isApt ? [['공급면적(㎡/평)', T.summaryAreaText(supplyM2 ? String(supplyM2) : sv('sum.supplyArea'))]] : []),
+        ...(isApt ? [['공급면적(㎡/평)', T.summaryAreaText(supplyM2 ? String(supplyM2) : sv('sum.supplyArea'))],
+          /* 용적률 — 아파트만, 표제부(없으면 PDF 단지정보), 앱과 같다 */
+          ['용적률', (() => { const n = sv('sum.far') || ((a.aptComplexInfo && a.aptComplexInfo.floorRatio) || '').replace(/[^\d.]/g, ''); return n ? `${esc(n)}%` : '-'; })()]] : []),
         ['대지면적(㎡/평)', T.summaryAreaText(sv('sum.landArea'))],
         ...(T.hasBuildingName(a.address || '') ? [] : [['건물명', sv('sum.buildingName') ? `<b class="it-name">${esc(sv('sum.buildingName'))}</b>` : '-']]),
         ['동/호', `${sv('sum.dong') ? `${hi(`${esc(sv('sum.dong'))}동`)} / ` : ''}${hi(sv('sum.ho') ? `${esc(sv('sum.ho'))}호` : '-호')}`],
