@@ -3086,6 +3086,19 @@ const SUP_TIPS: Record<'deal' | 'units' | 'areaUnits' | 'listings', Array<[strin
   areaUnits: [['출처', '건축물대장 전유공용면적'], ['기준', '이 호실과 공급면적이 같은 세대']],
   listings: [['입력', '네이버 부동산에서 이 단지 매매 매물을 세어 적는다'], ['단추', '네이버매물 — 이 단지를 가운데 둔 매매 지도']],
 };
+/** 칸에 마우스를 대면 그 값과 이어진 칸이 같이 빨갛게 — 위 동 수요분석(DM_LIT_LINKS)과 같은 짝.
+ *  세대수 칸은 계산에 실제로 쓰는 쪽(해당 세대수가 있으면 해당 세대수)이 켜진다 */
+const supLitKey = ref('');
+const supLit = (id: string) => {
+  const k = supLitKey.value;
+  if (!k) return false;
+  const base = supAreaUnits.value ? 'areaUnits' : 'units';
+  const links: Record<string, string[]> = {
+    turnover: ['turnover', 'deal', base], absorb: ['absorb', 'deal', 'listings'], burden: ['burden', 'listings', base], clear: ['clear', 'listings', 'deal'],
+    deal: ['deal', 'turnover', 'absorb', 'clear'], [base]: [base, 'turnover', 'burden'], listings: ['listings', 'absorb', 'burden', 'clear'],
+  };
+  return (links[k] ?? [k]).includes(id);
+};
 const openSupNaver = () => { const addr = auction.value?.address; if (addr) void openNaverComplexListing(addr, 'apt'); };
 const setSupVal = (key: string, v: string | number) => setSumVal(key, String(supNum(String(v)) || ''));
 
@@ -8401,23 +8414,23 @@ const goBack = () => router.back();
               <p class="sup-scope"><span class="area">{{ supName || '이' }}</span> 단지 수요분석</p>
               <p class="sup-head">① 기초수치</p>
               <div class="sup-row">
-                <div class="sup-cell">
+                <div :class="['sup-cell', { lit: supLit('deal') }]" @mouseenter="supLitKey = 'deal'" @mouseleave="supLitKey = ''">
                   <div class="sup-h"><InfoTip :rows="SUP_TIPS.deal" under="box">총 거래량(해당평형)</InfoTip></div>
                   <!-- 이 단지(같은 지번) 국토부 매매 자동값 — 정상 + 직거래, 계약해제 제외, 조회일부터 12개월 -->
                   <!-- 연(단지 전체 12개월) | 해당평형(이 평형) — 위 수요분석 총 거래량 '연 | 월'과 같은 꼴. 지표는 해당 평형으로 계산 -->
                   <div class="sup-b"><b v-if="!supLoaded" class="wait">받는 중</b><b v-else><em class="sup-pre">연</em>{{ supDeals.length.toLocaleString('ko-KR') }}<template v-if="supAreaUnits"><em class="sup-bar">|</em><em class="sup-pre">해당평형 연</em>{{ supDealCount.toLocaleString('ko-KR') }}<em class="sup-bar">|</em><em class="sup-pre">월</em>{{ (supDealCount / 12).toFixed(1) }}</template><em class="sup-u">건</em></b></div>
                 </div>
-                <div class="sup-cell">
+                <div :class="['sup-cell', { lit: supLit('units') }]" @mouseenter="supLitKey = 'units'" @mouseleave="supLitKey = ''">
                   <div class="sup-h"><InfoTip :rows="SUP_TIPS.units" under="box">총 세대수</InfoTip></div>
                   <!-- 자동값(PDF 단지정보 · 건축물대장) — 손으로 적지 않는다 -->
                   <div class="sup-b"><b><template v-if="supHouseholds">{{ supHouseholds.toLocaleString('ko-KR') }}<em class="sup-u">세대</em></template><template v-else>-</template></b></div>
                 </div>
-                <div class="sup-cell">
+                <div :class="['sup-cell', { lit: supLit('areaUnits') }]" @mouseenter="supLitKey = 'areaUnits'" @mouseleave="supLitKey = ''">
                   <div class="sup-h"><InfoTip :rows="SUP_TIPS.areaUnits" under="box">해당 세대수</InfoTip></div>
                   <!-- 자동값 — 이 호실과 공급면적이 같은 세대(건축물대장) -->
                   <div class="sup-b"><b><template v-if="supAreaUnits">{{ supAreaUnits.toLocaleString('ko-KR') }}<em class="sup-u">세대</em></template><template v-else>-</template></b></div>
                 </div>
-                <div class="sup-cell">
+                <div :class="['sup-cell', { lit: supLit('listings') }]" @mouseenter="supLitKey = 'listings'" @mouseleave="supLitKey = ''">
                   <div class="sup-h"><InfoTip :rows="SUP_TIPS.listings" under="box">현재 매물수</InfoTip></div>
                   <!-- 위 총 매물수의 '네이버매물'과 같은 단추 — 이 단지를 가운데 둔 네이버 부동산 매매 지도 -->
                   <div class="sup-b"><input class="sup-in" inputmode="numeric" placeholder="입력" aria-label="현재 매물수" :value="supListings ? supListings.toLocaleString('ko-KR') : ''" @change="setSupVal('sup.listings', ($event.target as HTMLInputElement).value)" /><button type="button" class="sup-nv" :title="`${supName || '이 단지'} — 네이버 부동산 매매 매물`" @click="openSupNaver">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></div>
@@ -8425,7 +8438,7 @@ const goBack = () => router.back();
               </div>
               <p class="sup-head">② 수요지표</p>
               <div class="sup-row">
-                <div v-for="c in supStats" :key="c.id" class="sup-cell">
+                <div v-for="c in supStats" :key="c.id" :class="['sup-cell', { lit: supLit(c.id) }]" @mouseenter="supLitKey = c.id" @mouseleave="supLitKey = ''">
                   <!-- ⓘ — 위 동 수요분석과 같은 말풍선(services/demandGrade) -->
                   <div class="sup-h"><InfoTip :rows="demandTip(c.id, supAreaUnits ? '이 평형' : '이 단지')" under="box">{{ c.label }}</InfoTip><em class="sup-plain">{{ c.plain }}</em></div>
                   <div class="sup-b"><b><UnitText :text="c.value" /><template v-if="c.grade !== '-'"><em class="sup-bar">|</em><span :class="['sup-gd', `g-${c.grade}`]">{{ c.grade }}</span><span :class="['sup-fit', { bad: c.fit === '부적합' }]">/ {{ c.fit }}</span></template></b></div>
@@ -11355,7 +11368,9 @@ tr.tone-take { background: #fff5f5; }
 .sup-scope .area { color: #2b6df3; }
 .sup-head { margin: 0 0 8px 2px; font-size: 14px; font-weight: 700; color: #111827; }
 .sup-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
-.sup-cell { min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; }
+.sup-cell { min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; transition: background .12s, border-color .12s; }
+.sup-cell.lit { background: #fff5f5; border-color: #f6d5d5; }   /* 위 수요분석 .dm-cell.lit 와 같은 색 */
+.sup-cell.lit .sup-h { background: #ffecec; border-bottom-color: #f6d5d5; }
 .sup-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; padding: 8px 6px; border-bottom: 1px solid #e3e8f0; border-radius: 8px 8px 0 0; background: #f3f6fb; font-size: 14px; color: #6b7280; white-space: nowrap; }
 .sup-plain { flex: 0 0 100%; margin-top: 2px; font-style: normal; font-size: 12px; color: #9ca3af; text-align: center; }
 .sup-b { display: flex; justify-content: center; align-items: center; padding: 14px 6px; }
