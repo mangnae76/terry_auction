@@ -5611,7 +5611,8 @@ const cmpDraw = () => {
     const eok = r.jeonseAvg > 0 ? `전세 ${(r.jeonseAvg / 1e8).toFixed(1)}억` : '전세 -';
     mv.pin(r.point!, {
       className: `cmp-bub${r.mine ? ' me' : ''}${on ? ' on' : ''}`,
-      html: `<div class="cb"><b>${cmpEsc(r.name || r.jibun)}</b><span>${eok} · ${r.avg === null ? '-' : `${cmpAvgText(r.avg)}등`}</span></div>`,
+      // 첫 줄 — 단지 이름 | 등수평균, 아래 띠 — 평균 전세가(2026-11-10)
+      html: `<div class="cb"><b>${cmpEsc(r.name || r.jibun)}<i></i>${r.avg === null ? '-' : `${cmpAvgText(r.avg)}등`}</b><span>${eok}</span></div>`,
       onClick: () => { cmpPick.value = r.jibun; },
       z: on ? 1000 : r.mine ? 500 : 10,
     });
@@ -11678,7 +11679,8 @@ tr.tone-take { background: #fff5f5; }
 .cmp-wait { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 13px; color: #6b7280; pointer-events: none; }
 .cmp-map :deep(.cmp-bub) { position: relative; cursor: pointer; }
 .cmp-map :deep(.cmp-bub .cb) { position: absolute; left: -10px; bottom: 9px; display: grid; min-width: 78px; border: 1.5px solid #2b4fd8; border-radius: 4px; background: #fff; box-shadow: 0 2px 6px rgba(17, 24, 39, .22); text-align: center; white-space: nowrap; overflow: visible; }
-.cmp-map :deep(.cmp-bub .cb b) { padding: 3px 8px 2px; font-size: 12px; font-weight: 400; color: #18213a; }   /* 말풍선 글은 모두 굵기 없음(2026-11-10) */
+.cmp-map :deep(.cmp-bub .cb b) { display: flex; align-items: center; justify-content: center; padding: 3px 8px 2px; font-size: 12px; font-weight: 400; color: #18213a; }
+.cmp-map :deep(.cmp-bub .cb b i) { width: 1px; height: 10px; margin: 0 6px; background: #c3c9d4; }   /* 이름 | 등수 세로 칸막이 */   /* 말풍선 글은 모두 굵기 없음(2026-11-10) */
 .cmp-map :deep(.cmp-bub .cb span) { padding: 2px 8px 3px; background: #2b4fd8; color: #fff; font-size: 11.5px; font-weight: 400; }   /* 아래 띠(전세 · 등수) 굵기 없음(2026-11-10) */
 .cmp-map :deep(.cmp-bub .cb::after) { content: ''; position: absolute; left: 4px; bottom: -9px; border: 5px solid transparent; border-top: 5px solid #2b4fd8; border-left: 5px solid #2b4fd8; }   /* 말풍선 꼬리 — 왼쪽 아래, 끝이 단지 위치 */
 .cmp-map :deep(.cmp-bub.me .cb) { border-color: #f05a28; }
