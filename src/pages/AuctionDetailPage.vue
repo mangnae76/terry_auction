@@ -5603,6 +5603,15 @@ const cmpList = computed<CompareComplex[]>(() => {
     return !!(p && me && metersBetween(me, p) <= r);
   });
 });
+/** 표 정렬 — 머리(연식 · 등수평균 · 평균 매매가 · 평균 전세가)를 누르면 그 칸으로, 다시 누르면 반대로. 시세분석 표처럼 ▲ ▼(2026-11-11) */
+type CmpSortKey = 'avg' | 'sale' | 'jeonse' | 'year';
+const cmpSortK = ref<CmpSortKey>('avg');
+const cmpSortDir = ref<'asc' | 'desc'>('asc');
+const cmpSortBy = (k: CmpSortKey) => {
+  if (cmpSortK.value === k) cmpSortDir.value = cmpSortDir.value === 'asc' ? 'desc' : 'asc';
+  else { cmpSortK.value = k; cmpSortDir.value = k === 'avg' ? 'asc' : 'desc'; }   // 등수는 작을수록 좋다 — 처음엔 낮은 순, 금액 · 연식은 큰 순
+};
+const cmpSortAria = (k: CmpSortKey) => (cmpSortK.value === k ? (cmpSortDir.value === 'asc' ? 'ascending' : 'descending') : undefined);
 type CmpPlace = { cond: string; name: string; m: number; lat?: number; lng?: number; ic: string; color: string };
 type CmpRow = CompareComplex & { ranks: Array<number | null>; avg: number | null; sum: number; point: { lat: number; lng: number } | null; places: Array<CmpPlace | null>; supply: { lo: number; hi: number } | null };
 const cmpRows = computed<CmpRow[]>(() => {
@@ -5621,16 +5630,21 @@ const cmpRows = computed<CmpRow[]>(() => {
     const supply = c.mine ? (mySupplyM2.value ? { lo: mySupplyM2.value, hi: mySupplyM2.value } : null) : cmpSupply.value[cmpKeyOf(c)] ?? null;
     return { ...c, ranks, avg, sum, point, places, supply };
   });
-  // 내 물건은 늘 첫 줄(2026-11-11). 나머지는 등수평균 낮은 순, 같으면 시설까지 거리 합이 짧은 순. 아직 못 잰 단지는 뒤로
-  return rows.sort((a, b) => Number(b.mine) - Number(a.mine) || (a.avg ?? 99) - (b.avg ?? 99) || a.sum - b.sum);
+  // 선정물건은 늘 첫 줄(2026-11-11). 나머지는 머리를 눌러 고른 칸으로(기본 등수평균 낮은 순 — 같으면 시설까지 거리 합이 짧은 순). 값이 없는 단지는 뒤로
+  const val = (r: { avg: number | null; saleAvg: number; jeonseAvg: number; buildYear: number }) => {
+    const k = cmpSortK.value;
+    const v = k === 'avg' ? r.avg : k === 'sale' ? r.saleAvg : k === 'jeonse' ? r.jeonseAvg : r.buildYear;
+    return v && v > 0 ? v : null;
+  };
+  const dir = cmpSortDir.value === 'asc' ? 1 : -1;
+  return rows.sort((a, b) => {
+    if (a.mine !== b.mine) return Number(b.mine) - Number(a.mine);
+    const va = val(a); const vb = val(b);
+    if (va === null || vb === null) return (va === null ? 1 : 0) - (vb === null ? 1 : 0);
+    return (va - vb) * dir || a.sum - b.sum;
+  });
 });
 /** 줄 · 점 고르기 — 같은 것을 다시 누르면 풀린다(풀리면 칸 줄 · 상세는 선정물건으로, 고른 표시는 없다, 2026-11-11) */
-/** 단지 줄의 중간값 — 고른 거래(매매 · 전세)의 그 평형 실거래 가운데 값 */
-const cmpMedianOf = (r: CompareComplex) => {
-  const ps = r.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세') && d.price > 0).map((d) => d.price).sort((a, b) => a - b);
-  if (!ps.length) return 0;
-  return ps.length % 2 ? ps[(ps.length - 1) / 2] : (ps[ps.length / 2 - 1] + ps[ps.length / 2]) / 2;
-};
 const cmpToggle = (key: string) => { cmpPick.value = cmpPick.value === key ? '' : key; };
 const cmpIsOn = (r: { mine: boolean; umdNm: string; jibun: string }) => !!cmpPick.value && cmpKeyOf(r) === cmpPick.value;
 const cmpPicked = computed(() => cmpRows.value.find((r) => cmpKeyOf(r) === cmpPick.value) ?? cmpRows.value.find((r) => r.mine) ?? null);
@@ -9209,9 +9223,9 @@ const goBack = () => router.back();
                   <table class="adm-table cmp-tbl">
                     <colgroup><col style="width: 200px" /></colgroup>
                     <thead><tr>
-                      <th>단지<small>(공급(전용))</small></th><th>연식<small>(건축년도)</small></th>
+                      <th>단지<small>(공급(전용))</small></th><th :aria-sort="cmpSortAria('year')" @click="cmpSortBy('year')">연식<i :class="['sdir', { on: cmpSortK === 'year' }]" aria-hidden="true">{{ cmpSortK === 'year' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(건축년도)</small></th>
                       <th v-for="c in cmpConds" :key="c">{{ c }}</th>
-                      <th>등수평균</th><th>평균 매매가<small>(최근 {{ cmpMonths }}개월)</small></th><th>평균 전세가<small>(최근 {{ cmpMonths }}개월)</small></th><th>중간값<small>({{ cmpKind }})</small></th>
+                      <th :aria-sort="cmpSortAria('avg')" @click="cmpSortBy('avg')">등수평균<i :class="['sdir', { on: cmpSortK === 'avg' }]" aria-hidden="true">{{ cmpSortK === 'avg' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i></th><th :aria-sort="cmpSortAria('sale')" @click="cmpSortBy('sale')">평균 매매가<i :class="['sdir', { on: cmpSortK === 'sale' }]" aria-hidden="true">{{ cmpSortK === 'sale' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th :aria-sort="cmpSortAria('jeonse')" @click="cmpSortBy('jeonse')">평균 전세가<i :class="['sdir', { on: cmpSortK === 'jeonse' }]" aria-hidden="true">{{ cmpSortK === 'jeonse' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th>
                     </tr></thead>
                     <tbody>
                       <tr v-for="r in cmpRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine, on: cmpIsOn(r) }]" tabindex="0" @click="cmpToggle(cmpKeyOf(r))" @keydown.enter="cmpToggle(cmpKeyOf(r))">
@@ -9223,9 +9237,8 @@ const goBack = () => router.back();
                         <!-- 고른 거래 쪽 평균을 굵게. 중간값은 고른 거래(매매 · 전세)의 가운데 값 -->
                         <td class="n amt"><b v-if="cmpKind === '매매'">{{ cmpMoney(r.saleAvg) }}</b><template v-else>{{ cmpMoney(r.saleAvg) }}</template></td>
                         <td class="n amt"><b v-if="cmpKind === '전세'">{{ cmpMoney(r.jeonseAvg) }}</b><template v-else>{{ cmpMoney(r.jeonseAvg) }}</template></td>
-                        <td class="n amt">{{ cmpMoney(cmpMedianOf(r)) }}</td>
                       </tr>
-                      <tr v-if="!cmpRows.length"><td :colspan="cmpConds.length + 6" class="cmp-dim">{{ supLoaded ? '범위 안에 견줄 단지 거래가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
+                      <tr v-if="!cmpRows.length"><td :colspan="cmpConds.length + 5" class="cmp-dim">{{ supLoaded ? '범위 안에 견줄 단지 거래가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -11964,6 +11977,9 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-kind { font-size: 12px; border-radius: 4px; padding: 1px 6px; background: #eef2ff; color: #2b3a67; }
 .cmp-kind.j { background: #fdf3e1; color: #b7791f; }
 .cmp-kind.m { background: #eef7f1; color: #22a55a; }
+.cmp-tbl th[aria-sort], .cmp-tbl th:has(> .sdir) { cursor: pointer; white-space: nowrap; }
+.cmp-tbl .sdir { margin-left: 3px; font-style: normal; font-size: 10px; color: #c3c9d4; }   /* 정렬 삼각형 — 시세분석 표와 같은 꼴 */
+.cmp-tbl .sdir.on { color: #2b4fd8; }
 .cmp-row { cursor: pointer; }
 .sup-tbl .adm-table tbody tr.cmp-row:hover td { background: #f7f9fc; }
 .sup-tbl .adm-table tbody tr.cmp-row.mine td { background: #fff5f5; box-shadow: inset 0 -2px 0 #efb7b7; }
