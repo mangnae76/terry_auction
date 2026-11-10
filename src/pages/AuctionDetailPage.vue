@@ -3072,12 +3072,12 @@ const supStats = computed(() => {
     const grade = demandGradeOf(id, ok, n);
     return { id, label, plain, value, grade, fit: demandFitText(grade) };
   };
+  // 중요한 것부터 — 종합 의견을 정하는 거래 회전율 · 매물율을 앞에, 그다음 짝인 매물 소화율 · 소화기간(2026-11-10)
   return [
-    row('absorb', '매물 소화율', DEMAND_PLAIN.absorb, ready && listings > 0 ? `${dec1(absorb)}%` : '-', ready && listings > 0, absorb),
-    row('clear', '매물 소화기간', DEMAND_PLAIN.clear, clear > 0 ? `${dec1(clear)}개월` : '-', clear > 0, clear),
     row('turnover', '거래 회전율', '단지 거래가 얼마나 활발한가', ready && base > 0 ? `${dec1(turnover)}%` : '-', ready && base > 0, turnover),
     row('burden', '매물율', DEMAND_PLAIN.burden, burden > 0 ? `${dec1(burden)}%` : '-', burden > 0, burden),
-  ];
+    row('absorb', '매물 소화율', DEMAND_PLAIN.absorb, ready && listings > 0 ? `${dec1(absorb)}%` : '-', ready && listings > 0, absorb),
+    row('clear', '매물 소화기간', DEMAND_PLAIN.clear, clear > 0 ? `${dec1(clear)}개월` : '-', clear > 0, clear),  ];
 });
 /** 단지 수요분석 기초수치 ⓘ — 값이 어디서 왔는지 */
 const SUP_TIPS: Record<'deal' | 'units' | 'areaUnits' | 'listings', Array<[string, string]>> = {
@@ -3105,7 +3105,7 @@ const supTip = (m: DemandMetric): Array<[string, string]> => {
   const deal = p ? '해당평형 12개월 거래량' : '12개월 거래량';
   const units = p ? '해당평형 세대수' : '총 세대수';
   const listings = p ? '현재 매물수(해당평형)' : '현재 매물수';
-  const who = p ? '이 평형' : '이 단지';
+  const who = p ? '이 아파트 평형' : '이 단지';
   const head: Record<DemandMetric, Array<[string, string]>> = {
     turnover: [['공식', `${deal} ÷ ${units} × 100`], ['의미', `${who} 중 1년에 몇 %가 손바뀜되나`]],
     absorb: [['공식', `${deal} ÷ ${listings} × 100`], ['의미', `나와 있는 ${who} 매물 중 한 해에 몇 %가 팔리나`]],
