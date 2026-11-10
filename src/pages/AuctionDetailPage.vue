@@ -8427,15 +8427,16 @@ const goBack = () => router.back();
             <!-- 1. 수요분석 — 손품분석에서는 지역분석 수요분석(수요분석 상자 · 동 표)이 대신한다(slot 'son-demand') -->
             <!-- 매매수요 조사 맨 위 — 선정물건 면적 · 룸수 · 세대구성 · 입지조건(웹 · 아파트, 2026-11-11). 룸수를 고르면 아래 단지 입지비교 조건 · 등수가 같이 바뀐다 -->
               <div v-if="cmpOn" class="cmp-persona top">
+                <b class="ttl">실사용자</b>
                 <!-- 칸마다 이름 + 회색 상자(값), 칸 사이 세로 칸막이. 룸수만 고르는 칸(고른 것은 검정 굵게) — 글 크기 14로 같게(2026-11-11) -->
                 <span class="grp"><span class="k">면적<small>공급(전용)</small></span><span class="val">{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2 || supMyArea) }}</span></span>
                 <i class="sep" aria-hidden="true" />
                 <span class="grp"><span class="k">룸수</span><span class="pa-seg" role="radiogroup" aria-label="룸수"><button v-for="r in ROOM_TYPES" :key="r.id" type="button" role="radio" :class="{ on: selectedRoomType?.id === r.id }" :aria-checked="selectedRoomType?.id === r.id" @click="pickRoomType(selectedRoomType?.id === r.id ? '' : r.id)">{{ r.label }}</button></span></span>
                 <i class="sep" aria-hidden="true" />
                 <!-- 값 상자는 나올 수 있는 글 중 가장 긴 것만큼 미리 넓혀 둔다 — 룸수를 바꿀 때 상자가 덜컹거리지 않게(2026-11-11) -->
-                <span class="grp"><span class="k">세대구성</span><span class="val stack"><span v-for="t in CMP_WHO_ALL" :key="t" :class="{ on: t === (cmpWho || '룸수를 고르세요') }" :aria-hidden="t !== (cmpWho || '룸수를 고르세요')">{{ t }}</span></span></span>
+                <span class="grp"><span class="k">세대구성</span><span class="val stack"><span v-for="t in CMP_WHO_ALL" :key="t" :class="{ on: t === (cmpWho || '룸수를 고르세요'), ph: t === '룸수를 고르세요' }" :aria-hidden="t !== (cmpWho || '룸수를 고르세요')">{{ t }}</span></span></span>
                 <i class="sep" aria-hidden="true" />
-                <span class="grp"><span class="k">입지조건</span><span class="val stack"><span v-for="t in CMP_COND_ALL" :key="t" :class="{ on: t === (cmpConds.join(' · ') || '룸수를 고르세요') }" :aria-hidden="t !== (cmpConds.join(' · ') || '룸수를 고르세요')">{{ t }}</span></span></span>
+                <span class="grp"><span class="k">입지조건</span><span class="val stack"><span v-for="t in CMP_COND_ALL" :key="t" :class="{ on: t === (cmpConds.join(' · ') || '룸수를 고르세요'), ph: t === '룸수를 고르세요' }" :aria-hidden="t !== (cmpConds.join(' · ') || '룸수를 고르세요')">{{ t }}</span></span></span>
                 <button type="button" :class="['cmp-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 고친 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동값으로</button>
               </div>
             <slot v-if="sonpumMode" name="son-demand" />
@@ -11796,6 +11797,7 @@ tr.tone-take { background: #fff5f5; }
 /* 면적 · 룸수 · 세대구성 · 입지조건 줄 — 단지 입지비교 머리(예전 ① 실사용자 + 입지등수에서 옮김). 이름(회색) + 회색 상자 값(검정 굵게), 칸 사이 세로 칸막이 */
 .cmp-persona { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 12px; padding: 8px 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-size: 14px; }
 .cmp-persona .grp { display: inline-flex; align-items: center; gap: 8px; }
+.cmp-persona .ttl { flex: 0 0 100%; font-size: 14px; font-weight: 700; color: #111827; }   /* 줄 이름 — 면적 위(2026-11-11) */
 .cmp-persona.top { margin: 4px 0 10px; padding: 10px 14px; border-color: #e3e8f0; border-radius: 10px; }   /* 매매수요 조사 맨 위 한 줄 */
 .cmp-persona .k { font-size: 14px; font-weight: 700; color: #6b7280; white-space: nowrap; }
 .cmp-persona .k small { margin-left: 2px; font-size: 12px; font-weight: 400; }
@@ -11806,6 +11808,7 @@ tr.tone-take { background: #fff5f5; }
 .cmp-noroom b { color: #111827; }
 .cmp-persona .val.stack > span { grid-area: 1 / 1; visibility: hidden; }
 .cmp-persona .val.stack > span.on { visibility: visible; }
+.cmp-persona .val.stack > span.ph { font-weight: 400; color: #9ca3af; }   /* 안내 글 — 고르기 전 자리 글은 굵기 없이 흐린 회색(입력칸 안내 글 규칙) */
 .cmp-persona .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
 .cmp-persona .pa-seg button { border: none; background: transparent; border-radius: 5px; height: 26px; padding: 0 11px; font: inherit; font-size: 14px; font-weight: 400; color: #6b7280; cursor: pointer; white-space: nowrap; }
 .cmp-persona .pa-seg button.on { background: #fff; color: #111827; font-weight: 700; box-shadow: 0 1px 2px rgba(17, 24, 39, .12); }   /* 고른 룸수 — 파랑 대신 검정 굵게 */
