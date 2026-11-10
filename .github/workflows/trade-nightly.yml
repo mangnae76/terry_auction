@@ -2,6 +2,9 @@
 # 화면은 그 문서를 먼저 읽으므로 국토부를 덜 부르고 빨리 뜬다. 내용은 jobs/trade-nightly/run.mjs.
 # 비밀값(저장소 Settings › Secrets and variables › Actions): FIREBASE_SERVICE_ACCOUNT · DATA_GO_KR_KEY
 name: 새벽 실거래 적재
+# 실행 목록에 뜨는 이름 — 손으로 돌릴 때 '적재 이름'을 적으면 그 이름(예 '인천 전체 아파트 · 빌라 1년'), 비우면 더한 지역 코드 · 달 수.
+# 예약 실행은 '새벽 정기'(2026-11-10)
+run-name: ${{ inputs.label && format('실거래 적재 — {0}', inputs.label) || (github.event_name == 'schedule' && '실거래 적재 — 새벽 정기' || format('실거래 적재 — {0} · {1}개월', inputs.extra_targets || '저장된 지역', inputs.history_months || '49')) }}
 
 on:
   # 2026-11-10 사용자 요청으로 잠시 멈춤 — 다시 하라고 하면 아래 두 줄의 # 를 지운다(손으로 돌리기는 그대로 된다)
@@ -9,6 +12,10 @@ on:
   #   - cron: '17 16 * * *'  # UTC 16:17 = 한국 01:17. 정시(:00 · :30)는 GitHub 예약이 몰려 늦거나 빠지기 쉬워 비켜 잡았다
   workflow_dispatch:         # Actions 탭에서 손으로도 돌린다
     inputs:
+      label:
+        description: '적재 이름 (실행 목록에 보임, 예 인천 전체 아파트 · 빌라 1년)'
+        required: false
+        default: ''
       extra_targets:
         description: "더할 지역 (예: 28275:villa,11680:apt)"
         required: false
