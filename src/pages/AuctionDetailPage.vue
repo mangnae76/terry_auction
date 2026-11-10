@@ -32,7 +32,7 @@ import {
 import { getBuildingFacts } from '../services/buildingFacts';
 import { complexNameOf, totalParkingOf } from '../services/aptComplex';
 import { getComplexAreas, supplyRowsOf, areaUnitsOf, sameExclusiveCountOf, type ComplexAreas } from '../services/complexAreas';
-import { DEMAND_PLAIN, demandFitText, demandGradeOf, demandTip, type DemandMetric } from '../services/demandGrade';
+import { DEMAND_PASS_TEXT, DEMAND_PLAIN, demandFitText, demandGradeOf, demandTip, type DemandMetric } from '../services/demandGrade';
 import { openNaverComplexListing, openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -8457,7 +8457,7 @@ const goBack = () => router.back();
                 <div v-for="c in supStats" :key="c.id" :class="['sup-cell', { lit: supLit(c.id) }]" @mouseenter="supLitKey = c.id" @mouseleave="supLitKey = ''">
                   <!-- ⓘ — 위 동 수요분석과 같은 말풍선(services/demandGrade) -->
                   <div class="sup-h"><InfoTip :rows="supTip(c.id)" under="box">{{ c.label }}</InfoTip><em class="sup-plain">{{ c.plain }}</em></div>
-                  <div class="sup-b"><b><UnitText :text="c.value" /><template v-if="c.grade !== '-'"><em class="sup-bar">|</em><span :class="['sup-gd', `g-${c.grade}`]">{{ c.grade }}</span><span :class="['sup-fit', { bad: c.fit === '부적합' }]">/ {{ c.fit }}</span></template></b></div>
+                  <div class="sup-b"><b><UnitText :text="c.value" /><em class="sup-bar">|</em><span class="sup-pass">{{ DEMAND_PASS_TEXT[c.id] }}</span></b></div>
                 </div>
               </div>
               <p class="sup-note">
@@ -11400,6 +11400,7 @@ tr.tone-take { background: #fff5f5; }
 .sup-gd.g-C { background: #e5e7eb; color: #111827; }
 .sup-fit { margin-left: 3px; font-size: 12px; font-weight: 800; color: #1f7a45; }
 .sup-fit.bad { color: #c22e2e; }
+.sup-pass { font-size: 12px; font-weight: 700; color: #6b7280; white-space: nowrap; }   /* 합격선 글 — 등급 대신(위 수요분석 .pass 와 같은 꼴) */
 .sup-u { margin-left: 2px; font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; }   /* UnitText 단위와 같은 꼴('세대'는 UnitText 단위 목록에 없다) */
 .sup-b b.wait { font-size: 14px; font-weight: 400; color: #9ca3af; }
 .sup-in { width: 110px; height: 34px; box-sizing: border-box; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; padding: 0 10px; text-align: right; font-family: inherit; font-size: 18px; font-weight: 800; color: #2b6df3; }

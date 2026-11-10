@@ -20,35 +20,39 @@ export const demandGradeOf = (metric: DemandMetric, ready: boolean, value: numbe
   return value <= a ? 'A' : value <= b ? 'B' : 'C';
 };
 
+/** 합격선 한 줄 — 웹 수요분석 지표 칸 막대 뒤(등급 A·B·C 대신, 2026-11-10 사용자 결정). 선은 등급표의 '적합' 끝(B 경계) */
+export const DEMAND_PASS_TEXT: Record<DemandMetric, string> = {
+  absorb: `${DEMAND_GRADE_RULES.absorb.b}% 이상 적합 · 미만 부적합`,
+  clear: `${DEMAND_GRADE_RULES.clear.b}개월 이하 적합 · 초과 부적합`,
+  turnover: `${DEMAND_GRADE_RULES.turnover.b}% 이상 적합 · 미만 부적합`,
+  burden: `${DEMAND_GRADE_RULES.burden.b}% 이하 적합 · 초과 부적합`,
+};
+
 /** A·B 는 적합, C 는 부적합 */
 export const demandFitText = (g: DemandGrade) => (g === '-' ? '' : g === 'A' || g === 'B' ? '적합' : '부적합');
 
-/** 네 지표 말풍선 — 앱 매매수요(dmTipData)의 turn · absorb · burden · clear 와 같은 줄. what = '연립·다세대' 같은 종류 이름 */
+/** 네 지표 말풍선 — 웹 수요분석 · 단지 수요분석. 기준 줄은 등급(A·B·C) 대신 합격선 한 줄(DEMAND_PASS_TEXT 와 같은 말, 2026-11-10). what = '연립·다세대' 같은 종류 이름 */
 export const demandTip = (metric: DemandMetric, what: string): Array<[string, string]> => ({
   turnover: [
     ['공식', '12개월 거래량 ÷ 총 세대수 × 100'],
     ['의미', `${what} 중 1년에 몇 %가 손바뀜되나`],
-    ['기준', 'A 3%↑ · B 1.5~3% · C 1.5%↓'],
-    ['적정', '3% 이상 ↑ (높을수록 좋다)'],
+    ['기준', '1.5% 이상 적합 · 미만 부적합'],
   ],
   absorb: [
     ['공식', '12개월 거래량 ÷ 총 매물수 × 100'],
     ['의미', '나와 있는 매물 중 한 해에 몇 %가 팔리나'],
-    ['기준', 'A 180%↑ · B 120~180% · C 120%↓'],
-    ['적정', '180% 이상 ↑ (높을수록 좋다)'],
+    ['기준', '120% 이상 적합 · 미만 부적합'],
   ],
   burden: [
     ['공식', '총 매물수 ÷ 총 세대수 × 100'],
     ['의미', `${what} 중 몇 %가 매물로 나와 있나`],
-    ['기준', 'A 3%↓ · B 3~5% · C 5% 초과'],
-    ['적정', '3% 이하 ↓ (낮을수록 좋다)'],
-    ['위험', '5%가 넘으면 매물이 쌓였다 — 부적합'],
+    ['기준', '5% 이하 적합 · 초과 부적합'],
+    ['위험', '5%가 넘으면 매물이 쌓였다'],
   ],
   clear: [
     ['공식', '총 매물수 ÷ 월평균 거래량'],
     ['의미', '총 누적 매물이 다 팔리는 데 걸리는 달 수'],
-    ['기준', 'A 6개월↓ · B 6~12개월 · C 12개월↑'],
-    ['적정', '6개월 이하 ↓ (짧을수록 좋다)'],
+    ['기준', '12개월 이하 적합 · 초과 부적합'],
   ],
 } as Record<DemandMetric, Array<[string, string]>>)[metric];
 
