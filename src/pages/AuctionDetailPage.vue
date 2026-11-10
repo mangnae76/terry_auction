@@ -8429,8 +8429,8 @@ const goBack = () => router.back();
             <!-- 1. 수요분석 — 손품분석에서는 지역분석 수요분석(수요분석 상자 · 동 표)이 대신한다(slot 'son-demand') -->
             <!-- 매매수요 조사 맨 위 — 선정물건 면적 · 룸수 · 세대구성 · 입지조건(웹 · 아파트, 2026-11-11). 룸수를 고르면 아래 단지 입지비교 조건 · 등수가 같이 바뀐다 -->
               <div v-if="cmpOn" class="cmp-persona top o-persona">
-                <!-- 이름 — 사람 표식 + '누구한테 팔까?'(이 집을 살 · 살 사람이 누구인지 정하는 줄) -->
-                <b class="ttl"><i class="ttl-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6" /><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6" /></svg></i>실사용자<small>누구한테 팔까?</small></b>
+                <!-- 이름 + '누구한테 팔까?'(이 집을 살 · 살 사람이 누구인지 정하는 줄). 아이콘은 흰 카드 제목(본건사진 · 매매수요 조사)에만 쓴다 -->
+                <b class="ttl">실사용자<small>누구한테 팔까?</small></b>
                 <div class="inner">
                 <!-- 칸마다 이름 + 회색 상자(값), 칸 사이 세로 칸막이. 룸수만 고르는 칸(고른 것은 검정 굵게) — 글 크기 14로 같게(2026-11-11) -->
                 <!-- ㎡ · 평 두 글을 겹쳐 두고 지금 단위만 보인다 — 평 / ㎡ 단추를 눌러도 상자 폭이 그대로(2026-11-11) -->
@@ -11802,9 +11802,8 @@ tr.tone-take { background: #fff5f5; }
 /* 면적 · 룸수 · 세대구성 · 입지조건 줄 — 단지 입지비교 머리(예전 ① 실사용자 + 입지등수에서 옮김). 이름(회색) + 회색 상자 값(검정 굵게), 칸 사이 세로 칸막이 */
 .cmp-persona { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 12px; padding: 8px 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-size: 14px; }
 .cmp-persona .grp { display: inline-flex; align-items: center; gap: 8px; }
-.cmp-persona .ttl { flex: 0 0 100%; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #111827; }   /* 줄 이름 — 면적 위(2026-11-11) */
-.cmp-persona .ttl-ic { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #eef2ff; color: #2b6df3; }
-.cmp-persona .ttl small { margin-left: 4px; font-size: 12.5px; font-weight: 400; color: #6b7280; }
+.cmp-persona .ttl { flex: 0 0 100%; display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 800; color: #111827; }   /* 단지 입지비교 · 지역 수요분석 제목과 같은 15 · 800 */   /* 줄 이름 — 면적 위(2026-11-11) */
+.cmp-persona .ttl small { margin-left: 2px; font-size: 12.5px; font-weight: 400; color: #6b7280; }
 /* 면적 ~ 자동값으로 — 안쪽 상자 하나로 묶는다 */
 .cmp-persona .inner { flex: 0 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; }
 /* 웹 · 아파트 손품조사 보이는 순서(마크업 순서는 그대로) */
