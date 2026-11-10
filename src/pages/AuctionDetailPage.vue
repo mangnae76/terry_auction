@@ -5526,6 +5526,10 @@ const hasTypedRank = computed(() => rankConditions.value.some((c) => !!rankOf(c)
 // ===== 웹 손품조사 — 단지 입지비교(2026-11-10 시안 그대로 · 웹 · 아파트만, 개별성 분석 아래) =====
 // 같은 동의 다른 단지를 내 물건과 같은 입지조건 · 같은 규칙(도보 5분 1등 · 10분 2등 · 그 밖 3등)으로 매기고,
 // 단지마다 내 전용면적과 가장 가까운 평형의 최근 12개월 평균 전세가 · 매매가를 옆에 둔다(국토부 · DB). 짐작한 값은 넣지 않는다
+/** 단지 입지비교가 켜지는 곳(웹 · 아파트 · 손품조사) — 여기선 ① 실사용자 + 입지등수를 단지 입지비교에 합친다 */
+const cmpOn = computed(() => webEmbed && isApartment.value && sonpumMode);
+/** 세대구성 — 고른 룸수(없으면 평형대)의 가족 */
+const cmpWho = computed(() => ((selectedRoomType.value?.details ?? []) as Array<{ who: string }>).map((d) => d.who).join(' · '));
 // 거르기(2026-11-11) — 범위(같은 동 · 500m · 1km) · 기간(1년 · 2년) · 평형 폭(±3 · ±5 · ±10㎡) · 거래(매매 · 전세). 고른 값은 새로고침 · 다른 물건에서도 그대로
 type CmpRange = 'dong' | 500 | 1000;
 const CMP_FILTER_KEY = 'son.cmp.filter';
@@ -8417,7 +8421,7 @@ const goBack = () => router.back();
         <!-- 매매수요 — 동단위 수요·공급 (빌라) -->
         <section class="adp-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('demand')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V10M9 21V4M15 21v-7M21 21v-11"/></svg>수요조사</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V10M9 21V4M15 21v-7M21 21v-11"/></svg>매매수요 조사</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('demand') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('demand')" class="adp-dm-body">
@@ -8718,8 +8722,8 @@ const goBack = () => router.back();
             </div>
 
 
-            <!-- ① 실사용자 + 입지등수 -->
-            <div class="adp-dm-block boxed">
+            <!-- ① 실사용자 + 입지등수 — 웹 · 아파트 손품조사에선 아래 단지 입지비교에 합쳤다(룸수 · 세대구성 · 등수 고치기, 2026-11-11 시안) -->
+            <div v-if="!cmpOn" class="adp-dm-block boxed">
             <div class="adp-dm-sub">① 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>초기화</button></div>
             <table :class="['adp-table adp-ruser-table', { tight: !webEmbed }]">
               <colgroup v-if="webEmbed">
@@ -8878,7 +8882,7 @@ const goBack = () => router.back();
             <!-- ② 개별성 분석 (웹은 ③) -->
             <div class="adp-dm-block boxed">
             <div class="adp-dm-sub">
-              ② 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
+              {{ cmpOn ? '①' : '②' }} 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
               <button v-if="!editingSurvey.individuality" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
             </div>
@@ -9117,7 +9121,15 @@ const goBack = () => router.back();
             <!-- ③ 단지 입지비교 — 웹 · 아파트만(2026-11-10 시안 그대로). 같은 동 단지를 내 물건과 같은 입지조건 · 같은 규칙으로 매기고 평균 전세가 · 매매가를 옆에 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box">
               <p class="sup-scope"><span class="area">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span> 단지 입지비교</p>
-              <p class="sup-head">③ 단지 입지비교 <small class="cmp-sub">선정물건과 같은 입지조건 · 같은 규칙으로 매긴 입지등수, 평균 전세가 · 매매가는 단지마다 선정물건 전용면적과 가장 가까운 평형의 최근 12개월</small></p>
+              <p class="sup-head">② 단지 입지비교 <small class="cmp-sub">선정물건과 같은 입지조건 · 같은 규칙으로 매긴 입지등수, 평균 전세가 · 매매가는 단지마다 선정물건 전용면적과 가장 가까운 평형의 최근 12개월</small></p>
+              <!-- 룸수 → 세대구성 → 입지조건(예전 ① 실사용자 + 입지등수에서 옮김). 룸수를 고르면 표 머리 조건 · 등수가 같이 바뀐다 -->
+              <div class="cmp-persona">
+                <span class="k">룸수</span>
+                <span class="pa-seg pa-out" role="radiogroup" aria-label="룸수"><button v-for="r in ROOM_TYPES" :key="r.id" type="button" role="radio" :class="{ on: selectedRoomType?.id === r.id }" :aria-checked="selectedRoomType?.id === r.id" @click="pickRoomType(selectedRoomType?.id === r.id ? '' : r.id)">{{ r.label }}</button></span>
+                <span class="k">세대구성</span><span class="who">{{ cmpWho || '룸수를 고르세요' }}</span>
+                <span class="conds">입지조건 {{ rankConditions.join(' · ') || '-' }}</span>
+                <button type="button" :class="['cmp-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 고친 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동값으로</button>
+              </div>
               <!-- 지도 — 시세분석 지도와 같은 도구 막대(주변 · 로드뷰 …) · 전체화면. 전체화면이면 body 로 옮겨 화면을 채우고 오른쪽에 단지 목록 -->
               <div class="cmp-map-slot">
               <Teleport to="body" :disabled="!cmpFs">
@@ -9167,7 +9179,8 @@ const goBack = () => router.back();
                       <tr v-for="r in cmpRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine, on: !!cmpPicked && cmpKeyOf(r) === cmpKeyOf(cmpPicked) }]" tabindex="0" @click="cmpPick = cmpKeyOf(r)" @keydown.enter="cmpPick = cmpKeyOf(r)">
                         <td class="nm"><span v-if="r.mine" class="cmp-tag">선정물건</span>{{ r.name || r.jibun }}<small class="sup-tbl-sub">{{ areaPair(r.supply, r.area) }}</small></td>
                         <td class="n">{{ r.buildYear ? `${r.buildYear}년` : '-' }}</td>
-                        <td v-for="(k, i) in r.ranks" :key="i" class="n"><span v-if="k" :class="['cmp-rk', { r1: k === 1 }]">{{ k }}</span><span v-else class="cmp-dim">{{ r.mine || cmpKeyOf(r) in cmpNearby ? '-' : '…' }}</span></td>
+                        <!-- 선정물건 줄은 등수를 손으로 고친다(1 · 2 · 3, 비우면 자동값). 다른 단지는 자동 등수만 -->
+                        <td v-for="(k, i) in r.ranks" :key="i" class="n" @click.stop><input v-if="r.mine" :class="['cmp-rk', 'in', { r1: k === 1, typed: !!rankOf(rankConditions[i]) }]" inputmode="numeric" maxlength="1" :value="k ?? ''" :title="autoRankNote(rankConditions[i]) || '1 · 2 · 3 중 하나 — 비우면 자동값'" :aria-label="`${rankConditions[i]} 입지등수`" @change="setRank(rankConditions[i], (($event.target as HTMLInputElement).value.match(/[1-3]/) ?? [''])[0])" /><span v-else-if="k" :class="['cmp-rk', { r1: k === 1 }]">{{ k }}</span><span v-else class="cmp-dim">{{ cmpKeyOf(r) in cmpNearby ? '-' : '…' }}</span></td>
                         <td class="n"><b class="cmp-avg">{{ cmpAvgText(r.avg) }}</b></td>
                         <td class="n amt"><b>{{ cmpMoney(r.jeonseAvg) }}</b></td>
                         <td class="n amt">{{ cmpMoney(r.saleAvg) }}</td>
@@ -11774,6 +11787,18 @@ tr.tone-take { background: #fff5f5; }
 .sup-opinion b { font-size: 15px; font-weight: 800; color: #111827; }
 .sup-opinion span { font-size: 13px; color: #111827; }   /* 의견 글은 검정(2026-11-10) */
 .sup-opinion .wait { color: #9ca3af; }
+/* 룸수 · 세대구성 줄 — 단지 입지비교 머리(예전 ① 실사용자 + 입지등수에서 옮김) */
+.cmp-persona { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 12px; padding: 8px 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-size: 14px; }
+.cmp-persona .k { font-weight: 700; color: #6b7280; }
+.cmp-persona .who { font-weight: 700; color: #111827; }
+.cmp-persona .conds { font-size: 13px; color: #6b7280; }
+.cmp-persona .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
+.cmp-persona .pa-seg button { border: none; background: transparent; border-radius: 5px; height: 26px; padding: 0 11px; font: inherit; font-size: 14px; color: #6b7280; cursor: pointer; white-space: nowrap; }
+.cmp-persona .pa-seg button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
+.cmp-reset { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 7px; background: #fff; font: inherit; font-size: 12.5px; color: #111827; cursor: pointer; }
+.cmp-reset.off { color: #c3c9d4; cursor: default; }
+input.cmp-rk.in { padding: 0; font: inherit; font-weight: 700; text-align: center; border-color: #2b6df3; background: #fff; }
+input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b45309; }   /* 손으로 고친 등수 */
 /* 단지 입지비교 거르기 — 시세분석 조건 줄(.pa-lab · .pa-seg · .kindF) 값 그대로(2026-11-11) */
 .cmp-conds { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .cmp-conds .pa-lab { display: inline-flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 4px 12px; font-size: 14px; font-weight: 700; color: #6b7280; white-space: nowrap; }
