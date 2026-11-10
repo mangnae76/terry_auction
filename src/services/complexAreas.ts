@@ -74,14 +74,21 @@ export const myGroupOf = (areas: ComplexAreas | null | undefined): AreaGroup | n
   return areas.groups.find((g) => g.supply.toFixed(2) === s.toFixed(2)) ?? null;
 };
 
-/** 단지정보 면적종류 — 공급면적마다 '83.18㎡(25.16평) 122세대', 내 호실 무리에 표시 */
+/** 단지정보 면적종류 — 전용면적이 같은 세대끼리 묶어 세고(평형 기준, area-by-exclusive), 그 안의 공급면적은 범위로 옆에 적는다.
+ *  '전용 59.99㎡ · 공급 83.18~83.21㎡' 123세대 — 같은 전용 안에서 공급이 갈려도 세대수는 하나로 */
 export const supplyRowsOf = (areas: ComplexAreas | null | undefined): Array<{ text: string; count: number; mine: boolean }> => {
-  const mine = myGroupOf(areas);
-  return (areas?.groups ?? []).map((g) => ({
-    text: `${g.supply.toFixed(2)}㎡(${(g.supply / 3.305785).toFixed(2)}평)`,
-    count: g.count,
-    mine: g === mine,
-  }));
+  const by = new Map<string, { exclusive: number; lo: number; hi: number; count: number }>();
+  (areas?.groups ?? []).forEach((g) => {
+    const k = g.exclusive.toFixed(2);
+    const r = by.get(k) ?? { exclusive: g.exclusive, lo: g.supply, hi: g.supply, count: 0 };
+    r.lo = Math.min(r.lo, g.supply); r.hi = Math.max(r.hi, g.supply); r.count += g.count;
+    by.set(k, r);
+  });
+  const mineEx = areas?.mine?.exclusive?.toFixed(2) ?? '';
+  return [...by.values()].sort((x, y) => x.exclusive - y.exclusive).map((r) => {
+    const sup = r.lo.toFixed(2) === r.hi.toFixed(2) ? r.lo.toFixed(2) : `${r.lo.toFixed(2)}~${r.hi.toFixed(2)}`;
+    return { text: `전용 ${r.exclusive.toFixed(2)}㎡ · 공급 ${sup}㎡`, count: r.count, mine: !!mineEx && r.exclusive.toFixed(2) === mineEx };
+  });
 };
 
 /** 해당 세대수 — 이 호실과 전용면적(건축물대장)이 같은 세대 수. 실거래가 전용면적으로만 갈리고 네이버 평형(25평 123세대)도
