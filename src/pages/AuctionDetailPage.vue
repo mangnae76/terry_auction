@@ -5543,8 +5543,8 @@ const CMP_RANGES: Array<[CmpRange, string]> = [['dong', '같은 동'], [500, '50
 const cmpKeyOf = (c: { mine: boolean; umdNm: string; jibun: string }) => (c.mine ? 'mine' : `${c.umdNm}|${c.jibun}`);
 // 면적 글 — 아파트는 공급면적 먼저, 괄호 안 전용은 숫자만('83.17㎡ (59.98)' · '25.2평 (18.1)'). 단위는 손품조사 탭 줄 단추(sonAreaUnit)
 const sonAreaUnit = inject<Ref<'m2' | 'py'> | null>('sonAreaUnit', null);
-const areaPair = (supply: { lo: number; hi: number } | null, exclusive: number) => {
-  const py = sonAreaUnit?.value === 'py';
+const areaPair = (supply: { lo: number; hi: number } | null, exclusive: number, unit?: 'm2' | 'py') => {
+  const py = (unit ?? sonAreaUnit?.value) === 'py';
   const one = (v: number) => (py ? (v / 3.305785).toFixed(1) : trunc2(v));
   const ex = exclusive > 0 ? one(exclusive) : '-';
   if (!supply || !(supply.lo > 0)) return `전용 ${ex}${py ? '평' : '㎡'}`;   // 공급을 모르면 전용만 단위와 함께
@@ -8433,7 +8433,8 @@ const goBack = () => router.back();
                 <b class="ttl"><i class="ttl-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6" /><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6" /></svg></i>실사용자<small>누구한테 팔까?</small></b>
                 <div class="inner">
                 <!-- 칸마다 이름 + 회색 상자(값), 칸 사이 세로 칸막이. 룸수만 고르는 칸(고른 것은 검정 굵게) — 글 크기 14로 같게(2026-11-11) -->
-                <span class="grp"><span class="k">면적<small>공급(전용)</small></span><span class="val">{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2 || supMyArea) }}</span></span>
+                <!-- ㎡ · 평 두 글을 겹쳐 두고 지금 단위만 보인다 — 평 / ㎡ 단추를 눌러도 상자 폭이 그대로(2026-11-11) -->
+                <span class="grp"><span class="k">면적<small>공급(전용)</small></span><span class="val stack"><span v-for="u in (['m2', 'py'] as const)" :key="u" :class="{ on: (sonAreaUnit ?? 'm2') === u }" :aria-hidden="(sonAreaUnit ?? 'm2') !== u">{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2 || supMyArea, u) }}</span></span></span>
                 <i class="sep" aria-hidden="true" />
                 <span class="grp"><span class="k">룸수</span><span class="pa-seg" role="radiogroup" aria-label="룸수"><button v-for="r in ROOM_TYPES" :key="r.id" type="button" role="radio" :class="{ on: selectedRoomType?.id === r.id }" :aria-checked="selectedRoomType?.id === r.id" @click="pickRoomType(selectedRoomType?.id === r.id ? '' : r.id)">{{ r.label }}</button></span></span>
                 <i class="sep" aria-hidden="true" />
@@ -9121,7 +9122,7 @@ const goBack = () => router.back();
 
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
-              <div class="cmp-est-h"><h3>{{ cmpEst?.name ?? '단지' }} {{ cmpKind }}가</h3>
+              <div class="cmp-est-h"><h3><span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span>단지 입지비교</h3>
                 <span class="cmp-est-desc">최근 {{ cmpYears * 12 }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 같은 평형 {{ cmpKind }} 실거래 · 아래 표나 지도에서 단지를 고르면 바뀝니다</span>
               </div>
               <div class="cmp-est">
@@ -9139,7 +9140,6 @@ const goBack = () => router.back();
 
             <!-- ③ 단지 입지비교 — 웹 · 아파트만(2026-11-10 시안 그대로). 같은 동 단지를 내 물건과 같은 입지조건 · 같은 규칙으로 매기고 평균 전세가 · 매매가를 옆에 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box o-cmp">
-              <p class="sup-scope"><span class="area">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span> 단지 입지비교</p>
               <p class="sup-head"><small class="cmp-sub cmp-sub0">선정물건과 같은 입지조건 · 같은 규칙으로 매긴 입지등수, 평균 전세가 · 매매가는 단지마다 선정물건 전용면적과 가장 가까운 평형의 최근 12개월</small></p>
 
               <!-- 지도 — 시세분석 지도와 같은 도구 막대(주변 · 로드뷰 …) · 전체화면. 전체화면이면 body 로 옮겨 화면을 채우고 오른쪽에 단지 목록 -->
@@ -11849,6 +11849,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-conds .kindF button.on[data-k="전세"] { background: #b7791f; color: #fff; }
 /* 시세분석 결론 칸 줄 — SonpumPricePage .zone-h · .pa-tag · .est · .tiles · .tile 값 그대로(2026-11-11) */
 .cmp-est-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.cmp-scope-chip { display: inline-flex; align-items: center; margin-right: 6px; padding: 2px 9px; border: 1px solid rgba(43, 109, 243, .28); border-radius: 999px; background: rgba(43, 109, 243, .09); color: #2b6df3; font-size: 12.5px; font-weight: 700; line-height: 1.4; white-space: nowrap; }   /* 지역 칩 — 작게(2026-11-11) */
 .cmp-est-h h3 { display: inline-flex; align-items: center; margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
 .cmp-est-tag { font-size: 13px; font-weight: 700; color: #2b4fd8; background: #eef2ff; border-radius: 5px; padding: 3px 8px; }
 .cmp-est-desc { font-size: 12px; color: #6b7280; }
