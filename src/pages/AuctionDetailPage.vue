@@ -3103,7 +3103,7 @@ const supLit = (id: string) => {
 const supTip = (m: DemandMetric): Array<[string, string]> => {
   const p = !!supAreaUnits.value;
   const deal = p ? '해당평형 12개월 거래량' : '12개월 거래량';
-  const units = p ? '해당 세대수' : '총 세대수';
+  const units = p ? '해당평형 세대수' : '총 세대수';
   const listings = p ? '현재 매물수(해당평형)' : '현재 매물수';
   const who = p ? '이 평형' : '이 단지';
   const head: Record<DemandMetric, Array<[string, string]>> = {
@@ -8442,7 +8442,7 @@ const goBack = () => router.back();
                   <div class="sup-b"><b><template v-if="supHouseholds">{{ supHouseholds.toLocaleString('ko-KR') }}<em class="sup-u">세대</em></template><template v-else>-</template></b></div>
                 </div>
                 <div :class="['sup-cell', { lit: supLit('areaUnits') }]" @mouseenter="supLitKey = 'areaUnits'" @mouseleave="supLitKey = ''">
-                  <div class="sup-h"><InfoTip :rows="SUP_TIPS.areaUnits" under="box">해당 세대수</InfoTip></div>
+                  <div class="sup-h"><InfoTip :rows="SUP_TIPS.areaUnits" under="box">해당평형 세대수</InfoTip></div>
                   <!-- 자동값 — 이 호실과 전용면적이 같은 세대(건축물대장) -->
                   <div class="sup-b"><b><template v-if="supAreaUnits">{{ supAreaUnits.toLocaleString('ko-KR') }}<em class="sup-u">세대</em></template><template v-else>-</template></b></div>
                 </div>
@@ -8461,7 +8461,7 @@ const goBack = () => router.back();
                 </div>
               </div>
               <p class="sup-note">
-                <template v-if="supAreaUnits">수요지표는 이 평형(전용 {{ trunc2(supMyArea) }}㎡) 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 해당 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 계산합니다. 계산식 · 등급은 위 동 수요분석과 같습니다.</template>
+                <template v-if="supAreaUnits">수요지표는 이 평형(전용 {{ trunc2(supMyArea) }}㎡) 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 해당평형 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 계산합니다. 계산식 · 등급은 위 동 수요분석과 같습니다.</template>
                 <template v-else>수요지표는 단지 전체 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 총 세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 계산합니다. 계산식 · 등급은 위 동 수요분석과 같습니다.</template>
               </p>
             </section>

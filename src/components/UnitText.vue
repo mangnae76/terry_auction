@@ -7,7 +7,7 @@ import { computed, inject } from 'vue';
 const props = defineProps<{ text: string; suffix?: string }>();
 const web = inject<boolean>('webEmbed', false);
 
-const UNIT = /(\s\/\s|\/|년차|개월|억|만|원|%|㎡|평|건|년)/;
+const UNIT = /(\s\/\s|\/|년차|개월|억|만|원|%|㎡|평|건|년|세대)/;
 const parts = computed(() => {
   const empty = !props.text || props.text === '-' || props.text === '—';
   const full = web && props.suffix && !empty ? `${props.text}${props.suffix}` : props.text;

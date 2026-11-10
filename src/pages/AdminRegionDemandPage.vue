@@ -313,7 +313,7 @@ const dmInputs = computed(() => {
   return [
     { id: 'deal' as DmId, label: '거래량', value: '', ym: { year: v.yearly, month: v.monthly }, note: '', wait: false,
       tip: dealCountTip({ normal: v.count, direct: directShown.value, cancel: cancelShown.value, months: months.value, from: day(period.value.from), to: day(period.value.to) }) },
-    { id: 'units' as DmId, label: '총 세대수', value: unitsTally.value.ready ? n(v.units) : (unitsTally.value.pending ? '받는 중' : '-'), ym: null, note: unitsNote.value, wait: unitsTally.value.pending > 0,
+    { id: 'units' as DmId, label: '총 세대수', value: unitsTally.value.ready ? (v.units > 0 ? `${n(v.units)}세대` : '-') : (unitsTally.value.pending ? '받는 중' : '-'), ym: null, note: unitsNote.value, wait: unitsTally.value.pending > 0,
       tip: [['출처', '건축HUB(건축물대장) · 자동 입력'], ['갱신', '30일 후 업데이트'], ['범위', `${dmArea.value} ${kindWhat.value}`], ['합산', '건물마다의 세대수를 모두 더한 값']] as TipRow[] },
     { id: 'listings' as DmId, label: '총 매물수', value: n(v.listings), ym: null,
       note: '', wait: false,
