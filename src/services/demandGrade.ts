@@ -20,6 +20,11 @@ export const demandGradeOf = (metric: DemandMetric, ready: boolean, value: numbe
   return value <= a ? 'A' : value <= b ? 'B' : 'C';
 };
 
+/** 거래 회전율 합격선(연 %) — 아파트는 8%: 같은 평형 300세대에 월 2건(연 24건)이 정상(2026-11-10 사용자 기준).
+ *  빌라 · 그 밖은 엑셀 기준 그대로(1.5%) */
+export const APT_TURNOVER_LINE = 8;
+export const turnoverLineOf = (apt: boolean) => (apt ? APT_TURNOVER_LINE : DEMAND_GRADE_RULES.turnover.b);
+
 /** 소수 한 자리 — 0 이면 떼고 정수로('100.0' → '100', '3.6' 그대로). 수요지표 값 공통(2026-11-10) */
 export const dec1 = (n: number) => { const r = Math.round(n * 10) / 10; return Number.isInteger(r) ? r.toLocaleString('ko-KR') : r.toFixed(1); };
 
@@ -31,12 +36,15 @@ export const DEMAND_PASS_TEXT: Record<DemandMetric, string> = {
   burden: `${DEMAND_GRADE_RULES.burden.b}% 이하 적합`,
 };
 
-/** 종합 의견 — 매물률(5% 선) × 거래 회전율(1.5% 선) 네 칸. 등급 대신 한 줄(2026-11-10 사용자 시안 'Level 3 · 저매물 / 저거래').
+/** 막대 뒤 합격선 글 — 아파트 회전율만 8% */
+export const demandPassText = (m: DemandMetric, apt = false) => (m === 'turnover' ? `${turnoverLineOf(apt)}% 이상 적합` : DEMAND_PASS_TEXT[m]);
+
+/** 종합 의견 — 매물률(5% 선) × 거래 회전율(1.5% 선, 아파트 8%) 네 칸. 등급 대신 한 줄(2026-11-10 사용자 시안 'Level 3 · 저매물 / 저거래').
  *  선은 DEMAND_PASS_TEXT 와 같은 합격선. 둘 중 하나라도 값이 없으면 null */
-export const demandOpinionOf = (burden: number, turnover: number, ready: boolean): { level: number; title: string; text: string } | null => {
+export const demandOpinionOf = (burden: number, turnover: number, ready: boolean, apt = false): { level: number; title: string; text: string } | null => {
   if (!ready) return null;
   const lowListing = burden <= DEMAND_GRADE_RULES.burden.b;
-  const highDeal = turnover >= DEMAND_GRADE_RULES.turnover.b;
+  const highDeal = turnover >= turnoverLineOf(apt);
   if (lowListing && highDeal) return { level: 1, title: '저매물 / 고거래', text: '매물은 적고 거래는 활발한 구간입니다.' };
   if (!lowListing && highDeal) return { level: 2, title: '고매물 / 고거래', text: '매물은 많지만 거래도 활발한 구간입니다.' };
   if (lowListing) return { level: 3, title: '저매물 / 저거래', text: '매물은 적지만 거래도 둔한 구간입니다.' };
@@ -47,11 +55,12 @@ export const demandOpinionOf = (burden: number, turnover: number, ready: boolean
 export const demandFitText = (g: DemandGrade) => (g === '-' ? '' : g === 'A' || g === 'B' ? '적합' : '부적합');
 
 /** 네 지표 말풍선 — 웹 수요분석 · 단지 수요분석. 기준 줄은 등급(A·B·C) 대신 합격선 한 줄(DEMAND_PASS_TEXT 와 같은 말, 2026-11-10). what = '연립·다세대' 같은 종류 이름 */
-export const demandTip = (metric: DemandMetric, what: string): Array<[string, string]> => ({
+export const demandTip = (metric: DemandMetric, what: string, apt = false): Array<[string, string]> => ({
   turnover: [
     ['공식', '12개월 거래량 ÷ 총 세대수 × 100'],
     ['의미', `${what} 중 1년에 몇 %가 손바뀜되나`],
-    ['기준', '1.5% 이상 적합 · 미만 부적합'],
+    ['기준', `${turnoverLineOf(apt)}% 이상 적합 · 미만 부적합`],
+    ...(apt ? [['아파트', '같은 평형 300세대에 월 2건(연 8%)이 정상'] as [string, string]] : []),
   ],
   absorb: [
     ['공식', '12개월 거래량 ÷ 총 매물수 × 100'],

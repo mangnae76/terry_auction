@@ -32,7 +32,7 @@ import {
 import { getBuildingFacts } from '../services/buildingFacts';
 import { complexNameOf, totalParkingOf } from '../services/aptComplex';
 import { getComplexAreas, supplyRowsOf, areaUnitsOf, sameExclusiveCountOf, type ComplexAreas } from '../services/complexAreas';
-import { DEMAND_PASS_TEXT, DEMAND_PLAIN, dec1, demandFitText, demandGradeOf, demandOpinionOf, demandTip, type DemandMetric } from '../services/demandGrade';
+import { DEMAND_PLAIN, dec1, demandFitText, demandGradeOf, demandOpinionOf, demandPassText, demandTip, type DemandMetric } from '../services/demandGrade';
 import { openNaverComplexListing, openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -3112,13 +3112,13 @@ const supTip = (m: DemandMetric): Array<[string, string]> => {
     burden: [['공식', `${listings} ÷ ${units} × 100`], ['의미', `${who} 중 몇 %가 매물로 나와 있나`]],
     clear: [['공식', `${listings} ÷ ${p ? '해당평형 월평균 거래량' : '월평균 거래량'}`], ['의미', `${who} 매물이 다 팔리는 데 걸리는 달 수`]],
   };
-  return [...head[m], ...demandTip(m, who).filter(([k]) => k !== '공식' && k !== '의미')];
+  return [...head[m], ...demandTip(m, who, true).filter(([k]) => k !== '공식' && k !== '의미')];
 };
 const openSupNaver = () => { const addr = auction.value?.address; if (addr) void openNaverComplexListing(addr, 'apt'); };
 /** 종합 의견 — 매물수(해당평형)를 넣었을 때만 */
 const supOpinion = computed(() => {
   const base = supBase.value; const deals = supDealCount.value; const listings = supListings.value;
-  return demandOpinionOf(base > 0 ? (listings / base) * 100 : 0, base > 0 ? (deals / base) * 100 : 0, supLoaded.value && base > 0 && listings > 0);
+  return demandOpinionOf(base > 0 ? (listings / base) * 100 : 0, base > 0 ? (deals / base) * 100 : 0, supLoaded.value && base > 0 && listings > 0, true);   // 단지 수요분석은 아파트만 — 회전율 선 8%
 });
 /** 아래 표 한 줄 — 위 동 수요분석 표와 같은 칸. 해당평형(전용면적이 같은 거래) 기준, 평균가는 정상거래만 */
 const supRow = computed(() => {
@@ -8482,7 +8482,7 @@ const goBack = () => router.back();
                 <div v-for="c in supStats" :key="c.id" :class="['sup-cell', { lit: supLit(c.id) }]" @mouseenter="supLitKey = c.id" @mouseleave="supLitKey = ''">
                   <!-- ⓘ — 위 동 수요분석과 같은 말풍선(services/demandGrade) -->
                   <div class="sup-h"><InfoTip :rows="supTip(c.id)" under="box">{{ c.label }}</InfoTip><em class="sup-plain">{{ c.plain }}</em></div>
-                  <div class="sup-b"><b><UnitText :text="c.value" /><em class="sup-bar">|</em><span class="sup-pass">{{ DEMAND_PASS_TEXT[c.id] }}</span></b></div>
+                  <div class="sup-b"><b><UnitText :text="c.value" /><em class="sup-bar">|</em><span class="sup-pass">{{ demandPassText(c.id, true) }}</span></b></div>
                 </div>
               </div>
               <!-- 종합 의견 — 위 동 수요분석과 같은 상자 -->

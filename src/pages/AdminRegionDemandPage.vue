@@ -14,7 +14,7 @@ import { fetchDongUnitCount, peekDongUnitCount } from '../services/dongUnits';
 import { runLimited } from '../utils/runLimited';
 import { openNaverDongListing } from '../services/naverListing';
 import { dealCountTip, type TipRow } from '../services/tipRows';
-import { DEMAND_PASS_TEXT, DEMAND_PLAIN, dec1, demandGradeOf, demandOpinionOf, demandTip, tallyDongUnits } from '../services/demandGrade';
+import { DEMAND_PLAIN, dec1, demandGradeOf, demandOpinionOf, demandPassText, demandTip, tallyDongUnits } from '../services/demandGrade';
 import InfoTip from '../components/InfoTip.vue';
 import SnapChip from '../components/SnapChip.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
@@ -334,7 +334,7 @@ const unitsNote = computed(() => {
 /** 종합 의견 — 매물수를 넣고 세대수를 다 받았을 때만 */
 const dmOpinion = computed(() => {
   const v = navStats.value;
-  return demandOpinionOf(v.burden, v.turnover, v.listings > 0 && unitsTally.value.ready && v.units > 0);
+  return demandOpinionOf(v.burden, v.turnover, v.listings > 0 && unitsTally.value.ready && v.units > 0, kind.value === 'apt');
 });
 const dmResults = computed(() => {
   const v = navStats.value;
@@ -344,10 +344,10 @@ const dmResults = computed(() => {
   const unitsPct = (x: number, needsListings: boolean) => (waiting && (!needsListings || v.listings > 0) ? '받는 중' : pct(x));
   return [
     // 가장 중요한 지표(내놓으면 팔리나)를 맨 앞에, 짝(같은 뜻을 개월로)인 소진기간을 바로 옆에 — 소화율 → 소진기간 → 회전율 → 부담률
-    { id: 'absorb' as DmId, metric: 'absorb' as const, label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', kindWhat.value), plain: DEMAND_PLAIN.absorb },
-    { id: 'clear' as DmId, metric: 'clear' as const, label: '매물 소화기간', value: v.clearMonths > 0 ? `${dec1(v.clearMonths)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', kindWhat.value), plain: DEMAND_PLAIN.clear },
-    { id: 'turn' as DmId, metric: 'turnover' as const, label: '거래 회전율', value: unitsPct(v.turnover, false), grade: v.grades.turnover, tip: demandTip('turnover', kindWhat.value), plain: DEMAND_PLAIN.turnover },
-    { id: 'burden' as DmId, metric: 'burden' as const, label: '매물률', value: unitsPct(v.burden, true), grade: v.grades.burden, tip: demandTip('burden', kindWhat.value), plain: DEMAND_PLAIN.burden },
+    { id: 'absorb' as DmId, metric: 'absorb' as const, label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', kindWhat.value, kind.value === 'apt'), plain: DEMAND_PLAIN.absorb },
+    { id: 'clear' as DmId, metric: 'clear' as const, label: '매물 소화기간', value: v.clearMonths > 0 ? `${dec1(v.clearMonths)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', kindWhat.value, kind.value === 'apt'), plain: DEMAND_PLAIN.clear },
+    { id: 'turn' as DmId, metric: 'turnover' as const, label: '거래 회전율', value: unitsPct(v.turnover, false), grade: v.grades.turnover, tip: demandTip('turnover', kindWhat.value, kind.value === 'apt'), plain: DEMAND_PLAIN.turnover },
+    { id: 'burden' as DmId, metric: 'burden' as const, label: '매물률', value: unitsPct(v.burden, true), grade: v.grades.burden, tip: demandTip('burden', kindWhat.value, kind.value === 'apt'), plain: DEMAND_PLAIN.burden },
   ];
 });
 const areaText = (n: number) => (n > 0 ? dec1(n) : '-');
@@ -617,7 +617,7 @@ const downloadCsv = () => {
         <div class="dm-row c4">
           <div v-for="c in dmResults" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
             <div class="dm-head"><InfoTip :rows="c.tip" under="box">{{ c.label }}</InfoTip><em class="dm-plain">{{ c.plain }}</em></div>
-            <div class="dm-body"><b :class="{ wait: c.value === '받는 중' }"><UnitText :text="c.value" /><em class="nbar">|</em><span class="pass">{{ DEMAND_PASS_TEXT[c.metric] }}</span></b></div>
+            <div class="dm-body"><b :class="{ wait: c.value === '받는 중' }"><UnitText :text="c.value" /><em class="nbar">|</em><span class="pass">{{ demandPassText(c.metric, kind === 'apt') }}</span></b></div>
           </div>
         </div>
               <!-- 종합 의견 — 등급 대신 매물률 × 회전율 네 칸 한 줄(2026-11-10). 매물수를 넣어야 나온다 -->
