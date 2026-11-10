@@ -8,7 +8,7 @@ export type DemandMetric = 'turnover' | 'absorb' | 'burden' | 'clear';
 export const DEMAND_GRADE_RULES: Record<DemandMetric, { a: number; b: number; higher: boolean }> = {
   turnover: { a: 3, b: 1.5, higher: true },   // 연간 회전율(%) — A 3%↑ · B 1.5%↑
   absorb: { a: 180, b: 120, higher: true },   // 연간 매물 소화율(%) — A 180%↑ · B 120%↑
-  burden: { a: 3, b: 5, higher: false },      // 매물률(%) — A 3%↓ · B 5%↓
+  burden: { a: 3, b: 5, higher: false },      // 매물율(%) — A 3%↓ · B 5%↓
   clear: { a: 6, b: 12, higher: false },      // 매물 소화기간(개월) — A 6↓ · B 12↓
 };
 
@@ -41,7 +41,7 @@ export const DEMAND_PASS_TEXT: Record<DemandMetric, string> = {
 /** 막대 뒤 합격선 글 — 아파트 회전율만 8% */
 export const demandPassText = (m: DemandMetric, apt = false) => (m === 'turnover' ? `${turnoverLineOf(apt)}% 이상 적합` : DEMAND_PASS_TEXT[m]);
 
-/** 종합 의견 — 매물률(5% 선) × 거래 회전율(1.5% 선, 아파트 8%) 네 칸. 등급 대신 한 줄(2026-11-10 사용자 시안 'Level 3 · 저매물 / 저거래').
+/** 종합 의견 — 매물율(5% 선) × 거래 회전율(1.5% 선, 아파트 8%) 네 칸. 등급 대신 한 줄(2026-11-10 사용자 시안 'Level 3 · 저매물 / 저거래').
  *  선은 DEMAND_PASS_TEXT 와 같은 합격선. 둘 중 하나라도 값이 없으면 null */
 export const demandOpinionOf = (burden: number, turnover: number, ready: boolean, apt = false): { level: number; title: string; text: string } | null => {
   if (!ready) return null;
@@ -92,7 +92,7 @@ export const demandTotalGrade = (grades: DemandGrade[]): DemandGrade => {
 
 /** 종합 말풍선 — 앱 매매수요(dmTipData.total)와 같은 줄 */
 export const DEMAND_TOTAL_TIP: Array<[string, string]> = [
-  ['대상', '매물 소화율 · 매물 소화기간 · 거래 회전율 · 매물률'],
+  ['대상', '매물 소화율 · 매물 소화기간 · 거래 회전율 · 매물율'],
   ['공식', '네 등급을 A 3 · B 2 · C 1로 바꿔 평균을 낸다'],
   ['기준', '평균 2.5↑ A · 1.5↑ B · 그 아래 C'],
   ['조건', '네 등급 중 셋 이상 매겨져야 종합등급이 나온다'],

@@ -3026,7 +3026,7 @@ const aptAreaRows = computed(() => {
 });
 
 // ===== 웹 손품조사 — 단지 수급(거투 4분면 시장분석, 2026-11-10 시험 · 웹만) =====
-// 총세대수 · 현재 매물수 · 12개월 거래량 · 해당 세대수로 매물률 · 거래율 · 월평균 거래 · 매물소화기간을 계산한다.
+// 총세대수 · 현재 매물수 · 12개월 거래량 · 해당 세대수로 매물율 · 거래율 · 월평균 거래 · 매물소화기간을 계산한다.
 // 거래량은 이 단지(같은 지번) 국토부 매매(정상 + 직거래, 계약해제 제외), 조회일부터 12개월. 짐작한 값은 넣지 않는다
 const supRows = ref<CaseTradeRow[]>([]);
 const supLoaded = ref(false);
@@ -3076,7 +3076,7 @@ const supStats = computed(() => {
     row('absorb', '매물 소화율', DEMAND_PLAIN.absorb, ready && listings > 0 ? `${dec1(absorb)}%` : '-', ready && listings > 0, absorb),
     row('clear', '매물 소화기간', DEMAND_PLAIN.clear, clear > 0 ? `${dec1(clear)}개월` : '-', clear > 0, clear),
     row('turnover', '거래 회전율', '단지 거래가 얼마나 도나', ready && base > 0 ? `${dec1(turnover)}%` : '-', ready && base > 0, turnover),
-    row('burden', '매물률', DEMAND_PLAIN.burden, burden > 0 ? `${dec1(burden)}%` : '-', burden > 0, burden),
+    row('burden', '매물율', DEMAND_PLAIN.burden, burden > 0 ? `${dec1(burden)}%` : '-', burden > 0, burden),
   ];
 });
 /** 단지 수요분석 기초수치 ⓘ — 값이 어디서 왔는지 */
@@ -3724,7 +3724,7 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
     ['적정', '6M 이하 ↓ (짧을수록 좋다)'],
   ] },
   total: { arrow: '72%', rows: [
-    ['대상', '매물 소화율 · 매물 소화기간 · 거래 회전율 · 매물률'],
+    ['대상', '매물 소화율 · 매물 소화기간 · 거래 회전율 · 매물율'],
     ['공식', '네 등급을 A 3 · B 2 · C 1로 바꿔 평균을 낸다'],
     ['기준', '평균 2.5↑ A · 1.5↑ B · 그 아래 C'],
     ['조건', '네 등급 중 셋 이상 매겨져야 종합등급이 나온다'],
@@ -3760,7 +3760,7 @@ const dmListings = computed(() => dmNum('fs.dm.listings'));  // 총 매물수 (�
 const dmMonthly = computed(() => deal12mValue.value / 12);   // 월평균 거래량
 // 연간 회전율 = 12개월 거래량 ÷ 총세대수 × 100
 const dmTurnover = computed(() => (dmUnits.value > 0 ? (deal12mValue.value / dmUnits.value) * 100 : 0));
-// 매물률 = 총매물수 ÷ 총세대수 × 100 (내놓은 물건이 동네에서 차지하는 비중)
+// 매물율 = 총매물수 ÷ 총세대수 × 100 (내놓은 물건이 동네에서 차지하는 비중)
 const dmBurden = computed(() => (dmUnits.value > 0 ? (dmListings.value / dmUnits.value) * 100 : 0));
 // 매물 소화기간 = 총매물수 ÷ 거래량 (지금 매물이 다 팔리는 데 걸리는 시간).
 // 월평균으로 나눠 '달 수'로 셈한다 — 연평균으로 나눈 '해 수'에 12를 곱한 것과 같은 값이다.
@@ -4038,7 +4038,7 @@ const MKT_LIT_LINKS: Record<string, string[]> = {
 const DM_LIT_LINKS: Record<string, string[]> = {
   turn: ['turn', 'deal', 'units'],        // 거래 회전율 = 거래량 ÷ 총세대수
   absorb: ['absorb', 'deal', 'listings'], // 매물 소화율 = 거래량 ÷ 총매물수
-  burden: ['burden', 'listings', 'units'], // 매물률 = 총매물수 ÷ 총세대수
+  burden: ['burden', 'listings', 'units'], // 매물율 = 총매물수 ÷ 총세대수
   clear: ['clear', 'listings', 'deal'],   // 매물 소화기간 = 총매물수 ÷ 월평균 거래량
   // 수치 칸은 거꾸로 — 그 값을 쓰는 지표들이 켜진다
   deal: ['deal', 'turn', 'absorb', 'clear'],
@@ -8412,7 +8412,7 @@ const goBack = () => router.back();
                 </div>
                 <div :class="['cell split calc', { lit: dmLit('burden') }]" @mouseenter="dmLitEnter('burden')" @mouseleave="dmLitLeave()" @click="dmLitTap('burden')">
                   <div class="cell-head">
-                    <small>매물률</small>
+                    <small>매물율</small>
                     <button
                       type="button"
                       class="adp-dm-info"
@@ -8502,7 +8502,7 @@ const goBack = () => router.back();
                     <thead><tr>
                       <th>단지/평형</th><th class="in">세대수</th><th class="in">매물수<small>(네이버 매물수)</small></th><th>거래량<small>(최근 12개월)</small></th>
                       <th>평균가<small>(최근 12개월)</small></th><th>평균 전용면적<small>(㎡)</small></th><th>평균 건축연수<small>(년)</small></th>
-                      <th>매물 소화율<small>(%)</small></th><th>매물<br>소화기간</th><th class="turn">회전율<small>(%)</small></th><th>매물률<small>(%)</small></th>
+                      <th>매물 소화율<small>(%)</small></th><th>매물<br>소화기간</th><th class="turn">회전율<small>(%)</small></th><th>매물율<small>(%)</small></th>
                     </tr></thead>
                     <tbody><tr>
                       <td class="nm">{{ supName || '단지' }}<small v-if="supAreaUnits" class="sup-tbl-sub">전용 {{ trunc2(supMyArea) }}㎡</small></td>
