@@ -87,7 +87,8 @@ export interface ApartUnit { dong: string; ho: string; areaM2: number; price: nu
  *  모든 사용자가 같이 쓴다(2026-11-10). 해가 바뀌면 새 문서를 만든다 */
 export const APT_COMPLEX_COLLECTION = 'aptComplexes';
 export type AptComplexGroup = { exclusive: number; supply: number; count: number };
-export type AptComplexDoc = { pnu: string; year: string; units: ApartUnit[]; groups?: AptComplexGroup[] };
+/** supplies — 단지 전체 호실의 전용 · 공급(건축물대장 전유공용면적). 공급면적별 세대수는 여기서 센다 */
+export type AptComplexDoc = { pnu: string; year: string; units: ApartUnit[]; groups?: AptComplexGroup[]; supplies?: Array<{ dong: string; ho: string; exclusive: number; supply: number }> };
 export const aptComplexIdOf = (bCode10: string, lotText: string): string => {
   const pnu = buildPnu(bCode10, lotText);
   return pnu ? `${pnu}_${PRICE_YEAR}` : '';

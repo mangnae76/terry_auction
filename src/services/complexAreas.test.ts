@@ -1,28 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { areaTypeRowsOf, myGroupOf, type ComplexAreas } from './complexAreas';
+import { groupBySupply, myGroupOf, supplyRowsOf, type ComplexAreas } from './complexAreas';
 
-// 2026타경50132 안산파크푸르지오 — 공동주택가격(2026) 전용별 호실 수 + 건축물대장 공급(전용 + 주건축물 공용)
-const areas: ComplexAreas = {
-  total: 1129,
-  mine: { exclusive: 59.99, supply: 83.18 },
-  groups: [
-    { exclusive: 59.99, supply: 83.18, count: 123 },
-    { exclusive: 73.94, supply: 102.47, count: 246 },
-    { exclusive: 84.53, supply: 116.23, count: 132 },
-    { exclusive: 84.56, supply: 114.84, count: 56 },
-    { exclusive: 84.67, supply: 115.77, count: 539 },
-    { exclusive: 101.98, supply: 138.8, count: 33 },
-  ],
-};
+// 2026타경50132 안산파크푸르지오 — 건축물대장 전유공용면적(2026-11-10). 같은 전용 59.99 안에서도 공급이 83.18 · 83.21 로 갈린다
+const supplies = [
+  ...Array.from({ length: 122 }, (_, i) => ({ dong: '101동', ho: String(2301 + i), exclusive: 59.99, supply: 83.18 })),
+  { dong: '102동', ho: '101', exclusive: 59.99, supply: 83.21 },
+  ...Array.from({ length: 407 }, (_, i) => ({ dong: '103동', ho: String(100 + i), exclusive: 84.67, supply: 115.77 })),
+  ...Array.from({ length: 132 }, (_, i) => ({ dong: '104동', ho: String(100 + i), exclusive: 84.67, supply: 115.96 })),
+];
+const areas: ComplexAreas = { groups: groupBySupply(supplies), total: supplies.length, mine: { exclusive: 59.99, supply: 83.18 } };
 
 describe('complexAreas', () => {
-  it('내 평형 세대수', () => {
-    expect(myGroupOf(areas, 59.98)?.count).toBe(123);
+  it('공급면적이 같은 호실끼리만 센다 — 타입 · 평형으로 묶지 않는다', () => {
+    expect(areas.groups.map((g) => `${g.supply.toFixed(2)}:${g.count}`)).toEqual(['83.18:122', '83.21:1', '115.77:407', '115.96:132']);
   });
-  it('면적 종류 — 평형마다 세대수, 같은 숫자 평형은 묶는다', () => {
-    const rows = areaTypeRowsOf('83㎡, 102㎡, 114D㎡, 115A㎡, 115B㎡, 116C㎡, 138㎡', areas, 59.98);
-    expect(rows.map((r) => `${r.text}:${r.count}${r.mine ? '*' : ''}`)).toEqual([
-      '83㎡:123*', '102㎡:246', '114D㎡:56', '115A㎡·115B㎡:539', '116C㎡:132', '138㎡:33',
+  it('해당면적 세대수 — 내 호실과 공급이 같은 호실 수', () => {
+    expect(myGroupOf(areas)?.count).toBe(122);
+    expect(myGroupOf({ ...areas, mine: null })).toBeNull();
+  });
+  it('면적종류 줄 — 공급㎡(평) · 내 호실', () => {
+    expect(supplyRowsOf(areas).map((r) => `${r.text} ${r.count}${r.mine ? '*' : ''}`)).toEqual([
+      '83.18㎡(25.16평) 122*', '83.21㎡(25.17평) 1', '115.77㎡(35.02평) 407', '115.96㎡(35.08평) 132',
     ]);
   });
 });

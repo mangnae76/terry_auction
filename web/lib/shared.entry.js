@@ -57,7 +57,7 @@ export { lookupAddress } from '../../src/services/addressLookup';
 /* 단지명 · 총 주차수 · 내 평형 — 물건정보 단지정보 · 건축물정보에서 PDF 칸이 비었을 때(앱과 같은 규칙) */
 export { complexNameOf, totalParkingOf } from '../../src/services/aptComplex';
 /* 아파트 평형별 세대수 · 공급면적, 내 호실 공급면적 — 정보요약 · 단지정보 · 건축물정보(앱과 같은 모듈) */
-export { getComplexAreas, myGroupOf, areaTypeRowsOf } from '../../src/services/complexAreas';
+export { getComplexAreas, myGroupOf, supplyRowsOf, areaUnitsOf } from '../../src/services/complexAreas';
 /* 시도 · 시군구 표(법정동 코드) · 시군구의 동 이름(최근 실거래) — 경매사례 지역 고르기 · 도우미 동 추가 */
 export { SIDO_NAMES, districtsOf, REGION_GROUPS } from '../../src/services/regionCodes';
 export { resolveRegionFromAddress } from '../../src/services/regionResolver';   /* 주소 → 시군구 코드(손품조사 경매사례 탭이 물건 주소로 지역을 고른다) */

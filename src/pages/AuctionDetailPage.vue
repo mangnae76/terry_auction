@@ -31,7 +31,7 @@ import {
 } from '../services/fieldChecklist';
 import { getBuildingFacts } from '../services/buildingFacts';
 import { complexNameOf, totalParkingOf } from '../services/aptComplex';
-import { getComplexAreas, myGroupOf, areaTypeRowsOf, type ComplexAreas } from '../services/complexAreas';
+import { getComplexAreas, myGroupOf, supplyRowsOf, areaUnitsOf, type ComplexAreas } from '../services/complexAreas';
 import { DEMAND_PLAIN } from '../services/demandGrade';
 import { openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
@@ -2996,7 +2996,7 @@ watch(() => [auction.value?.id, isApartment.value] as const, async ([id, apt]) =
   complexAreas.value = got;
   // 물건 문서 정보요약에도 남긴다 — 빈 칸일 때만(공급면적은 예전에 PDF 공용까지 더해 넣은 틀린 값도 바꾼다). 사람이 적은 값은 덮지 않는다
   const a = auction.value;
-  const group = myGroupOf(got, Number(a.buildingAreaM2) || 0);
+  const group = myGroupOf(got);
   const supply = got?.mine?.supply || 0;   // 이 호실 건축물대장 값만 — 다른 호실 값으로 메우지 않는다
   if (!a.basicSummary) a.basicSummary = {};
   const v = a.basicSummary;
@@ -3005,20 +3005,21 @@ watch(() => [auction.value?.id, isApartment.value] as const, async ([id, apt]) =
   const oldWrong = ex > 0 && common > 0 ? (ex + common).toFixed(2) : '';
   let changed = false;
   if (supply > 0 && (!v['sum.supplyArea'] || v['sum.supplyArea'] === oldWrong) && v['sum.supplyArea'] !== supply.toFixed(2)) { v['sum.supplyArea'] = supply.toFixed(2); changed = true; }
-  if (group?.count && !v['sum.areaUnits']) { v['sum.areaUnits'] = String(group.count); changed = true; }
+  // 해당면적 세대수 = 내 호실과 공급면적이 같은 호실 수. 자동으로 넣은 값엔 표('sum.areaUnitsAuto')를 남겨 다음에 고칠 수 있게.
+  // 예전 자동값(전용면적이 같은 호실 수 — 공급이 다른 호실까지 셌다, 50132 는 123)도 바꾼다. 사람이 적은 값은 덮지 않는다
+  const units = areaUnitsOf(got, v['sum.areaUnits'] ?? '', v['sum.areaUnitsAuto'] ?? '');
+  if (group?.count && units === String(group.count) && v['sum.areaUnits'] !== units) { v['sum.areaUnits'] = units; v['sum.areaUnitsAuto'] = '1'; changed = true; }
   if (changed) void store.saveAuction(a, { silent: true });
 }, { immediate: true });
-/** 내 평형 세대수 — 적어 둔 값이 먼저, 없으면 공동주택가격 호실 수 */
-const myAreaUnits = computed(() => sumVal('sum.areaUnits')
-  || String(myGroupOf(complexAreas.value, Number(auction.value?.buildingAreaM2) || 0)?.count || ''));
+/** 해당면적 세대수 — 사람이 적은 값이 먼저, 아니면 공급면적이 같은 호실 수(건축물대장) */
+const myAreaUnits = computed(() => areaUnitsOf(complexAreas.value, sumVal('sum.areaUnits'), sumVal('sum.areaUnitsAuto')));
 /** 공급면적 — 이 호실 건축물대장(전용 + 주건축물 공용)만. 같은 전용의 다른 호실 값으로 메우지 않는다(추정값 금지).
  *  PDF 공용면적엔 지하주차장까지 들어 있어 쓰지 않는다 */
 const mySupplyM2 = computed(() => complexAreas.value?.mine?.supply || 0);
-/** 단지정보 면적 종류 — 평형마다 세대수 · 내 평형. 조회 전이면 PDF 평형 이름만(짐작해 표시하지 않는다) */
+/** 단지정보 면적종류 — 건축물대장 공급면적마다 세대수 · 내 호실(타입 · 평형으로 묶지 않는다). 받기 전이면 PDF 평형 이름만 */
 const aptAreaRows = computed(() => {
-  const types = auction.value?.aptComplexInfo?.areaTypes ?? '';
-  if (complexAreas.value) return areaTypeRowsOf(types, complexAreas.value, Number(auction.value?.buildingAreaM2) || 0);
-  return types.split(/\s*,\s*/).filter(Boolean).map((text) => ({ text, count: 0, mine: false }));
+  if (complexAreas.value?.groups.length) return supplyRowsOf(complexAreas.value);
+  return (auction.value?.aptComplexInfo?.areaTypes ?? '').split(/\s*,\s*/).filter(Boolean).map((text) => ({ text, count: 0, mine: false }));
 });
 
 // 주차수 · 엘베 — PDF에 없으면 그 필지의 건축물대장(표제부)에서 채운다. 사람이 넣은 값은 덮지 않는다
@@ -5579,6 +5580,7 @@ const setSumVal = (id: string, value: string) => {
   if (!auction.value) return;
   if (!auction.value.basicSummary) auction.value.basicSummary = {};
   auction.value.basicSummary[id] = value;
+  if (id === 'sum.areaUnits') auction.value.basicSummary['sum.areaUnitsAuto'] = '';   // 사람이 적었다 — 자동으로 덮지 않게
   persistSoon();
 };
 
@@ -6013,7 +6015,7 @@ const goBack = () => router.back();
               <tr v-if="auction.aptComplexInfo.facilities"><th>편의시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.facilities }}</td></tr>
               <tr v-if="auction.aptComplexInfo.schools"><th>교육시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.schools }}</td></tr>
               <tr v-if="auction.aptComplexInfo.restPark"><th>휴식/공원</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.restPark }}</td></tr>
-              <tr v-if="auction.aptComplexInfo.areaTypes"><th>면적종류</th><td colspan="3" class="wrap"><template v-for="(t, i) in aptAreaRows" :key="t.text">{{ i ? ', ' : '' }}<span :class="{ 'adp-apt-mine': t.mine }">{{ t.text }}{{ t.count ? ` ${t.count.toLocaleString('ko-KR')}세대` : '' }}<small v-if="t.mine">내 물건</small></span></template></td></tr>
+              <tr v-if="aptAreaRows.length"><th>면적종류</th><td colspan="3" class="wrap"><template v-for="(t, i) in aptAreaRows" :key="t.text">{{ i ? ', ' : '' }}<span :class="{ 'adp-apt-mine': t.mine }">{{ t.text }}{{ t.count ? ` ${t.count.toLocaleString('ko-KR')}세대` : '' }}<small v-if="t.mine">내 물건</small></span></template></td></tr>
               <tr v-if="auction.aptComplexInfo.evCharger"><th>전기차충전소</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.evCharger }}</td></tr>
             </tbody>
           </table>
@@ -8346,7 +8348,7 @@ const goBack = () => router.back();
                 <th>세대구성</th>
                 <th>입지조건</th>
                 <th>등수</th>
-                <th>평균등수</th>
+                <th>등수평균</th>
               </tr>
               </thead>
               <tbody>

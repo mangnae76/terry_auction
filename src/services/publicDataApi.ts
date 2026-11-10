@@ -1200,6 +1200,53 @@ export const fetchUnitSupply = async (bCode10: string, jibun: string, dong: stri
   return { exclusive: Math.round(exclusive * 100) / 100, supply: Math.round((exclusive + common) * 100) / 100 };
 };
 
+/** 단지 전체 호실의 전용 · 공급면적 — 건축물대장 전유공용면적을 쪽(100줄)마다 다 받는다(1,129세대 단지 103쪽, 약 20초).
+ *  공동주택(아파트) 전유가 있는 호실만 — 상가(근린생활시설)는 뺀다. 한 쪽이라도 못 받으면 던진다(덜 찬 값을 남기지 않게) */
+export type ComplexUnitArea = { dong: string; ho: string; exclusive: number; supply: number };
+export const fetchComplexSupplies = async (bCode10: string, jibun: string): Promise<ComplexUnitArea[]> => {
+  const m = jibun.replace(/\s+/g, ' ').match(/^(산\s*)?(\d+)(?:-(\d+))?$/);
+  if (!m || bCode10.length < 10) return [];
+  const page = async (pageNo: number) => {
+    const url = buildApiUrl(BLD_PUBUSE_API_PATH);
+    setServiceKey(url);
+    url.searchParams.set('sigunguCd', bCode10.slice(0, 5));
+    url.searchParams.set('bjdongCd', bCode10.slice(5, 10));
+    url.searchParams.set('platGbCd', m[1] ? '1' : '0');
+    url.searchParams.set('bun', m[2].padStart(4, '0'));
+    url.searchParams.set('ji', (m[3] ?? '0').padStart(4, '0'));
+    url.searchParams.set('numOfRows', '100');
+    url.searchParams.set('pageNo', String(pageNo));
+    url.searchParams.set('_type', 'json');
+    const json = await requestJson(url);
+    const code = String(json?.response?.header?.resultCode ?? '00');
+    if (!/^0+$/.test(code)) throw new Error(`건축물대장 조회 실패(${code})`);
+    return { rows: asArray(json?.response?.body?.items?.item), total: Number(json?.response?.body?.totalCount) || 0 };
+  };
+  const first = await page(1);
+  const pages = Math.ceil(first.total / 100);
+  const rows = [...first.rows];
+  let next = 2;
+  // 넷씩 나눠 받는다 — 한꺼번에 던지면 429(1초 한도)가 난다
+  await Promise.all(Array.from({ length: Math.min(4, Math.max(0, pages - 1)) }, async () => {
+    while (next <= pages) { const p = next; next += 1; rows.push(...(await page(p)).rows); }
+  }));
+  const units = new Map<string, { dong: string; ho: string; ex: number; common: number; home: boolean }>();
+  rows.forEach((r) => {
+    const dong = String(r.dongNm ?? '').trim(); const ho = String(r.hoNm ?? '').trim();
+    const k = `${dong}|${ho}`;
+    const u = units.get(k) ?? { dong, ho, ex: 0, common: 0, home: false };
+    const area = Number(r.area) || 0;
+    if (String(r.exposPubuseGbCdNm ?? '') === '전유') {
+      u.ex += area;
+      if (/아파트|공동주택/.test(`${r.mainPurpsCdNm ?? ''} ${r.etcPurps ?? ''}`)) u.home = true;
+    } else if (String(r.mainAtchGbCdNm ?? '') === '주건축물') u.common += area;
+    units.set(k, u);
+  });
+  return [...units.values()].filter((u) => u.home && u.ex > 0).map((u) => ({
+    dong: u.dong, ho: u.ho, exclusive: Math.round(u.ex * 100) / 100, supply: Math.round((u.ex + u.common) * 100) / 100,
+  }));
+};
+
 /** 그 동의 연립·다세대 세대수(물건상세 매매수요) */
 export const fetchDongHouseholds = async (bCode10: string): Promise<number> => (await fetchDongUnits(bCode10)).villa;
 
