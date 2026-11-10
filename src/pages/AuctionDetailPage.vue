@@ -11871,7 +11871,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-sub.cmp-sub0 { margin-left: 0; }   /* 단지 입지비교가 입지/개별성 위로 올라가 번호(②)는 뺐다 — 제목은 위 칩 줄 */
 .cmp-map { position: relative; z-index: 0; isolation: isolate; border: 1px solid #e3e8f0; border-radius: 10px; overflow: hidden; background: #eef2f6; }   /* 지도 안 z-index 를 이 상자에 가둔다(시세분석 .map 과 같게) */
 .cmp-map-in { height: 620px; }   /* 시세분석 지도(SonpumPricePage .map-in)와 같은 높이 · 둥글기(2026-11-10) */
-.cmp-map-slot { margin: 0 -8px 6px; }   /* 상자 안쪽 여백이 시세분석 카드보다 8px 넓어 — 지도 폭을 시세분석 지도와 같게 */
+.cmp-map-slot { margin: 0 0 6px; }   /* 좌우를 위 실사용자 안쪽 상자 · 칸 줄 · 아래 표와 같은 선에 맞춘다(2026-11-11, 예전엔 -8px 로 시세분석 지도 폭에 맞췄다) */
 .cmp-map-legend { position: absolute; left: 10px; bottom: 10px; z-index: 500; display: flex; gap: 10px; padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, .94); font-size: 12px; color: #111827; }   /* 시세분석 지도 .legend 와 같은 자리 · 꼴 */
 .cmp-map-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .cmp-map-legend .dot { width: 10px; height: 10px; border-radius: 50%; background: #2b4fd8; }
