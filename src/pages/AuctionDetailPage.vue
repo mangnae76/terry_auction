@@ -5274,7 +5274,7 @@ const REAL_USER_BANDS = [
   {
     id: '12',
     title: '전용 12평',
-    conditions: ['일자리', '교통', '인프라', '공원'],
+    conditions: ['교통', '인프라', '공원'],
     maxPyeong: 13.5,
   },
   {
@@ -5322,23 +5322,23 @@ const rankConditions = computed(
 // 룸수 — 전용면적에서 자동으로 뽑지 않고 직접 고른다.
 // 같은 평수라도 방을 몇 개로 나눴느냐에 따라 들어와 사는 가족이 달라지기 때문이다.
 // 오른쪽 세대구성은 여기서 고른 룸수를 그대로 따라간다.
-// 입지조건도 여기에 둔다 — 혼자 사는 사람은 일자리·교통을 보고,
+// 입지조건도 여기에 둔다 — 혼자 사는 사람은 교통을 보고(일자리는 교통이 편하면 가까워지므로 뺐다, 2026-11-10 사용자 결정),
 // 아이가 있는 집은 유치원·초등학교·학원가를 본다. 보는 것이 가족에 따라 달라진다.
 const ROOM_TYPES = [
   {
     id: '1', label: '1룸',
     details: [{ who: '1인가구', kinds: [] }],
-    conditions: ['일자리', '교통', '인프라', '공원'],
+    conditions: ['교통', '인프라', '공원'],
   },
   {
     id: '1.5', label: '1.5룸',
     details: [{ who: '1인가구', kinds: [] }, { who: '2인가구', kinds: ['신혼'] }],
-    conditions: ['일자리', '교통', '인프라', '공원'],
+    conditions: ['교통', '인프라', '공원'],
   },
   {
     id: '2', label: '2룸',
     details: [{ who: '1인가구', kinds: [] }, { who: '2인가구', kinds: ['신혼', '중장년'] }],
-    conditions: ['일자리', '교통', '인프라', '공원'],
+    conditions: ['교통', '인프라', '공원'],
   },
   {
     id: '2b', label: '큰 2룸',
@@ -5373,7 +5373,7 @@ const pickRoomType = async (id: string) => {
 // 등수 열쇠는 손으로 고른 구간만 — 자동 구간으로 바꾸면 예전에 적어 둔 등수가 안 보인다
 const rankKey = (cond: string) => `${pickedRealUserBand.value?.id ?? ''}:${cond}`;
 /** 입지조건별로 어느 주변시설을 보는지 — 여기 한 줄만 고치면 기준이 바뀐다.
- *  '일자리'만 뺀다 — 출퇴근 거리(수 km)라 반경 조회로 잴 수 있는 값이 아니다. */
+ *  입지조건에서 '일자리'는 뺐다 — 교통이 편하면 일자리 접근성도 좋다(2026-11-10). 남은 조건은 모두 거리로 잰다 */
 const LOCATION_SOURCES: Record<string, Array<keyof NearbyEnvironment>> = {
   교통: ['subway', 'busStop'],
   인프라: ['mart', 'hospital', 'commerce', 'academy'],
