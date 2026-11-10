@@ -8330,16 +8330,17 @@ const goBack = () => router.back();
             <!-- ① 실사용자 + 입지등수 -->
             <div class="adp-dm-block boxed">
             <div class="adp-dm-sub">① 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>초기화</button></div>
-            <table class="adp-table adp-ruser-table">
+            <table :class="['adp-table adp-ruser-table', { tight: !webEmbed }]">
               <colgroup v-if="webEmbed">
               <col style="width: 20%" /><col style="width: 15%" /><col style="width: 21%" /><col style="width: 17%" /><col style="width: 12%" /><col style="width: 15%" />
               </colgroup>
               <!-- 아파트는 '전용 59.98㎡ / 18.1평' 두 줄이 들어가게 첫 칸을 넓히고 세대구성을 줄인다(2026-11-10) -->
+              <!-- 폰 폭(표 327px)에서 '입지등수' · '등수평균' 머리와 면적 두 줄이 다 들어가게 잰 비율(2026-11-10). 칸 안쪽 여백은 2px -->
               <colgroup v-else-if="isApartment">
-              <col style="width: 38%" /><col style="width: 16%" /><col style="width: 18%" /><col style="width: 13%" /><col style="width: 15%" />
+              <col style="width: 37.5%" /><col style="width: 15%" /><col style="width: 17.5%" /><col style="width: 14.5%" /><col style="width: 15.5%" />
               </colgroup>
               <colgroup v-else>
-              <col style="width: 33%" /><col style="width: 21%" /><col style="width: 18%" /><col style="width: 13%" /><col style="width: 15%" />
+              <col style="width: 31%" /><col style="width: 19%" /><col style="width: 18%" /><col style="width: 15%" /><col style="width: 17%" />
               </colgroup>
               <thead>
               <tr>
@@ -8347,7 +8348,7 @@ const goBack = () => router.back();
                 <th v-if="webEmbed">룸수</th>
                 <th>세대구성</th>
                 <th>입지조건</th>
-                <th>등수</th>
+                <th>입지등수</th>
                 <th>등수평균</th>
               </tr>
               </thead>
@@ -12180,7 +12181,10 @@ tr.tone-take { background: #fff5f5; }
 .adp-agency-phone { color: #2b6df3; text-decoration: none; font-weight: 700; }
 /* 정보요약 값은 모두 까만색 한 가지 — 파란 강조 · 회색 기준일 · 전화 링크까지(2026-11-10, 사용자 결정) */
 .adp-sum-rows dd, .adp-sum-rows dd * { color: #111827 !important; }
+/* 굵기도 한 가지 — 값은 모두 굵게(700), 강조 · 부서 · 전화까지 같게(아파트 · 빌라, 2026-11-10) */
+.adp-sum-rows dd, .adp-sum-rows dd * { font-weight: 700 !important; }
 /* 실사용자 표 — 아파트 전용 · 공급면적 두 줄(고르는 칸 대신) */
+.adp-ruser-table.tight th, .adp-ruser-table.tight td { padding-left: 2px; padding-right: 2px; }   /* 앱 — 좁은 폭에 다섯 칸 */
 .adp-ruser-area { display: grid; justify-items: center; align-content: center; gap: 4px; font-size: 12.5px; font-weight: 700; color: #111827; white-space: nowrap; text-align: center; }   /* 룸수(3룸) 글자와 같은 크기, 칸 가운데 */
 /* 줄 앞 '전용' · '공급' — 좁은 칸에 들어가게 작고 옅게 */
 .adp-ruser-area em { margin-right: 3px; font-style: normal; font-size: 11px; font-weight: 600; color: #6b7280; }
