@@ -24,7 +24,8 @@
 import { readFileSync } from 'node:fs';
 import { COLLECTION, KIND_PATHS, PATHS, QuotaError, addLandingDoc, docId, fetchMonth, monthFinalAt, newLandingCount, parseDocId, regionTable, ymdAgo } from './rtms.mjs';
 
-const HISTORY_MONTHS = 49;        // 손품조사 4년치 = 4년 전 그달부터 이번 달까지
+const HISTORY_MONTHS = Number(process.env.HISTORY_MONTHS) || 49;        // 손품조사 4년치 = 4년 전 그달부터 이번 달까지. 손으로 돌릴 때 줄일 수 있다(인천 1년치 = 13, 2026-11-10)
+const ONLY_EXTRA = process.env.ONLY_EXTRA === '1';   // 손으로 더한 지역(EXTRA_TARGETS)만 — DB 에 있는 다른 지역은 건드리지 않는다
 const MAX_DOC_BYTES = 1_000_000;  // Firestore 문서 한도(1MiB) 안쪽
 const CONCURRENCY = 4;
 
@@ -101,12 +102,15 @@ const main = async () => {
   // 대상 지역 · 종류
   const targets = new Map();
   const add = (t) => targets.set(`${t.lawdCd5}|${t.path}`, t);
-  for (const sido of alwaysSido) for (const lawdCd5 of table[sido] ?? []) for (const path of Object.values(PATHS)) add({ lawdCd5, path });
-  for (const lawdCd5 of alwaysLawd) for (const path of Object.values(PATHS)) add({ lawdCd5, path });
-  let stale = 0;
-  for (const id of saved.keys()) { const p = parseDocId(id); if (!p) continue; if (knownCodes.has(p.lawdCd5)) add(p); else stale += 1; }
-  if (stale) log(`지역 표에 없는 옛 코드 문서 ${stale.toLocaleString()}개는 건너뜀`);
+  if (!ONLY_EXTRA) {
+    for (const sido of alwaysSido) for (const lawdCd5 of table[sido] ?? []) for (const path of Object.values(PATHS)) add({ lawdCd5, path });
+    for (const lawdCd5 of alwaysLawd) for (const path of Object.values(PATHS)) add({ lawdCd5, path });
+    let stale = 0;
+    for (const id of saved.keys()) { const p = parseDocId(id); if (!p) continue; if (knownCodes.has(p.lawdCd5)) add(p); else stale += 1; }
+    if (stale) log(`지역 표에 없는 옛 코드 문서 ${stale.toLocaleString()}개는 건너뜀`);
+  }
   extraTargets().forEach(add);
+  log(`받을 달 ${HISTORY_MONTHS}개${ONLY_EXTRA ? ' · 손으로 더한 지역만' : ''}`);
   const list = [...targets.values()];
   log(`대상 ${list.length}개 (지역 × 종류)`);
   if (!list.length) { log('대상이 없습니다 — 끝'); return; }

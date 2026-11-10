@@ -17,6 +17,15 @@ on:
         description: '지난 달 채우기 최대 호출 수'
         required: false
         default: '1500'
+      history_months:
+        description: '받을 달 수 (이번 달 포함, 1년치 = 13, 기본 49 = 4년치)'
+        required: false
+        default: '49'
+      only_extra:
+        description: '더할 지역만 받기 (DB 에 있는 다른 지역은 건드리지 않음)'
+        type: boolean
+        required: false
+        default: false
       count_only:
         description: '국토부는 부르지 않고 대문 숫자만 다시 세기'
         type: boolean
@@ -49,3 +58,5 @@ jobs:
           EXTRA_TARGETS: ${{ inputs.extra_targets || vars.TRADE_EXTRA_TARGETS || '' }}
           BACKFILL_BUDGET: ${{ inputs.backfill_budget || '1500' }}
           COUNT_ONLY: ${{ inputs.count_only && '1' || '' }}
+          HISTORY_MONTHS: ${{ inputs.history_months || '49' }}
+          ONLY_EXTRA: ${{ inputs.only_extra && '1' || '' }}
