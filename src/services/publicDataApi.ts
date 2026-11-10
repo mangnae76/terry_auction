@@ -1038,11 +1038,13 @@ const fetchMonthWithRetry = async (
   tries = 2,
 ): Promise<MonthFetchResult> => {
   const id = cacheKey(lawdCd5, path, dealYmd);
-  if (deniedPaths().includes(path)) return { rows: [], error: '403 (data.go.kr 해당 데이터셋 활용신청/승인 필요 — 오늘은 다시 부르지 않음)', typeLabel: '' };
   const hit = await readCache<MonthFetchResult>('cacheTradeMonth', id, monthCacheTtl(dealYmd));
   // 빈 달은 정상 응답으로 확인된 것(checked)만 믿는다 — 표 없이 예전에 저장된 0건은 오류 응답이 '0건'으로 굳은 것일 수 있어 다시 받는다.
   // 예전엔 0건이면 늘 다시 받아, 거래 없는 달이 많은 빌라 · 작은 구는 열 때마다 국토부를 불렀다(2026-11-10)
   if (hit && !hit.error && (hit.rows.length > 0 || hit.checked)) return hit;
+  // 403 으로 막아 둔 API 는 국토부만 안 부른다 — DB 에 받아 둔 달(새벽 적재 · 다른 사람)은 위에서 먼저 쓴다.
+  // 예전엔 이 검사가 DB 보다 앞이라, 그날 한 번 403 이 나면 DB 에 있는 전월세까지 하루 내내 0건이었다(2026-11-10 상록구 아파트 전월세)
+  if (deniedPaths().includes(path)) return { rows: [], error: '403 (data.go.kr 해당 데이터셋 활용신청/승인 필요 — 오늘은 다시 부르지 않음)', typeLabel: '' };
   let last: MonthFetchResult = { rows: [], error: '미조회', typeLabel: '' };
   for (let i = 0; i < tries; i += 1) {
     if (isQuotaBlocked()) return { rows: [], error: QUOTA_EXCEEDED_MSG, typeLabel: '' };
