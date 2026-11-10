@@ -11811,7 +11811,7 @@ tr.tone-take { background: #fff5f5; }
 .cmp-persona .val.stack > span.ph { font-weight: 400; color: #9ca3af; }   /* 안내 글 — 고르기 전 자리 글은 굵기 없이 흐린 회색(입력칸 안내 글 규칙) */
 .cmp-persona .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
 .cmp-persona .pa-seg button { border: none; background: transparent; border-radius: 5px; height: 26px; padding: 0 11px; font: inherit; font-size: 14px; font-weight: 400; color: #6b7280; cursor: pointer; white-space: nowrap; }
-.cmp-persona .pa-seg button.on { background: #fff; color: #111827; font-weight: 700; box-shadow: 0 1px 2px rgba(17, 24, 39, .12); }   /* 고른 룸수 — 파랑 대신 검정 굵게 */
+.cmp-persona .pa-seg button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }   /* 고른 룸수 — 시세분석 고르기 단추와 같은 파랑(2026-11-11 사용자, 검정에서 되돌림) */
 .cmp-reset { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 7px; background: #fff; font: inherit; font-size: 12.5px; color: #111827; cursor: pointer; }
 .cmp-reset.off { color: #c3c9d4; cursor: default; }
 input.cmp-rk.in { padding: 0; font: inherit; font-weight: 700; text-align: center; border-color: #2b6df3; background: #fff; }
