@@ -20,12 +20,27 @@ export const demandGradeOf = (metric: DemandMetric, ready: boolean, value: numbe
   return value <= a ? 'A' : value <= b ? 'B' : 'C';
 };
 
+/** 소수 한 자리 — 0 이면 떼고 정수로('100.0' → '100', '3.6' 그대로). 수요지표 값 공통(2026-11-10) */
+export const dec1 = (n: number) => { const r = Math.round(n * 10) / 10; return Number.isInteger(r) ? r.toLocaleString('ko-KR') : r.toFixed(1); };
+
 /** 합격선 한 줄 — 웹 수요분석 지표 칸 막대 뒤(등급 A·B·C 대신, 2026-11-10 사용자 결정). 선은 등급표의 '적합' 끝(B 경계) */
 export const DEMAND_PASS_TEXT: Record<DemandMetric, string> = {
   absorb: `${DEMAND_GRADE_RULES.absorb.b}% 이상 적합 · 미만 부적합`,
   clear: `${DEMAND_GRADE_RULES.clear.b}개월 이하 적합 · 초과 부적합`,
   turnover: `${DEMAND_GRADE_RULES.turnover.b}% 이상 적합 · 미만 부적합`,
   burden: `${DEMAND_GRADE_RULES.burden.b}% 이하 적합 · 초과 부적합`,
+};
+
+/** 종합 의견 — 매물률(5% 선) × 거래 회전율(1.5% 선) 네 칸. 등급 대신 한 줄(2026-11-10 사용자 시안 'Level 3 · 저매물 / 저거래').
+ *  선은 DEMAND_PASS_TEXT 와 같은 합격선. 둘 중 하나라도 값이 없으면 null */
+export const demandOpinionOf = (burden: number, turnover: number, ready: boolean): { level: number; title: string; text: string } | null => {
+  if (!ready) return null;
+  const lowListing = burden <= DEMAND_GRADE_RULES.burden.b;
+  const highDeal = turnover >= DEMAND_GRADE_RULES.turnover.b;
+  if (lowListing && highDeal) return { level: 1, title: '저매물 / 고거래', text: '매물은 적고 거래는 활발한 구간입니다.' };
+  if (!lowListing && highDeal) return { level: 2, title: '고매물 / 고거래', text: '매물은 많지만 거래도 활발한 구간입니다.' };
+  if (lowListing) return { level: 3, title: '저매물 / 저거래', text: '매물은 적지만 거래도 둔한 구간입니다.' };
+  return { level: 4, title: '고매물 / 저거래', text: '매물은 쌓이고 거래도 둔한 구간입니다.' };
 };
 
 /** A·B 는 적합, C 는 부적합 */

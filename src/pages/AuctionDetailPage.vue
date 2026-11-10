@@ -32,7 +32,7 @@ import {
 import { getBuildingFacts } from '../services/buildingFacts';
 import { complexNameOf, totalParkingOf } from '../services/aptComplex';
 import { getComplexAreas, supplyRowsOf, areaUnitsOf, sameExclusiveCountOf, type ComplexAreas } from '../services/complexAreas';
-import { DEMAND_PASS_TEXT, DEMAND_PLAIN, demandFitText, demandGradeOf, demandTip, type DemandMetric } from '../services/demandGrade';
+import { DEMAND_PASS_TEXT, DEMAND_PLAIN, dec1, demandFitText, demandGradeOf, demandOpinionOf, demandTip, type DemandMetric } from '../services/demandGrade';
 import { openNaverComplexListing, openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -3073,10 +3073,10 @@ const supStats = computed(() => {
     return { id, label, plain, value, grade, fit: demandFitText(grade) };
   };
   return [
-    row('absorb', '매물 소화율', DEMAND_PLAIN.absorb, ready && listings > 0 ? `${absorb.toFixed(1)}%` : '-', ready && listings > 0, absorb),
-    row('clear', '매물 소화기간', DEMAND_PLAIN.clear, clear > 0 ? `${clear.toFixed(1)}개월` : '-', clear > 0, clear),
-    row('turnover', '거래 회전율', '단지 거래가 얼마나 도나', ready && base > 0 ? `${turnover.toFixed(1)}%` : '-', ready && base > 0, turnover),
-    row('burden', '매물률', DEMAND_PLAIN.burden, burden > 0 ? `${burden.toFixed(1)}%` : '-', burden > 0, burden),
+    row('absorb', '매물 소화율', DEMAND_PLAIN.absorb, ready && listings > 0 ? `${dec1(absorb)}%` : '-', ready && listings > 0, absorb),
+    row('clear', '매물 소화기간', DEMAND_PLAIN.clear, clear > 0 ? `${dec1(clear)}개월` : '-', clear > 0, clear),
+    row('turnover', '거래 회전율', '단지 거래가 얼마나 도나', ready && base > 0 ? `${dec1(turnover)}%` : '-', ready && base > 0, turnover),
+    row('burden', '매물률', DEMAND_PLAIN.burden, burden > 0 ? `${dec1(burden)}%` : '-', burden > 0, burden),
   ];
 });
 /** 단지 수요분석 기초수치 ⓘ — 값이 어디서 왔는지 */
@@ -3115,6 +3115,31 @@ const supTip = (m: DemandMetric): Array<[string, string]> => {
   return [...head[m], ...demandTip(m, who).filter(([k]) => k !== '공식' && k !== '의미')];
 };
 const openSupNaver = () => { const addr = auction.value?.address; if (addr) void openNaverComplexListing(addr, 'apt'); };
+/** 종합 의견 — 매물수(해당평형)를 넣었을 때만 */
+const supOpinion = computed(() => {
+  const base = supBase.value; const deals = supDealCount.value; const listings = supListings.value;
+  return demandOpinionOf(base > 0 ? (listings / base) * 100 : 0, base > 0 ? (deals / base) * 100 : 0, supLoaded.value && base > 0 && listings > 0);
+});
+/** 아래 표 한 줄 — 위 동 수요분석 표와 같은 칸. 해당평형(전용면적이 같은 거래) 기준, 평균가는 정상거래만 */
+const supRow = computed(() => {
+  const p = !!supAreaUnits.value;
+  const deals = p ? supDeals.value.filter((r) => Math.abs(r.areaM2 - supMyArea.value) < 0.005) : supDeals.value;
+  const normal = deals.filter((r) => r.kind === '매매');
+  const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+  const base = supBase.value; const n = deals.length; const listings = supListings.value; const monthly = n / 12;
+  const by = avg(deals.map((r) => r.buildYear ?? 0).filter((y) => y > 1800));
+  const clear = listings > 0 && monthly > 0 ? listings / monthly : 0;
+  return {
+    units: base, yearly: n, monthly,
+    avgPrice: avg(normal.map((r) => r.price)), avgArea: avg(deals.map((r) => r.areaM2)),
+    age: by ? buildingAgeOf(Math.round(by)) : 0,
+    absorb: listings > 0 ? (n / listings) * 100 : 0,
+    clear, clearYears: clear >= 12 ? `${dec1(clear / 12)}년` : '',
+    turnover: base > 0 ? (n / base) * 100 : 0,
+    burden: base > 0 && listings > 0 ? (listings / base) * 100 : 0,
+  };
+});
+const supPct = (n: number) => (n > 0 ? `${dec1(n)}%` : '-');
 const setSupVal = (key: string, v: string | number) => setSumVal(key, String(supNum(String(v)) || ''));
 
 // 주차수 · 엘베 — PDF에 없으면 그 필지의 건축물대장(표제부)에서 채운다. 사람이 넣은 값은 덮지 않는다
@@ -8460,10 +8485,41 @@ const goBack = () => router.back();
                   <div class="sup-b"><b><UnitText :text="c.value" /><em class="sup-bar">|</em><span class="sup-pass">{{ DEMAND_PASS_TEXT[c.id] }}</span></b></div>
                 </div>
               </div>
+              <!-- 종합 의견 — 위 동 수요분석과 같은 상자 -->
+              <div class="sup-opinion">
+                <template v-if="supOpinion"><b>Level {{ supOpinion.level }} · {{ supOpinion.title }}</b><span>{{ supOpinion.text }}</span></template>
+                <span v-else class="wait">현재 매물수(해당평형)를 넣으면 종합 의견이 나옵니다.</span>
+              </div>
               <p class="sup-note">
-                <template v-if="supAreaUnits">수요지표는 이 평형(전용 {{ trunc2(supMyArea) }}㎡) 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 해당평형 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 계산합니다. 계산식 · 등급은 위 동 수요분석과 같습니다.</template>
-                <template v-else>수요지표는 단지 전체 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 총 세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 계산합니다. 계산식 · 등급은 위 동 수요분석과 같습니다.</template>
+                <template v-if="supAreaUnits">수요지표는 이 평형(전용 {{ trunc2(supMyArea) }}㎡) 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 해당평형 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 계산합니다. 계산식 · 합격선은 위 동 수요분석과 같습니다.</template>
+                <template v-else>수요지표는 단지 전체 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 총 세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 계산합니다. 계산식 · 합격선은 위 동 수요분석과 같습니다.</template>
               </p>
+              <!-- 위 동 수요분석 표와 같은 칸 · 꾸밈(son-demand 안이라 웹 공통 꾸밈도 같이 받는다). 해당평형 한 줄 -->
+              <div class="son-demand sup-tbl">
+                <div class="adm-table-wrap">
+                  <table class="adm-table even">
+                    <colgroup><col style="width: 160px" /><col v-for="i in 10" :key="i" /></colgroup>
+                    <thead><tr>
+                      <th>단지/평형</th><th class="in">세대수</th><th class="in">매물수<small>(네이버 매물수)</small></th><th>거래량<small>(최근 12개월)</small></th>
+                      <th>평균가<small>(최근 12개월)</small></th><th>평균 전용면적<small>(㎡)</small></th><th>평균 건축연수<small>(년)</small></th>
+                      <th>매물 소화율<small>(%)</small></th><th>매물<br>소화기간</th><th class="turn">회전율<small>(%)</small></th><th>매물률<small>(%)</small></th>
+                    </tr></thead>
+                    <tbody><tr>
+                      <td class="nm">{{ supName || '단지' }}<small v-if="supAreaUnits" class="sup-tbl-sub">전용 {{ trunc2(supMyArea) }}㎡</small></td>
+                      <td class="units in-tint">{{ supRow.units ? supRow.units.toLocaleString('ko-KR') : '-' }}</td>
+                      <td class="in"><input class="adm-cell" inputmode="numeric" placeholder="입력" :value="supListings ? supListings.toLocaleString('ko-KR') : ''" @change="setSupVal('sup.listings', ($event.target as HTMLInputElement).value)" /></td>
+                      <td class="n deal"><em class="pre">연</em>{{ supRow.yearly.toLocaleString('ko-KR') }}<em class="bar">|</em><em class="pre">월</em>{{ dec1(supRow.monthly) }}</td>
+                      <td class="n amt"><span class="v">{{ supRow.avgPrice ? Math.round(supRow.avgPrice).toLocaleString('ko-KR') : '-' }}</span></td>
+                      <td class="n area"><span class="v">{{ supRow.avgArea ? dec1(supRow.avgArea) : '-' }}</span></td>
+                      <td class="n age"><span class="v">{{ supRow.age || '-' }}</span></td>
+                      <td class="n rate"><em v-if="supRow.absorb > 0" class="pre">연</em><span class="v">{{ supPct(supRow.absorb) }}</span></td>
+                      <td class="n clear"><template v-if="supRow.clear > 0"><span class="v">{{ dec1(supRow.clear) }}개월</span><small v-if="supRow.clearYears"> / {{ supRow.clearYears }}</small></template><template v-else>-</template></td>
+                      <td class="n rate turn"><em v-if="supRow.turnover > 0" class="pre">연</em><span class="v">{{ supPct(supRow.turnover) }}</span></td>
+                      <td class="n rate"><span class="v">{{ supPct(supRow.burden) }}</span></td>
+                    </tr></tbody>
+                  </table>
+                </div>
+              </div>
             </section>
 
             <!-- ① 실사용자 + 입지등수 (웹은 ②) -->
@@ -11400,6 +11456,79 @@ tr.tone-take { background: #fff5f5; }
 .sup-gd.g-C { background: #e5e7eb; color: #111827; }
 .sup-fit { margin-left: 3px; font-size: 12px; font-weight: 800; color: #1f7a45; }
 .sup-fit.bad { color: #c22e2e; }
+/* 단지 종합 의견 — 위 동 수요분석 .dm-opinion 과 같은 꼴 */
+.sup-opinion { display: grid; gap: 4px; margin: 4px 0 12px; padding: 14px 18px; border: 1px solid #e3e8f0; border-radius: 12px; background: #fff; }
+.sup-opinion b { font-size: 15px; font-weight: 800; color: #111827; }
+.sup-opinion span { font-size: 13px; color: #6b7280; }
+.sup-opinion .wait { color: #9ca3af; }
+/* 단지 표 — 위 동 수요분석 표(AdminRegionDemandPage .adm-table)를 그대로 옮김 */
+.sup-tbl { margin-top: 12px; }
+.sup-tbl .adm-table-wrap { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; overflow: hidden; }
+.sup-tbl .adm-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.sup-tbl .adm-table th, .sup-tbl .adm-table td {
+  border-bottom: 1px solid #eef1f6; border-right: 1px solid #eef1f6;
+  padding: 10px 12px; font-size: 12.5px; text-align: center; white-space: nowrap;
+}
+.sup-tbl .adm-table th:last-child, .sup-tbl .adm-table td:last-child { border-right: none; }
+.sup-tbl .adm-table thead th { background: #f7f9fc; color: #374151; font-weight: 700; }
+.sup-tbl .adm-table thead tr.grp th { background: #eef2f7; font-size: 12px; font-weight: 800; color: #1f3a72; }
+/* 손으로 적는 칸은 파랗게 — 엑셀에서 쓰던 표시 그대로 */
+/* 손으로 적는 칸(총 매물수) 머리 — 아래 입력 칸과 같은 흐린 파랑 */
+.sup-tbl .adm-table thead th.in, .sup-tbl .adm-table thead tr.grp th.in { background: #f7faff; color: #1b3f8f; }
+.sup-tbl .adm-table th small { display: block; font-size: 10px; font-weight: 600; color: #9ca3af; }
+.sup-tbl .adm-table thead th.in small { color: #4b6cb7; }
+.sup-tbl .adm-table tbody tr:last-child td { border-bottom: none; }
+.sup-tbl .adm-table tbody tr:hover td { background: #fafbfe; }
+.sup-tbl .adm-table td.gu { font-weight: 700; color: #374151; white-space: nowrap; }
+.sup-tbl .adm-table td.nm { font-weight: 800; white-space: nowrap; }
+/* 웹 — 동 이름 옆 '네이버 매물 ↗' (그 동만 보기 · 매매 · 종류 필터로 연다) */
+.sup-tbl .adm-table td.n { font-variant-numeric: tabular-nums; }
+.sup-tbl .adm-table td.n.strong { font-weight: 800; }
+.sup-tbl .adm-table td.in { background: #f7faff; padding: 6px 8px; }
+/* 웹 — 세대수 칸도 매물수 칸과 같은 연하늘(입력칸 여백은 그대로) */
+.sup-tbl .adm-table td.in-tint { background: #f7faff; }
+/* 웹 — 회전율 칸은 매물수 칸(연파랑)처럼 연분홍으로 칠해 눈에 띄게 */
+.sup-tbl .adm-table thead th.turn { background: #fff5f5; color: #b42318; }
+.sup-tbl .adm-table thead th.turn small { color: #d9534f; }
+.sup-tbl .adm-table td.turn { background: #fff5f5; }
+/* 총 거래량 — 연 | 월 두 값을 가운데 막대로 가른다 (손품+현장과 같은 꼴) */
+.sup-tbl .adm-table td.deal { white-space: nowrap; letter-spacing: -0.3px; font-size: 11.5px; }
+.sup-tbl .adm-table td em.pre { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-right: 3px; }
+.sup-tbl .adm-table td.deal em.bar { font-style: normal; font-weight: 400; color: #c3cbd8; margin: 0 3px; }
+/* 숫자 자리를 못 박는다 — 연은 세 자리, 월은 두 자리.
+   앞붙임(연·월)은 제자리에 서고 숫자는 그 안에서 오른쪽에 붙어,
+   줄이 달라도 끝자리가 세로로 맞는다. 소수점 아래는 뒤로 흘린다 */
+.sup-tbl .adm-table td.deal { padding-left: 6px; padding-right: 6px; font-variant-numeric: tabular-nums; }
+.sup-tbl .adm-table td.deal .grp { display: inline-block; }
+.sup-tbl .adm-table td.deal .grp i { display: inline-block; font-style: normal; text-align: right; }
+.sup-tbl .adm-table td.deal .grp.y i { min-width: 3ch; }
+.sup-tbl .adm-table td.deal .grp.m i { min-width: 2ch; }
+/* 소수점 아래 자리도 폭을 잡아 둔다 — 없는 줄과 있는 줄의 전체 너비가
+   달라지면 가운데 정렬 때문에 끝선이 어긋난다 */
+.sup-tbl .adm-table td.deal b { display: inline-block; width: 11px; text-align: left; font-weight: inherit; }
+/* 매물 소화기간 — '96개월 / 8년' 한 줄로(해 환산이 아래로 떨어지지 않게) */
+.sup-tbl .adm-table td.clear { line-height: 1.25; white-space: nowrap; }
+.sup-tbl .adm-table td.clear em { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-left: 1px; }
+.sup-tbl .adm-table td.clear small { font-size: inherit; font-weight: inherit; color: inherit; }
+/* 줄끼리 끝자리를 맞춘다 — 값을 같은 폭 상자에 담아 오른쪽으로 붙인다.
+   상자째로는 칸 가운데에 서므로 머리글과도 어긋나 보이지 않는다 */
+.sup-tbl .adm-table td .v { display: inline-block; text-align: right; }
+/* 금액 칸 이름은 'amt' — 'price' 로 쓰면 웹 선정목록 카드의 .price(바탕 · 둥근 상자)가 덮여 상자가 한 겹 더 생긴다 */
+.sup-tbl .adm-table td.amt .v { min-width: 84px; }
+.sup-tbl .adm-table td.area .v { min-width: 36px; }
+.sup-tbl .adm-table td.age .v { min-width: 22px; }
+.sup-tbl .adm-table td.rate .v { min-width: 44px; }
+.sup-tbl .adm-table td.clear .v { min-width: 26px; }
+.sup-tbl .adm-table td.clear small { width: 54px; margin: 0 auto; text-align: right; }
+.sup-tbl .adm-cell {
+  width: 100%; box-sizing: border-box; height: 30px;
+  border: 1px solid #cfdcf6; border-radius: 7px; background: #fff;
+  padding: 0 8px; font-family: inherit; font-size: 12.5px; color: #1b3f8f;
+  font-weight: 700; text-align: right;
+}
+.sup-tbl .adm-cell:focus { outline: none; border-color: #2b6df3; }
+.sup-tbl .adm-table td.units { text-align: right; color: #111827; font-weight: 600; }
+.sup-tbl-sub { display: block; font-size: 12px; font-weight: 400; color: #6b7280; }
 .sup-pass { font-size: 12px; font-weight: 700; color: #6b7280; white-space: nowrap; }   /* 합격선 글 — 등급 대신(위 수요분석 .pass 와 같은 꼴) */
 .sup-u { margin-left: 2px; font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; }   /* UnitText 단위와 같은 꼴('세대'는 UnitText 단위 목록에 없다) */
 .sup-b b.wait { font-size: 14px; font-weight: 400; color: #9ca3af; }

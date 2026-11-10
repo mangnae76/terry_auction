@@ -14,7 +14,7 @@ import { fetchDongUnitCount, peekDongUnitCount } from '../services/dongUnits';
 import { runLimited } from '../utils/runLimited';
 import { openNaverDongListing } from '../services/naverListing';
 import { dealCountTip, type TipRow } from '../services/tipRows';
-import { DEMAND_PASS_TEXT, DEMAND_PLAIN, demandGradeOf, demandTip, tallyDongUnits } from '../services/demandGrade';
+import { DEMAND_PASS_TEXT, DEMAND_PLAIN, dec1, demandGradeOf, demandOpinionOf, demandTip, tallyDongUnits } from '../services/demandGrade';
 import InfoTip from '../components/InfoTip.vue';
 import SnapChip from '../components/SnapChip.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
@@ -331,24 +331,29 @@ const unitsNote = computed(() => {
   if (t.failed > 0) return `${t.failed.toLocaleString('ko-KR')}곳 받기실패 · 표에서 다시 받기`;
   return '';
 });
+/** 종합 의견 — 매물수를 넣고 세대수를 다 받았을 때만 */
+const dmOpinion = computed(() => {
+  const v = navStats.value;
+  return demandOpinionOf(v.burden, v.turnover, v.listings > 0 && unitsTally.value.ready && v.units > 0);
+});
 const dmResults = computed(() => {
   const v = navStats.value;
-  const pct = (x: number) => (x > 0 ? `${x.toFixed(1)}%` : '-');
+  const pct = (x: number) => (x > 0 ? `${dec1(x)}%` : '-');
   // 세대수를 다 받기 전 — 세대수가 드는 회전율 · 부담률은 '받는 중'(부담률은 매물수를 적었을 때만 뜻이 있다)
   const waiting = unitsTally.value.pending > 0;
   const unitsPct = (x: number, needsListings: boolean) => (waiting && (!needsListings || v.listings > 0) ? '받는 중' : pct(x));
   return [
     // 가장 중요한 지표(내놓으면 팔리나)를 맨 앞에, 짝(같은 뜻을 개월로)인 소진기간을 바로 옆에 — 소화율 → 소진기간 → 회전율 → 부담률
     { id: 'absorb' as DmId, metric: 'absorb' as const, label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', kindWhat.value), plain: DEMAND_PLAIN.absorb },
-    { id: 'clear' as DmId, metric: 'clear' as const, label: '매물 소화기간', value: v.clearMonths > 0 ? `${v.clearMonths.toFixed(1)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', kindWhat.value), plain: DEMAND_PLAIN.clear },
+    { id: 'clear' as DmId, metric: 'clear' as const, label: '매물 소화기간', value: v.clearMonths > 0 ? `${dec1(v.clearMonths)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', kindWhat.value), plain: DEMAND_PLAIN.clear },
     { id: 'turn' as DmId, metric: 'turnover' as const, label: '거래 회전율', value: unitsPct(v.turnover, false), grade: v.grades.turnover, tip: demandTip('turnover', kindWhat.value), plain: DEMAND_PLAIN.turnover },
     { id: 'burden' as DmId, metric: 'burden' as const, label: '매물률', value: unitsPct(v.burden, true), grade: v.grades.burden, tip: demandTip('burden', kindWhat.value), plain: DEMAND_PLAIN.burden },
   ];
 });
-const areaText = (n: number) => (n > 0 ? n.toFixed(1) : '-');
+const areaText = (n: number) => (n > 0 ? dec1(n) : '-');
 /** 건축연수 — 햇수식 N년차(올해 − 평균 건축연도 + 1), 위 navStats.age 와 같은 셈 */
 const ageText = (buildYear: number) => (buildYear > 1800 ? String(buildingAgeOf(Math.round(buildYear))) : '-');
-const pct = (n: number) => (n > 0 ? `${n.toFixed(1)}%` : '-');
+const pct = (n: number) => (n > 0 ? `${dec1(n)}%` : '-');
 /** 거래량을 연·월로 가른다 — 24개월을 받아도 1년치로 환산해 견준다 */
 /** 표의 거래 칸 — 웹은 총 거래건수(정상 + 직거래, 계약해제 제외), 분석 도구는 정상거래만(예전 그대로) */
 const dealOf = (r: { count: number; directCount?: number }) => (webEmbed ? r.count + (r.directCount ?? 0) : r.count);
@@ -367,7 +372,7 @@ const cntFrac = (n: number) => {
   return Number.isInteger(t) ? '' : `.${Math.round((t - Math.floor(t)) * 10)}`;
 };
 /** 소진기간 — 한 줄로 달 수와 해로 환산한 값 ('97.5개월 / 8.1년'). 위 지표 카드와 같게 소수 한 자리 */
-const clearHead = (n: number) => (n > 0 ? n.toFixed(1) : '');
+const clearHead = (n: number) => (n > 0 ? dec1(n) : '');
 /** 해 환산 — 칸 하나에 한 줄로 들어가게 '8년' · '10.8년' 처럼 소수 한 자리. 1년이 안 되면 적지 않는다 */
 const clearSub = (n: number) => {
   if (!(n >= 12)) return '';
@@ -615,6 +620,11 @@ const downloadCsv = () => {
             <div class="dm-body"><b :class="{ wait: c.value === '받는 중' }"><UnitText :text="c.value" /><em class="nbar">|</em><span class="pass">{{ DEMAND_PASS_TEXT[c.metric] }}</span></b></div>
           </div>
         </div>
+              <!-- 종합 의견 — 등급 대신 매물률 × 회전율 네 칸 한 줄(2026-11-10). 매물수를 넣어야 나온다 -->
+        <div class="dm-opinion">
+          <template v-if="dmOpinion"><b>Level {{ dmOpinion.level }} · {{ dmOpinion.title }}</b><span>{{ dmOpinion.text }}</span></template>
+          <span v-else class="wait">총 매물수를 넣으면 종합 의견이 나옵니다.</span>
+        </div>
       </section>
       <p v-if="errorMsg" class="adm-msg err">{{ errorMsg }}</p>
       <p v-else-if="notice" class="adm-msg warn">{{ notice }}</p>
@@ -818,6 +828,11 @@ const downloadCsv = () => {
 .dm-cell .gd.g-C { background: #e5e7eb; color: #111827; }
 .dm-cell .fit { margin-left: 3px; font-size: 12px; font-weight: 800; color: #1f7a45; }
 .dm-cell .fit.bad { color: #c22e2e; }
+/* 종합 의견 — 수요지표 아래 한 줄 상자(사용자 시안) */
+.dm-opinion { display: grid; gap: 4px; margin-top: 12px; padding: 14px 18px; border: 1px solid #e3e8f0; border-radius: 12px; background: #fff; }
+.dm-opinion b { font-size: 15px; font-weight: 800; color: #111827; }
+.dm-opinion span { font-size: 13px; color: #6b7280; }
+.dm-opinion .wait { color: #9ca3af; }
 /* 합격선 글 — 등급 대신(2026-11-10). 작고 회색, 한 줄 */
 .dm-cell .pass { font-size: 12px; font-weight: 700; color: #6b7280; white-space: nowrap; }
 .adm-sum {
