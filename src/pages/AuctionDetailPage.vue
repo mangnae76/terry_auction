@@ -3084,7 +3084,7 @@ const SUP_TIPS: Record<'deal' | 'units' | 'areaUnits' | 'listings', Array<[strin
   deal: [['출처', '국토부 아파트 매매 실거래 — 이 단지(같은 지번)'], ['기간', '조회일부터 지난 12개월'], ['셈', '정상 + 직거래, 계약해제 제외'], ['해당평형', '이 호실과 전용면적이 같은 거래']],
   units: [['출처', 'PDF 단지정보 · 건축물대장 세대수']],
   areaUnits: [['출처', '건축물대장 전유공용면적'], ['기준', '이 호실과 공급면적이 같은 세대']],
-  listings: [['입력', '네이버 부동산에서 이 단지 매매 매물을 세어 적는다'], ['단추', '네이버매물 — 이 단지를 가운데 둔 매매 지도']],
+  listings: [['입력', '네이버 부동산에서 이 평형(해당평형) 매매 매물을 세어 적는다'], ['단추', '네이버매물 — 이 단지를 가운데 둔 매매 지도']],
 };
 /** 칸에 마우스를 대면 그 값과 이어진 칸이 같이 빨갛게 — 위 동 수요분석(DM_LIT_LINKS)과 같은 짝.
  *  세대수 칸은 계산에 실제로 쓰는 쪽(해당 세대수가 있으면 해당 세대수)이 켜진다 */
@@ -3098,6 +3098,21 @@ const supLit = (id: string) => {
     deal: ['deal', 'turnover', 'absorb', 'clear'], [base]: [base, 'turnover', 'burden'], listings: ['listings', 'absorb', 'burden', 'clear'],
   };
   return (links[k] ?? [k]).includes(id);
+};
+/** 단지 수요분석 지표 ⓘ — 공식 · 뜻은 실제 계산 기준(해당평형)으로, 기준 · 적정 · 위험 줄은 위 동 수요분석과 같은 글(services/demandGrade) */
+const supTip = (m: DemandMetric): Array<[string, string]> => {
+  const p = !!supAreaUnits.value;
+  const deal = p ? '해당평형 12개월 거래량' : '12개월 거래량';
+  const units = p ? '해당 세대수' : '총 세대수';
+  const listings = p ? '현재 매물수(해당평형)' : '현재 매물수';
+  const who = p ? '이 평형' : '이 단지';
+  const head: Record<DemandMetric, Array<[string, string]>> = {
+    turnover: [['공식', `${deal} ÷ ${units} × 100`], ['의미', `${who} 중 1년에 몇 %가 손바뀜되나`]],
+    absorb: [['공식', `${deal} ÷ ${listings} × 100`], ['의미', `나와 있는 ${who} 매물 중 한 해에 몇 %가 팔리나`]],
+    burden: [['공식', `${listings} ÷ ${units} × 100`], ['의미', `${who} 중 몇 %가 매물로 나와 있나`]],
+    clear: [['공식', `${listings} ÷ ${p ? '해당평형 월평균 거래량' : '월평균 거래량'}`], ['의미', `${who} 매물이 다 팔리는 데 걸리는 달 수`]],
+  };
+  return [...head[m], ...demandTip(m, who).filter(([k]) => k !== '공식' && k !== '의미')];
 };
 const openSupNaver = () => { const addr = auction.value?.address; if (addr) void openNaverComplexListing(addr, 'apt'); };
 const setSupVal = (key: string, v: string | number) => setSumVal(key, String(supNum(String(v)) || ''));
@@ -8440,7 +8455,7 @@ const goBack = () => router.back();
               <div class="sup-row">
                 <div v-for="c in supStats" :key="c.id" :class="['sup-cell', { lit: supLit(c.id) }]" @mouseenter="supLitKey = c.id" @mouseleave="supLitKey = ''">
                   <!-- ⓘ — 위 동 수요분석과 같은 말풍선(services/demandGrade) -->
-                  <div class="sup-h"><InfoTip :rows="demandTip(c.id, supAreaUnits ? '이 평형' : '이 단지')" under="box">{{ c.label }}</InfoTip><em class="sup-plain">{{ c.plain }}</em></div>
+                  <div class="sup-h"><InfoTip :rows="supTip(c.id)" under="box">{{ c.label }}</InfoTip><em class="sup-plain">{{ c.plain }}</em></div>
                   <div class="sup-b"><b><UnitText :text="c.value" /><template v-if="c.grade !== '-'"><em class="sup-bar">|</em><span :class="['sup-gd', `g-${c.grade}`]">{{ c.grade }}</span><span :class="['sup-fit', { bad: c.fit === '부적합' }]">/ {{ c.fit }}</span></template></b></div>
                 </div>
               </div>
