@@ -11761,7 +11761,7 @@ tr.tone-take { background: #fff5f5; }
 .cmp-fs-row .nm .cmp-tag { justify-self: start; margin-bottom: 2px; }   /* 칩이 줄 폭으로 늘지 않게 */
 .cmp-fs-row .pr { font-size: 12.5px; font-weight: 800; color: #111827; white-space: nowrap; }
 .cmp-fs-row.mine { background: #fff5f5; box-shadow: inset 0 -2px 0 #f3c9c9; }
-.cmp-fs-row.on { border-color: #e9a3a3; background: #fff5f5; box-shadow: inset 0 -2px 0 #e9a3a3; }
+.cmp-fs-row.on { border-color: #2b4fd8; background: #eef2ff; box-shadow: none; }   /* 시세분석 전체화면 .fs-it.on 과 같게 */
 .cmp-fs-places { display: grid; gap: 6px; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 9px; background: #fff; font-size: 12px; color: #6b7280; }
 .cmp-fs-places span { display: flex; align-items: center; gap: 6px; }
 .cmp-fs-places b { font-weight: 400; color: #111827; }
@@ -11772,7 +11772,7 @@ tr.tone-take { background: #fff5f5; }
 .cmp-row { cursor: pointer; }
 .sup-tbl .adm-table tbody tr.cmp-row:hover td { background: #f7f9fc; }
 .sup-tbl .adm-table tbody tr.cmp-row.mine td { background: #fff5f5; box-shadow: inset 0 -2px 0 #f3c9c9; }
-.sup-tbl .adm-table tbody tr.cmp-row.on td { background: #fff5f5; box-shadow: inset 0 -2px 0 #e9a3a3; }
+.sup-tbl .adm-table tbody tr.cmp-row.on td { background: #eef2ff; box-shadow: none; }   /* 고른 줄 연파랑 — 시세분석과 같게 */
 .cmp-tag { display: inline-block; margin-right: 4px; padding: 1px 4px; border-radius: 3px; background: #e03e3e; color: #fff; font-size: 8.5px; font-weight: 400; vertical-align: 2px; }   /* 선정물건 — 시세분석 표 첫 줄 .kind.me 와 같은 네모 칩(모서리 3) */
 .cmp-rk { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 1px solid #e3e8f0; border-radius: 6px; font-weight: 700; color: #111827; }
 .cmp-rk.r1 { color: #2b6df3; border-color: #b9cdf8; }
