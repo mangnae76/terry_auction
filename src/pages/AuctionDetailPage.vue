@@ -9031,7 +9031,7 @@ const goBack = () => router.back();
 
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box">
-              <div class="cmp-est-h"><span class="cmp-est-tag">결론</span><h3><span v-if="cmpEst?.mine" class="cmp-tag">선정물건</span>{{ cmpEst?.name ?? '단지' }} 전세가</h3>
+              <div class="cmp-est-h"><h3>{{ cmpEst?.name ?? '단지' }} 전세가</h3>
                 <span class="cmp-est-desc">최근 12개월 · 전용 {{ cmpEst ? trunc2(cmpEst.py * 3.305785) : '-' }}㎡ 같은 평형 전세 실거래 · 아래 표나 지도에서 단지를 고르면 바뀝니다</span>
                 <button type="button" class="cmp-est-go" @click="cmpGoPrice">시세분석에서 보기</button>
               </div>
