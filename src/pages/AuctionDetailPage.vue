@@ -5613,6 +5613,8 @@ const cmpRows = computed<CmpRow[]>(() => {
   return rows.sort((a, b) => Number(b.mine) - Number(a.mine) || (a.avg ?? 99) - (b.avg ?? 99) || a.sum - b.sum);
 });
 const cmpPicked = computed(() => cmpRows.value.find((r) => cmpKeyOf(r) === cmpPick.value) ?? cmpRows.value.find((r) => r.mine) ?? null);
+/** 고른 단지 실거래가 표 — 거래(매매 · 전세) 단추를 따라 그 거래만(매매는 직거래 포함, 2026-11-11) */
+const cmpPickedDeals = computed(() => (cmpPicked.value?.deals ?? []).filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세')));
 /** '3억 1,500' — 원 → 억 · 만 */
 const cmpMoney = (won: number) => {
   if (!(won > 0)) return '-';
@@ -8439,7 +8441,7 @@ const goBack = () => router.back();
                 <!-- ㎡ · 평 두 글을 겹쳐 두고 지금 단위만 보인다 — 평 / ㎡ 단추를 눌러도 상자 폭이 그대로(2026-11-11) -->
                 <span class="grp"><span class="k">면적<small>공급(전용)</small></span><span class="val stack"><span v-for="u in (['m2', 'py'] as const)" :key="u" :class="{ on: (sonAreaUnit ?? 'm2') === u }" :aria-hidden="(sonAreaUnit ?? 'm2') !== u">{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2 || supMyArea, u) }}</span></span></span>
                 <i class="sep" aria-hidden="true" />
-                <span class="grp"><span class="k">룸수</span><span class="pa-seg" role="radiogroup" aria-label="룸수"><button v-for="r in ROOM_TYPES" :key="r.id" type="button" role="radio" :class="{ on: selectedRoomType?.id === r.id }" :aria-checked="selectedRoomType?.id === r.id" @click="pickRoomType(selectedRoomType?.id === r.id ? '' : r.id)">{{ r.label }}</button></span></span>
+                <span class="grp"><span class="k">룸수</span><span class="pa-seg" role="radiogroup" aria-label="룸수"><button v-for="r in ROOM_TYPES" :key="r.id" type="button" role="radio" :class="{ on: selectedRoomType?.id === r.id }" :aria-checked="selectedRoomType?.id === r.id" :data-t="r.label" @click="pickRoomType(selectedRoomType?.id === r.id ? '' : r.id)">{{ r.label }}</button></span></span>
                 <i class="sep" aria-hidden="true" />
                 <!-- 값 상자는 나올 수 있는 글 중 가장 긴 것만큼 미리 넓혀 둔다 — 룸수를 바꿀 때 상자가 덜컹거리지 않게(2026-11-11) -->
                 <span class="grp"><span class="k">세대구성</span><span class="val stack"><span v-for="t in CMP_WHO_ALL" :key="t" :class="{ on: t === (cmpWho || '룸수를 고르세요'), ph: t === '룸수를 고르세요' }" :aria-hidden="t !== (cmpWho || '룸수를 고르세요')">{{ t }}</span></span></span>
@@ -9175,10 +9177,10 @@ const goBack = () => router.back();
               </div>
               <!-- 거르기 — 지도 밑 · 표 바로 위(표를 보면서 바꾸게, 2026-11-11). 시세분석 조건 줄과 같은 단추 · 순서(범위 → 거래 → 기간 → 평형). 표 · 지도 · 위 칸 줄이 같이 바뀐다 -->
               <div class="cmp-conds">
-                <span class="pa-lab">범위<span class="pa-seg pa-out" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRange === v }" :aria-checked="cmpRange === v" @click="cmpRange = v">{{ t }}</button></span></span>
+                <span class="pa-lab">범위<span class="pa-seg pa-out" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRange === v }" :aria-checked="cmpRange === v" :data-t="t" @click="cmpRange = v">{{ t }}</button></span></span>
                 <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :data-k="k" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" @click="cmpKind = k">{{ k }}</button></span></span>
-                <span class="pa-lab">기간<span class="pa-seg pa-out" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonths === m }" :aria-checked="cmpMonths === m" @click="cmpMonths = m">{{ t }}</button></span></span>
-                <span class="pa-lab">평형<span class="pa-seg pa-out" role="radiogroup" aria-label="평형 폭"><button v-for="t in [3, 5, 10] as const" :key="t" type="button" role="radio" :class="{ on: cmpTol === t }" :aria-checked="cmpTol === t" @click="cmpTol = t">±{{ t }}㎡</button></span></span>
+                <span class="pa-lab">기간<span class="pa-seg pa-out" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonths === m }" :aria-checked="cmpMonths === m" :data-t="t" @click="cmpMonths = m">{{ t }}</button></span></span>
+                <span class="pa-lab">평형<span class="pa-seg pa-out" role="radiogroup" aria-label="평형 폭"><button v-for="t in [3, 5, 10] as const" :key="t" type="button" role="radio" :class="{ on: cmpTol === t }" :aria-checked="cmpTol === t" :data-t="`±${t}㎡`" @click="cmpTol = t">±{{ t }}㎡</button></span></span>
               </div>
               <p v-if="!cmpConds.length" class="cmp-noroom">매매수요 조사 맨 위에서 <b>룸수</b>를 고르면 세대구성에 맞는 입지조건과 단지별 입지등수가 나옵니다.</p>
               <div class="son-demand sup-tbl">
@@ -9225,10 +9227,10 @@ const goBack = () => router.back();
                   <div class="son-demand sup-tbl"><div class="adm-table-wrap cmp-deals"><table class="adm-table cmp-tbl">
                     <thead><tr><th>구분</th><th>계약일</th><th>전용</th><th>층</th><th>실거래가</th></tr></thead>
                     <tbody>
-                      <tr v-for="(d, i) in cmpPicked.deals" :key="i">
+                      <tr v-for="(d, i) in cmpPickedDeals" :key="i">
                         <td><span :class="['cmp-kind', { j: d.kind === '전세', m: d.kind === '월세' }]">{{ d.kind === '직거래' ? '매매' : d.kind }}</span></td><td class="n">{{ d.contractDate }}</td><td class="n">{{ sonAreaUnit === 'py' ? `${(d.areaM2 / 3.305785).toFixed(1)}평` : `${trunc2(d.areaM2)}㎡` }}</td><td class="n">{{ d.floor ? `${d.floor}층` : '-' }}</td><td class="n amt"><b>{{ cmpMoney(d.price) }}</b></td>
                       </tr>
-                      <tr v-if="!cmpPicked.deals.length"><td colspan="5" class="cmp-dim">최근 {{ cmpMonths }}개월 같은 평형 거래가 없습니다.</td></tr>
+                      <tr v-if="!cmpPickedDeals.length"><td colspan="5" class="cmp-dim">최근 {{ cmpMonths }}개월 같은 평형 {{ cmpKind }} 거래가 없습니다.</td></tr>
                     </tbody>
                   </table></div></div>
                 </div>
@@ -11842,6 +11844,9 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-conds .pa-lab { display: inline-flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 4px 12px; font-size: 14px; font-weight: 700; color: #6b7280; white-space: nowrap; }
 .cmp-conds .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
 .cmp-conds .pa-seg button { border: none; background: transparent; border-radius: 5px; height: 26px; padding: 0 13px; font: inherit; font-size: 14px; font-weight: 400; color: #6b7280; cursor: pointer; white-space: nowrap; }
+/* 고르면 굵어져도 폭이 그대로 — 굵은 글 폭을 보이지 않게 미리 잡아 둔다(data-t), 단추를 눌러도 줄이 흔들리지 않게(2026-11-11) */
+.cmp-conds .pa-seg.pa-out button, .cmp-persona .pa-seg button { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; }
+.cmp-conds .pa-seg.pa-out button::after, .cmp-persona .pa-seg button::after { content: attr(data-t); height: 0; overflow: hidden; visibility: hidden; font-weight: 700; pointer-events: none; }
 .cmp-conds .pa-seg.pa-out button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
 .cmp-conds .kindF button { font-weight: 700; }
 .cmp-conds .kindF button[data-k="매매"] { background: #eef2ff; color: #2b3a67; }
