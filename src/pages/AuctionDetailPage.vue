@@ -9121,7 +9121,7 @@ const goBack = () => router.back();
                     <thead><tr><th>구분</th><th>계약일</th><th>전용</th><th>층</th><th>금액</th></tr></thead>
                     <tbody>
                       <tr v-for="(d, i) in cmpPicked.deals" :key="i">
-                        <td>{{ d.kind === '직거래' ? '매매' : d.kind }}</td><td class="n">{{ d.contractDate }}</td><td class="n">{{ trunc2(d.areaM2) }}㎡</td><td class="n">{{ d.floor ? `${d.floor}층` : '-' }}</td><td class="n amt"><b>{{ cmpMoney(d.price) }}</b></td>
+                        <td><span :class="['cmp-kind', { j: d.kind === '전세', m: d.kind === '월세' }]">{{ d.kind === '직거래' ? '매매' : d.kind }}</span></td><td class="n">{{ d.contractDate }}</td><td class="n">{{ trunc2(d.areaM2) }}㎡</td><td class="n">{{ d.floor ? `${d.floor}층` : '-' }}</td><td class="n amt"><b>{{ cmpMoney(d.price) }}</b></td>
                       </tr>
                       <tr v-if="!cmpPicked.deals.length"><td colspan="5" class="cmp-dim">최근 12개월 같은 평형 거래가 없습니다.</td></tr>
                     </tbody>
@@ -11769,6 +11769,10 @@ tr.tone-take { background: #fff5f5; }
 .cmp-fs-places .cmp-rk { margin-left: auto; width: 22px; height: 22px; font-style: normal; font-size: 12px; }
 .cmp-legend { margin: 0 2px 12px; font-size: 12px; color: #9ca3af; }
 .cmp-ic { margin-right: 6px; }
+/* 구분 칩 — 시세분석 표 구분(.kind · .kind.j · .kind.m)과 같은 칩: 매매 남색 · 전세 노랑 · 월세 초록(2026-11-11) */
+.cmp-kind { font-size: 12px; border-radius: 4px; padding: 1px 6px; background: #eef2ff; color: #2b3a67; }
+.cmp-kind.j { background: #fdf3e1; color: #b7791f; }
+.cmp-kind.m { background: #eef7f1; color: #22a55a; }
 .cmp-row { cursor: pointer; }
 .sup-tbl .adm-table tbody tr.cmp-row:hover td { background: #f7f9fc; }
 .sup-tbl .adm-table tbody tr.cmp-row.mine td { background: #fff5f5; box-shadow: inset 0 -2px 0 #f3c9c9; }
