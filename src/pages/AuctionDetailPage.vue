@@ -46,6 +46,7 @@ import AgencyBookModal from '../components/AgencyBookModal.vue';
 import PhotoCountMark from '../components/PhotoCountMark.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
+import UnitText from '../components/UnitText.vue';
 import DateWheelPicker from '../components/DateWheelPicker.vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import {
@@ -70,7 +71,7 @@ import { baseDateOf, isTakenOver, normalizeYmd } from '../services/registryAnaly
 import { VWORLD_KEY_EXPIRES, PRICE_YEAR } from '../services/vworldApi';
 import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
-import { addressParts, hasBuildingName, isUnitToken } from '../utils/addressName';
+import { addressParts, buildingNameOf, hasBuildingName, isUnitToken } from '../utils/addressName';
 import { stageDates, bidStageOf, stageLabelOf } from '../utils/stageLabel';
 import { useAuthStore } from '../stores/authStore';
 import { deleteSitePdf, deleteSitePhoto, isPdfEntry, isPdfFile, isPhotoId, loadSitePdf, loadSitePhoto, pdfNameOf, saveSitePdf, saveSitePhoto } from '../services/sitePhotoRepository';
@@ -3042,8 +3043,11 @@ const supDeals = computed(() => {
   const from = `${w.start.getFullYear()}${String(w.start.getMonth() + 1).padStart(2, '0')}${String(w.start.getDate()).padStart(2, '0')}`;
   return supRows.value.filter((r) => (r.kind === '매매' || r.kind === '직거래') && r.contractDate.replace(/\D/g, '') >= from);
 });
+/** 상자 제목의 단지(건물) 이름 — 고정카드와 같은 값: 적어 둔 건물명 → 주소 속 건물명 → PDF 단지명 */
+const supName = computed(() => sumVal('sum.buildingName') || buildingNameOf(auction.value?.address ?? '') || (auction.value ? complexNameOf(auction.value) : ''));
 const supNum = (v: string) => Number(String(v ?? '').replace(/[^\d]/g, '')) || 0;
-const supHouseholds = computed(() => supNum(sumVal('sup.households')) || supNum(sumVal('sum.units')));
+/** 총세대수 — 자동값만(정보요약 세대수: PDF 단지정보 · 건축물대장). 손으로 적지 않는다 */
+const supHouseholds = computed(() => supNum(sumVal('sum.units')));
 const supListings = computed(() => supNum(sumVal('sup.listings')));
 const supAreaUnits = computed(() => supNum(sumVal('sup.areaUnits')));
 /** 해당 세대수를 적으면 그 평형(이 물건 전용면적과 같은 거래)만 센다 */
@@ -8369,39 +8373,42 @@ const goBack = () => router.back();
             </div>
 
 
-            <!-- 웹 ① 거투 4분면 시장분석 — 단지 수급(2026-11-10 시험, 웹만). 칸 모양은 위 수요조사 ① 기초수치 · ② 수요지표와 같은 틀 -->
-            <div v-if="webEmbed" class="adp-dm-block boxed adp-sup">
-              <div class="adp-dm-sub">① 거투 4분면 시장분석<span class="adp-sup-lead">단지 수급으로 목표 세후 순이익을 정합니다</span></div>
-              <div class="adp-mkt-cells c4 adp-dm-table dm-input">
-                <div class="cell split">
-                  <div class="cell-head"><small>총세대수</small></div>
-                  <div class="cell-body"><span class="adp-dm-pair"><input class="adp-mkt-input dm-val" inputmode="numeric" :value="supHouseholds ? supHouseholds.toLocaleString('ko-KR') : ''" placeholder="입력" @change="setSupVal('sup.households', ($event.target as HTMLInputElement).value)" /><em class="adp-dm-unit">세대</em></span></div>
+            <!-- 웹 ① 단지 시장분석 — 단지 수급(2026-11-10 시험, 웹만). 위 수요분석(AdminRegionDemandPage)의 ① 기초수치 · ② 수요지표와 같은 틀 · 글자 · 칸 크기 -->
+            <section v-if="webEmbed" class="adp-dm-block boxed sup-dm">
+              <p class="sup-scope"><span class="area">{{ supName || '단지' }}</span> 시장분석</p>
+              <p class="sup-head">① 기초수치</p>
+              <div class="sup-row">
+                <div class="sup-cell">
+                  <div class="sup-h">12개월 거래량</div>
+                  <!-- 이 단지(같은 지번) 국토부 매매 자동값 — 정상 + 직거래, 계약해제 제외, 조회일부터 12개월 -->
+                  <div class="sup-b"><b :class="{ wait: !supLoaded }"><UnitText :text="supLoaded ? `${supDealCount.toLocaleString('ko-KR')}건` : '받는 중'" /></b></div>
                 </div>
-                <div class="cell split">
-                  <div class="cell-head"><small>현재 매물수</small></div>
-                  <div class="cell-body"><span class="adp-dm-pair"><input class="adp-mkt-input dm-val" inputmode="numeric" :value="supListings ? supListings.toLocaleString('ko-KR') : ''" placeholder="입력" @change="setSupVal('sup.listings', ($event.target as HTMLInputElement).value)" /><em class="adp-dm-unit">건</em></span></div>
+                <div class="sup-cell">
+                  <div class="sup-h">총세대수</div>
+                  <!-- 자동값(PDF 단지정보 · 건축물대장) — 손으로 적지 않는다 -->
+                  <div class="sup-b"><b><template v-if="supHouseholds">{{ supHouseholds.toLocaleString('ko-KR') }}<em class="sup-u">세대</em></template><template v-else>-</template></b></div>
                 </div>
-                <div class="cell split">
-                  <div class="cell-head"><small>12개월 거래량</small></div>
-                  <!-- 이 단지(같은 지번) 국토부 매매 자동값 — 정상 + 직거래, 계약해제 제외 -->
-                  <div class="cell-body"><strong class="hi-blue"><span class="num">{{ supLoaded ? supDealCount.toLocaleString('ko-KR') : '…' }}</span></strong><em class="adp-dm-unit">건</em></div>
+                <div class="sup-cell">
+                  <div class="sup-h">현재 매물수</div>
+                  <div class="sup-b"><input class="sup-in" inputmode="numeric" placeholder="입력" aria-label="현재 매물수" :value="supListings ? supListings.toLocaleString('ko-KR') : ''" @change="setSupVal('sup.listings', ($event.target as HTMLInputElement).value)" /></div>
                 </div>
-                <div class="cell split">
-                  <div class="cell-head"><small>해당 세대수</small></div>
-                  <div class="cell-body"><span class="adp-dm-pair"><input class="adp-mkt-input dm-val" inputmode="numeric" :value="supAreaUnits ? supAreaUnits.toLocaleString('ko-KR') : ''" placeholder="입력" @change="setSupVal('sup.areaUnits', ($event.target as HTMLInputElement).value)" /><em class="adp-dm-unit">세대</em></span></div>
+                <div class="sup-cell">
+                  <div class="sup-h">해당 세대수</div>
+                  <div class="sup-b"><input class="sup-in" inputmode="numeric" placeholder="입력" aria-label="해당 세대수 — 보는 평형의 세대수" :value="supAreaUnits ? supAreaUnits.toLocaleString('ko-KR') : ''" @change="setSupVal('sup.areaUnits', ($event.target as HTMLInputElement).value)" /></div>
                 </div>
               </div>
-              <div class="adp-mkt-cells c4 adp-dm-table adp-sup-stats">
-                <div class="cell"><small>매물률</small><strong class="hi-blue">{{ supStats.listingRate }}</strong></div>
-                <div class="cell"><small>거래율</small><strong class="hi-blue">{{ supStats.dealRate }}</strong></div>
-                <div class="cell"><small>월평균 거래</small><strong class="hi-blue">{{ supStats.monthly }}</strong></div>
-                <div class="cell"><small>매물소화기간</small><strong class="hi-blue">{{ supStats.absorb }}</strong></div>
+              <p class="sup-head">② 수요지표</p>
+              <div class="sup-row">
+                <div class="sup-cell"><div class="sup-h">매물률<em class="sup-plain">매물이 얼마나 쌓였나</em></div><div class="sup-b"><b><UnitText :text="supStats.listingRate" /></b></div></div>
+                <div class="sup-cell"><div class="sup-h">거래율<em class="sup-plain">단지 거래가 얼마나 도나</em></div><div class="sup-b"><b><UnitText :text="supStats.dealRate" /></b></div></div>
+                <div class="sup-cell"><div class="sup-h">월평균 거래<em class="sup-plain">한 달에 몇 건 팔리나</em></div><div class="sup-b"><b><UnitText :text="supStats.monthly" /></b></div></div>
+                <div class="sup-cell"><div class="sup-h">매물소화기간<em class="sup-plain">다 팔리는 데 걸리는 시간</em></div><div class="sup-b"><b><UnitText :text="supStats.absorb" /></b></div></div>
               </div>
-              <p class="adp-sup-note">
+              <p class="sup-note">
                 <template v-if="supAreaUnits">거래율은 이 평형(전용 {{ trunc2(supMyArea) }}㎡) 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건을 해당 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 나눈 값입니다.</template>
-                <template v-else>거래율은 12개월 거래량을 총세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 나눈 값입니다. 해당 세대수를 적으면 그 평형 기준으로 다시 계산합니다.</template>
+                <template v-else>거래율은 12개월 거래량을 총세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 나눈 값입니다. 해당 세대수(보는 평형의 세대수)를 적으면 그 평형 기준으로 다시 계산합니다.</template>
               </p>
-            </div>
+            </section>
 
             <!-- ① 실사용자 + 입지등수 (웹은 ②) -->
             <div class="adp-dm-block boxed">
@@ -11315,10 +11322,23 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-block .adp-dm-result { width: 100%; justify-content: center; }
 .adp-dm-block .adp-dm-result > em { display: inline-block; min-width: 14px; text-align: left; }
 .adp-dm-block .adp-dm-judge { flex: 0 0 34px; text-align: right; }
-.adp-sup-lead { margin-left: 4px; font-size: 12px; font-weight: 500; color: #6b7280; }
-.adp-sup .adp-mkt-cells + .adp-mkt-cells { margin-top: 8px; }
-.adp-dm-unit { margin-left: 4px; font-style: normal; font-size: 12px; color: #6b7280; }
-.adp-sup-note { margin: 8px 2px 0; font-size: 12px; color: #6b7280; line-height: 1.6; }
+/* 웹 단지 시장분석 — 수요분석(AdminRegionDemandPage .adm-nav-scope · .dm-*)과 같은 값 */
+.sup-dm { padding: 14px 16px 12px; }
+.sup-scope { margin: 0 0 14px; font-size: 18px; font-weight: 800; color: #111827; }
+.sup-scope .area { color: #2b6df3; }
+.sup-head { margin: 0 0 8px 2px; font-size: 14px; font-weight: 700; color: #111827; }
+.sup-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.sup-cell { min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; }
+.sup-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; padding: 8px 6px; border-bottom: 1px solid #e3e8f0; border-radius: 8px 8px 0 0; background: #f3f6fb; font-size: 14px; color: #6b7280; white-space: nowrap; }
+.sup-plain { flex: 0 0 100%; margin-top: 2px; font-style: normal; font-size: 12px; color: #9ca3af; text-align: center; }
+.sup-b { display: flex; justify-content: center; align-items: center; padding: 14px 6px; }
+.sup-b b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; display: inline-flex; align-items: center; }
+.sup-u { margin-left: 2px; font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; }   /* UnitText 단위와 같은 꼴('세대'는 UnitText 단위 목록에 없다) */
+.sup-b b.wait { font-size: 14px; font-weight: 400; color: #9ca3af; }
+.sup-in { width: 110px; height: 34px; box-sizing: border-box; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; padding: 0 10px; text-align: right; font-family: inherit; font-size: 18px; font-weight: 800; color: #2b6df3; }
+.sup-in:focus { outline: none; border-color: #2b6df3; }
+.sup-in::placeholder { color: #aebbd6; font-size: 14px; font-weight: 400; }
+.sup-note { margin: -6px 2px 0; font-size: 12px; color: #6b7280; line-height: 1.6; }
 .adp-dm-sub { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 3px 2px 2px; font-size: 13px; font-weight: 800; color: #111827; }
 .adp-dm-sub .adp-edit-btn { margin-left: auto; }
 .adp-dm-result em { font-size: 11px; font-style: normal; font-weight: 700; color: #4b5563; }
