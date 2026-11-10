@@ -34,7 +34,7 @@ import { complexNameOf, totalParkingOf } from '../services/aptComplex';
 import { getComplexAreas, supplyRowsOf, areaUnitsOf, sameExclusiveCountOf, type ComplexAreas } from '../services/complexAreas';
 import { DEMAND_PLAIN, dec1, demandFitText, demandGradeOf, demandOpinionOf, demandPassText, demandTip, type DemandMetric } from '../services/demandGrade';
 import { openNaverComplexListing, openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
-import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
+import { computed, inject, markRaw, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
@@ -83,7 +83,8 @@ import RightsPanel from '../components/RightsPanel.vue';
 import SonpumPricePage from './SonpumPricePage.vue';
 import type { CasePropertyType } from '../services/caseTradeAnalysis';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
-import { complexesOf, complexNearbyOf, nearestPlaceOf, rankFromMeters, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
+import { complexesOf, complexNearbyOf, nearestPlaceOf, PLACE_ICON, rankFromMeters, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
+import KakaoMapTools from '../components/KakaoMapTools.vue';
 import { createMapView, type MapView } from '../services/mapView';
 import { geocodeAddress } from '../services/routeOptimizer';
 import {
@@ -5522,7 +5523,6 @@ const hasTypedRank = computed(() => rankConditions.value.some((c) => !!rankOf(c)
 // ===== 웹 손품조사 — 단지 입지비교(2026-11-10 시안 그대로 · 웹 · 아파트만, 개별성 분석 아래) =====
 // 같은 동의 다른 단지를 내 물건과 같은 입지조건 · 같은 규칙(도보 5분 1등 · 10분 2등 · 그 밖 3등)으로 매기고,
 // 단지마다 내 전용면적과 가장 가까운 평형의 최근 12개월 평균 전세가 · 매매가를 옆에 둔다(국토부 · DB). 짐작한 값은 넣지 않는다
-const CMP_COLOR: Record<string, string> = { 초등학교: '#1f9d55', 학원가: '#7c3aed', 인프라: '#d97706', 교통: '#1e3a8a', 공원: '#16a34a', 유치원: '#db2777' };
 const cmpNearby = ref<Record<string, ComplexNearby | null>>({});   // 지번 → 좌표 · 주변시설(null = 못 찾음)
 const cmpPick = ref('');
 const cmpFrom = computed(() => { const w = tradeWindowOf(Date.now(), 12); return `${w.start.getFullYear()}${String(w.start.getMonth() + 1).padStart(2, '0')}${String(w.start.getDate()).padStart(2, '0')}`; });
@@ -5533,13 +5533,14 @@ const cmpList = computed<CompareComplex[]>(() => {
   if (!list.some((c) => c.mine)) list.push({ jibun: myJibun, name: supName.value, umdNm: '', area: myArea, jeonseAvg: 0, saleAvg: 0, deals: [], mine: true });
   return list.map((c) => (c.mine ? { ...c, name: supName.value || c.name } : c));
 });
-type CmpRow = CompareComplex & { ranks: Array<number | null>; avg: number | null; sum: number; point: { lat: number; lng: number } | null; places: Array<{ cond: string; name: string; m: number; lat?: number; lng?: number } | null> };
+type CmpPlace = { cond: string; name: string; m: number; lat?: number; lng?: number; ic: string; color: string };
+type CmpRow = CompareComplex & { ranks: Array<number | null>; avg: number | null; sum: number; point: { lat: number; lng: number } | null; places: Array<CmpPlace | null> };
 const cmpRows = computed<CmpRow[]>(() => {
   const conds = rankConditions.value;
   const rows = cmpList.value.map((c) => {
     const nb = c.mine ? null : cmpNearby.value[c.jibun];
     const env = c.mine ? nearbyEnv.value : nb?.env ?? null;
-    const places = conds.map((cond) => { const p = nearestPlaceOf(env, cond); return p ? { cond, name: p.name, m: p.distanceMeters, lat: p.lat, lng: p.lng } : null; });
+    const places = conds.map((cond) => { const p = nearestPlaceOf(env, cond); const ic = p ? PLACE_ICON[p.src] : undefined; return p ? { cond, name: p.name, m: p.distanceMeters, lat: p.lat, lng: p.lng, ic: ic?.ic ?? '📍', color: ic?.color ?? '#6b7280' } : null; });
     // 내 물건 — 위 '실사용자 + 입지등수'에 보이는 값 그대로(손으로 고친 등수가 있으면 그 값)
     const ranks = conds.map((cond, i) => (c.mine ? (Number(rankValue(cond)) || null) : (places[i] ? rankFromMeters(places[i]!.m) : null)));
     const ready = env && ranks.every((r) => r !== null);
@@ -5596,11 +5597,11 @@ const cmpDraw = () => {
   if (pick?.point) {
     mv.circle(pick.point, WALK_M_PER_MIN * 10, { color: '#2b6df3', weight: 1.4, dash: true, fillOpacity: 0 });
     mv.circle(pick.point, WALK_M_PER_MIN * 5, { color: '#2b6df3', weight: 1.6, fillOpacity: 0.07 });
+    // 조건별 가장 가까운 시설 — 지도 도구 '주변'과 같은 그림 · 색 상자(이름 · 거리), 단지와 선으로 잇는다
     pick.places.forEach((p) => {
       if (!p?.lat || !p.lng) return;
-      const color = CMP_COLOR[p.cond] ?? '#6b7280';
-      mv.line([pick.point!, { lat: p.lat, lng: p.lng }], { color, weight: 2, opacity: 0.7 });
-      mv.pin({ lat: p.lat, lng: p.lng }, { className: 'cmp-fac', html: `<i style="background:${color}" title="${cmpEsc(`${p.cond} · ${p.name} ${p.m}m`)}"></i>`, z: 20, interactive: false });
+      mv.line([pick.point!, { lat: p.lat, lng: p.lng }], { color: p.color, weight: 2, opacity: 0.7 });
+      mv.pin({ lat: p.lat, lng: p.lng }, { className: 'cmp-near', html: `<div class="kt-near" style="--c:${p.color}">${p.ic} ${cmpEsc(p.name)} · ${p.m.toLocaleString('ko-KR')}m</div>`, z: 20, interactive: false });
     });
   }
   rows.forEach((r) => {
@@ -5620,12 +5621,28 @@ const cmpEnsureMap = async () => {
   await nextTick();
   if (!cmpMvP && cmpMapEl.value && cmpRows.value.some((r) => r.point)) {
     const el = cmpMapEl.value;
-    cmpMvP = createMapView(el, { zoomControl: 'topright' }).then((v) => { cmpMv = v; });
+    cmpMvP = createMapView(el, { zoomControl: 'topright', kakaoTools: true, leaflet: { scrollWheelZoom: true, wheelPxPerZoomLevel: 120, zoomSnap: 0.25 } }).then((v) => { cmpMv = v; if (v.native) cmpTools.value = markRaw(v.native); });
   }
   if (cmpMvP) { await cmpMvP; cmpDraw(); }
 };
 watch(() => `${cmpPicked.value?.jibun}|${cmpRows.value.map((r) => `${r.jibun}:${r.point ? 1 : 0}:${r.avg}`).join(',')}`, () => { void cmpEnsureMap(); });
 if (sonpumTab) watch(sonpumTab, (t) => { if (t === 'demand') void nextTick(() => { cmpMv?.relayout(); cmpFitted = ''; cmpDraw(); }); });
+/** 지도 도구 막대(시세분석 지도와 같은 것 — 주변 · 로드뷰 · 거리재기 …) */
+const cmpTools = shallowRef<{ k: unknown; map: unknown } | null>(null);
+const cmpMePoint = computed(() => cmpRows.value.find((r) => r.mine)?.point ?? null);
+/** 전체화면 — 시세분석 지도처럼. 고른 보기는 새로고침 · 다른 물건에서도 남긴다(닫아야 풀린다) */
+const CMP_FS_KEY = 'son.cmp.fs';
+const cmpFs = ref(webEmbed && (() => { try { return localStorage.getItem(CMP_FS_KEY) === '1'; } catch { return false; } })());
+const onCmpFsKey = (e: KeyboardEvent) => { if (e.key === 'Escape') cmpFs.value = false; };
+watch(cmpFs, async (on) => {
+  try { if (on) localStorage.setItem(CMP_FS_KEY, '1'); else localStorage.removeItem(CMP_FS_KEY); } catch { /* 이 창에서만 */ }
+  document.documentElement.style.overflow = on ? 'hidden' : '';
+  if (on) window.addEventListener('keydown', onCmpFsKey); else window.removeEventListener('keydown', onCmpFsKey);
+  await nextTick();
+  [0, 120, 400].forEach((ms) => window.setTimeout(() => { cmpMv?.relayout(); cmpFitted = ''; cmpDraw(); }, ms));
+});
+onBeforeUnmount(() => { window.removeEventListener('keydown', onCmpFsKey); if (cmpFs.value) document.documentElement.style.overflow = ''; });
+const cmpFsGo = (r: CmpRow) => { cmpPick.value = r.jibun; if (r.point) cmpMv?.focus(r.point, 16); };
 onBeforeUnmount(() => { cmpMv?.destroy(); cmpMv = null; cmpMvP = null; });
 /** 손으로 적은 등수를 지운다 — 비우면 거리로 매긴 자동값이 다시 선다.
  *  칸을 하나씩 지우는 길은 원래 있었지만, 폰에서 지우기가 까다로워 보이지 않았다. */
@@ -9003,10 +9020,35 @@ const goBack = () => router.back();
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box">
               <p class="sup-scope"><span class="area">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span> 단지 입지비교</p>
               <p class="sup-head">③ 단지 입지비교 <small class="cmp-sub">내 물건과 같은 입지조건 · 같은 규칙으로 매긴 입지등수, 평균 전세가 · 매매가는 단지마다 내 전용면적과 가장 가까운 평형의 최근 12개월</small></p>
-              <div ref="cmpMapEl" class="cmp-map">
-                <p v-if="!cmpRows.some((r) => r.point)" class="cmp-wait">{{ supLoaded ? '단지 위치를 찾는 중입니다…' : '실거래를 받는 중입니다…' }}</p>
+              <!-- 지도 — 시세분석 지도와 같은 도구 막대(주변 · 로드뷰 …) · 전체화면. 전체화면이면 body 로 옮겨 화면을 채우고 오른쪽에 단지 목록 -->
+              <div class="cmp-map-slot">
+              <Teleport to="body" :disabled="!cmpFs">
+              <div :class="['cmp-map', { fs: cmpFs }]">
+                <div v-if="cmpFs" class="cmp-fs-top">
+                  <button type="button" class="cmp-fs-x" @click="cmpFs = false"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>전체화면 닫기</button>
+                  <b>단지 입지비교<small>{{ [auction?.caseNumber, [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ')].filter(Boolean).join(' · ') }}</small></b>
+                </div>
+                <!-- 지도 칸 — 도구 막대 · 전체화면 단추는 이 칸 안에(전체화면에서 오른쪽 목록과 겹치지 않게) -->
+                <div class="cmp-map-box">
+                  <div ref="cmpMapEl" class="cmp-map-in" />
+                  <KakaoMapTools v-if="cmpTools" :k="cmpTools.k" :map="cmpTools.map" :near="cmpMePoint" />
+                  <button v-if="!cmpFs" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="cmpFs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
+                  <p v-if="!cmpRows.some((r) => r.point)" class="cmp-wait">{{ supLoaded ? '단지 위치를 찾는 중입니다…' : '실거래를 받는 중입니다…' }}</p>
+                </div>
+                <aside v-if="cmpFs" class="cmp-fs-list">
+                  <button v-for="r in cmpRows" :key="r.jibun" type="button" :class="['cmp-fs-row', { on: r.jibun === cmpPicked?.jibun, mine: r.mine }]" @click="cmpFsGo(r)">
+                    <b>{{ r.name || r.jibun }}<span v-if="r.mine" class="cmp-tag">내 물건</span></b>
+                    <span>등수평균 <em class="cmp-avg">{{ cmpAvgText(r.avg) }}</em> · 전세 <em>{{ cmpMoney(r.jeonseAvg) }}</em></span>
+                    <span class="dim">전용 {{ trunc2(r.area) }}㎡{{ cmpDist(r) ? ` · ${cmpDist(r)}` : '' }}</span>
+                  </button>
+                  <div v-if="cmpPicked" class="cmp-fs-places">
+                    <span v-for="(p, i) in cmpPicked.places" :key="i"><i>{{ p?.ic ?? '·' }}</i>{{ rankConditions[i] }} <b>{{ p ? `${p.name} ${p.m.toLocaleString('ko-KR')}m` : '-' }}</b><em v-if="cmpPicked.ranks[i]" :class="['cmp-rk', { r1: cmpPicked.ranks[i] === 1 }]">{{ cmpPicked.ranks[i] }}</em></span>
+                  </div>
+                </aside>
               </div>
-              <div class="cmp-legend"><span><i class="me"></i>내 물건</span><span><i></i>비교 단지</span><span v-for="c in rankConditions" :key="c"><i class="sq" :style="{ background: CMP_COLOR[c] ?? '#6b7280' }"></i>{{ c }}</span><span class="dim">원 — 도보 5분(실선) · 10분(점선)</span></div>
+              </Teleport>
+              </div>
+              <p class="cmp-legend">고른 단지의 원 — 도보 5분(실선) · 10분(점선). 그림은 입지조건별 가장 가까운 시설입니다.</p>
               <div class="son-demand sup-tbl">
                 <div class="adm-table-wrap">
                   <table class="adm-table cmp-tbl">
@@ -9036,8 +9078,8 @@ const goBack = () => router.back();
                     <thead><tr><th>입지조건</th><th>가장 가까운 곳</th><th>거리</th><th>도보</th><th>입지등수</th></tr></thead>
                     <tbody>
                       <tr v-for="(c, i) in rankConditions" :key="c">
-                        <td><i class="cmp-sq" :style="{ background: CMP_COLOR[c] ?? '#6b7280' }"></i>{{ c }}</td>
-                        <td class="lft">{{ cmpPicked.places[i]?.name ?? '-' }}</td>
+                        <td>{{ c }}</td>
+                        <td class="lft"><template v-if="cmpPicked.places[i]"><span class="cmp-ic">{{ cmpPicked.places[i]!.ic }}</span>{{ cmpPicked.places[i]!.name }}</template><template v-else>-</template></td>
                         <td class="n">{{ cmpPicked.places[i] ? `${cmpPicked.places[i]!.m.toLocaleString('ko-KR')}m` : '-' }}</td>
                         <td class="n">{{ cmpPicked.places[i] ? `${Math.max(1, Math.round(cmpPicked.places[i]!.m / WALK_M_PER_MIN))}분` : '-' }}</td>
                         <td class="n"><span v-if="cmpPicked.ranks[i]" :class="['cmp-rk', { r1: cmpPicked.ranks[i] === 1 }]">{{ cmpPicked.ranks[i] }}</span><template v-else>-</template></td>
@@ -11628,14 +11670,38 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-body > .adp-dm-block.boxed.cmp-box { margin-top: 10px; border: 1px solid #e3e8f0; border-radius: 10px; padding: 14px; background: #fff; }
 .adp-dm-body > .adp-dm-block:has(+ .cmp-box) { border-bottom: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; padding-bottom: 12px; }   /* 개별성 분석이 단락 끝 — 아래 테두리 */
 .cmp-sub { margin-left: 6px; font-size: 12px; font-weight: 400; color: #6b7280; }
-.cmp-map { position: relative; height: 380px; border: 1px solid #e3e8f0; border-radius: 8px; overflow: hidden; background: #eef2f6; margin-bottom: 8px; }
-.cmp-wait { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 13px; color: #6b7280; }
-.cmp-map :deep(.cmp-fac i) { position: absolute; left: -7px; top: -7px; width: 14px; height: 14px; border-radius: 3px; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(17, 24, 39, .35); }
-.cmp-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 2px 12px; font-size: 12px; color: #6b7280; }
-.cmp-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 4px; border-radius: 50%; background: #2b4fd8; vertical-align: -1px; }
-.cmp-legend i.me { background: #e03e3e; }
-.cmp-legend i.sq { border-radius: 2px; }
-.cmp-legend .dim { color: #9ca3af; }
+.cmp-map { position: relative; z-index: 0; isolation: isolate; border: 1px solid #e3e8f0; border-radius: 8px; overflow: hidden; background: #eef2f6; }   /* 지도 안 z-index 를 이 상자에 가둔다(시세분석 .map 과 같게) */
+.cmp-map-in { height: 460px; }
+.cmp-map-slot { margin-bottom: 6px; }
+.cmp-wait { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 13px; color: #6b7280; pointer-events: none; }
+.cmp-map :deep(.cmp-near) { position: relative; }
+.cmp-map :deep(.cmp-near .kt-near) { position: absolute; left: 0; bottom: 4px; transform: translateX(-50%); }
+.fs-btn { position: absolute; left: 10px; top: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(17, 24, 39, .18); font: inherit; font-size: 12.5px; font-weight: 700; color: #111827; cursor: pointer; }
+.fs-btn:hover { color: #2b6df3; }
+/* 전체화면 — 위 띠 · 왼쪽 지도 · 오른쪽 단지 목록(시세분석 전체화면과 같은 짜임) */
+.cmp-map.fs { position: fixed; inset: 0; z-index: 2000; border: 0; border-radius: 0; display: grid; grid-template-columns: minmax(0, 1fr) 340px; grid-template-rows: auto minmax(0, 1fr); background: #fff; }
+.cmp-map-box { position: relative; isolation: isolate; }
+.cmp-map.fs .cmp-map-box { grid-column: 1; grid-row: 2; min-height: 0; }
+.cmp-map.fs .cmp-map-in { height: 100%; }
+.cmp-fs-top { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; padding: 10px 16px; border-bottom: 1px solid #e3e8f0; background: #fff; }
+.cmp-fs-top b { font-size: 15px; font-weight: 800; color: #111827; }
+.cmp-fs-top b small { margin-left: 8px; font-size: 12.5px; font-weight: 400; color: #6b7280; }
+.cmp-fs-x { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font: inherit; font-size: 12.5px; font-weight: 700; color: #111827; cursor: pointer; }
+.cmp-fs-list { grid-column: 2; grid-row: 2; overflow-y: auto; border-left: 1px solid #e3e8f0; padding: 10px; display: grid; gap: 8px; align-content: start; background: #f7f9fc; }
+.cmp-fs-row { display: grid; gap: 3px; text-align: left; padding: 10px 12px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font: inherit; font-size: 12.5px; color: #374151; cursor: pointer; }
+.cmp-fs-row b { font-size: 14px; color: #1e3a8a; }
+.cmp-fs-row em { font-style: normal; font-weight: 700; color: #111827; }
+.cmp-fs-row .cmp-avg { font-size: 13px; color: #e03e3e; }
+.cmp-fs-row .dim { color: #9ca3af; }
+.cmp-fs-row.mine { background: #fff5f5; }
+.cmp-fs-row.on { border-color: #2b6df3; background: #eaf1ff; }
+.cmp-fs-places { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font-size: 12.5px; color: #6b7280; }
+.cmp-fs-places span { display: flex; align-items: center; gap: 6px; }
+.cmp-fs-places b { font-weight: 600; color: #111827; }
+.cmp-fs-places i { font-style: normal; }
+.cmp-fs-places .cmp-rk { margin-left: auto; width: 22px; height: 22px; font-style: normal; font-size: 12px; }
+.cmp-legend { margin: 0 2px 12px; font-size: 12px; color: #9ca3af; }
+.cmp-ic { margin-right: 6px; }
 .cmp-row { cursor: pointer; }
 .sup-tbl .adm-table tbody tr.cmp-row:hover td { background: #f7f9fc; }
 .sup-tbl .adm-table tbody tr.cmp-row.mine td { background: #fff5f5; }
@@ -11650,7 +11716,6 @@ tr.tone-take { background: #fff5f5; }
 .cmp-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
 .cmp-two .sup-tbl { margin-top: 0; }
 .cmp-deals { max-height: 330px; overflow-y: auto; }
-.cmp-sq { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 2px; vertical-align: 0; }
 .sup-tbl .adm-table td.lft { text-align: left; }
 /* 단지 표 — 위 동 수요분석 표(AdminRegionDemandPage .adm-table)를 그대로 옮김 */
 .sup-tbl { margin-top: 0; }

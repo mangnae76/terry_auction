@@ -23,12 +23,24 @@ export const LOCATION_SOURCES: Record<string, Array<keyof NearbyEnvironment>> = 
 export const WALK_M_PER_MIN = 80;
 export const rankFromMeters = (m: number) => (m <= WALK_M_PER_MIN * 5 ? 1 : m <= WALK_M_PER_MIN * 10 ? 2 : 3);
 
-/** 그 조건에서 가장 가까운 한 곳 — 없으면 null(1km 안에 없음) */
-export const nearestPlaceOf = (env: NearbyEnvironment | null | undefined, cond: string): NearbyPlace | null => {
+/** 그 조건에서 가장 가까운 한 곳 — 없으면 null(1km 안에 없음). src 는 어느 시설 묶음에서 왔는지(지도 그림 · 색) */
+export const nearestPlaceOf = (env: NearbyEnvironment | null | undefined, cond: string): (NearbyPlace & { src: keyof NearbyEnvironment }) | null => {
   const keys = LOCATION_SOURCES[cond];
   if (!env || !keys) return null;
-  const all = keys.flatMap((k) => env[k] ?? []).filter((p) => Number(p.distanceMeters) > 0);
+  const all = keys.flatMap((k) => (env[k] ?? []).map((p) => ({ ...p, src: k }))).filter((p) => Number(p.distanceMeters) > 0);
   return all.length ? all.reduce((a, b) => (b.distanceMeters < a.distanceMeters ? b : a)) : null;
+};
+/** 시설 묶음마다 그림 · 색 — 지도 도구 막대 '주변'(components/KakaoMapTools NEAR_KINDS)과 같은 그림 · 색 */
+export const PLACE_ICON: Partial<Record<keyof NearbyEnvironment, { ic: string; color: string; label: string }>> = {
+  school: { ic: '🏫', color: '#7c3aed', label: '초등학교' },
+  daycare: { ic: '🧒', color: '#a855f7', label: '어린이집' },
+  academy: { ic: '📚', color: '#6d28d9', label: '학원' },
+  subway: { ic: '🚇', color: '#2563eb', label: '지하철' },
+  busStop: { ic: '🚌', color: '#0891b2', label: '버스정류장' },
+  mart: { ic: '🛒', color: '#ea580c', label: '마트' },
+  hospital: { ic: '🏥', color: '#dc2626', label: '병원' },
+  commerce: { ic: '🍽', color: '#d97706', label: '상권' },
+  park: { ic: '🌳', color: '#15803d', label: '공원' },
 };
 
 export type ComplexNearby = { lat: number; lng: number; env: NearbyEnvironment };
