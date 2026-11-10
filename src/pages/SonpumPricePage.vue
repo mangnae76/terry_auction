@@ -543,7 +543,7 @@ const drawMap = () => {
   });
   // 내 물건(빨간 점)도 눌렀을 때만 이름표
   mv.pin(m, {
-    className: 'pa-pin me',
+    className: `pa-pin me${meOpen.value ? ' on' : ''}`,
     html: meOpen.value ? html(`<b>${meName.value}</b>${sameCount.value ? `<br>${webEmbed ? `<b>같은건물 ${sameCount.value}건</b>` : `같은 건물 ${sameCount.value}건`}` : ''}`) : dotOnly(),   /* 웹 — '같은건물' 붙여 쓰고 굵게 */
     onClick: () => { focus.value = ''; meOpen.value = !meOpen.value; },
     z: 1000,
@@ -639,7 +639,7 @@ onMounted(() => { window.addEventListener('resize', onResize); void run(); });
 const FS_KEY = 'son.price.fs';
 const fs = ref(webEmbed && !props.app && (() => { try { return localStorage.getItem(FS_KEY) === '1'; } catch { return false; } })());
 const fsList = computed(() => [...mapGroups.value].sort((a, b) => (orderOf.value[a.jibun] ?? 999) - (orderOf.value[b.jibun] ?? 999)));
-const fsGo = (g: { jibun: string; spot: { lat: number; lng: number } }) => { focus.value = focus.value === g.jibun ? '' : g.jibun; if (focus.value && mv) mv.focus(g.spot, 16); };
+const fsGo = (g: { jibun: string; spot: { lat: number; lng: number } }) => { meOpen.value = false; focus.value = focus.value === g.jibun ? '' : g.jibun; if (focus.value && mv) mv.focus(g.spot, 16); };
 const onFsKey = (e: KeyboardEvent) => { if (e.key === 'Escape') fs.value = false; };
 watch(fs, async (on) => {
   if (!webEmbed) return;
@@ -876,7 +876,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
                 <button type="button" :class="['ab', { ok: okKey === 'mineC' }]" title="주소 복사" aria-label="주소 복사" @click="copy(props.auction.address, 'mineC')"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg></button>
               </span></td>
             </tr>
-            <tr v-for="r in listRows" :key="r.id" :class="{ on: focus && focus === r.jibun, off: isOff(r) }" @click="focus = focus === r.jibun ? '' : r.jibun">
+            <tr v-for="r in listRows" :key="r.id" :class="{ on: focus && focus === r.jibun, off: isOff(r) }" @click="meOpen = false; focus = focus === r.jibun ? '' : r.jibun">
               <td v-if="webEmbed" class="ck-td" @click.stop><input type="checkbox" :checked="isOff(r)" :aria-label="`${r.contractDate} ${r.name || r.jibun} 평균에서 빼기`" @change="toggleDrop(r)" /></td>
               <td><span :class="['kind', r.group === '전세' ? 'j' : r.group === '월세' ? 'm' : '']">{{ r.group }}</span></td>
               <td class="pa-num">{{ r.contractDate }}</td>
@@ -1008,10 +1008,13 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .map-msg { position: absolute; inset: 0; z-index: 500; margin: 0; display: grid; place-items: center; color: var(--sub); font-size: 13px; background: rgba(255, 255, 255, .6); }
 .map :deep(.pa-pin) { position: relative; }
 .map :deep(.pa-pin .dot) { position: absolute; left: -12px; top: -12px; width: 24px; height: 24px; border-radius: 50%; background: #2b4fd8; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(17, 24, 39, .3); cursor: pointer; display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 800; font-style: normal; line-height: 1; }   /* 안에 임장 순서 번호 */
-.map :deep(.pa-pin.on .dot) { left: -15px; top: -15px; width: 30px; height: 30px; font-size: 14px; }
+.map :deep(.pa-pin.on .dot) { left: -22px; top: -22px; width: 44px; height: 44px; font-size: 18px; border-width: 3px; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }   /* 누른 점(지도 · 목록) — 두 배 가까이(2026-11-10) */
 .map :deep(.pa-pin.off .dot) { background: #b8bfcc; }   /* 그 건물 거래를 다 제외 — 회색 */
 .map :deep(.pa-pin.off .lbl) { opacity: .55; text-decoration: line-through; }
-.map :deep(.pa-pin.me .dot) { left: -9px; top: -9px; width: 18px; height: 18px; background: #e03e3e; cursor: default; }
+.map :deep(.pa-pin.me .dot) { left: -9px; top: -9px; width: 18px; height: 18px; background: #e03e3e; cursor: pointer; }
+.map :deep(.pa-pin.me.on .dot) { left: -17px; top: -17px; width: 34px; height: 34px; border-width: 3px; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+.map :deep(.pa-pin.on .lbl) { top: 26px; }   /* 커진 점 아래로 이름표를 내린다 */
+.map :deep(.pa-pin.me.on .lbl) { top: 20px; }
 .map :deep(.pa-pin .lbl) { position: absolute; left: 0; top: 15px; transform: translateX(-50%); font-size: 12px; line-height: 1.3; text-align: center; color: var(--fg); text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; white-space: nowrap; pointer-events: none; }
 .map :deep(.pa-pin b) { font-weight: 700; }
 .map :deep(.pa-pin.me b) { color: var(--red); }
