@@ -61,7 +61,8 @@ import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import alertIcon from '../assets/icones/triangle-alert.png';
 import fileTextIcon from '../assets/icones/file-text.png';
 import { resolveRegionFromAddress } from '../services/regionResolver';
-import { fetchRealTradeAverage, fetchPlaceHistory, fetchDongHouseholds, PLACE_HISTORY_YEARS, type RealTradeMatchRow } from '../services/publicDataApi';
+import { fetchRealTradeAverage, fetchPlaceHistory, fetchDongHouseholds, PLACE_HISTORY_YEARS, tradeWindowOf, type RealTradeMatchRow } from '../services/publicDataApi';
+import { analyzeAddress, type CaseTradeRow } from '../services/caseTradeAnalysis';
 import { cached, cachedEntryOrStale, loadOrFail, cacheKey, readCache, writeCache, CACHE_TTL, type FetchState } from '../services/marketCache';
 // 셈은 화면 밖에 따로 둔다 — 표로 매번 확인할 수 있게 (profitMath.test.ts · registryAnalysis.test.ts)
 import { taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxProfitOf } from '../services/profitMath';
@@ -2987,7 +2988,7 @@ watch(
 
 // 아파트 평형별 세대수 · 공급면적, 내 호실 공급면적 — 정보요약 · 단지정보 면적 종류 · 건축물정보 전유부(아파트만, 2026-11-10)
 const complexAreas = ref<ComplexAreas | null>(null);
-watch(() => [auction.value?.id, isApartment.value] as const, async ([id, apt]) => {
+watch([() => auction.value?.id, isApartment] as const, async ([id, apt]) => {   // 물건 · 아파트 여부가 바뀔 때만(저장할 때마다 다시 돌지 않게)
   complexAreas.value = null;
   const addr = auction.value?.buildingHeader?.unitLocation || auction.value?.address;
   if (!id || !apt || !addr) return;
@@ -3021,6 +3022,47 @@ const aptAreaRows = computed(() => {
   if (complexAreas.value?.groups.length) return supplyRowsOf(complexAreas.value);
   return (auction.value?.aptComplexInfo?.areaTypes ?? '').split(/\s*,\s*/).filter(Boolean).map((text) => ({ text, count: 0, mine: false }));
 });
+
+// ===== 웹 손품조사 — 단지 수급(거투 4분면 시장분석, 2026-11-10 시험 · 웹만) =====
+// 총세대수 · 현재 매물수 · 12개월 거래량 · 해당 세대수로 매물률 · 거래율 · 월평균 거래 · 매물소화기간을 계산한다.
+// 거래량은 이 단지(같은 지번) 국토부 매매(정상 + 직거래, 계약해제 제외), 조회일부터 12개월. 짐작한 값은 넣지 않는다
+const supRows = ref<CaseTradeRow[]>([]);
+const supLoaded = ref(false);
+// 물건이 바뀔 때만 — 배열을 돌려주는 한 함수로 지켜보면 저장할 때마다(물건 객체가 바뀔 때마다) 다시 돌았다
+watch([() => auction.value?.id, () => webEmbed] as const, async ([id, web]) => {
+  supRows.value = []; supLoaded.value = false;
+  const a = auction.value;
+  if (!id || !web || !a?.address) return;
+  const out = await analyzeAddress({ address: a.address, propertyType: priceKind.value, years: 1 }).catch(() => null);
+  if (auction.value?.id !== id) return;
+  supRows.value = out?.rows ?? []; supLoaded.value = true;
+}, { immediate: true });
+const supDeals = computed(() => {
+  const w = tradeWindowOf(Date.now(), 12);
+  const from = `${w.start.getFullYear()}${String(w.start.getMonth() + 1).padStart(2, '0')}${String(w.start.getDate()).padStart(2, '0')}`;
+  return supRows.value.filter((r) => (r.kind === '매매' || r.kind === '직거래') && r.contractDate.replace(/\D/g, '') >= from);
+});
+const supNum = (v: string) => Number(String(v ?? '').replace(/[^\d]/g, '')) || 0;
+const supHouseholds = computed(() => supNum(sumVal('sup.households')) || supNum(sumVal('sum.units')));
+const supListings = computed(() => supNum(sumVal('sup.listings')));
+const supAreaUnits = computed(() => supNum(sumVal('sup.areaUnits')));
+/** 해당 세대수를 적으면 그 평형(이 물건 전용면적과 같은 거래)만 센다 */
+const supMyArea = computed(() => Number(auction.value?.buildingAreaM2) || 0);
+const supDealCount = computed(() => (supAreaUnits.value && supMyArea.value
+  ? supDeals.value.filter((r) => Math.abs(r.areaM2 - supMyArea.value) < 0.05).length
+  : supDeals.value.length));
+const supBase = computed(() => supAreaUnits.value || supHouseholds.value);
+const supStats = computed(() => {
+  const base = supBase.value; const deals = supDealCount.value; const listings = supListings.value;
+  const monthly = deals / 12;
+  return {
+    listingRate: base > 0 && listings > 0 ? `${((listings / base) * 100).toFixed(1)}%` : '-',
+    dealRate: base > 0 && supLoaded.value ? `${((deals / base) * 100).toFixed(1)}%` : '-',
+    monthly: supLoaded.value ? `${monthly.toFixed(1)}건` : '-',
+    absorb: listings > 0 && monthly > 0 ? `${(listings / monthly).toFixed(1)}개월` : '-',
+  };
+});
+const setSupVal = (key: string, v: string | number) => setSumVal(key, String(supNum(String(v)) || ''));
 
 // 주차수 · 엘베 — PDF에 없으면 그 필지의 건축물대장(표제부)에서 채운다. 사람이 넣은 값은 덮지 않는다
 watch(() => auction.value?.id, async (id) => {
@@ -8327,9 +8369,44 @@ const goBack = () => router.back();
             </div>
 
 
-            <!-- ① 실사용자 + 입지등수 -->
+            <!-- 웹 ① 거투 4분면 시장분석 — 단지 수급(2026-11-10 시험, 웹만). 시안(사용자 화면 그림) 배치 그대로 -->
+            <div v-if="webEmbed" class="adp-dm-block boxed adp-sup">
+              <div class="adp-dm-sub">① 거투 4분면 시장분석</div>
+              <p class="adp-sup-lead">단지 수급으로 목표 세후 순이익을 정합니다</p>
+              <div class="adp-sup-grid">
+                <label class="adp-sup-f">
+                  <span class="k">총세대수</span>
+                  <span class="adp-sup-in"><FormattedNumberInput :model-value="supHouseholds ? String(supHouseholds) : ''" mode="string" placeholder="입력" @update:model-value="setSupVal('sup.households', $event)" /><em>세대</em></span>
+                </label>
+                <label class="adp-sup-f">
+                  <span class="k">현재 매물수</span>
+                  <span class="adp-sup-in"><FormattedNumberInput :model-value="supListings ? String(supListings) : ''" mode="string" placeholder="입력" @update:model-value="setSupVal('sup.listings', $event)" /><em>건</em></span>
+                </label>
+                <div class="adp-sup-f">
+                  <span class="k">12개월 거래량</span>
+                  <span class="adp-sup-in ro"><b>{{ supLoaded ? supDealCount.toLocaleString('ko-KR') : '조회 중…' }}</b><em>건</em></span>
+                </div>
+                <label class="adp-sup-f">
+                  <span class="k">해당 세대수</span>
+                  <span class="adp-sup-in"><FormattedNumberInput :model-value="supAreaUnits ? String(supAreaUnits) : ''" mode="string" placeholder="입력" @update:model-value="setSupVal('sup.areaUnits', $event)" /><em>세대</em></span>
+                  <small>보는 평형의 세대수</small>
+                </label>
+              </div>
+              <div class="adp-sup-stats">
+                <div><span>매물률</span><b>{{ supStats.listingRate }}</b></div>
+                <div><span>거래율</span><b>{{ supStats.dealRate }}</b></div>
+                <div><span>월평균 거래</span><b>{{ supStats.monthly }}</b></div>
+                <div><span>매물소화기간</span><b>{{ supStats.absorb }}</b></div>
+              </div>
+              <p class="adp-sup-note">
+                <template v-if="supAreaUnits">거래율은 이 평형(전용 {{ trunc2(supMyArea) }}㎡) 12개월 거래량 <b>{{ supDealCount.toLocaleString('ko-KR') }}건</b>을 <b>해당 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대</b>로 나눈 값입니다.</template>
+                <template v-else>거래율은 12개월 거래량을 <b>총세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}</b>로 나눈 값입니다. 해당 세대수를 적으면 그 평형 기준으로 다시 계산합니다.</template>
+              </p>
+            </div>
+
+            <!-- ① 실사용자 + 입지등수 (웹은 ②) -->
             <div class="adp-dm-block boxed">
-            <div class="adp-dm-sub">① 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>초기화</button></div>
+            <div class="adp-dm-sub">{{ webEmbed ? '②' : '①' }} 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>초기화</button></div>
             <table :class="['adp-table adp-ruser-table', { tight: !webEmbed }]">
               <colgroup v-if="webEmbed">
               <col style="width: 20%" /><col style="width: 15%" /><col style="width: 21%" /><col style="width: 17%" /><col style="width: 12%" /><col style="width: 15%" />
@@ -8484,10 +8561,10 @@ const goBack = () => router.back();
 
             </div>
 
-            <!-- ② 개별성 분석 -->
+            <!-- ② 개별성 분석 (웹은 ③) -->
             <div class="adp-dm-block boxed">
             <div class="adp-dm-sub">
-              ② 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
+              {{ webEmbed ? '③' : '②' }} 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
               <button v-if="!editingSurvey.individuality" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
             </div>
@@ -11239,6 +11316,22 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-block .adp-dm-result { width: 100%; justify-content: center; }
 .adp-dm-block .adp-dm-result > em { display: inline-block; min-width: 14px; text-align: left; }
 .adp-dm-block .adp-dm-judge { flex: 0 0 34px; text-align: right; }
+.adp-sup .adp-sup-lead { margin: 2px 2px 10px; font-size: 13px; color: #6b7280; }
+.adp-sup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; }
+.adp-sup-f { display: grid; gap: 6px; }
+.adp-sup-f .k { font-size: 13px; color: #6b7280; }
+.adp-sup-f small { font-size: 12px; color: #9aa3b2; }
+.adp-sup-in { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border: 1px solid #d5dbe6; border-radius: 10px; background: #fff; }
+.adp-sup-in.ro { border-color: transparent; background: #f8fafc; }
+.adp-sup-in :deep(input) { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; font: inherit; font-size: 18px; font-weight: 700; color: #111827; text-align: left; }   /* 시안처럼 왼쪽 */
+.adp-sup-in b { flex: 1; font-size: 18px; font-weight: 700; color: #111827; }
+.adp-sup-in em { font-style: normal; font-size: 13px; color: #6b7280; }
+.adp-sup-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px; }
+.adp-sup-stats div { display: grid; gap: 4px; padding: 10px 12px; border-radius: 10px; background: #f8fafc; }
+.adp-sup-stats span { font-size: 13px; color: #6b7280; }
+.adp-sup-stats b { font-size: 20px; font-weight: 800; color: #111827; }
+.adp-sup-note { margin: 12px 2px 2px; font-size: 13px; color: #6b7280; line-height: 1.6; }
+.adp-sup-note b { color: #111827; }
 .adp-dm-sub { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 3px 2px 2px; font-size: 13px; font-weight: 800; color: #111827; }
 .adp-dm-sub .adp-edit-btn { margin-left: auto; }
 .adp-dm-result em { font-size: 11px; font-style: normal; font-weight: 700; color: #4b5563; }
