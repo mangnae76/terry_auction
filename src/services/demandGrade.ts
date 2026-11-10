@@ -68,13 +68,14 @@ export const demandPassOf = (m: DemandMetric, value: number, apt = false) => {
   return R.higher ? value >= line : value <= line;
 };
 
-/** 종합 의견 — 매물(소화기간 10개월 선) × 거래(회전율 1.5% 선, 아파트 3%) 네 칸. 등급 대신 한 줄(2026-11-10 사용자 시안 'Level 3 · 저매물 / 저거래').
+/** 종합 의견 — 매물(소화기간 10개월 · 매물율 5% 선) × 거래(회전율 1.5% 선, 아파트 3%) 네 칸. 등급 대신 한 줄(2026-11-10 사용자 시안 'Level 3 · 저매물 / 저거래').
  *  매물이 많고 적음은 세대수가 아니라 팔리는 속도로 본다 — 1년치가 쌓였으면 세대수 대비 적어도 '고매물'(2026-11-10 사용자 결정, 성포동 329건 · 329건).
  *  소화기간 = 1,200 ÷ 소화율 이라 소화율로 받는다(거래 0건이면 소화율 0 → 고매물). 선은 DEMAND_PASS_TEXT 와 같은 합격선. 값이 없으면 null */
-export const demandOpinionOf = (absorb: number, turnover: number, ready: boolean, apt = false): { level: number; title: string; text: string } | null => {
+// 매물율이 5%를 넘으면 소화기간과 상관없이 '고매물'(많이 쌓였다, 2026-11-10 사용자 결정) — 둘 중 하나만 넘어도 고매물
+export const demandOpinionOf = (absorb: number, turnover: number, ready: boolean, apt = false, burden = 0): { level: number; title: string; text: string } | null => {
   if (!ready) return null;
   const clearMonths = absorb > 0 ? 1200 / absorb : Infinity;
-  const lowListing = clearMonths <= DEMAND_GRADE_RULES.clear.b;
+  const lowListing = clearMonths <= DEMAND_GRADE_RULES.clear.b && burden <= DEMAND_GRADE_RULES.burden.b;
   const highDeal = turnover >= turnoverLineOf(apt);
   // 거래가 얼마나 활발한지 한 낱말 — 아파트 3~5% 다소 · 5~8% · 8%↑ 매우(ⓘ 단계와 같다), 빌라 1.5~3% 다소 · 3%↑
   const lively = apt

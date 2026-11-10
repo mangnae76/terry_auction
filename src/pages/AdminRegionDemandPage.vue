@@ -338,7 +338,7 @@ const unitsNote = computed(() => {
 /** 종합 의견 — 매물수를 넣고 세대수를 다 받았을 때만 */
 const dmOpinion = computed(() => {
   const v = navStats.value;
-  return demandOpinionOf(v.absorb, v.turnover, v.listings > 0 && unitsTally.value.ready && v.units > 0, kind.value === 'apt');
+  return demandOpinionOf(v.absorb, v.turnover, v.listings > 0 && unitsTally.value.ready && v.units > 0, kind.value === 'apt', v.burden);
 });
 const dmResults = computed(() => {
   const v = navStats.value;
