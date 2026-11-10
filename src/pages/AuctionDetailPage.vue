@@ -5650,6 +5650,8 @@ const cmpEst = computed(() => {
   const avg = ps.length ? ps.reduce((a, b) => a + b, 0) / ps.length : 0;
   return { name: r.name || r.jibun, mine: r.mine, n: ps.length, avg, med: mid, min: ps[0] ?? 0, max: ps[ps.length - 1] ?? 0, perPy: py > 0 ? avg / py : 0, py, year: r.buildYear };
 });
+/** 표 · 목록의 시설 이름 — 옆 칸이 이미 '학원가'라 '학원가 · 학원 12곳' 은 '학원 12곳' 으로만(2026-11-11) */
+const cmpPlaceName = (name: string) => name.replace(/^학원가\s*·\s*/, '');
 const cmpEok = (w: number) => (w > 0 ? `${(w / 1e8).toFixed(2)}억` : '-');
 const cmpPy = (w: number) => (w > 0 ? `${Math.round(w / 1e4).toLocaleString('ko-KR')}만/평` : '-');
 const cmpGoPrice = () => { if (sonpumTab) sonpumTab.value = 'price'; };
@@ -9072,7 +9074,7 @@ const goBack = () => router.back();
                     <span class="pr">{{ cmpMoney(r.jeonseAvg) }}</span>
                   </button>
                   <div v-if="cmpPicked" class="cmp-fs-places">
-                    <span v-for="(p, i) in cmpPicked.places" :key="i"><i>{{ p?.ic ?? '·' }}</i>{{ rankConditions[i] }} <b>{{ p ? `${p.name} ${p.m.toLocaleString('ko-KR')}m` : '-' }}</b><em v-if="cmpPicked.ranks[i]" :class="['cmp-rk', { r1: cmpPicked.ranks[i] === 1 }]">{{ cmpPicked.ranks[i] }}</em></span>
+                    <span v-for="(p, i) in cmpPicked.places" :key="i"><i>{{ p?.ic ?? '·' }}</i>{{ rankConditions[i] }} <b>{{ p ? `${cmpPlaceName(p.name)} ${p.m.toLocaleString('ko-KR')}m` : '-' }}</b><em v-if="cmpPicked.ranks[i]" :class="['cmp-rk', { r1: cmpPicked.ranks[i] === 1 }]">{{ cmpPicked.ranks[i] }}</em></span>
                   </div>
                 </aside>
               </div>
@@ -9106,11 +9108,13 @@ const goBack = () => router.back();
                 <p class="sup-head cmp-pick">고른 단지 <span class="area cmp-chip">{{ cmpPicked.name || cmpPicked.jibun }}</span> <small class="cmp-sub">지도 점이나 위 표 줄을 누르면 바뀝니다</small></p>
                 <div class="cmp-two">
                   <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
+                    <!-- 가장 가까운 곳 칸을 넓히고(이름이 잘리지 않게) 나머지는 좁게(2026-11-11) -->
+                    <colgroup><col style="width: 76px" /><col /><col style="width: 72px" /><col style="width: 56px" /><col style="width: 70px" /></colgroup>
                     <thead><tr><th>입지조건</th><th>가장 가까운 곳</th><th>거리</th><th>도보</th><th>입지등수</th></tr></thead>
                     <tbody>
                       <tr v-for="(c, i) in rankConditions" :key="c">
                         <td>{{ c }}</td>
-                        <td class="lft"><template v-if="cmpPicked.places[i]"><span class="cmp-ic">{{ cmpPicked.places[i]!.ic }}</span>{{ cmpPicked.places[i]!.name }}</template><template v-else>-</template></td>
+                        <td class="lft cmp-place"><template v-if="cmpPicked.places[i]"><span class="cmp-ic">{{ cmpPicked.places[i]!.ic }}</span>{{ cmpPlaceName(cmpPicked.places[i]!.name) }}</template><template v-else>-</template></td>
                         <td class="n">{{ cmpPicked.places[i] ? `${cmpPicked.places[i]!.m.toLocaleString('ko-KR')}m` : '-' }}</td>
                         <td class="n">{{ cmpPicked.places[i] ? `${Math.max(1, Math.round(cmpPicked.places[i]!.m / WALK_M_PER_MIN))}분` : '-' }}</td>
                         <td class="n"><span v-if="cmpPicked.ranks[i]" :class="['cmp-rk', { r1: cmpPicked.ranks[i] === 1 }]">{{ cmpPicked.ranks[i] }}</span><template v-else>-</template></td>
@@ -9118,7 +9122,7 @@ const goBack = () => router.back();
                     </tbody>
                   </table></div></div>
                   <div class="son-demand sup-tbl"><div class="adm-table-wrap cmp-deals"><table class="adm-table cmp-tbl">
-                    <thead><tr><th>구분</th><th>계약일</th><th>전용</th><th>층</th><th>금액</th></tr></thead>
+                    <thead><tr><th>구분</th><th>계약일</th><th>전용</th><th>층</th><th>실거래가</th></tr></thead>
                     <tbody>
                       <tr v-for="(d, i) in cmpPicked.deals" :key="i">
                         <td><span :class="['cmp-kind', { j: d.kind === '전세', m: d.kind === '월세' }]">{{ d.kind === '직거래' ? '매매' : d.kind }}</span></td><td class="n">{{ d.contractDate }}</td><td class="n">{{ trunc2(d.areaM2) }}㎡</td><td class="n">{{ d.floor ? `${d.floor}층` : '-' }}</td><td class="n amt"><b>{{ cmpMoney(d.price) }}</b></td>
@@ -11769,6 +11773,7 @@ tr.tone-take { background: #fff5f5; }
 .cmp-fs-places .cmp-rk { margin-left: auto; width: 22px; height: 22px; font-style: normal; font-size: 12px; }
 .cmp-legend { margin: 0 2px 12px; font-size: 12px; color: #9ca3af; }
 .cmp-ic { margin-right: 6px; }
+.sup-tbl .adm-table td.cmp-place { white-space: normal; word-break: keep-all; }   /* 긴 시설 이름은 잘리지 않고 줄을 바꾼다 */
 /* 구분 칩 — 시세분석 표 구분(.kind · .kind.j · .kind.m)과 같은 칩: 매매 남색 · 전세 노랑 · 월세 초록(2026-11-11) */
 .cmp-kind { font-size: 12px; border-radius: 4px; padding: 1px 6px; background: #eef2ff; color: #2b3a67; }
 .cmp-kind.j { background: #fdf3e1; color: #b7791f; }
