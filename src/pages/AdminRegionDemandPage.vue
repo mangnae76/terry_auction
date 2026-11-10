@@ -622,7 +622,7 @@ const downloadCsv = () => {
         </div>
               <!-- 종합 의견 — 등급 대신 매물률 × 회전율 네 칸 한 줄(2026-11-10). 매물수를 넣어야 나온다 -->
         <div class="dm-opinion">
-          <template v-if="dmOpinion"><b>Level {{ dmOpinion.level }} · {{ dmOpinion.title }}</b><span>{{ dmOpinion.text }}</span></template>
+          <template v-if="dmOpinion"><b>{{ dmOpinion.title }}</b><span>{{ dmOpinion.text }}</span></template>
           <span v-else class="wait">총 매물수를 넣으면 종합 의견이 나옵니다.</span>
         </div>
       </section>

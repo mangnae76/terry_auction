@@ -8487,7 +8487,7 @@ const goBack = () => router.back();
               </div>
               <!-- 종합 의견 — 위 동 수요분석과 같은 상자 -->
               <div class="sup-opinion">
-                <template v-if="supOpinion"><b>Level {{ supOpinion.level }} · {{ supOpinion.title }}</b><span>{{ supOpinion.text }}</span></template>
+                <template v-if="supOpinion"><b>{{ supOpinion.title }}</b><span>{{ supOpinion.text }}</span></template>
                 <span v-else class="wait">현재 매물수(해당평형)를 넣으면 종합 의견이 나옵니다.</span>
               </div>
               <p class="sup-note">
