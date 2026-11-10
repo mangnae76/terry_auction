@@ -5479,7 +5479,7 @@ const ROOM_TYPES = [
 const roomOpen = ref(false);
 /** 매매수요 조사 맨 위 줄 — 세대구성 · 입지조건에 나올 수 있는 글 전부(상자 폭을 가장 긴 글에 맞춰 둔다) */
 const CMP_WHO_ALL = [...new Set([...ROOM_TYPES.map((r) => r.details.map((d) => d.who).join(' · ')), '룸수를 고르세요'])];
-const CMP_COND_ALL = [...new Set([...ROOM_TYPES.map((r) => r.conditions.join(' · ')), ...REAL_USER_BANDS.map((b) => b.conditions.join(' · ')), '-'])];
+const CMP_COND_ALL = [...new Set([...ROOM_TYPES.map((r) => r.conditions.join(' · ')), '룸수를 고르세요'])];
 /** 1.5룸 · 4룸은 뺐다(2026-11-11 사용자) — 예전에 고른 물건은 2룸 · 3룸으로 본다 */
 const ROOM_ALIAS: Record<string, string> = { '1.5': '2', '4': '3' };
 const selectedRoomType = computed(() => {
@@ -5524,6 +5524,9 @@ const hasTypedRank = computed(() => rankConditions.value.some((c) => !!rankOf(c)
 // 단지마다 내 전용면적과 가장 가까운 평형의 최근 12개월 평균 전세가 · 매매가를 옆에 둔다(국토부 · DB). 짐작한 값은 넣지 않는다
 /** 단지 입지비교가 켜지는 곳(웹 · 아파트 · 손품조사) — 여기선 ① 실사용자 + 입지등수를 단지 입지비교에 합친다 */
 const cmpOn = computed(() => webEmbed && isApartment.value && sonpumMode);
+/** 단지 입지비교 · 맨 위 줄의 입지조건 — 룸수를 고르기 전에는 비운다(평수로 미리 채우면 룸수를 고르는 뜻이 없다, 2026-11-11 사용자).
+ *  웹 · 아파트 손품조사만. 앱 · 빌라의 실사용자 표는 예전처럼 평수 구간으로 채운다 */
+const cmpConds = computed(() => (cmpOn.value && !selectedRoomType.value ? [] : rankConditions.value));
 /** 세대구성 — 고른 룸수(없으면 평형대)의 가족 */
 const cmpWho = computed(() => ((selectedRoomType.value?.details ?? []) as Array<{ who: string }>).map((d) => d.who).join(' · '));
 // 거르기(2026-11-11) — 범위(같은 동 · 500m · 1km) · 기간(1년 · 2년) · 평형 폭(±3 · ±5 · ±10㎡) · 거래(매매 · 전세). 고른 값은 새로고침 · 다른 물건에서도 그대로
@@ -5589,7 +5592,7 @@ const cmpList = computed<CompareComplex[]>(() => {
 type CmpPlace = { cond: string; name: string; m: number; lat?: number; lng?: number; ic: string; color: string };
 type CmpRow = CompareComplex & { ranks: Array<number | null>; avg: number | null; sum: number; point: { lat: number; lng: number } | null; places: Array<CmpPlace | null>; supply: { lo: number; hi: number } | null };
 const cmpRows = computed<CmpRow[]>(() => {
-  const conds = rankConditions.value;
+  const conds = cmpConds.value;
   const rows = cmpList.value.map((c) => {
     const nb = c.mine ? null : cmpNearby.value[cmpKeyOf(c)];
     const env = c.mine ? nearbyEnv.value : nb?.env ?? null;
@@ -5597,7 +5600,7 @@ const cmpRows = computed<CmpRow[]>(() => {
     // 내 물건 — 위 '실사용자 + 입지등수'에 보이는 값 그대로(손으로 고친 등수가 있으면 그 값)
     // 주변시설을 받았는데 1km 안에 없으면 3등(위 자동 등수와 같은 규칙)
     const ranks = conds.map((cond, i) => (c.mine ? (Number(rankValue(cond)) || null) : (places[i] ? rankFromMeters(places[i]!.m) : env && cond in LOCATION_SOURCES ? 3 : null)));
-    const ready = env && ranks.every((r) => r !== null);
+    const ready = env && ranks.length > 0 && ranks.every((r) => r !== null);
     const avg = ready ? ranks.reduce<number>((a, b) => a + (b ?? 0), 0) / ranks.length : null;
     const sum = places.reduce((a, p) => a + (p?.m ?? 9999), 0);
     const point = c.mine ? (supRegion.value?.lat ? { lat: supRegion.value.lat, lng: supRegion.value.lng } : null) : nb ? { lat: nb.lat, lng: nb.lng } : null;
@@ -8432,7 +8435,7 @@ const goBack = () => router.back();
                 <!-- 값 상자는 나올 수 있는 글 중 가장 긴 것만큼 미리 넓혀 둔다 — 룸수를 바꿀 때 상자가 덜컹거리지 않게(2026-11-11) -->
                 <span class="grp"><span class="k">세대구성</span><span class="val stack"><span v-for="t in CMP_WHO_ALL" :key="t" :class="{ on: t === (cmpWho || '룸수를 고르세요') }" :aria-hidden="t !== (cmpWho || '룸수를 고르세요')">{{ t }}</span></span></span>
                 <i class="sep" aria-hidden="true" />
-                <span class="grp"><span class="k">입지조건</span><span class="val stack"><span v-for="t in CMP_COND_ALL" :key="t" :class="{ on: t === (rankConditions.join(' · ') || '-') }" :aria-hidden="t !== (rankConditions.join(' · ') || '-')">{{ t }}</span></span></span>
+                <span class="grp"><span class="k">입지조건</span><span class="val stack"><span v-for="t in CMP_COND_ALL" :key="t" :class="{ on: t === (cmpConds.join(' · ') || '룸수를 고르세요') }" :aria-hidden="t !== (cmpConds.join(' · ') || '룸수를 고르세요')">{{ t }}</span></span></span>
                 <button type="button" :class="['cmp-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 고친 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동값으로</button>
               </div>
             <slot v-if="sonpumMode" name="son-demand" />
@@ -9154,7 +9157,7 @@ const goBack = () => router.back();
                     <span class="pr">{{ cmpMoney(cmpKind === '매매' ? r.saleAvg : r.jeonseAvg) }}</span>
                   </button>
                   <div v-if="cmpPicked" class="cmp-fs-places">
-                    <span v-for="(p, i) in cmpPicked.places" :key="i"><i>{{ p?.ic ?? '·' }}</i>{{ rankConditions[i] }} <b>{{ p ? `${cmpPlaceName(p.name)} ${p.m.toLocaleString('ko-KR')}m` : '-' }}</b><em v-if="cmpPicked.ranks[i]" :class="['cmp-rk', { r1: cmpPicked.ranks[i] === 1 }]">{{ cmpPicked.ranks[i] }}</em></span>
+                    <span v-for="(p, i) in cmpPicked.places" :key="i"><i>{{ p?.ic ?? '·' }}</i>{{ cmpConds[i] }} <b>{{ p ? `${cmpPlaceName(p.name)} ${p.m.toLocaleString('ko-KR')}m` : '-' }}</b><em v-if="cmpPicked.ranks[i]" :class="['cmp-rk', { r1: cmpPicked.ranks[i] === 1 }]">{{ cmpPicked.ranks[i] }}</em></span>
                   </div>
                 </aside>
               </div>
@@ -9168,13 +9171,14 @@ const goBack = () => router.back();
                 <span class="pa-lab">평형<span class="pa-seg pa-out" role="radiogroup" aria-label="평형 폭"><button v-for="t in [3, 5, 10] as const" :key="t" type="button" role="radio" :class="{ on: cmpTol === t }" :aria-checked="cmpTol === t" @click="cmpTol = t">±{{ t }}㎡</button></span></span>
                 <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :data-k="k" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" @click="cmpKind = k">{{ k }}</button></span></span>
               </div>
+              <p v-if="!cmpConds.length" class="cmp-noroom">매매수요 조사 맨 위에서 <b>룸수</b>를 고르면 세대구성에 맞는 입지조건과 단지별 입지등수가 나옵니다.</p>
               <div class="son-demand sup-tbl">
                 <div class="adm-table-wrap">
                   <table class="adm-table cmp-tbl">
                     <colgroup><col style="width: 200px" /></colgroup>
                     <thead><tr>
                       <th>단지<small>(공급(전용))</small></th><th>연식<small>(건축년도)</small></th>
-                      <th v-for="c in rankConditions" :key="c">{{ c }}</th>
+                      <th v-for="c in cmpConds" :key="c">{{ c }}</th>
                       <th>등수평균</th><th>평균 전세가<small>(최근 {{ cmpYears * 12 }}개월)</small></th><th>평균 매매가<small>(최근 {{ cmpYears * 12 }}개월)</small></th>
                     </tr></thead>
                     <tbody>
@@ -9182,12 +9186,12 @@ const goBack = () => router.back();
                         <td class="nm"><span v-if="r.mine" class="cmp-tag">선정물건</span>{{ r.name || r.jibun }}<small class="sup-tbl-sub">{{ areaPair(r.supply, r.area) }}</small></td>
                         <td class="n">{{ r.buildYear ? `${r.buildYear}년` : '-' }}</td>
                         <!-- 선정물건 줄은 등수를 손으로 고친다(1 · 2 · 3, 비우면 자동값). 다른 단지는 자동 등수만 -->
-                        <td v-for="(k, i) in r.ranks" :key="i" class="n" @click.stop><input v-if="r.mine" :class="['cmp-rk', 'in', { r1: k === 1, typed: !!rankOf(rankConditions[i]) }]" inputmode="numeric" maxlength="1" :value="k ?? ''" :title="autoRankNote(rankConditions[i]) || '1 · 2 · 3 중 하나 — 비우면 자동값'" :aria-label="`${rankConditions[i]} 입지등수`" @change="setRank(rankConditions[i], (($event.target as HTMLInputElement).value.match(/[1-3]/) ?? [''])[0])" /><span v-else-if="k" :class="['cmp-rk', { r1: k === 1 }]">{{ k }}</span><span v-else class="cmp-dim">{{ cmpKeyOf(r) in cmpNearby ? '-' : '…' }}</span></td>
+                        <td v-for="(k, i) in r.ranks" :key="i" class="n" @click.stop><input v-if="r.mine" :class="['cmp-rk', 'in', { r1: k === 1, typed: !!rankOf(cmpConds[i]) }]" inputmode="numeric" maxlength="1" :value="k ?? ''" :title="autoRankNote(cmpConds[i]) || '1 · 2 · 3 중 하나 — 비우면 자동값'" :aria-label="`${cmpConds[i]} 입지등수`" @change="setRank(cmpConds[i], (($event.target as HTMLInputElement).value.match(/[1-3]/) ?? [''])[0])" /><span v-else-if="k" :class="['cmp-rk', { r1: k === 1 }]">{{ k }}</span><span v-else class="cmp-dim">{{ cmpKeyOf(r) in cmpNearby ? '-' : '…' }}</span></td>
                         <td class="n"><b class="cmp-avg">{{ cmpAvgText(r.avg) }}</b></td>
                         <td class="n amt"><b>{{ cmpMoney(r.jeonseAvg) }}</b></td>
                         <td class="n amt">{{ cmpMoney(r.saleAvg) }}</td>
                       </tr>
-                      <tr v-if="!cmpRows.length"><td :colspan="rankConditions.length + 5" class="cmp-dim">{{ supLoaded ? '범위 안에 견줄 단지 거래가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
+                      <tr v-if="!cmpRows.length"><td :colspan="cmpConds.length + 5" class="cmp-dim">{{ supLoaded ? '범위 안에 견줄 단지 거래가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -9200,7 +9204,7 @@ const goBack = () => router.back();
                     <colgroup><col style="width: 16%" /><col /><col style="width: 14%" /><col style="width: 12%" /><col style="width: 14%" /></colgroup>
                     <thead><tr><th>입지조건</th><th>가장 가까운 곳</th><th>거리</th><th>도보</th><th>입지등수</th></tr></thead>
                     <tbody>
-                      <tr v-for="(c, i) in rankConditions" :key="c">
+                      <tr v-for="(c, i) in cmpConds" :key="c">
                         <td>{{ c }}</td>
                         <td class="lft cmp-place"><template v-if="cmpPicked.places[i]"><span class="cmp-ic">{{ cmpPicked.places[i]!.ic }}</span>{{ cmpPlaceName(cmpPicked.places[i]!.name) }}</template><template v-else>-</template></td>
                         <td class="n">{{ cmpPicked.places[i] ? `${cmpPicked.places[i]!.m.toLocaleString('ko-KR')}m` : '-' }}</td>
@@ -11798,6 +11802,8 @@ tr.tone-take { background: #fff5f5; }
 .cmp-persona .val { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 6px; background: #f3f5f9; font-size: 14px; font-weight: 700; color: #111827; white-space: nowrap; }
 .cmp-persona .sep { width: 1px; height: 22px; background: #dde3ee; }
 .cmp-persona .val.stack { display: inline-grid; justify-items: center; }
+.cmp-noroom { margin: 0 0 8px; padding: 10px 12px; border: 1px dashed #dde3ee; border-radius: 8px; background: #f7f9fc; font-size: 13px; color: #6b7280; }
+.cmp-noroom b { color: #111827; }
 .cmp-persona .val.stack > span { grid-area: 1 / 1; visibility: hidden; }
 .cmp-persona .val.stack > span.on { visibility: visible; }
 .cmp-persona .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
