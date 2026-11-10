@@ -294,7 +294,7 @@ type DmId = 'deal' | 'units' | 'listings' | 'turn' | 'absorb' | 'burden' | 'clea
 const DM_LIT_LINKS: Record<DmId, DmId[]> = {
   turn: ['turn', 'deal', 'units'],          // 거래 회전율 = 거래량 ÷ 총세대수
   absorb: ['absorb', 'deal', 'listings'],   // 매물 소화율 = 거래량 ÷ 총매물수
-  burden: ['burden', 'listings', 'units'],  // 매물 부담률 = 총매물수 ÷ 총세대수
+  burden: ['burden', 'listings', 'units'],  // 매물률 = 총매물수 ÷ 총세대수
   clear: ['clear', 'listings', 'deal'],     // 매물 소화기간 = 총매물수 ÷ 월평균 거래량
   deal: ['deal', 'turn', 'absorb', 'clear'],
   units: ['units', 'turn', 'burden'],
@@ -342,7 +342,7 @@ const dmResults = computed(() => {
     { id: 'absorb' as DmId, label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', kindWhat.value), plain: DEMAND_PLAIN.absorb },
     { id: 'clear' as DmId, label: '매물 소화기간', value: v.clearMonths > 0 ? `${v.clearMonths.toFixed(1)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', kindWhat.value), plain: DEMAND_PLAIN.clear },
     { id: 'turn' as DmId, label: '거래 회전율', value: unitsPct(v.turnover, false), grade: v.grades.turnover, tip: demandTip('turnover', kindWhat.value), plain: DEMAND_PLAIN.turnover },
-    { id: 'burden' as DmId, label: '매물 부담률', value: unitsPct(v.burden, true), grade: v.grades.burden, tip: demandTip('burden', kindWhat.value), plain: DEMAND_PLAIN.burden },
+    { id: 'burden' as DmId, label: '매물률', value: unitsPct(v.burden, true), grade: v.grades.burden, tip: demandTip('burden', kindWhat.value), plain: DEMAND_PLAIN.burden },
   ];
 });
 const areaText = (n: number) => (n > 0 ? n.toFixed(1) : '-');
@@ -476,7 +476,7 @@ const load = async () => {
 /** 엑셀에서 열 수 있게 — 쉼표가 든 값은 따옴표로 감싼다 */
 const downloadCsv = () => {
   if (rows.value.length === 0) return;
-  const head = ['소속 구', '읍면동', '총세대수', '총매물수', `총거래량(최근 ${months.value}개월)`, '평균가', '회전율(%)', '매물소화율(%)', '매물부담률(%)', '매물소화기간(개월)', '평균전용(㎡)', '평균건축연수', '평균평당가', '직거래·해제'];
+  const head = ['소속 구', '읍면동', '총세대수', '총매물수', `총거래량(최근 ${months.value}개월)`, '평균가', '회전율(%)', '매물소화율(%)', '매물률(%)', '매물소화기간(개월)', '평균전용(㎡)', '평균건축연수', '평균평당가', '직거래·해제'];
   const body = rows.value.map((r) => [
     r.sigungu, r.umdNm,
     r.units || '', r.listings || '',
@@ -667,7 +667,7 @@ const downloadCsv = () => {
               <th v-if="webEmbed">매물<br>소화기간</th>
               <th v-else>매물 소화기간</th>
               <th :class="{ turn: webEmbed }">회전율<small>(%)</small></th>
-              <th>매물 부담률<small>(%)</small></th>
+              <th>매물률<small>(%)</small></th>
             </tr>
           </thead>
           <tbody>
@@ -712,7 +712,7 @@ const downloadCsv = () => {
       <!-- 웹은 표 밑 셈 설명을 뺀다(요약 칸의 ⓘ 말풍선에 같은 내용이 있다) -->
       <p v-if="!webEmbed && rows.length > 0" class="adm-foot">
         회전율 = 1년 거래량 ÷ 세대수 &nbsp;·&nbsp; 소화율 = 1년 거래량 ÷ 매물수 &nbsp;·&nbsp;
-        부담률 = 매물수 ÷ 세대수 &nbsp;·&nbsp; 소화기간 = 매물수 ÷ 월평균 거래량.
+        매물률 = 매물수 ÷ 세대수 &nbsp;·&nbsp; 소화기간 = 매물수 ÷ 월평균 거래량.
         총 세대수는 건축물대장에서 자동으로 채웁니다(연립·다세대 · 아파트는 세대수, 오피스텔은 호수). 파란 칸(총 매물수)은 손으로 적습니다 — 적어 두면 다음에도 남습니다.
       </p>
     </div>

@@ -3076,7 +3076,7 @@ const supStats = computed(() => {
     row('absorb', '매물 소화율', DEMAND_PLAIN.absorb, ready && listings > 0 ? `${absorb.toFixed(1)}%` : '-', ready && listings > 0, absorb),
     row('clear', '매물 소화기간', DEMAND_PLAIN.clear, clear > 0 ? `${clear.toFixed(1)}개월` : '-', clear > 0, clear),
     row('turnover', '거래 회전율', '단지 거래가 얼마나 도나', ready && base > 0 ? `${turnover.toFixed(1)}%` : '-', ready && base > 0, turnover),
-    row('burden', '매물 부담률', DEMAND_PLAIN.burden, burden > 0 ? `${burden.toFixed(1)}%` : '-', burden > 0, burden),
+    row('burden', '매물률', DEMAND_PLAIN.burden, burden > 0 ? `${burden.toFixed(1)}%` : '-', burden > 0, burden),
   ];
 });
 /** 단지 수요분석 기초수치 ⓘ — 값이 어디서 왔는지 */
@@ -3671,7 +3671,7 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
     ['적정', '6M 이하 ↓ (짧을수록 좋다)'],
   ] },
   total: { arrow: '72%', rows: [
-    ['대상', '매물 소화율 · 매물 소화기간 · 거래 회전율 · 매물 부담률'],
+    ['대상', '매물 소화율 · 매물 소화기간 · 거래 회전율 · 매물률'],
     ['공식', '네 등급을 A 3 · B 2 · C 1로 바꿔 평균을 낸다'],
     ['기준', '평균 2.5↑ A · 1.5↑ B · 그 아래 C'],
     ['조건', '네 등급 중 셋 이상 매겨져야 종합등급이 나온다'],
@@ -3707,7 +3707,7 @@ const dmListings = computed(() => dmNum('fs.dm.listings'));  // 총 매물수 (�
 const dmMonthly = computed(() => deal12mValue.value / 12);   // 월평균 거래량
 // 연간 회전율 = 12개월 거래량 ÷ 총세대수 × 100
 const dmTurnover = computed(() => (dmUnits.value > 0 ? (deal12mValue.value / dmUnits.value) * 100 : 0));
-// 매물 부담률 = 총매물수 ÷ 총세대수 × 100 (내놓은 물건이 동네에서 차지하는 비중)
+// 매물률 = 총매물수 ÷ 총세대수 × 100 (내놓은 물건이 동네에서 차지하는 비중)
 const dmBurden = computed(() => (dmUnits.value > 0 ? (dmListings.value / dmUnits.value) * 100 : 0));
 // 매물 소화기간 = 총매물수 ÷ 거래량 (지금 매물이 다 팔리는 데 걸리는 시간).
 // 월평균으로 나눠 '달 수'로 셈한다 — 연평균으로 나눈 '해 수'에 12를 곱한 것과 같은 값이다.
@@ -3985,7 +3985,7 @@ const MKT_LIT_LINKS: Record<string, string[]> = {
 const DM_LIT_LINKS: Record<string, string[]> = {
   turn: ['turn', 'deal', 'units'],        // 거래 회전율 = 거래량 ÷ 총세대수
   absorb: ['absorb', 'deal', 'listings'], // 매물 소화율 = 거래량 ÷ 총매물수
-  burden: ['burden', 'listings', 'units'], // 매물 부담률 = 총매물수 ÷ 총세대수
+  burden: ['burden', 'listings', 'units'], // 매물률 = 총매물수 ÷ 총세대수
   clear: ['clear', 'listings', 'deal'],   // 매물 소화기간 = 총매물수 ÷ 월평균 거래량
   // 수치 칸은 거꾸로 — 그 값을 쓰는 지표들이 켜진다
   deal: ['deal', 'turn', 'absorb', 'clear'],
@@ -8359,7 +8359,7 @@ const goBack = () => router.back();
                 </div>
                 <div :class="['cell split calc', { lit: dmLit('burden') }]" @mouseenter="dmLitEnter('burden')" @mouseleave="dmLitLeave()" @click="dmLitTap('burden')">
                   <div class="cell-head">
-                    <small>매물 부담률</small>
+                    <small>매물률</small>
                     <button
                       type="button"
                       class="adp-dm-info"
@@ -8404,8 +8404,8 @@ const goBack = () => router.back();
                 <div class="sup-cell">
                   <div class="sup-h"><InfoTip :rows="SUP_TIPS.deal" under="box">총 거래량(해당평형)</InfoTip></div>
                   <!-- 이 단지(같은 지번) 국토부 매매 자동값 — 정상 + 직거래, 계약해제 제외, 조회일부터 12개월 -->
-                  <!-- 총(단지 전체) | 해당(이 평형) — 위 수요분석 총 거래량 '연 | 월'과 같은 꼴. 지표는 해당 평형으로 계산 -->
-                  <div class="sup-b"><b v-if="!supLoaded" class="wait">받는 중</b><b v-else><em class="sup-pre">총</em>{{ supDeals.length.toLocaleString('ko-KR') }}<template v-if="supAreaUnits"><em class="sup-bar">|</em><em class="sup-pre">해당평형</em>{{ supDealCount.toLocaleString('ko-KR') }}</template><em class="sup-u">건</em></b></div>
+                  <!-- 연(단지 전체 12개월) | 해당평형(이 평형) — 위 수요분석 총 거래량 '연 | 월'과 같은 꼴. 지표는 해당 평형으로 계산 -->
+                  <div class="sup-b"><b v-if="!supLoaded" class="wait">받는 중</b><b v-else><em class="sup-pre">연</em>{{ supDeals.length.toLocaleString('ko-KR') }}<template v-if="supAreaUnits"><em class="sup-bar">|</em><em class="sup-pre">해당평형 연</em>{{ supDealCount.toLocaleString('ko-KR') }}<em class="sup-bar">|</em><em class="sup-pre">월</em>{{ (supDealCount / 12).toFixed(1) }}</template><em class="sup-u">건</em></b></div>
                 </div>
                 <div class="sup-cell">
                   <div class="sup-h"><InfoTip :rows="SUP_TIPS.units" under="box">총 세대수</InfoTip></div>
@@ -11359,7 +11359,7 @@ tr.tone-take { background: #fff5f5; }
 .sup-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; padding: 8px 6px; border-bottom: 1px solid #e3e8f0; border-radius: 8px 8px 0 0; background: #f3f6fb; font-size: 14px; color: #6b7280; white-space: nowrap; }
 .sup-plain { flex: 0 0 100%; margin-top: 2px; font-style: normal; font-size: 12px; color: #9ca3af; text-align: center; }
 .sup-b { display: flex; justify-content: center; align-items: center; padding: 14px 6px; }
-.sup-b b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; display: inline-flex; align-items: center; }
+.sup-b b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; display: inline-flex; align-items: baseline; }   /* 작은 글자(연 · 해당평형 · 건 · 세대)의 아랫면을 숫자 아랫면에 맞춘다 */
 .sup-pre { margin-right: 3px; font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; }   /* YmCount '연 · 월'과 같은 꼴 */
 .sup-bar { margin: 0 7px; font-style: normal; font-weight: 400; color: #c3c9d4; }
 .sup-gd { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 13px; font-weight: 800; line-height: 1; }   /* 위 수요분석 등급 동그라미와 같은 꼴 */
