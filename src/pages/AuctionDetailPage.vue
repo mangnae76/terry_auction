@@ -5551,8 +5551,8 @@ const cmpRows = computed<CmpRow[]>(() => {
     const point = c.mine ? (supRegion.value?.lat ? { lat: supRegion.value.lat, lng: supRegion.value.lng } : null) : nb ? { lat: nb.lat, lng: nb.lng } : null;
     return { ...c, ranks, avg, sum, point, places };
   });
-  // 등수평균 낮은 순, 같으면 시설까지 거리 합이 짧은 순. 아직 못 잰 단지는 뒤로
-  return rows.sort((a, b) => (a.avg ?? 99) - (b.avg ?? 99) || a.sum - b.sum);
+  // 내 물건은 늘 첫 줄(2026-11-11). 나머지는 등수평균 낮은 순, 같으면 시설까지 거리 합이 짧은 순. 아직 못 잰 단지는 뒤로
+  return rows.sort((a, b) => Number(b.mine) - Number(a.mine) || (a.avg ?? 99) - (b.avg ?? 99) || a.sum - b.sum);
 });
 const cmpPicked = computed(() => cmpRows.value.find((r) => r.jibun === cmpPick.value) ?? cmpRows.value.find((r) => r.mine) ?? null);
 /** '3억 1,500' — 원 → 억 · 만 */

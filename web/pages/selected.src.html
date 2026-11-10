@@ -534,6 +534,9 @@ button { cursor: pointer; }
 .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail .adp-card > :not(header) { margin-left: 0 !important; margin-right: 0 !important; padding-left: 16px !important; padding-right: 16px !important; }
 /* 물건분석 동/지역 표 — 칸 색칠 · 색 세로줄은 빼고, 머리글 글자색만: 세대수 · 매물수 진한 파랑, 회전율 빨강 */
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table :is(th, td) { background: var(--surface) !important; border-left-color: #eef1f6 !important; border-right-color: #eef1f6 !important; box-shadow: none !important; }
+.app-market .son-demand .adm-table tbody tr.cmp-row:hover td { background: var(--surface-2, #f7f9fc) !important; }   /* 단지 입지비교 — 줄을 누르면 고른 줄 색(위 흰 바탕 규칙보다 앞에, 2026-11-11) */
+.app-market .son-demand .adm-table tbody tr.cmp-row.mine td { background: #fff5f5 !important; }
+.app-market .son-demand .adm-table tbody tr.cmp-row.on td { background: var(--blue-soft, #eaf1ff) !important; }
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th { background: #f7f9fc !important; color: #374151 !important; }
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th.in, :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th.in small { color: #1e3a8a !important; }   /* 세대수 · 매물수(네이버 매물수) — 검정에 가까운 파랑 */
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table td.nm { color: #1e3a8a !important; }   /* 동 이름(검암동)도 같은 파랑 */
