@@ -5612,6 +5612,15 @@ const cmpRows = computed<CmpRow[]>(() => {
   // 내 물건은 늘 첫 줄(2026-11-11). 나머지는 등수평균 낮은 순, 같으면 시설까지 거리 합이 짧은 순. 아직 못 잰 단지는 뒤로
   return rows.sort((a, b) => Number(b.mine) - Number(a.mine) || (a.avg ?? 99) - (b.avg ?? 99) || a.sum - b.sum);
 });
+/** 줄 · 점 고르기 — 같은 것을 다시 누르면 풀린다(풀리면 칸 줄 · 상세는 선정물건으로, 고른 표시는 없다, 2026-11-11) */
+/** 단지 줄의 중간값 — 고른 거래(매매 · 전세)의 그 평형 실거래 가운데 값 */
+const cmpMedianOf = (r: CompareComplex) => {
+  const ps = r.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세') && d.price > 0).map((d) => d.price).sort((a, b) => a - b);
+  if (!ps.length) return 0;
+  return ps.length % 2 ? ps[(ps.length - 1) / 2] : (ps[ps.length / 2 - 1] + ps[ps.length / 2]) / 2;
+};
+const cmpToggle = (key: string) => { cmpPick.value = cmpPick.value === key ? '' : key; };
+const cmpIsOn = (r: { mine: boolean; umdNm: string; jibun: string }) => !!cmpPick.value && cmpKeyOf(r) === cmpPick.value;
 const cmpPicked = computed(() => cmpRows.value.find((r) => cmpKeyOf(r) === cmpPick.value) ?? cmpRows.value.find((r) => r.mine) ?? null);
 /** 고른 단지 실거래가 표 — 거래(매매 · 전세) 단추를 따라 그 거래만(매매는 직거래 포함, 2026-11-11) */
 const cmpPickedDeals = computed(() => (cmpPicked.value?.deals ?? []).filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세')));
@@ -5675,7 +5684,7 @@ const cmpDraw = () => {
   // 단지마다 말풍선 — 위 흰 칸에 단지 이름, 아래 색 띠에 평균 전세가 · 등수평균. 내 물건은 주황, 비교 단지는 파랑(2026-11-10 사용자 그림).
   // 고른 단지는 테두리를 굵게 · 맨 앞으로
   rows.forEach((r) => {
-    const on = !!pick && cmpKeyOf(r) === cmpKeyOf(pick);
+    const on = cmpIsOn(r);
     const v = cmpKind.value === '매매' ? r.saleAvg : r.jeonseAvg;   // 말풍선 금액 — 고른 거래(매매 · 전세)
     const eok = v > 0 ? `${cmpKind.value} ${(v / 1e8).toFixed(1)}억` : `${cmpKind.value} -`;
     mv.pin(r.point!, {
@@ -5684,7 +5693,7 @@ const cmpDraw = () => {
       // 아래 띠 — 평균 전세가 | 연식(건축년도)
       // 이름이 길면 말줄임(…) — 마우스를 대면 전체 이름. 등수는 굵게(2026-11-11)
       html: `<div class="cb"><b><span class="nm" title="${cmpEsc(r.name || r.jibun)}">${cmpEsc(r.name || r.jibun)}</span><i></i><em>${r.avg === null ? '-' : `${cmpAvgText(r.avg)}등`}</em></b><span>${eok}${r.buildYear ? `<i></i>${r.buildYear}년` : ''}</span></div>`,
-      onClick: () => { cmpPick.value = cmpKeyOf(r); },
+      onClick: () => { cmpToggle(cmpKeyOf(r)); },
       z: on ? 1000 : r.mine ? 500 : 10,
     });
   });
@@ -5699,7 +5708,7 @@ const cmpEnsureMap = async () => {
   }
   if (cmpMvP) { await cmpMvP; cmpDraw(); }
 };
-watch(() => `${cmpKind.value}|${cmpPicked.value ? cmpKeyOf(cmpPicked.value) : ''}|${cmpRows.value.map((r) => `${cmpKeyOf(r)}:${r.point ? 1 : 0}:${r.avg}`).join(',')}`, () => { void cmpEnsureMap(); });
+watch(() => `${cmpKind.value}|${cmpPick.value}|${cmpPicked.value ? cmpKeyOf(cmpPicked.value) : ''}|${cmpRows.value.map((r) => `${cmpKeyOf(r)}:${r.point ? 1 : 0}:${r.avg}`).join(',')}`, () => { void cmpEnsureMap(); });
 if (sonpumTab) watch(sonpumTab, (t) => { if (t === 'demand') void nextTick(() => { cmpMv?.relayout(); cmpFitted = ''; cmpDraw(); }); });
 /** 지도 도구 막대(시세분석 지도와 같은 것 — 주변 · 로드뷰 · 거리재기 …) */
 const cmpTools = shallowRef<{ k: unknown; map: unknown } | null>(null);
@@ -5730,7 +5739,7 @@ const cmpEst = computed(() => {
 const cmpPlaceName = (name: string) => name.replace(/^학원가\s*·\s*/, '');
 const cmpEok = (w: number) => (w > 0 ? `${(w / 1e8).toFixed(2)}억` : '-');
 const cmpPy = (w: number) => (w > 0 ? `${Math.round(w / 1e4).toLocaleString('ko-KR')}만/평` : '-');
-const cmpFsGo = (r: CmpRow) => { cmpPick.value = cmpKeyOf(r); if (r.point) cmpMv?.focus(r.point, 16); };
+const cmpFsGo = (r: CmpRow) => { cmpToggle(cmpKeyOf(r)); if (cmpPick.value && r.point) cmpMv?.focus(r.point, 16); };
 onBeforeUnmount(() => { cmpMv?.destroy(); cmpMv = null; cmpMvP = null; });
 /** 손으로 적은 등수를 지운다 — 비우면 거리로 매긴 자동값이 다시 선다.
  *  칸을 하나씩 지우는 길은 원래 있었지만, 폰에서 지우기가 까다로워 보이지 않았다. */
@@ -9127,7 +9136,7 @@ const goBack = () => router.back();
 
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
-              <div class="cmp-est-h"><h3>단지 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span><small class="cmp-q">내 아파트 단지는 몇 등일까?</small></h3>
+              <div class="cmp-est-h"><h3>단지 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span><small class="cmp-q">내 선정물건 아파트 단지는 몇 등일까?</small></h3>
                 <span class="cmp-est-desc">최근 {{ cmpMonths }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 같은 평형 {{ cmpKind }} 실거래 · 아래 표나 지도에서 단지를 고르면 바뀝니다</span>
               </div>
               <div class="cmp-est">
@@ -9164,7 +9173,7 @@ const goBack = () => router.back();
                 </div>
                 <aside v-if="cmpFs" class="cmp-fs-list">
                   <b class="cmp-fs-lh">단지 {{ cmpRows.length }}곳 <small>오른쪽 금액은 평균 {{ cmpKind }}가</small></b>
-                  <button v-for="r in cmpRows" :key="cmpKeyOf(r)" type="button" :class="['cmp-fs-row', { on: !!cmpPicked && cmpKeyOf(r) === cmpKeyOf(cmpPicked), mine: r.mine }]" @click="cmpFsGo(r)">
+                  <button v-for="r in cmpRows" :key="cmpKeyOf(r)" type="button" :class="['cmp-fs-row', { on: cmpIsOn(r), mine: r.mine }]" @click="cmpFsGo(r)">
                     <span class="nm"><span v-if="r.mine" class="cmp-tag">선정물건</span>{{ r.name || r.jibun }}<small>등수평균 {{ cmpAvgText(r.avg) }} · {{ areaPair(r.supply, r.area) }}{{ r.buildYear ? ` · ${r.buildYear}년` : '' }}</small></span>
                     <span class="pr">{{ cmpMoney(cmpKind === '매매' ? r.saleAvg : r.jeonseAvg) }}</span>
                   </button>
@@ -9190,19 +9199,21 @@ const goBack = () => router.back();
                     <thead><tr>
                       <th>단지<small>(공급(전용))</small></th><th>연식<small>(건축년도)</small></th>
                       <th v-for="c in cmpConds" :key="c">{{ c }}</th>
-                      <th>등수평균</th><th>평균 전세가<small>(최근 {{ cmpMonths }}개월)</small></th><th>평균 매매가<small>(최근 {{ cmpMonths }}개월)</small></th>
+                      <th>등수평균</th><th>평균 매매가<small>(최근 {{ cmpMonths }}개월)</small></th><th>평균 전세가<small>(최근 {{ cmpMonths }}개월)</small></th><th>중간값<small>({{ cmpKind }})</small></th>
                     </tr></thead>
                     <tbody>
-                      <tr v-for="r in cmpRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine, on: !!cmpPicked && cmpKeyOf(r) === cmpKeyOf(cmpPicked) }]" tabindex="0" @click="cmpPick = cmpKeyOf(r)" @keydown.enter="cmpPick = cmpKeyOf(r)">
+                      <tr v-for="r in cmpRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine, on: cmpIsOn(r) }]" tabindex="0" @click="cmpToggle(cmpKeyOf(r))" @keydown.enter="cmpToggle(cmpKeyOf(r))">
                         <td class="nm"><span v-if="r.mine" class="cmp-tag">선정물건</span>{{ r.name || r.jibun }}<small class="sup-tbl-sub">{{ areaPair(r.supply, r.area) }}</small></td>
                         <td class="n">{{ r.buildYear ? `${r.buildYear}년` : '-' }}</td>
                         <!-- 선정물건 줄은 등수를 손으로 고친다(1 · 2 · 3, 비우면 자동값). 다른 단지는 자동 등수만 -->
                         <td v-for="(k, i) in r.ranks" :key="i" class="n" @click.stop><input v-if="r.mine" :class="['cmp-rk', 'in', { r1: k === 1, typed: !!rankOf(cmpConds[i]) }]" inputmode="numeric" maxlength="1" :value="k ?? ''" :title="autoRankNote(cmpConds[i]) || '1 · 2 · 3 중 하나 — 비우면 자동값'" :aria-label="`${cmpConds[i]} 입지등수`" @change="setRank(cmpConds[i], (($event.target as HTMLInputElement).value.match(/[1-3]/) ?? [''])[0])" /><span v-else-if="k" :class="['cmp-rk', { r1: k === 1 }]">{{ k }}</span><span v-else class="cmp-dim">{{ cmpKeyOf(r) in cmpNearby ? '-' : '…' }}</span></td>
                         <td class="n"><b class="cmp-avg">{{ cmpAvgText(r.avg) }}</b></td>
-                        <td class="n amt"><b>{{ cmpMoney(r.jeonseAvg) }}</b></td>
-                        <td class="n amt">{{ cmpMoney(r.saleAvg) }}</td>
+                        <!-- 고른 거래 쪽 평균을 굵게. 중간값은 고른 거래(매매 · 전세)의 가운데 값 -->
+                        <td class="n amt"><b v-if="cmpKind === '매매'">{{ cmpMoney(r.saleAvg) }}</b><template v-else>{{ cmpMoney(r.saleAvg) }}</template></td>
+                        <td class="n amt"><b v-if="cmpKind === '전세'">{{ cmpMoney(r.jeonseAvg) }}</b><template v-else>{{ cmpMoney(r.jeonseAvg) }}</template></td>
+                        <td class="n amt">{{ cmpMoney(cmpMedianOf(r)) }}</td>
                       </tr>
-                      <tr v-if="!cmpRows.length"><td :colspan="cmpConds.length + 5" class="cmp-dim">{{ supLoaded ? '범위 안에 견줄 단지 거래가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
+                      <tr v-if="!cmpRows.length"><td :colspan="cmpConds.length + 6" class="cmp-dim">{{ supLoaded ? '범위 안에 견줄 단지 거래가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
                     </tbody>
                   </table>
                 </div>
