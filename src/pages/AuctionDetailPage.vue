@@ -3109,10 +3109,10 @@ const supTip = (m: DemandMetric): Array<[string, string]> => {
   const head: Record<DemandMetric, Array<[string, string]>> = {
     turnover: [['공식', `${deal} ÷ ${units} × 100`], ['의미', `${who} 중 1년에 몇 %가 손바뀜되나`]],
     absorb: [['공식', `${deal} ÷ ${listings} × 100`], ['의미', `나와 있는 ${who} 매물 중 한 해에 몇 %가 팔리나`]],
-    burden: [['공식', `${listings} ÷ ${units} × 100`], ['의미', `${who} 중 몇 %가 매물로 나와 있나`]],
+    burden: [['공식', `${listings} ÷ ${units} × 100`], ['의미', `${who} 가운데 지금 팔려고 내놓은 집이 몇 %인가`], ['예', '123세대에 매물 6건이면 약 5%']],
     clear: [['공식', `${listings} ÷ ${p ? '해당평형 월평균 거래량' : '월평균 거래량'}`], ['의미', `${who} 매물이 다 팔리는 데 걸리는 달 수`]],
   };
-  return [...head[m], ...demandTip(m, who, true).filter(([k]) => k !== '공식' && k !== '의미')];
+  return [...head[m], ...demandTip(m, who, true).filter(([k]) => k !== '공식' && k !== '의미' && k !== '예')];
 };
 const openSupNaver = () => { const addr = auction.value?.address; if (addr) void openNaverComplexListing(addr, 'apt'); };
 /** 종합 의견 — 매물수(해당평형)를 넣었을 때만 */
