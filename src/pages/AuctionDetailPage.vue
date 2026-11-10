@@ -9124,6 +9124,8 @@ const goBack = () => router.back();
               <p class="sup-head">② 단지 입지비교 <small class="cmp-sub">선정물건과 같은 입지조건 · 같은 규칙으로 매긴 입지등수, 평균 전세가 · 매매가는 단지마다 선정물건 전용면적과 가장 가까운 평형의 최근 12개월</small></p>
               <!-- 룸수 → 세대구성 → 입지조건(예전 ① 실사용자 + 입지등수에서 옮김). 룸수를 고르면 표 머리 조건 · 등수가 같이 바뀐다 -->
               <div class="cmp-persona">
+                <!-- 면적 — 선정물건 공급(전용). 단위는 손품조사 탭 줄 '평 / ㎡' 단추를 따른다 -->
+                <span class="k">면적<small>공급(전용)</small></span><span class="who">{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2 || supMyArea) }}</span>
                 <span class="k">룸수</span>
                 <span class="pa-seg pa-out" role="radiogroup" aria-label="룸수"><button v-for="r in ROOM_TYPES" :key="r.id" type="button" role="radio" :class="{ on: selectedRoomType?.id === r.id }" :aria-checked="selectedRoomType?.id === r.id" @click="pickRoomType(selectedRoomType?.id === r.id ? '' : r.id)">{{ r.label }}</button></span>
                 <span class="k">세대구성</span><span class="who">{{ cmpWho || '룸수를 고르세요' }}</span>
@@ -11790,6 +11792,7 @@ tr.tone-take { background: #fff5f5; }
 /* 룸수 · 세대구성 줄 — 단지 입지비교 머리(예전 ① 실사용자 + 입지등수에서 옮김) */
 .cmp-persona { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 12px; padding: 8px 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-size: 14px; }
 .cmp-persona .k { font-weight: 700; color: #6b7280; }
+.cmp-persona .k small { margin-left: 2px; font-size: 12px; font-weight: 400; }
 .cmp-persona .who { font-weight: 700; color: #111827; }
 .cmp-persona .conds { font-size: 13px; color: #6b7280; }
 .cmp-persona .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
