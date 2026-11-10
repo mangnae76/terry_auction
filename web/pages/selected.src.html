@@ -6657,10 +6657,10 @@ span.cal-day.has { cursor: help; }
     if (pick === null) pick = S.route === 'item' ? cardPickHtml('item', it.id) : '';
     const a = detailOf(it); const T = CLOUD.T;
     const kind = TYPE_NAME(it.type) || '다세대';
-    /* 매각구분 · 건물 면적 · 사용승인 — 앱 saleKindOf · headMetaLineOf. 웹은 '토건일괄매각'을 풀어 쓴다 */
+    /* 매각구분 · 전용 면적 · 사용승인 — 앱 saleKindOf · headMetaLineOf. 웹은 '토건일괄매각'을 풀어 쓴다. 면적 앞 글은 '전용'(예전 '건물', 2026-11-10) */
     const sale = (T ? T.saleKindOf(a) : '토건일괄매각').replace('토건일괄매각', '토지건물 일괄매각');
     const meta = T ? T.headMetaLineOf(a, new Date().getFullYear()) : '';
-    const metaText = meta ? (/㎡/.test(meta) ? `건물 ${meta}` : meta) : '';
+    const metaText = meta ? (/㎡/.test(meta) ? `전용 ${meta}` : meta) : '';
     const stage = T && CLOUD.raw.has(it.id) ? T.stageLabelOf(a) : stageLabel(it);
     const hot = stage === '입찰진행'; const done = stage === '낙찰' || stage === '매도'; const off = stage === '유찰' || /취소/.test(stage);
     /* 고정카드의 PDF 단추는 뺐다(2026-11-07) */

@@ -156,7 +156,7 @@ const webHead = computed(() => {
     court: courtInfoOf(a).name || '',
     won: wonText,
     kind: propTypeName(a.propertyType),
-    sale: [saleKindOf(a).replace('토건일괄매각', '토지건물 일괄매각'), meta ? (/㎡/.test(meta) ? `건물 ${meta}` : meta) : ''].filter(Boolean).join(' · '),
+    sale: [saleKindOf(a).replace('토건일괄매각', '토지건물 일괄매각'), meta ? (/㎡/.test(meta) ? `전용 ${meta}` : meta) : ''].filter(Boolean).join(' · '),
     addr: parts.before.trim(),
     bld: parts.name,
     unit: `${parts.mid}${parts.unit}`.trim(),

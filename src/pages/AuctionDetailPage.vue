@@ -5288,19 +5288,26 @@ const REAL_USER_BANDS = [
   },
 ];
 
-// 평형대는 손으로 고른 것만 쓴다 — 세대구성·입지조건이 따라 바뀌므로
-// 전용면적으로 미리 정해 두면 고르지도 않은 기준으로 등수를 적게 된다
-const selectedRealUserBand = computed(
+// 평형대는 손으로 고른 것이 먼저. 아파트는 고르는 칸 없이 전용 · 공급면적을 적고, 입지조건은 전용 평수 구간으로 자동으로 선다
+// (2026-11-10, 사용자 요청 — 예전에 고른 값이 있으면 그 등수를 지키려고 그대로 쓴다). 아파트가 아니면 예전처럼 손으로 고른 것만
+const pickedRealUserBand = computed(
   () => REAL_USER_BANDS.find((b) => b.id === auction.value?.realUserBandId) ?? null,
 );
+const aptExclusiveM2 = computed(() => (isApartment.value ? Number(auction.value?.buildingAreaM2) || 0 : 0));
+const autoRealUserBand = computed(() => {
+  const py = aptExclusiveM2.value / PYEONG_TO_M2;
+  return py > 0 ? REAL_USER_BANDS.find((b) => py <= b.maxPyeong) ?? null : null;
+});
+const selectedRealUserBand = computed(() => pickedRealUserBand.value ?? autoRealUserBand.value);
 
-// '12~14평' 같은 평형대를 ㎡로 바꿔 선택칸 아래에 같이 보여 준다
-const selectedRealUserBandM2 = computed(() => {
-  const nums = (selectedRealUserBand.value?.title ?? '').match(/[\d.]+/g);
+// '12~14평' 같은 평형대를 ㎡로 바꿔 선택칸 아래 · 고르는 목록에 같이 보여 준다
+const bandM2Of = (title: string) => {
+  const nums = title.match(/[\d.]+/g);
   if (!nums || nums.length === 0) return '';
   const toM2 = (p: string) => (Number(p) * PYEONG_TO_M2).toFixed(1);
   return nums.length >= 2 ? `${toM2(nums[0])}~${toM2(nums[1])}㎡` : `${toM2(nums[0])}㎡`;
-});
+};
+const selectedRealUserBandM2 = computed(() => bandM2Of(selectedRealUserBand.value?.title ?? ''));
 
 const bandOpen = ref(false);
 /** 등수를 매길 입지조건 — 사는 가족(룸수)을 따라간다.
@@ -8316,7 +8323,7 @@ const goBack = () => router.back();
               </colgroup>
               <thead>
               <tr>
-                <th>전용면적</th>
+                <th>{{ isApartment ? '면적(전용/공급)' : '전용면적' }}</th>
                 <th v-if="webEmbed">룸수</th>
                 <th>세대구성</th>
                 <th>입지조건</th>
@@ -8327,7 +8334,12 @@ const goBack = () => router.back();
               <tbody>
               <tr>
                 <td class="adp-ruser-cell vmid">
-                <div class="adp-rcase-dd">
+                <!-- 아파트 — 고르지 않고 이 물건의 전용 · 공급면적을 위아래로 적는다(머리 '면적(전용/공급)', 2026-11-10). 입지조건은 전용 평수 구간으로 자동 -->
+                <div v-if="isApartment" class="adp-ruser-area">
+                  <span>{{ aptExclusiveM2 ? `${trunc2(aptExclusiveM2)}㎡ / ${(aptExclusiveM2 / PYEONG_TO_M2).toFixed(1)}평` : '-' }}</span>
+                  <span>{{ mySupplyM2 ? `${trunc2(mySupplyM2)}㎡ / ${(mySupplyM2 / PYEONG_TO_M2).toFixed(1)}평` : '-' }}</span>
+                </div>
+                <div v-else class="adp-rcase-dd">
                   <button type="button" class="adp-rcase-select adp-ruser-select" @click="bandOpen = !bandOpen">
                     <span class="adp-ruser-pick">
                       <span class="band">{{ selectedRealUserBand ? selectedRealUserBand.title : '면적 선택' }}</span>
@@ -8339,7 +8351,7 @@ const goBack = () => router.back();
                     <div class="adp-rcase-backdrop" @click="bandOpen = false" />
                     <ul class="adp-rcase-list adp-ruser-list">
                       <li
-                        :class="['adp-rcase-item', { on: !selectedRealUserBand }]"
+                        :class="['adp-rcase-item', { on: !pickedRealUserBand }]"
                         @click="pickRealUserBand('')"
                       >
                         <strong>면적 선택</strong>
@@ -8347,10 +8359,10 @@ const goBack = () => router.back();
                       <li
                         v-for="b in REAL_USER_BANDS"
                         :key="b.id"
-                        :class="['adp-rcase-item', { on: b.id === selectedRealUserBand?.id }]"
+                        :class="['adp-rcase-item', { on: b.id === pickedRealUserBand?.id }]"
                         @click="pickRealUserBand(b.id)"
                       >
-                        <strong>{{ b.title }}</strong>
+                        <strong>{{ b.title }}</strong><span class="adp-ruser-m2">{{ bandM2Of(b.title) }}</span>
                       </li>
                     </ul>
                   </template>
@@ -12146,6 +12158,10 @@ tr.tone-take { background: #fff5f5; }
 .adp-agency-line { margin: 2px 0; font-size: 11.5px; color: #374151; line-height: 1.5; }
 .adp-agency-zip { color: #6b7280; }
 .adp-agency-phone { color: #2b6df3; text-decoration: none; font-weight: 700; }
+/* 실사용자 표 — 아파트 전용 · 공급면적 두 줄(고르는 칸 대신) */
+.adp-ruser-area { display: grid; justify-items: center; align-content: center; gap: 4px; font-size: 12.5px; font-weight: 700; color: #111827; white-space: nowrap; text-align: center; }   /* 룸수(3룸) 글자와 같은 크기, 칸 가운데 */
+/* 면적 선택 목록 — 평형 옆 ㎡ */
+.adp-ruser-m2 { margin-left: 6px; font-size: 12px; color: #6b7280; }
 /* 단지정보 면적 종류 — 내 물건 평형(공급면적) */
 .adp-apt-mine { color: #2b6df3; font-weight: 700; }
 .adp-apt-mine small { margin-left: 3px; padding: 0 4px; border-radius: 4px; background: #eef3ff; font-size: 10px; font-weight: 700; }
