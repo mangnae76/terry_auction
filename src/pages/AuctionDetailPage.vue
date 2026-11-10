@@ -3118,7 +3118,7 @@ const openSupNaver = () => { const addr = auction.value?.address; if (addr) void
 /** 종합 의견 — 매물수(해당평형)를 넣었을 때만 */
 const supOpinion = computed(() => {
   const base = supBase.value; const deals = supDealCount.value; const listings = supListings.value;
-  return demandOpinionOf(listings > 0 ? (deals / listings) * 100 : 0, base > 0 ? (deals / base) * 100 : 0, supLoaded.value && base > 0 && listings > 0, true);   // 단지 수요분석은 아파트만 — 회전율 선 5%
+  return demandOpinionOf(listings > 0 ? (deals / listings) * 100 : 0, base > 0 ? (deals / base) * 100 : 0, supLoaded.value && base > 0 && listings > 0, true);   // 단지 수요분석은 아파트만 — 회전율 선 3%
 });
 /** 아래 표 한 줄 — 위 동 수요분석 표와 같은 칸. 해당평형(전용면적이 같은 거래) 기준, 평균가는 정상거래만 */
 const supRow = computed(() => {

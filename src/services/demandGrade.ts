@@ -20,11 +20,18 @@ export const demandGradeOf = (metric: DemandMetric, ready: boolean, value: numbe
   return value <= a ? 'A' : value <= b ? 'B' : 'C';
 };
 
-/** 거래 회전율 합격선(연 %) — 아파트는 5%: 전국 아파트가 평범한 해 3~5%라 그 위면 '평균보다 잘 팔리는 단지'.
- *  8% 이상(300세대에 월 2건, 2020 활황기 전국 평균)은 매우 활발 — ⓘ 에 적는다(2026-11-10 사용자 결정).
- *  빌라 · 그 밖은 엑셀 기준 그대로(1.5%, 공식 통계 아님) */
-export const APT_TURNOVER_LINE = 5;
+/** 거래 회전율 합격선(연 %) — 아파트는 3%: 수도권 아파트 연 회전율이 2022년 0.56~1.66% · 2023년 1.76~3.23%(직방)라 3% 넘으면 평균 이상.
+ *  전국 7.9%(2020)는 활황기 전국 값이라 수도권 기준으론 높다 — 5% → 3%(2026-11-10 사용자 결정). 지역 수치는 ⓘ 표(APT_TURNOVER_STATS)에.
+ *  8% 이상(300세대에 월 2건, 2020 활황기 전국 평균)은 매우 활발. 빌라 · 그 밖은 엑셀 기준 그대로(1.5%, 공식 통계 아님) */
+export const APT_TURNOVER_LINE = 3;
 export const APT_TURNOVER_HOT = 8;
+/** 아파트 회전율 ⓘ 표 — 지역별 연 회전율(직방, 국토부 실거래 ÷ 아파트 재고). 2024년 이후 지역별 발표는 없다(2026-11-10 조사) */
+export const APT_TURNOVER_STATS: Array<[string, string]> = [
+  ['구분', '서울 · 경기 · 인천 · 전국'],
+  ['2022년', '0.56% · 1.55% · 1.66% · 2.28%'],
+  ['2023년', '1.76% · 2.99% · 3.23% · 3.04%'],
+  ['출처', '직방(국토부 실거래 기준, 2023년 12월 발표)'],
+];
 export const turnoverLineOf = (apt: boolean) => (apt ? APT_TURNOVER_LINE : DEMAND_GRADE_RULES.turnover.b);
 
 /** 소수 한 자리 — 0 이면 떼고 정수로('100.0' → '100', '3.6' 그대로). 수요지표 값 공통(2026-11-10) */
@@ -38,10 +45,10 @@ export const DEMAND_PASS_TEXT: Record<DemandMetric, string> = {
   burden: `${DEMAND_GRADE_RULES.burden.b}% 이하 적합`,
 };
 
-/** 막대 뒤 합격선 글 — 아파트 회전율만 8% */
+/** 막대 뒤 합격선 글 — 아파트 회전율만 3%(빌라 1.5%) */
 export const demandPassText = (m: DemandMetric, apt = false) => (m === 'turnover' ? `${turnoverLineOf(apt)}% 이상 적합` : DEMAND_PASS_TEXT[m]);
 
-/** 종합 의견 — 매물(소화기간 10개월 선) × 거래(회전율 1.5% 선, 아파트 5%) 네 칸. 등급 대신 한 줄(2026-11-10 사용자 시안 'Level 3 · 저매물 / 저거래').
+/** 종합 의견 — 매물(소화기간 10개월 선) × 거래(회전율 1.5% 선, 아파트 3%) 네 칸. 등급 대신 한 줄(2026-11-10 사용자 시안 'Level 3 · 저매물 / 저거래').
  *  매물이 많고 적음은 세대수가 아니라 팔리는 속도로 본다 — 1년치가 쌓였으면 세대수 대비 적어도 '고매물'(2026-11-10 사용자 결정, 성포동 329건 · 329건).
  *  소화기간 = 1,200 ÷ 소화율 이라 소화율로 받는다(거래 0건이면 소화율 0 → 고매물). 선은 DEMAND_PASS_TEXT 와 같은 합격선. 값이 없으면 null */
 export const demandOpinionOf = (absorb: number, turnover: number, ready: boolean, apt = false): { level: number; title: string; text: string } | null => {
@@ -64,7 +71,7 @@ export const demandTip = (metric: DemandMetric, what: string, apt = false): Arra
     ['공식', '12개월 거래량 ÷ 총 세대수 × 100'],
     ['의미', `${what} 중 1년에 몇 %가 손바뀜되나`],
     ['기준', `${turnoverLineOf(apt)}% 이상 적합 · 미만 부적합`],
-    ...(apt ? [['활발', `${APT_TURNOVER_HOT}% 이상이면 매우 활발(같은 평형 300세대에 월 2건)`] as [string, string]]
+    ...(apt ? [['활발', `${APT_TURNOVER_HOT}% 이상이면 매우 활발(같은 평형 300세대에 월 2건)`] as [string, string], ...APT_TURNOVER_STATS]
       : [['참고', `${DEMAND_GRADE_RULES.turnover.b}%는 업계에서 쓰는 기준(공식 통계 아님)`] as [string, string]]),
   ],
   absorb: [
