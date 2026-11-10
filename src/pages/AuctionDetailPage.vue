@@ -9136,10 +9136,9 @@ const goBack = () => router.back();
                   <div class="cmp-tile"><span class="k">{{ cmpKind }} 거래건수</span><span class="v">{{ cmpEst?.n ?? 0 }}건</span></div>
                 </div>
               </div>
-            </section>
+                          <!-- 칸 줄과 지도 · 표는 한 상자(2026-11-11) -->
+              <div class="cmp-gap" />
 
-            <!-- ③ 단지 입지비교 — 웹 · 아파트만(2026-11-10 시안 그대로). 같은 동 단지를 내 물건과 같은 입지조건 · 같은 규칙으로 매기고 평균 전세가 · 매매가를 옆에 -->
-            <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box o-cmp">
 
               <!-- 지도 — 시세분석 지도와 같은 도구 막대(주변 · 로드뷰 …) · 전체화면. 전체화면이면 body 로 옮겨 화면을 채우고 오른쪽에 단지 목록 -->
               <div class="cmp-map-slot">
@@ -9154,6 +9153,8 @@ const goBack = () => router.back();
                   <div ref="cmpMapEl" class="cmp-map-in" />
                   <KakaoMapTools v-if="cmpTools" :k="cmpTools.k" :map="cmpTools.map" :near="cmpMePoint" />
                   <button v-if="!cmpFs" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="cmpFs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
+                  <!-- 범례 — 시세분석 지도처럼 왼쪽 아래(2026-11-11) -->
+                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span><span><i class="ring" />5분</span><span><i class="ring dash" />10분</span></div>
                   <p v-if="!cmpRows.some((r) => r.point)" class="cmp-wait">{{ supLoaded ? '단지 위치를 찾는 중입니다…' : '실거래를 받는 중입니다…' }}</p>
                 </div>
                 <aside v-if="cmpFs" class="cmp-fs-list">
@@ -9169,7 +9170,6 @@ const goBack = () => router.back();
               </div>
               </Teleport>
               </div>
-              <p class="cmp-legend">주황은 선정물건, 파랑은 비교 단지(평균 전세가 · 등수평균). 고른 단지의 원은 도보 5분(실선) · 10분(점선), 그림은 입지조건별 가장 가까운 시설입니다.</p>
               <!-- 거르기 — 지도 밑 · 표 바로 위(표를 보면서 바꾸게, 2026-11-11). 시세분석 조건 줄과 같은 단추. 표 · 지도 · 위 칸 줄이 같이 바뀐다 -->
               <div class="cmp-conds">
                 <span class="pa-lab">범위<span class="pa-seg pa-out" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRange === v }" :aria-checked="cmpRange === v" @click="cmpRange = v">{{ t }}</button></span></span>
@@ -11811,7 +11811,7 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-body.cmp-order > * { order: 10; }
 .adp-dm-body.cmp-order > .o-persona { order: 1; }
 .adp-dm-body.cmp-order > .o-est { order: 2; }
-.adp-dm-body.cmp-order > .o-cmp { order: 3; margin-top: 18px !important; }   /* 칸 줄 상자와 지도 상자 사이를 띄운다(2026-11-11) */
+.cmp-gap { height: 18px; }   /* 한 상자 안 — 칸 줄과 지도 사이(2026-11-11) */
 .adp-dm-body.cmp-order > .o-indh { order: 4; }
 .adp-dm-body.cmp-order > .o-ind { order: 5; }
 .adp-dm-body.cmp-order > .o-demand { order: 6; margin-top: 10px; }
@@ -11872,6 +11872,13 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-map { position: relative; z-index: 0; isolation: isolate; border: 1px solid #e3e8f0; border-radius: 10px; overflow: hidden; background: #eef2f6; }   /* 지도 안 z-index 를 이 상자에 가둔다(시세분석 .map 과 같게) */
 .cmp-map-in { height: 620px; }   /* 시세분석 지도(SonpumPricePage .map-in)와 같은 높이 · 둥글기(2026-11-10) */
 .cmp-map-slot { margin: 0 -8px 6px; }   /* 상자 안쪽 여백이 시세분석 카드보다 8px 넓어 — 지도 폭을 시세분석 지도와 같게 */
+.cmp-map-legend { position: absolute; left: 10px; bottom: 10px; z-index: 500; display: flex; gap: 10px; padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, .94); font-size: 12px; color: #111827; }   /* 시세분석 지도 .legend 와 같은 자리 · 꼴 */
+.cmp-map-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.cmp-map-legend .dot { width: 10px; height: 10px; border-radius: 50%; background: #2b4fd8; }
+.cmp-map-legend .dot.me { background: #f05a28; }
+.cmp-map-legend .ring { width: 14px; height: 0; border-top: 2px solid #2b6df3; }
+.cmp-map-legend .ring.dash { border-top-style: dashed; }
+.cmp-map.fs .cmp-map-legend { left: 364px; }   /* 전체화면 — 떠 있는 왼쪽 목록 옆으로 */
 .cmp-wait { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 13px; color: #6b7280; pointer-events: none; }
 .cmp-map :deep(.cmp-bub) { position: relative; cursor: pointer; }
 .cmp-map :deep(.cmp-bub .cb) { position: absolute; left: -10px; bottom: 9px; display: grid; min-width: 78px; border: 1.5px solid #2b4fd8; border-radius: 4px; background: #fff; box-shadow: 0 2px 6px rgba(17, 24, 39, .22); text-align: center; white-space: nowrap; overflow: visible; }
