@@ -5640,6 +5640,11 @@ watch(cmpFs, async (on) => {
   [0, 120, 400].forEach((ms) => window.setTimeout(() => { cmpMv?.relayout(); cmpFitted = ''; cmpDraw(); }, ms));
 });
 onBeforeUnmount(() => { window.removeEventListener('keydown', onCmpFsKey); if (cmpFs.value) document.documentElement.style.overflow = ''; });
+/** 시세분석 결론 칸 줄 — 시세분석이 물건(marketPicks.price.tiles)에 남긴 값을 그대로(2026-11-11). 시세분석을 연 뒤부터 */
+const cmpEst = computed(() => auction.value?.marketPicks?.price?.tiles ?? null);
+const cmpEok = (w: number) => (cmpEst.value?.kind === '월세' ? `월 ${Math.round(w / 1e4).toLocaleString('ko-KR')}만` : `${(w / 1e8).toFixed(2)}억`);
+const cmpPy = (w: number) => (cmpEst.value?.kind === '월세' ? `${Math.round(w / 1e3) / 10}만/평` : `${Math.round(w / 1e4).toLocaleString('ko-KR')}만/평`);
+const cmpGoPrice = () => { if (sonpumTab) sonpumTab.value = 'price'; };
 const cmpFsGo = (r: CmpRow) => { cmpPick.value = r.jibun; if (r.point) cmpMv?.focus(r.point, 16); };
 onBeforeUnmount(() => { cmpMv?.destroy(); cmpMv = null; cmpMvP = null; });
 /** 손으로 적은 등수를 지운다 — 비우면 거리로 매긴 자동값이 다시 선다.
@@ -9014,10 +9019,29 @@ const goBack = () => router.back();
           </div>
           </div>
 
+            <!-- 시세분석 결론 칸 줄 — 단지 입지비교 위에 같은 줄(2026-11-11). 값은 시세분석이 남긴 것, 조건은 시세분석에서 바꾼다 -->
+            <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box">
+              <div class="cmp-est-h"><span class="cmp-est-tag">결론</span><h3>이 물건 매도가 예상</h3>
+                <span class="cmp-est-desc">{{ cmpEst ? `${cmpEst.region || '지역'} · 최근 ${cmpEst.months}개월 · 시세분석 기준` : '시세분석을 한 번 열면 채워집니다' }}</span>
+                <button type="button" class="cmp-est-go" @click="cmpGoPrice">시세분석에서 보기</button>
+              </div>
+              <div class="cmp-est">
+                <div class="cmp-tiles">
+                  <div class="cmp-tile key"><span class="k">매도가 예상({{ cmpEst?.kind ?? '매매' }})</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.est) : '-' }}</span><span v-if="cmpEst?.capped" class="cap">보증보험 한도 적용</span></div>
+                  <div class="cmp-tile"><span class="k">중간값</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.med) : '-' }}</span></div>
+                  <div class="cmp-tile"><span class="k">최저가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.min) : '-' }}</span></div>
+                  <div class="cmp-tile"><span class="k">최고가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.max) : '-' }}</span></div>
+                  <div class="cmp-tile"><span class="k">{{ cmpEst?.kind === '월세' ? '평균 평당 월세' : '평균 평당가' }}</span><span class="v">{{ cmpEst ? cmpPy(cmpEst.avgPy) : '-' }}</span></div>
+                  <div class="cmp-tile"><span class="k">전용 / 연식</span><span class="v sm">{{ cmpEst?.py ? `${cmpEst.py.toFixed(2)}평` : '-' }} / {{ cmpEst?.year ? `${cmpEst.year}년식` : '-' }}</span></div>
+                  <div class="cmp-tile"><span class="k">유사 거래건수</span><span class="v">{{ cmpEst?.n ?? 0 }}건</span></div>
+                </div>
+              </div>
+            </section>
+
             <!-- ③ 단지 입지비교 — 웹 · 아파트만(2026-11-10 시안 그대로). 같은 동 단지를 내 물건과 같은 입지조건 · 같은 규칙으로 매기고 평균 전세가 · 매매가를 옆에 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box">
               <p class="sup-scope"><span class="area">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span> 단지 입지비교</p>
-              <p class="sup-head">③ 단지 입지비교 <small class="cmp-sub">내 물건과 같은 입지조건 · 같은 규칙으로 매긴 입지등수, 평균 전세가 · 매매가는 단지마다 내 전용면적과 가장 가까운 평형의 최근 12개월</small></p>
+              <p class="sup-head">③ 단지 입지비교 <small class="cmp-sub">선정물건과 같은 입지조건 · 같은 규칙으로 매긴 입지등수, 평균 전세가 · 매매가는 단지마다 선정물건 전용면적과 가장 가까운 평형의 최근 12개월</small></p>
               <!-- 지도 — 시세분석 지도와 같은 도구 막대(주변 · 로드뷰 …) · 전체화면. 전체화면이면 body 로 옮겨 화면을 채우고 오른쪽에 단지 목록 -->
               <div class="cmp-map-slot">
               <Teleport to="body" :disabled="!cmpFs">
@@ -11665,6 +11689,24 @@ tr.tone-take { background: #fff5f5; }
 .sup-opinion b { font-size: 15px; font-weight: 800; color: #111827; }
 .sup-opinion span { font-size: 13px; color: #111827; }   /* 의견 글은 검정(2026-11-10) */
 .sup-opinion .wait { color: #9ca3af; }
+/* 시세분석 결론 칸 줄 — SonpumPricePage .zone-h · .pa-tag · .est · .tiles · .tile 값 그대로(2026-11-11) */
+.cmp-est-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.cmp-est-h h3 { margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
+.cmp-est-tag { font-size: 13px; font-weight: 700; color: #2b4fd8; background: #eef2ff; border-radius: 5px; padding: 3px 8px; }
+.cmp-est-desc { font-size: 12px; color: #6b7280; }
+.cmp-est-go { margin-left: auto; height: 30px; padding: 0 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; font: inherit; font-size: 12.5px; color: #111827; cursor: pointer; }
+.cmp-est-go:hover { color: #2b4fd8; border-color: #c7d0e2; }
+.cmp-est { background: #f7f8fb; border-radius: 10px; padding: 14px; }
+.cmp-tiles { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 1000px) { .cmp-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.cmp-tile { background: #fff; border-radius: 10px; padding: 13px 8px; text-align: center; display: grid; gap: 5px; box-shadow: 0 1px 2px rgba(17, 24, 39, .04); min-width: 0; }
+.cmp-tile .k { font-size: 13px; color: #6b7280; }
+.cmp-tile .v { font-size: 19px; font-weight: 700; color: #2b3a67; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.cmp-tile .v.sm { font-size: clamp(12.5px, 1.15vw, 15px); }
+.cmp-tile.key { background: #5aae6e; box-shadow: 0 0 0 2px #4b9a5e inset; }
+.cmp-tile.key .k { color: #eaf6ee; }
+.cmp-tile.key .v { color: #fff; font-size: 23px; }
+.cmp-tile .cap { justify-self: center; font-size: 11px; color: #fff; background: rgba(0, 0, 0, .18); border-radius: 999px; padding: 1px 8px; }
 /* 단지 입지비교 — 단지 수요분석과 같은 상자 · 표(sup-*), 지도는 시세분석 지도 점(웹 pa-pin) */
 .adp-dm-body > .adp-dm-block.boxed.cmp-box { margin-top: 10px; border: 1px solid #e3e8f0; border-radius: 10px; padding: 14px; background: #fff; }
 .adp-dm-body > .adp-dm-block:has(+ .cmp-box) { border-bottom: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; padding-bottom: 12px; }   /* 개별성 분석이 단락 끝 — 아래 테두리 */
