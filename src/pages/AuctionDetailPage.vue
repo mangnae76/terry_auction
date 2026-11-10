@@ -8399,7 +8399,7 @@ const goBack = () => router.back();
                   <div class="sup-b"><b v-if="!supLoaded" class="wait">받는 중</b><b v-else><em class="sup-pre">총</em>{{ supDeals.length.toLocaleString('ko-KR') }}<template v-if="supAreaUnits"><em class="sup-bar">|</em><em class="sup-pre">해당 평형</em>{{ supDealCount.toLocaleString('ko-KR') }}</template><em class="sup-u">건</em></b></div>
                 </div>
                 <div class="sup-cell">
-                  <div class="sup-h">총세대수</div>
+                  <div class="sup-h">총 세대수</div>
                   <!-- 자동값(PDF 단지정보 · 건축물대장) — 손으로 적지 않는다 -->
                   <div class="sup-b"><b><template v-if="supHouseholds">{{ supHouseholds.toLocaleString('ko-KR') }}<em class="sup-u">세대</em></template><template v-else>-</template></b></div>
                 </div>
@@ -8423,7 +8423,7 @@ const goBack = () => router.back();
               </div>
               <p class="sup-note">
                 <template v-if="supAreaUnits">수요지표는 이 평형(전용 {{ trunc2(supMyArea) }}㎡) 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 해당 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 계산합니다. 계산식 · 등급은 위 동 수요분석과 같습니다.</template>
-                <template v-else>수요지표는 단지 전체 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 총세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 계산합니다. 계산식 · 등급은 위 동 수요분석과 같습니다.</template>
+                <template v-else>수요지표는 단지 전체 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 총 세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 계산합니다. 계산식 · 등급은 위 동 수요분석과 같습니다.</template>
               </p>
             </section>
 
