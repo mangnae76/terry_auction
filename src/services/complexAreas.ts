@@ -1,10 +1,11 @@
 // 아파트 단지의 평형별 세대수 · 공급면적과 내 호실 공급면적 — 물건정보 단지정보 · 정보요약 · 건축물정보(앱 · 웹 같이).
-//  · 세대수 — 공동주택가격(올해) 호실 목록을 전용면적끼리 센다(한 번 조회, 이 브라우저에 한 해)
+//  · 세대수 — 공동주택가격(올해) 호실 목록을 전용면적끼리 센다
 //  · 공급면적 — 전용면적마다 호실 하나만 건축물대장 전유공용면적으로 계산(전용 + 주건축물 공용). 단지 전체는 1만 줄이 넘어 다 받지 않는다
+//  둘 다 우리 DB 단지 문서(aptComplexes — 단지 · 올해 하나)에 묶어 두고 모두가 같이 쓴다
 //  2026타경50132 안산파크푸르지오 — 59.99㎡ 123세대 · 공급 83.18㎡, 리치고 평형표와 같다(2026-11-10)
 import { cachedEntryOrStale, cacheKey } from './marketCache';
 import { fetchUnitSupply, type UnitArea } from './publicDataApi';
-import { fetchApartUnits } from './vworldApi';
+import { aptComplexIdOf, fetchApartUnits, PRICE_YEAR, readAptComplex, writeAptComplex } from './vworldApi';
 import { resolveRegionFromAddress } from './regionResolver';
 import { parseAddressParts } from './addressLookup';
 
@@ -25,7 +26,12 @@ export const getComplexAreas = async (address: string): Promise<ComplexAreas | n
     const region = await resolveRegionFromAddress(address);
     if (!region?.bCode10 || !region.jibun) return null;
     const parts = parseAddressParts(address);
-    const units = await fetchApartUnits(region.bCode10, region.jibun);
+    const id = aptComplexIdOf(region.bCode10, region.jibun);
+    const saved = id ? await readAptComplex(id) : null;
+    const units = saved?.units?.length ? saved.units : await fetchApartUnits(region.bCode10, region.jibun);
+    const mine = parts.ho ? await unitSupply(region.bCode10, region.jibun, parts.buildingDong, parts.ho).catch(() => null) : null;
+    // 평형표가 이미 단지 문서에 있으면(공급까지 다 찬 것) 그대로 쓴다
+    if (saved?.groups?.length && saved.groups.every((g) => g.supply > 0)) return { groups: saved.groups, total: units.length, mine };
     const byArea = new Map<string, { exclusive: number; count: number; dong: string; ho: string }>();
     units.forEach((u) => {
       if (!(u.areaM2 > 0)) return;
@@ -39,8 +45,11 @@ export const getComplexAreas = async (address: string): Promise<ComplexAreas | n
       const s = await unitSupply(region.bCode10, region.jibun, g.dong, g.ho).catch(() => null);
       groups.push({ exclusive: g.exclusive, supply: s?.supply ?? 0, count: g.count });
     }
-    const mine = parts.ho ? await unitSupply(region.bCode10, region.jibun, parts.buildingDong, parts.ho).catch(() => null) : null;
     if (!groups.length && !mine) return null;
+    // 공급까지 다 찼을 때만 단지 문서에 평형표를 더해 둔다 — 덜 찬 표를 남기면 다음 사람이 빈 공급을 그대로 받는다
+    if (id && units.length && groups.length && groups.every((g) => g.supply > 0)) {
+      void writeAptComplex(id, { pnu: id.split('_')[0], year: PRICE_YEAR, units, groups });
+    }
     return { groups, total: units.length, mine };
   } catch {
     return null;

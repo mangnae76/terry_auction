@@ -411,6 +411,10 @@ service cloud.firestore {
     match /cacheAptPrice/{id} {
       allow read, write: if isAllowedUser();
     }
+    // 아파트 단지 문서 — 단지(PNU) · 올해 하나. 호실별 전용 · 공동주택가격, 평형별 전용 · 공급 · 세대수(2026-11-10)
+    match /aptComplexes/{id} {
+      allow read, write: if isAllowedUser();
+    }
 
     // 관리자 도구 · 경매지번 분석 스냅샷 — 본인 uid 일치 시에만.
     // 그때 본 숫자를 그대로 박제해 두는 자리다 (거래 표는 담지 않는다).

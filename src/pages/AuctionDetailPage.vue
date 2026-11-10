@@ -2992,7 +2992,21 @@ watch(() => [auction.value?.id, isApartment.value] as const, async ([id, apt]) =
   const addr = auction.value?.buildingHeader?.unitLocation || auction.value?.address;
   if (!id || !apt || !addr) return;
   const got = await getComplexAreas(addr);
-  if (auction.value?.id === id) complexAreas.value = got;
+  if (auction.value?.id !== id) return;
+  complexAreas.value = got;
+  // 물건 문서 정보요약에도 남긴다 — 빈 칸일 때만(공급면적은 예전에 PDF 공용까지 더해 넣은 틀린 값도 바꾼다). 사람이 적은 값은 덮지 않는다
+  const a = auction.value;
+  const group = myGroupOf(got, Number(a.buildingAreaM2) || 0);
+  const supply = got?.mine?.supply || group?.supply || 0;
+  if (!a.basicSummary) a.basicSummary = {};
+  const v = a.basicSummary;
+  const ex = Number(String(a.buildingHeader?.unitExclusiveArea ?? '').replace(/[^\d.]/g, '')) || Number(a.buildingAreaM2) || 0;
+  const common = Number(String(a.buildingHeader?.unitCommonArea ?? '').replace(/[^\d.]/g, '')) || 0;
+  const oldWrong = ex > 0 && common > 0 ? (ex + common).toFixed(2) : '';
+  let changed = false;
+  if (supply > 0 && (!v['sum.supplyArea'] || v['sum.supplyArea'] === oldWrong) && v['sum.supplyArea'] !== supply.toFixed(2)) { v['sum.supplyArea'] = supply.toFixed(2); changed = true; }
+  if (group?.count && !v['sum.areaUnits']) { v['sum.areaUnits'] = String(group.count); changed = true; }
+  if (changed) void store.saveAuction(a, { silent: true });
 }, { immediate: true });
 /** 내 평형 세대수 — 적어 둔 값이 먼저, 없으면 공동주택가격 호실 수 */
 const myAreaUnits = computed(() => sumVal('sum.areaUnits')
@@ -5886,7 +5900,7 @@ const goBack = () => router.back();
             <div class="adp-base-row">
               <dt>{{ isApartment ? '세대수(총/해당면적)' : '세대수' }}</dt>
               <dd>
-                <template v-if="isApartment">{{ sumVal('sum.units') ? Number(sumVal('sum.units')).toLocaleString('ko-KR') : '-' }} / {{ myAreaUnits ? `${Number(myAreaUnits).toLocaleString('ko-KR')}세대` : '-' }}</template>
+                <template v-if="isApartment">{{ sumVal('sum.units') ? `${Number(sumVal('sum.units')).toLocaleString('ko-KR')}세대` : '-' }} / {{ myAreaUnits ? `${Number(myAreaUnits).toLocaleString('ko-KR')}세대` : '-' }}</template>
                 <template v-else>{{ sumVal('sum.units') ? `${Number(sumVal('sum.units')).toLocaleString('ko-KR')}세대` : '-' }}</template>
               </dd>
             </div>
@@ -5894,8 +5908,9 @@ const goBack = () => router.back();
             <div v-if="isApartment" class="adp-base-row">
               <dt>공동주택가격</dt>
               <dd>
-                <template v-if="officialPriceAuto">{{ formatMoney(officialPriceAuto) }}원 <span class="adp-na">({{ officialPriceYear }}-01-01 기준)</span></template>
-                <template v-else-if="auction?.officialPriceValue">{{ formatMoney(auction.officialPriceValue) }}원 <span class="adp-na">(PDF)</span></template>
+                <!-- 기준일을 왼쪽, 금액을 오른쪽에 -->
+                <template v-if="officialPriceAuto"><span class="adp-na">{{ officialPriceYear }}-01-01 기준</span> {{ formatMoney(officialPriceAuto) }}원</template>
+                <template v-else-if="auction?.officialPriceValue"><span class="adp-na">PDF</span> {{ formatMoney(auction.officialPriceValue) }}원</template>
                 <span v-else class="adp-na">{{ officialPriceDone ? '-' : '조회 중…' }}</span>
               </dd>
             </div>
@@ -5907,6 +5922,11 @@ const goBack = () => router.back();
             <div v-if="isApartment" class="adp-base-row">
               <dt>체납금액</dt>
               <dd>{{ auction?.arrearsInfo?.amount || '-' }}</dd>
+            </div>
+            <!-- 관리소번호 — PDF 단지정보, 누르면 전화 -->
+            <div v-if="isApartment" class="adp-base-row">
+              <dt>관리소번호</dt>
+              <dd><a v-if="auction?.aptComplexInfo?.managementPhone" :href="`tel:${auction.aptComplexInfo.managementPhone.replace(/[^\d+]/g, '')}`" class="adp-agency-phone">{{ auction.aptComplexInfo.managementPhone }}</a><template v-else>-</template></dd>
             </div>
           </dl>
         </section>

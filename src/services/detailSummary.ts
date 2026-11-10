@@ -71,10 +71,11 @@ export const summarySeedOf = (a: AuctionDetail): Record<string, string> => {
       || headerHouseholds(a.buildingHeader?.households),
   );
   fill('sum.exclusiveArea', a.buildingAreaM2 ? String(a.buildingAreaM2) : num(a.buildingHeader?.unitExclusiveArea));
-  // 공급면적 = 전용 + 공용 (둘 다 읽혔을 때만)
+  // 공급면적 = 전용 + 공용 (둘 다 읽혔을 때만). 아파트는 빼 둔다 — PDF 공용면적에 지하주차장 · 관리사무소(기타공용)까지 들어 있어
+  // 59.99 + 63.98 = 123.97 처럼 틀린 값이 된다. 아파트 공급면적은 건축물대장(services/complexAreas)으로 채운다(2026-11-10)
   const ex = Number(num(a.buildingHeader?.unitExclusiveArea)) || Number(a.buildingAreaM2) || 0;
   const common = Number(num(a.buildingHeader?.unitCommonArea)) || 0;
-  if (ex > 0 && common > 0) fill('sum.supplyArea', (ex + common).toFixed(2));
+  if (ex > 0 && common > 0 && !/아파트/.test(a.propertyType ?? '')) fill('sum.supplyArea', (ex + common).toFixed(2));
   // 전체 층수 — '0층 / 4층'처럼 지하/지상으로 오면 지상 층수를 쓴다
   fill('sum.floorTotal', num((a.buildingHeader?.floors ?? '').split('/').pop() ?? ''));
   // 해당 물건 층 — 전유부 층, 없으면 소재지의 'N층'

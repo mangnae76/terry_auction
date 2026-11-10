@@ -6699,8 +6699,10 @@ span.cal-day.has { cursor: help; }
       const supplyM2 = (areas && areas.mine && areas.mine.supply) || (myGroup && myGroup.supply) || 0;
       const areaUnits = sv('sum.areaUnits') || (myGroup ? String(myGroup.count) : '');
       const pubNow = CLOUD.pubPrice.get(it.id);
-      const pubText = pubNow && pubNow.price ? `${Number(pubNow.price).toLocaleString('ko-KR')}원 <span class="it-na">(${esc(pubNow.year)}-01-01 기준)</span>`
-        : a.officialPriceValue ? `${Number(a.officialPriceValue).toLocaleString('ko-KR')}원 <span class="it-na">(PDF)</span>` : (!pubNow || pubNow.busy ? '<span class="it-na">조회 중…</span>' : '-');
+      /* 기준일을 왼쪽, 금액을 오른쪽에(앱과 같다) */
+      const pubText = pubNow && pubNow.price ? `<span class="it-na">${esc(pubNow.year)}-01-01 기준</span> ${Number(pubNow.price).toLocaleString('ko-KR')}원`
+        : a.officialPriceValue ? `<span class="it-na">PDF</span> ${Number(a.officialPriceValue).toLocaleString('ko-KR')}원` : (!pubNow || pubNow.busy ? '<span class="it-na">조회 중…</span>' : '-');
+      const mgr = (a.aptComplexInfo && a.aptComplexInfo.managementPhone) || '';
       const arr = a.arrearsInfo || {};
       /* 정보요약은 보기만 — 값은 PDF · 건축물대장에서 온 물건 자료(DB)라 고칠 까닭이 없어 편집을 뺐다(2026-11-02) */
       const summaryRows = [
@@ -6714,9 +6716,10 @@ span.cal-day.has { cursor: help; }
         ['동/호', `${sv('sum.dong') ? `${hi(`${esc(sv('sum.dong'))}동`)} / ` : ''}${hi(sv('sum.ho') ? `${esc(sv('sum.ho'))}호` : '-호')}`],
         ['층', T.summaryFloorPairOf(sv('sum.floorCurrent'), sv('sum.floorTotal'))],
         /* 아파트는 '총 / 해당면적' 세대수를 한 줄에, 그 아래 공동주택가격 · 맨 아래 체납(2026-11-10) */
-        isApt ? ['세대수(총/해당면적)', `${sv('sum.units') ? Number(sv('sum.units')).toLocaleString('ko-KR') : '-'} / ${areaUnits ? `${Number(areaUnits).toLocaleString('ko-KR')}세대` : '-'}`]
+        isApt ? ['세대수(총/해당면적)', `${sv('sum.units') ? `${Number(sv('sum.units')).toLocaleString('ko-KR')}세대` : '-'} / ${areaUnits ? `${Number(areaUnits).toLocaleString('ko-KR')}세대` : '-'}`]
           : ['세대수', sv('sum.units') ? `${Number(sv('sum.units')).toLocaleString('ko-KR')}세대` : '-'],
-        ...(isApt ? [['공동주택가격', pubText], ['체납조사(본건)', esc(arr.surveyDate || '-')], ['체납금액', esc(arr.amount || '-')]] : []),
+        ...(isApt ? [['공동주택가격', pubText], ['체납조사(본건)', esc(arr.surveyDate || '-')], ['체납금액', esc(arr.amount || '-')],
+          ['관리소번호', mgr ? `<a class="it-tel" href="tel:${esc(mgr.replace(/[^\d+]/g, ''))}">${esc(mgr)}</a>` : '-']] : []),
       ];
       /* 기본정보 — 소유자·채무자·채권자·차수 / 감정가 · 회차별 최저가(비율·결과·날짜) · 보증금 */
       const fm = (n) => (n > 0 ? Number(n).toLocaleString('ko-KR') : '0');
