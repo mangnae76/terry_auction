@@ -4,6 +4,7 @@
 // 인증키도 query 로 받기 때문에 그대로 쓰면 키가 화면에 노출된다. 둘 다 워커가 처리한다.
 import { apiPath } from './apiBase';
 import { cacheKey, readCache, writeCache } from './marketCache';
+import { browserCacheGet, browserCachePut } from './browserCache';
 
 const VWORLD_BASE = apiPath('/api-vworld');
 /** 브이월드 인증키 만료일 — 지나면 공시가격이 들어오지 않는다.
@@ -104,8 +105,12 @@ export const fetchApartUnits = async (bCode10: string, lotText: string): Promise
   const pnu = buildPnu(bCode10, lotText);
   if (!pnu) return [];
   const id = aptComplexIdOf(bCode10, lotText);
+  // 이 브라우저에 둔 값이 먼저 — 지번이 많은 시세분석에서 지번마다 DB 를 부르지 않게(2026-11-10)
+  const localKey = `aptUnits${PRICE_YEAR}_${pnu}`;
+  const local = await browserCacheGet<ApartUnit[]>(localKey, PRICE_TTL);
+  if (local?.length) return local;
   const hit = await readAptComplex(id);
-  if (hit?.units?.length) return hit.units;
+  if (hit?.units?.length) { void browserCachePut(localKey, hit.units); return hit.units; }
   let rows = await callOnce(pnu);
   if (rows.length === 0) {
     const legacy = LEGACY_LD_CODES[bCode10];
@@ -120,7 +125,7 @@ export const fetchApartUnits = async (bCode10: string, lotText: string): Promise
   const out = [...best.values()].map((r) => ({
     dong: String(r.dongNm ?? ''), ho: String(r.hoNm ?? ''), areaM2: num(r.prvuseAr), price: num(r.pblntfPc), year: String(r.stdrYear ?? ''),
   }));
-  if (out.length > 0) void writeAptComplex(id, { pnu, year: PRICE_YEAR, units: out });
+  if (out.length > 0) { void browserCachePut(localKey, out); void writeAptComplex(id, { pnu, year: PRICE_YEAR, units: out }); }
   return out;
 };
 

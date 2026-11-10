@@ -2991,7 +2991,7 @@ watch(() => [auction.value?.id, isApartment.value] as const, async ([id, apt]) =
   complexAreas.value = null;
   const addr = auction.value?.buildingHeader?.unitLocation || auction.value?.address;
   if (!id || !apt || !addr) return;
-  const got = await getComplexAreas(addr);
+  const got = await getComplexAreas(addr, { deferMs: 3000 });
   if (auction.value?.id !== id) return;
   complexAreas.value = got;
   // 물건 문서 정보요약에도 남긴다 — 빈 칸일 때만(공급면적은 예전에 PDF 공용까지 더해 넣은 틀린 값도 바꾼다). 사람이 적은 값은 덮지 않는다

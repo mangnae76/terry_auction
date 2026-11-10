@@ -1226,8 +1226,8 @@ export const fetchComplexSupplies = async (bCode10: string, jibun: string): Prom
   const pages = Math.ceil(first.total / 100);
   const rows = [...first.rows];
   let next = 2;
-  // 넷씩 나눠 받는다 — 한꺼번에 던지면 429(1초 한도)가 난다
-  await Promise.all(Array.from({ length: Math.min(4, Math.max(0, pages - 1)) }, async () => {
+  // 둘씩 나눠 받는다 — 많이 던지면 429(1초 한도)가 나고, 브라우저 연결을 차지해 시세분석 · 지도 조회가 밀린다(2026-11-10)
+  await Promise.all(Array.from({ length: Math.min(2, Math.max(0, pages - 1)) }, async () => {
     while (next <= pages) { const p = next; next += 1; rows.push(...(await page(p)).rows); }
   }));
   const units = new Map<string, { dong: string; ho: string; ex: number; common: number; home: boolean }>();

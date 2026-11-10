@@ -36,7 +36,8 @@ export const groupBySupply = (supplies: ComplexUnitArea[]): AreaGroup[] => {
 };
 
 /** 주소(동 · 호까지) → 단지의 공급면적별 세대수, 내 호실 공급면적. 못 찾으면 null */
-export const getComplexAreas = async (address: string): Promise<ComplexAreas | null> => {
+/** deferMs — 단지 전체를 새로 받아야 할 때만 이만큼 쉬었다 받는다(처음 여는 화면의 다른 조회가 먼저 끝나게) */
+export const getComplexAreas = async (address: string, opts: { deferMs?: number } = {}): Promise<ComplexAreas | null> => {
   try {
     const region = await resolveRegionFromAddress(address);
     if (!region?.bCode10 || !region.jibun) return null;
@@ -45,6 +46,7 @@ export const getComplexAreas = async (address: string): Promise<ComplexAreas | n
     const saved = id ? await readAptComplex(id) : null;
     let supplies = saved?.supplies ?? [];
     if (!supplies.length) {
+      if (opts.deferMs) await new Promise((ok) => { window.setTimeout(ok, opts.deferMs); });
       supplies = await fetchComplexSupplies(region.bCode10, region.jibun).catch(() => []);
       if (id && supplies.length) {
         // 단지 문서에 더해 둔다 — 공시가격 호실 목록(units)도 같이 지킨다

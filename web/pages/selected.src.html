@@ -6910,7 +6910,7 @@ span.cal-day.has { cursor: help; }
     const a = detailOf(it); const addr = (a.buildingHeader && a.buildingHeader.unitLocation) || a.address;
     if (!addr) return null;
     CLOUD.areas.set(id, { busy: true });
-    T.getComplexAreas(addr).catch(() => null).then((value) => {
+    T.getComplexAreas(addr, { deferMs: 3000 }).catch(() => null).then((value) => {
       CLOUD.areas.set(id, { value });
       if (S.route === 'item' && S.itemId === id) renderItem();
     });
