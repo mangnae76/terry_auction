@@ -8392,9 +8392,9 @@ const goBack = () => router.back();
             </div>
 
 
-            <!-- 웹 ① 단지 시장분석 — 단지 수급(2026-11-10 시험, 웹만). 위 수요분석(AdminRegionDemandPage)의 ① 기초수치 · ② 수요지표와 같은 틀 · 글자 · 칸 크기 -->
+            <!-- 웹 ① 단지 수요분석 — 단지 수급(2026-11-10 시험, 웹만). 위 수요분석(AdminRegionDemandPage)의 ① 기초수치 · ② 수요지표와 같은 틀 · 글자 · 칸 크기 -->
             <section v-if="webEmbed" class="adp-dm-block boxed sup-dm">
-              <p class="sup-scope"><span class="area">{{ supName || '단지' }}</span> 시장분석</p>
+              <p class="sup-scope"><span class="area">{{ supName || '단지' }}</span> 수요분석</p>
               <p class="sup-head">① 기초수치</p>
               <div class="sup-row">
                 <div class="sup-cell">
