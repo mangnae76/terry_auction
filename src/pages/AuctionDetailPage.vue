@@ -3075,7 +3075,7 @@ const supStats = computed(() => {
   return [
     row('absorb', '매물 소화율', DEMAND_PLAIN.absorb, ready && listings > 0 ? `${dec1(absorb)}%` : '-', ready && listings > 0, absorb),
     row('clear', '매물 소화기간', DEMAND_PLAIN.clear, clear > 0 ? `${dec1(clear)}개월` : '-', clear > 0, clear),
-    row('turnover', '거래 회전율', '단지 거래가 얼마나 도나', ready && base > 0 ? `${dec1(turnover)}%` : '-', ready && base > 0, turnover),
+    row('turnover', '거래 회전율', '단지 거래가 얼마나 활발한가', ready && base > 0 ? `${dec1(turnover)}%` : '-', ready && base > 0, turnover),
     row('burden', '매물율', DEMAND_PLAIN.burden, burden > 0 ? `${dec1(burden)}%` : '-', burden > 0, burden),
   ];
 });

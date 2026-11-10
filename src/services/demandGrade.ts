@@ -102,7 +102,7 @@ export const DEMAND_TOTAL_TIP: Array<[string, string]> = [
 export const DEMAND_PLAIN: Record<DemandMetric, string> = {
   absorb: '1년에 매물이 몇 % 팔리나',
   clear: '다 팔리는 데 걸리는 시간',
-  turnover: '동네 거래가 얼마나 도나',
+  turnover: '동네 거래가 얼마나 활발한가',
   burden: '매물이 얼마나 쌓였나',
 };
 /** 종합 칸 쉬운 말 */
