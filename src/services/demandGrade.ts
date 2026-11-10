@@ -23,12 +23,12 @@ export const demandGradeOf = (metric: DemandMetric, ready: boolean, value: numbe
 /** 소수 한 자리 — 0 이면 떼고 정수로('100.0' → '100', '3.6' 그대로). 수요지표 값 공통(2026-11-10) */
 export const dec1 = (n: number) => { const r = Math.round(n * 10) / 10; return Number.isInteger(r) ? r.toLocaleString('ko-KR') : r.toFixed(1); };
 
-/** 합격선 한 줄 — 웹 수요분석 지표 칸 막대 뒤(등급 A·B·C 대신, 2026-11-10 사용자 결정). 선은 등급표의 '적합' 끝(B 경계) */
+/** 합격선 한 줄 — 웹 수요분석 지표 칸 막대 뒤(등급 A·B·C 대신, 2026-11-10 사용자 결정). '적합' 쪽만 짧게 — 부적합 설명은 ⓘ 에. 선은 등급표의 '적합' 끝(B 경계) */
 export const DEMAND_PASS_TEXT: Record<DemandMetric, string> = {
-  absorb: `${DEMAND_GRADE_RULES.absorb.b}% 이상 적합 · 미만 부적합`,
-  clear: `${DEMAND_GRADE_RULES.clear.b}개월 이하 적합 · 초과 부적합`,
-  turnover: `${DEMAND_GRADE_RULES.turnover.b}% 이상 적합 · 미만 부적합`,
-  burden: `${DEMAND_GRADE_RULES.burden.b}% 이하 적합 · 초과 부적합`,
+  absorb: `${DEMAND_GRADE_RULES.absorb.b}% 이상 적합`,
+  clear: `${DEMAND_GRADE_RULES.clear.b}개월 이하 적합`,
+  turnover: `${DEMAND_GRADE_RULES.turnover.b}% 이상 적합`,
+  burden: `${DEMAND_GRADE_RULES.burden.b}% 이하 적합`,
 };
 
 /** 종합 의견 — 매물률(5% 선) × 거래 회전율(1.5% 선) 네 칸. 등급 대신 한 줄(2026-11-10 사용자 시안 'Level 3 · 저매물 / 저거래').
