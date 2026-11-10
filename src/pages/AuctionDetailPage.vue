@@ -8122,7 +8122,7 @@ const goBack = () => router.back();
               <div class="adp-mkt-cells c3 adp-dm-table dm-input">
                 <div :class="['cell split', { lit: dmLit('deal') }]" @mouseenter="dmLitEnter('deal')" @mouseleave="dmLitLeave()" @click="dmLitTap('deal')">
                   <div class="cell-head">
-                    <small>총 거래건수</small>
+                    <small>총 거래량</small>
                     <button
                       v-if="deal12mState !== 'fresh'"
                       type="button"

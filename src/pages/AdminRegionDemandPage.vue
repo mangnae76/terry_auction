@@ -311,7 +311,7 @@ const dmInputs = computed(() => {
   const day = (x: string) => (x.length >= 6 ? [x.slice(0, 4), x.slice(4, 6), x.slice(6, 8)].filter(Boolean).join('-') : x);
   const n = (x: number) => (x > 0 ? x.toLocaleString('ko-KR') : '-');
   return [
-    { id: 'deal' as DmId, label: '총 거래건수', value: '', ym: { year: v.yearly, month: v.monthly }, note: '', wait: false,
+    { id: 'deal' as DmId, label: '총 거래량', value: '', ym: { year: v.yearly, month: v.monthly }, note: '', wait: false,
       tip: dealCountTip({ normal: v.count, direct: directShown.value, cancel: cancelShown.value, months: months.value, from: day(period.value.from), to: day(period.value.to) }) },
     { id: 'units' as DmId, label: '총 세대수', value: unitsTally.value.ready ? n(v.units) : (unitsTally.value.pending ? '받는 중' : '-'), ym: null, note: unitsNote.value, wait: unitsTally.value.pending > 0,
       tip: [['출처', '건축HUB(건축물대장) · 자동 입력'], ['갱신', '30일 후 업데이트'], ['범위', `${dmArea.value} ${kindWhat.value}`], ['합산', '건물마다의 세대수를 모두 더한 값']] as TipRow[] },
@@ -659,7 +659,7 @@ const downloadCsv = () => {
               <th>{{ embedded ? '동/지역' : '읍면동' }}</th>
               <th :class="{ in: webEmbed }">{{ webEmbed ? '세대수' : '총 세대수' }}</th>
               <th class="in">{{ webEmbed ? '매물수' : '총 매물수' }}<small v-if="webEmbed">(네이버 매물수)</small></th>
-              <th>{{ webEmbed ? '거래건수' : '총 거래량' }}<small>(최근 {{ months }}개월)</small></th>
+              <th>{{ webEmbed ? '거래량' : '총 거래량' }}<small>(최근 {{ months }}개월)</small></th>
               <th>평균가<small>(최근 {{ months }}개월)</small></th>
               <th>평균 전용면적<small>(㎡)</small></th>
               <th>평균 건축연수<small>(년)</small></th>
