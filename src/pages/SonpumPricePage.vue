@@ -64,6 +64,11 @@ const run = async () => {
   if (loading.value || !props.auction.address) return;
   const id = ++runId;
   loading.value = true; errorMsg.value = '';
+  // 지도는 실거래를 기다리지 않는다 — 이 물건 위치만 찾으면 지도 · 빨간 점 · 반경부터 띄우고, 파란 점은 거래가 들어오는 대로(2026-11-10)
+  if (!mySpot.value) {
+    const addr = props.auction.address;
+    void geocodeAddress(addr).then((p) => { if (props.auction.address === addr && !mySpot.value && p) mySpot.value = p; }).catch(() => undefined);
+  }
   try {
     const out = await analyzeAddress({ address: props.auction.address, propertyType: props.kind, years: Math.ceil(months.value / 12) });
     if (id !== runId) return;
@@ -134,7 +139,7 @@ const enrichNow = async (id: number) => {
   if (!r) return;
   // 저장해 둔 값은 길어야 1.5초만 기다린다 — 브라우저 저장소가 늦어도 조회는 이어 간다
   const cacheP = Promise.race([browserCacheGet<LotCache>(lotKey(), LOT_TTL), new Promise<null>((ok) => { window.setTimeout(() => ok(null), 1500); })]);
-  mySpot.value = await geocodeAddress(props.auction.address).catch(() => null);
+  if (!mySpot.value) mySpot.value = await geocodeAddress(props.auction.address).catch(() => null);   // 보통은 run 이 먼저 찾아 둔다
   const cache = await cacheP;
   if (id !== runId) return;
   const retryMiss = !cache || Date.now() - cache.at > RETRY_MISS;

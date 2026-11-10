@@ -1016,6 +1016,17 @@ const monthCacheTtl = (dealYmd: string) => {
 /** 한 달치 실거래 — 지역·종류·달이 같으면 누가 묻든 결과가 같다.
  *  그래서 물건이 아니라 '달' 단위로 모아 두고 다 같이 읽는다.
  *  (제대로 받은 달만 적어 둔다 — 실패한 달이 굳어 버리면 영영 비어 보인다) */
+/** 키가 등록되지 않은 API(403 — 아파트 전월세, 2026-11-10) — 그날은 이 브라우저에서 다시 부르지 않는다.
+ *  예전엔 달마다 두 번씩 다시 불러 13달 × 2 = 26번을 헛되이 기다렸다 */
+const DENIED_KEY = 'mt.api.denied';
+const todayKey = () => new Date().toISOString().slice(0, 10);
+const deniedPaths = (): string[] => {
+  try { const v = JSON.parse(localStorage.getItem(DENIED_KEY) ?? '{}') as { day?: string; paths?: string[] }; return v.day === todayKey() ? v.paths ?? [] : []; } catch { return []; }
+};
+const markDenied = (path: string) => {
+  try { const paths = deniedPaths(); if (!paths.includes(path)) localStorage.setItem(DENIED_KEY, JSON.stringify({ day: todayKey(), paths: [...paths, path] })); } catch { /* 저장소를 못 써도 조회는 이어 간다 */ }
+};
+
 const fetchMonthWithRetry = async (
   path: string,
   lawdCd5: string,
@@ -1023,6 +1034,7 @@ const fetchMonthWithRetry = async (
   tries = 2,
 ): Promise<MonthFetchResult> => {
   const id = cacheKey(lawdCd5, path, dealYmd);
+  if (deniedPaths().includes(path)) return { rows: [], error: '403 (data.go.kr 해당 데이터셋 활용신청/승인 필요 — 오늘은 다시 부르지 않음)', typeLabel: '' };
   const hit = await readCache<MonthFetchResult>('cacheTradeMonth', id, monthCacheTtl(dealYmd));
   // 빈 달은 믿지 않고 다시 받는다 — 예전에 오류 응답이 '0건'으로 저장된 것이 남아 있을 수 있다
   if (hit && !hit.error && hit.rows.length > 0) return hit;
@@ -1034,6 +1046,8 @@ const fetchMonthWithRetry = async (
       void writeCache('cacheTradeMonth', id, last);
       return last;
     }
+    // 403 — 키가 그 API 에 등록되지 않았다. 다시 불러도 같으니 바로 그만두고 그날은 부르지 않는다
+    if (/403/.test(last.error)) { markDenied(path); return last; }
     await napMs(300 * (i + 1));
   }
   return last;
@@ -1056,6 +1070,9 @@ export interface PlaceHistoryResult {
   rents: RealRentRow[];
   /** 세 번 눌러도 못 받은 달 수 — 0이 아니면 결과가 모자란다는 뜻 */
   missedMonths: number;
+  /** 매매 · 전월세 따로 — 전월세만 못 받아도 매매는 저장해 쓴다(2026-11-10) */
+  tradeMissed?: number;
+  rentMissed?: number;
 }
 
 /** 한 단지의 실거래 이력 — 매매와 전월세를 최근 n년치만 받아 온다 */
@@ -1324,7 +1341,9 @@ export const fetchPlaceHistory = async (params: {
     });
   }));
   const missedMonths = all.filter((r) => r.res.error).length;
-  return { trades, rents, missedMonths };
+  const tradeMissed = tradeChunks.filter((r) => r.error).length;
+  const rentMissed = rentChunks.filter((r) => r.error).length;
+  return { trades, rents, missedMonths, tradeMissed, rentMissed };
 };
 
 export const fetchRealTradeAverage = async (

@@ -72,8 +72,9 @@ const loadDistrict = async (lawdCd5: string, propertyType: CasePropertyType, yea
   if (shared) { void browserCachePut(`place_${key}`, shared); void noteDistrictStats(statKey, shared); return shared; }
   const fresh = await fetchPlaceHistory({ lawdCd5, propertyType, years });
   if (fresh.missedMonths === 0) void noteDistrictStats(statKey, fresh);
-  // 몇 달을 못 받았으면 남기지 않는다 — 덜 받은 값이 하루 동안 굳는다
-  if (fresh.missedMonths === 0) {
+  // 매매를 몇 달이라도 못 받았으면 남기지 않는다 — 덜 받은 값이 하루 동안 굳는다.
+  // 전월세만 못 받은 것(키 미등록 403 — 아파트 전월세)은 매매까지 버리지 않는다: 예전엔 그 탓에 아파트는 열 때마다 1년치를 다시 받았다(2026-11-10)
+  if ((fresh.tradeMissed ?? fresh.missedMonths) === 0) {
     void browserCachePut(`place_${key}`, fresh);
     void writeChunkedCache('cachePlaceHistoryV2', key, fresh);
   }
