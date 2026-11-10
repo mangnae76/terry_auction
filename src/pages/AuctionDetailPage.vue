@@ -8394,13 +8394,14 @@ const goBack = () => router.back();
 
             <!-- 웹 ① 단지 수요분석 — 단지 수급(2026-11-10 시험, 웹만). 위 수요분석(AdminRegionDemandPage)의 ① 기초수치 · ② 수요지표와 같은 틀 · 글자 · 칸 크기 -->
             <section v-if="webEmbed" class="adp-dm-block boxed sup-dm">
-              <p class="sup-scope"><span class="area">{{ supName || '단지' }}</span> 수요분석</p>
+              <p class="sup-scope"><span class="area">{{ supName || '이' }}</span> 단지 수요분석</p>
               <p class="sup-head">① 기초수치</p>
               <div class="sup-row">
                 <div class="sup-cell">
                   <div class="sup-h">12개월 거래량</div>
                   <!-- 이 단지(같은 지번) 국토부 매매 자동값 — 정상 + 직거래, 계약해제 제외, 조회일부터 12개월 -->
-                  <div class="sup-b"><b :class="{ wait: !supLoaded }"><UnitText :text="supLoaded ? `${supDealCount.toLocaleString('ko-KR')}건` : '받는 중'" /></b></div>
+                  <!-- 총(단지 전체) | 해당(이 평형) — 위 수요분석 총 거래량 '연 | 월'과 같은 꼴. 지표는 해당 평형으로 계산 -->
+                  <div class="sup-b"><b v-if="!supLoaded" class="wait">받는 중</b><b v-else><em class="sup-pre">총</em>{{ supDeals.length.toLocaleString('ko-KR') }}<template v-if="supAreaUnits"><em class="sup-bar">|</em><em class="sup-pre">해당</em>{{ supDealCount.toLocaleString('ko-KR') }}</template><em class="sup-u">건</em></b></div>
                 </div>
                 <div class="sup-cell">
                   <div class="sup-h">총세대수</div>
@@ -11353,6 +11354,8 @@ tr.tone-take { background: #fff5f5; }
 .sup-plain { flex: 0 0 100%; margin-top: 2px; font-style: normal; font-size: 12px; color: #9ca3af; text-align: center; }
 .sup-b { display: flex; justify-content: center; align-items: center; padding: 14px 6px; }
 .sup-b b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; display: inline-flex; align-items: center; }
+.sup-pre { margin-right: 3px; font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; }   /* YmCount '연 · 월'과 같은 꼴 */
+.sup-bar { margin: 0 7px; font-style: normal; font-weight: 400; color: #c3c9d4; }
 .sup-u { margin-left: 2px; font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; }   /* UnitText 단위와 같은 꼴('세대'는 UnitText 단위 목록에 없다) */
 .sup-b b.wait { font-size: 14px; font-weight: 400; color: #9ca3af; }
 .sup-in { width: 110px; height: 34px; box-sizing: border-box; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; padding: 0 10px; text-align: right; font-family: inherit; font-size: 18px; font-weight: 800; color: #2b6df3; }

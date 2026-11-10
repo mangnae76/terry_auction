@@ -587,7 +587,8 @@ const downloadCsv = () => {
       <!-- 앱 매매수요와 같은 짜임 — 위 ① 수치(거래량 · 세대수 · 매물수) 3칸, 아래 ② 지표 4칸. 두 줄은 시작과 끝이 같다.
            칸에 마우스를 대면 그 값과 이어진 칸이 같이 빨갛게 켜진다(앱 DM_LIT_LINKS 와 같은 짝) -->
       <section v-if="webEmbed && rows.length > 0" class="adm-nav dm">
-        <p class="adm-nav-scope"><span><span class="area">{{ dmArea }}</span> 수요분석</span><SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
+        <!-- 손품조사(embedded)는 동 이름만 — 아래 '○○ 단지 수요분석'과 짝(2026-11-10) -->
+        <p class="adm-nav-scope"><span><span class="area">{{ embedded && dongFilter ? dongFilter : dmArea }}</span> 수요분석</span><SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
         <p class="dm-block-head">① 기초수치</p>
         <div class="dm-row c3">
           <div v-for="c in dmInputs" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
