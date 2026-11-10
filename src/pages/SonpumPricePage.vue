@@ -69,7 +69,7 @@ const run = async () => {
     if (id !== runId) return;
     if (out.error) errorMsg.value = out.error;
     res.value = out; loadedMonths.value = months.value; fetchedAt.value = Date.now();
-    if (!rangeCond.value.mMax) rangeCond.value = simCond(sim.value, me.value);
+    if (!rangeCond.value.mMax) rangeCond.value = { ...simCond(sim.value, me.value), floor: null };   // 직접범위의 층은 '전체'에서 시작
     void enrich(id);
   } catch (err) {
     errorMsg.value = userMessage(err);
@@ -208,9 +208,12 @@ const allRows = computed<PriceRow[]>(() => periodRows.value.map((r, i) => {
 /* 웹 — 엘베 전체 · 있음 · 없음. 유사도 · 직접범위 어느 쪽이든 같이 건다. 엘베를 아직 모르는 거래 · 같은 건물 거래는 거르지 않는다 */
 const elevPick = ref<'yes' | 'no' | null>(sv?.elev ?? null);
 const cond = computed<PriceCond>(() => {
-  let base = simMode.value === 'sim' ? simCond(sim.value, me.value) : rangeCond.value;
-  // 웹 — 층은 위 줄에 있어 유사도에서도 고른다: '같은 층'이면 유사도에서도 같은 층만('전체'면 유사도 규칙대로)
-  if (webEmbed && simMode.value === 'sim' && rangeCond.value.floor === 0) base = { ...base, floor: 0 };
+  // 층 단추는 '전체'(null) · '같은 층'(0) 둘뿐 — 직접범위에서 예전에 저장된 '±1층'(유사도에서 옮겨 온 값)은 '전체'로 본다.
+  // 화면엔 '전체'로 보이는데 ±1층이 숨어 걸려, 23층 아파트에서 다른 단지(15층 이하)가 다 빠졌다(2026-11-10)
+  const rangeFloor = rangeCond.value.floor === 0 ? 0 : null;
+  let base = simMode.value === 'sim' ? simCond(sim.value, me.value) : { ...rangeCond.value, floor: rangeFloor };
+  // 웹 — 층은 위 줄에 있어 유사도에서도 고른다: 화면에 보이는 대로 '전체'면 모든 층, '같은 층'이면 같은 층만
+  if (webEmbed && simMode.value === 'sim') base = { ...base, floor: rangeFloor };
   return elevPick.value ? { ...base, elev: elevPick.value } : base;
 });
 const candidates = computed(() => {
@@ -309,7 +312,7 @@ const vfmt = (w: number) => (kindF.value === '월세' ? manW(w) : eok(w));
 const vPy = (w: number) => (kindF.value === '월세' ? `${Math.round(w / 1e3) / 10}만/평` : man(w));
 const pct = (a: number, b: number) => (a > 0 && b > 0 ? `${Math.round((a / b) * 100)}%` : '-');
 const tolText = computed(() => (simMode.value === 'sim'
-  ? `유사도 기준 ${sim.value}%(${simDefText(sim.value)})`
+  ? `유사도 기준 ${sim.value}%(${webEmbed ? simDefText(sim.value).replace(/ · 층.*$/, '') : simDefText(sim.value)})`
   : `면적 ${cond.value.mMin}~${cond.value.mMax}㎡ · 건축 ${cond.value.yMin}~${cond.value.yMax}년${cond.value.floor === null ? '' : ' · 같은 층'}`));
 const condText = computed(() => `${region.value?.dong ?? ''} · 반경 ${radText(radius.value)} · ${tolText.value} · 최근 ${periodText(loadedMonths.value)}`);
 
@@ -784,7 +787,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         </span>
         <div :class="['simrow', { 'has-elev': webEmbed }]">
           <div v-if="simMode === 'sim'" class="simA">
-            <label for="paSim" class="simlab"><span>유사도 기준 <b>{{ sim }}%</b></span><span>{{ simDefText(sim) }}</span></label>
+            <label for="paSim" class="simlab"><span>유사도 기준 <b>{{ sim }}%</b></span><span>{{ webEmbed ? simDefText(sim).replace(/ · 층.*$/, '') : simDefText(sim) }}</span></label>   <!-- 웹 — 층은 옆 '층' 단추가 정한다 -->
             <input id="paSim" v-model.number="sim" type="range" min="60" max="95" step="5">
             <div class="ticks" aria-hidden="true"><span v-for="s in SIM_STEPS" :key="s">{{ s }}%</span></div>
           </div>
