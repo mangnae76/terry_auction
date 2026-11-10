@@ -470,9 +470,6 @@ export interface PriceView {
   estJeonse: number;
   estPerPy: number;
   estCount: number;
-  /** 결론 칸 줄 그대로 — 고른 거래(매매 · 전세 · 월세)의 예상가 · 중간값 · 최저 · 최고 · 평균 평당가 · 건수, 전용 평 · 연식.
-   *  손품조사 수요분석 '단지 입지비교' 위에 같은 줄을 띄운다(2026-11-11). 시세분석을 연 뒤부터 채워진다 */
-  tiles?: { kind: '매매' | '전세' | '월세'; est: number; med: number; min: number; max: number; avgPy: number; n: number; capped: boolean; py: number; year: number; region: string; months: number };
 }
 
 export interface AuctionDetail {

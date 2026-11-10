@@ -383,8 +383,6 @@ const body = computed((): Omit<MarketPicks, 'savedAt'> => {
     ...(dropped.value.length ? { drop: [...dropped.value] } : {}),
     ...(elevPick.value ? { elev: elevPick.value } : {}),
     estSale: s?.est ?? 0, estJeonse: Math.round(j?.est ?? 0), estPerPy: s?.avgPy ?? 0, estCount: s?.n ?? 0,
-    // 결론 칸 줄 — 수요분석 '단지 입지비교' 위에 같은 줄로 띄운다
-    ...(view.value ? { tiles: { kind: kindF.value, est: Math.round(view.value.est), med: Math.round(view.value.med), min: Math.round(view.value.min), max: Math.round(view.value.max), avgPy: Math.round(view.value.avgPy), n: view.value.n, capped: !!view.value.capped, py: Math.round(myPy.value * 100) / 100, year: me.value.year || 0, region: regionText.value || '', months: loadedMonths.value } } : {}),
   };
   return {
     // 같은 건물 거래는 손품결론 「경매지번 매매가」 자리 — 같은 평형 · 같은 층 → 같은 평형 → 가까운 평형

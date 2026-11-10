@@ -5640,10 +5640,18 @@ watch(cmpFs, async (on) => {
   [0, 120, 400].forEach((ms) => window.setTimeout(() => { cmpMv?.relayout(); cmpFitted = ''; cmpDraw(); }, ms));
 });
 onBeforeUnmount(() => { window.removeEventListener('keydown', onCmpFsKey); if (cmpFs.value) document.documentElement.style.overflow = ''; });
-/** 시세분석 결론 칸 줄 — 시세분석이 물건(marketPicks.price.tiles)에 남긴 값을 그대로(2026-11-11). 시세분석을 연 뒤부터 */
-const cmpEst = computed(() => auction.value?.marketPicks?.price?.tiles ?? null);
-const cmpEok = (w: number) => (cmpEst.value?.kind === '월세' ? `월 ${Math.round(w / 1e4).toLocaleString('ko-KR')}만` : `${(w / 1e8).toFixed(2)}억`);
-const cmpPy = (w: number) => (cmpEst.value?.kind === '월세' ? `${Math.round(w / 1e3) / 10}만/평` : `${Math.round(w / 1e4).toLocaleString('ko-KR')}만/평`);
+/** 단지 입지비교 위 칸 줄 — 표에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 실거래(최근 12개월)로 계산한다(2026-11-11).
+ *  평균 전세가 · 중간값 · 최저 · 최고 · 평균 평당가 · 전용 / 연식 · 거래건수. 표에 없는 값도 고른 단지의 거래로 계산해 넣는다 */
+const cmpEst = computed(() => {
+  const r = cmpPicked.value; if (!r) return null;
+  const ps = r.deals.filter((d) => d.kind === '전세' && d.price > 0).map((d) => d.price).sort((a, b) => a - b);
+  const py = r.area / 3.305785;
+  const mid = ps.length ? (ps.length % 2 ? ps[(ps.length - 1) / 2] : (ps[ps.length / 2 - 1] + ps[ps.length / 2]) / 2) : 0;
+  const avg = ps.length ? ps.reduce((a, b) => a + b, 0) / ps.length : 0;
+  return { name: r.name || r.jibun, mine: r.mine, n: ps.length, avg, med: mid, min: ps[0] ?? 0, max: ps[ps.length - 1] ?? 0, perPy: py > 0 ? avg / py : 0, py, year: r.buildYear };
+});
+const cmpEok = (w: number) => (w > 0 ? `${(w / 1e8).toFixed(2)}억` : '-');
+const cmpPy = (w: number) => (w > 0 ? `${Math.round(w / 1e4).toLocaleString('ko-KR')}만/평` : '-');
 const cmpGoPrice = () => { if (sonpumTab) sonpumTab.value = 'price'; };
 const cmpFsGo = (r: CmpRow) => { cmpPick.value = r.jibun; if (r.point) cmpMv?.focus(r.point, 16); };
 onBeforeUnmount(() => { cmpMv?.destroy(); cmpMv = null; cmpMvP = null; });
@@ -9019,21 +9027,21 @@ const goBack = () => router.back();
           </div>
           </div>
 
-            <!-- 시세분석 결론 칸 줄 — 단지 입지비교 위에 같은 줄(2026-11-11). 값은 시세분석이 남긴 것, 조건은 시세분석에서 바꾼다 -->
+            <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box">
-              <div class="cmp-est-h"><span class="cmp-est-tag">결론</span><h3>이 물건 매도가 예상</h3>
-                <span class="cmp-est-desc">{{ cmpEst ? `${cmpEst.region || '지역'} · 최근 ${cmpEst.months}개월 · 시세분석 기준` : '시세분석을 한 번 열면 채워집니다' }}</span>
+              <div class="cmp-est-h"><span class="cmp-est-tag">결론</span><h3><span v-if="cmpEst?.mine" class="cmp-tag">선정물건</span>{{ cmpEst?.name ?? '단지' }} 전세가</h3>
+                <span class="cmp-est-desc">최근 12개월 · 전용 {{ cmpEst ? trunc2(cmpEst.py * 3.305785) : '-' }}㎡ 같은 평형 전세 실거래 · 아래 표나 지도에서 단지를 고르면 바뀝니다</span>
                 <button type="button" class="cmp-est-go" @click="cmpGoPrice">시세분석에서 보기</button>
               </div>
               <div class="cmp-est">
                 <div class="cmp-tiles">
-                  <div class="cmp-tile key"><span class="k">매도가 예상({{ cmpEst?.kind ?? '매매' }})</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.est) : '-' }}</span><span v-if="cmpEst?.capped" class="cap">보증보험 한도 적용</span></div>
+                  <div class="cmp-tile key"><span class="k">평균 전세가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.avg) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">중간값</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.med) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">최저가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.min) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">최고가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.max) : '-' }}</span></div>
-                  <div class="cmp-tile"><span class="k">{{ cmpEst?.kind === '월세' ? '평균 평당 월세' : '평균 평당가' }}</span><span class="v">{{ cmpEst ? cmpPy(cmpEst.avgPy) : '-' }}</span></div>
+                  <div class="cmp-tile"><span class="k">평균 평당가</span><span class="v">{{ cmpEst ? cmpPy(cmpEst.perPy) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">전용 / 연식</span><span class="v sm">{{ cmpEst?.py ? `${cmpEst.py.toFixed(2)}평` : '-' }} / {{ cmpEst?.year ? `${cmpEst.year}년식` : '-' }}</span></div>
-                  <div class="cmp-tile"><span class="k">유사 거래건수</span><span class="v">{{ cmpEst?.n ?? 0 }}건</span></div>
+                  <div class="cmp-tile"><span class="k">전세 거래건수</span><span class="v">{{ cmpEst?.n ?? 0 }}건</span></div>
                 </div>
               </div>
             </section>
@@ -11691,7 +11699,7 @@ tr.tone-take { background: #fff5f5; }
 .sup-opinion .wait { color: #9ca3af; }
 /* 시세분석 결론 칸 줄 — SonpumPricePage .zone-h · .pa-tag · .est · .tiles · .tile 값 그대로(2026-11-11) */
 .cmp-est-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.cmp-est-h h3 { margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
+.cmp-est-h h3 { display: inline-flex; align-items: center; margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
 .cmp-est-tag { font-size: 13px; font-weight: 700; color: #2b4fd8; background: #eef2ff; border-radius: 5px; padding: 3px 8px; }
 .cmp-est-desc { font-size: 12px; color: #6b7280; }
 .cmp-est-go { margin-left: auto; height: 30px; padding: 0 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; font: inherit; font-size: 12.5px; color: #111827; cursor: pointer; }
