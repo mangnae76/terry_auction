@@ -21,8 +21,8 @@
 //
 // 끝나면 DB 전체(사용자 조회분 + 새벽 적재분 — 같은 지역 · 같은 달은 문서 한 장이라 겹치지 않는다)를 세어
 // 대문(로그인 전) 숫자 한 장 publicStats/landing 에 적는다 — '전국 실거래 데이터' · '분석 가능한 단지'
-import { readFileSync } from 'node:fs';
-import { COLLECTION, KIND_PATHS, PATHS, QuotaError, addLandingDoc, docId, fetchMonth, monthFinalAt, newLandingCount, parseDocId, regionTable, ymdAgo } from './rtms.mjs';
+import { appendFileSync, readFileSync } from 'node:fs';
+import { COLLECTION, KIND_PATHS, PATHS, QuotaError, addLandingDoc, docId, fetchMonth, kindNameOf, regionNames, monthFinalAt, newLandingCount, parseDocId, regionTable, ymdAgo } from './rtms.mjs';
 
 const HISTORY_MONTHS = Number(process.env.HISTORY_MONTHS) || 49;        // 손품조사 4년치 = 4년 전 그달부터 이번 달까지. 손으로 돌릴 때 줄일 수 있다(인천 1년치 = 13, 2026-11-10)
 const ONLY_EXTRA = process.env.ONLY_EXTRA === '1';   // 손으로 더한 지역(EXTRA_TARGETS)만 — DB 에 있는 다른 지역은 건드리지 않는다
@@ -37,6 +37,8 @@ const alwaysLawd = (process.env.ALWAYS_LAWD ?? '41271,41273,28275,28177,28237').
 const alwaysSido = (process.env.ALWAYS_SIDO ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 const table = regionTable(readFileSync(new URL('../../src/services/regionCodes.ts', import.meta.url), 'utf8'));
 const knownCodes = new Set(Object.values(table).flat());
+const names = regionNames(readFileSync(new URL('../../src/services/regionCodes.ts', import.meta.url), 'utf8'));
+const nameOf = (lawdCd5) => names[lawdCd5] ?? lawdCd5;
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
 if (!serviceKey && !COUNT_ONLY) { console.error('DATA_GO_KR_KEY 가 없습니다'); process.exit(1); }
@@ -84,6 +86,27 @@ const pool = async (jobs, n) => {
   }));
 };
 
+/** 실행 화면(GitHub Actions 요약)에 어느 지역 · 종류를 몇 달 받았는지 표로 남긴다(2026-11-10) */
+const writeSummary = (stat, per) => {
+  const file = process.env.GITHUB_STEP_SUMMARY;
+  const rows = [...per.values()].sort((a, b) => a.lawdCd5.localeCompare(b.lawdCd5) || kindNameOf(a.path).localeCompare(kindNameOf(b.path)));
+  const regions = [...new Set(rows.map((r) => nameOf(r.lawdCd5)))];
+  const lines = [
+    `## 실거래 적재 — ${process.env.RUN_LABEL || (ONLY_EXTRA ? '손으로 더한 지역' : '새벽 정기')}`,
+    '',
+    `- 받을 달 ${HISTORY_MONTHS}개 (${ymdAgo(HISTORY_MONTHS - 1).slice(0, 4)}.${ymdAgo(HISTORY_MONTHS - 1).slice(4)} ~ ${ymdAgo(0).slice(0, 4)}.${ymdAgo(0).slice(4)})${ONLY_EXTRA ? ' · 손으로 더한 지역만' : ''}`,
+    `- 지역 ${regions.length}곳 — ${regions.join(', ')}`,
+    `- 저장 ${stat.written.toLocaleString()}달 · 0건 ${stat.empty.toLocaleString()} · 실패 ${stat.failed} · 한도 ${stat.quota} · 국토부 호출 ${stat.calls.toLocaleString()}`,
+    '',
+    '| 지역 | 종류 | 저장한 달 | 거래 건수 | 이미 있어 건너뜀 | 실패 |',
+    '|---|---|---:|---:|---:|---:|',
+    ...rows.map((r) => `| ${nameOf(r.lawdCd5)} | ${kindNameOf(r.path)} | ${r.months} | ${r.rows.toLocaleString()} | ${r.skipped} | ${r.failed} |`),
+    '',
+  ];
+  if (DRY || !file) return;
+  try { appendFileSync(file, lines.join('\n')); } catch (err) { log(`요약 못 적음 — ${err instanceof Error ? err.message : err}`); }
+};
+
 const main = async () => {
   let db = null; let FieldValue = null;
   /** 문서 이름 → 적어 둔 시각(ms) */
@@ -113,10 +136,14 @@ const main = async () => {
   log(`받을 달 ${HISTORY_MONTHS}개${ONLY_EXTRA ? ' · 손으로 더한 지역만' : ''}`);
   const list = [...targets.values()];
   log(`대상 ${list.length}개 (지역 × 종류)`);
+  log(`대상 지역 — ${[...new Set(list.map((t) => nameOf(t.lawdCd5)))].join(', ')}`);
   if (!list.length) { log('대상이 없습니다 — 끝'); return; }
 
   const blocked = new Set();   // 오늘 한도에 걸린 주소
   const stat = { written: 0, empty: 0, tooBig: 0, failed: 0, calls: 0, quota: 0 };
+  /** 지역 · 종류마다 — 저장한 달 · 거래 건수 · 확정이라 건너뛴 달 · 실패(요약 표) */
+  const per = new Map();
+  const perOf = (lawdCd5, path) => { const k = `${lawdCd5}|${path}`; if (!per.has(k)) per.set(k, { lawdCd5, path, months: 0, rows: 0, skipped: 0, failed: 0 }); return per.get(k); };
   const failures = [];
 
   const one = async ({ lawdCd5, path }, ymd) => {
@@ -131,6 +158,7 @@ const main = async () => {
       if (Buffer.byteLength(JSON.stringify(payload)) > MAX_DOC_BYTES) { stat.tooBig += 1; return; }
       await db.collection(COLLECTION).doc(id).set({ savedAt: Date.now(), updatedAt: FieldValue.serverTimestamp(), payload });
       stat.written += 1;
+      const pp = perOf(lawdCd5, path); pp.months += 1; pp.rows += result.rows.length;
     } catch (err) {
       stat.calls += 1;
       if (err instanceof QuotaError) {
@@ -139,7 +167,7 @@ const main = async () => {
         blocked.add(path);
         return;
       }
-      stat.failed += 1;
+      stat.failed += 1; perOf(lawdCd5, path).failed += 1;
       if (failures.length < 20) failures.push(`${id} ${err instanceof Error ? err.message : err}`);
     }
   };
@@ -151,7 +179,7 @@ const main = async () => {
     const ymd = ymdAgo(age); const finalAt = monthFinalAt(ymd);
     for (const t of list) {
       const at = saved.get(docId(t.lawdCd5, t.path, ymd));
-      if (at && at >= finalAt) { done += 1; continue; }        // 확정 뒤에 받아 둠 — 다시 받지 않는다
+      if (at && at >= finalAt) { done += 1; perOf(t.lawdCd5, t.path).skipped += 1; continue; }        // 확정 뒤에 받아 둠 — 다시 받지 않는다
       if (finalAt > now) live.push([t, ymd]);                  // 아직 바뀌는 달
       else older.push([t, ymd]);                               // 지난 달 — 없거나 확정 전에 받아 둔 것
     }
@@ -172,6 +200,7 @@ const main = async () => {
   if (!DRY) { try { await writeLandingStats(db, await import('firebase-admin/firestore')); } catch (err) { log(`대문 숫자 못 적음 — ${err instanceof Error ? err.message : err}`); } }
   log(`끝 — 저장 ${stat.written} · 0건 ${stat.empty} · 너무 커서 못 담음 ${stat.tooBig} · 실패 ${stat.failed} · 한도 · 미신청 ${stat.quota} · 국토부 호출 ${stat.calls}`);
   failures.forEach((f) => log(`실패 ${f}`));
+  writeSummary(stat, per);
   // 하나도 못 받았으면 실패로 끝내 GitHub 가 알리게 한다
   if (stat.written === 0 && !DRY && stat.failed + stat.quota > 0) process.exit(1);
 };

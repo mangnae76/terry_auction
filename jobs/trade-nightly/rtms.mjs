@@ -34,6 +34,22 @@ export const regionTable = (src) => {
   return out;
 };
 
+/** 지역 표 → { 시군구 5자리: '인천 부평구' } — 적재 결과 요약에 이름으로 적는다(2026-11-10) */
+const SIDO_SHORT = (sido) => sido.replace(/특별자치시$|특별자치도$|특별시$|광역시$/, '').replace(/^(경기|강원|충청북|충청남|전라북|전라남|경상북|경상남)도$/, (_, a) => ({ 충청북: '충북', 충청남: '충남', 전라북: '전북', 전라남: '전남', 경상북: '경북', 경상남: '경남' }[a] ?? a));
+export const regionNames = (src) => {
+  const out = {};
+  for (const m of String(src).matchAll(/sido: '([^']+)',\s*districts: \[([\s\S]*?)\]/g)) {
+    for (const x of m[2].matchAll(/label: '([^']+)', lawdCode: '(\d{5})'/g)) out[x[2]] = `${SIDO_SHORT(m[1])} ${x[1]}`;
+  }
+  return out;
+};
+/** 주소 → 종류 이름(요약 표) */
+export const KIND_NAMES = {
+  aptTrade: '아파트 매매', aptRent: '아파트 전월세', villaTrade: '연립·다세대 매매', villaRent: '연립·다세대 전월세',
+  offiTrade: '오피스텔 매매', offiRent: '오피스텔 전월세', singleTrade: '단독 매매', singleRent: '단독 전월세', nrgTrade: '상업업무 매매',
+};
+export const kindNameOf = (path) => KIND_NAMES[Object.keys(PATHS).find((k) => PATHS[k] === path)] ?? path;
+
 /** marketCache.ts 의 cacheKey 와 같다 */
 export const cacheKey = (...parts) =>
   parts.map((p) => String(p).replace(/\s+/g, '').replace(/[/\\.#$[\]]/g, '-')).join('_');
