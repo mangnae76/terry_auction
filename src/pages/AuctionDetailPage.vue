@@ -5530,7 +5530,7 @@ const cmpList = computed<CompareComplex[]>(() => {
   const myArea = supMyArea.value; const myJibun = supRegion.value?.jibun || supRows.value[0]?.jibun || '';
   if (!myArea || !myJibun) return [];
   const list = complexesOf(supDongRows.value, myArea, myJibun, cmpFrom.value);
-  if (!list.some((c) => c.mine)) list.push({ jibun: myJibun, name: supName.value, umdNm: '', area: myArea, jeonseAvg: 0, saleAvg: 0, deals: [], mine: true });
+  if (!list.some((c) => c.mine)) list.push({ jibun: myJibun, name: supName.value, umdNm: '', area: myArea, jeonseAvg: 0, saleAvg: 0, deals: [], mine: true, buildYear: 0 });
   return list.map((c) => (c.mine ? { ...c, name: supName.value || c.name } : c));
 });
 type CmpPlace = { cond: string; name: string; m: number; lat?: number; lng?: number; ic: string; color: string };
@@ -5612,7 +5612,8 @@ const cmpDraw = () => {
     mv.pin(r.point!, {
       className: `cmp-bub${r.mine ? ' me' : ''}${on ? ' on' : ''}`,
       // 첫 줄 — 단지 이름 | 등수평균, 아래 띠 — 평균 전세가(2026-11-10)
-      html: `<div class="cb"><b>${cmpEsc(r.name || r.jibun)}<i></i>${r.avg === null ? '-' : `${cmpAvgText(r.avg)}등`}</b><span>${eok}</span></div>`,
+      // 아래 띠 — 평균 전세가 | 연식(건축년도)
+      html: `<div class="cb"><b>${cmpEsc(r.name || r.jibun)}<i></i>${r.avg === null ? '-' : `${cmpAvgText(r.avg)}등`}</b><span>${eok}${r.buildYear ? `<i></i>${r.buildYear}년` : ''}</span></div>`,
       onClick: () => { cmpPick.value = r.jibun; },
       z: on ? 1000 : r.mine ? 500 : 10,
     });
@@ -9055,21 +9056,23 @@ const goBack = () => router.back();
               <div class="son-demand sup-tbl">
                 <div class="adm-table-wrap">
                   <table class="adm-table cmp-tbl">
+                    <colgroup><col style="width: 200px" /></colgroup>
                     <thead><tr>
-                      <th>단지<small>(전용)</small></th><th>거리<small>(내 물건에서)</small></th>
+                      <th>단지<small>(전용)</small></th><th>연식<small>(건축년도)</small></th><th>거리<small>(내 물건에서)</small></th>
                       <th v-for="c in rankConditions" :key="c">{{ c }}</th>
                       <th>등수평균</th><th>평균 전세가<small>(최근 12개월)</small></th><th>평균 매매가<small>(최근 12개월)</small></th>
                     </tr></thead>
                     <tbody>
                       <tr v-for="r in cmpRows" :key="r.jibun" :class="['cmp-row', { mine: r.mine, on: r.jibun === cmpPicked?.jibun }]" tabindex="0" @click="cmpPick = r.jibun" @keydown.enter="cmpPick = r.jibun">
                         <td class="nm">{{ r.name || r.jibun }}<span v-if="r.mine" class="cmp-tag">내 물건</span><small class="sup-tbl-sub">전용 {{ trunc2(r.area) }}㎡</small></td>
+                        <td class="n">{{ r.buildYear ? `${r.buildYear}년` : '-' }}</td>
                         <td class="n">{{ cmpDist(r) || '-' }}</td>
                         <td v-for="(k, i) in r.ranks" :key="i" class="n"><span v-if="k" :class="['cmp-rk', { r1: k === 1 }]">{{ k }}</span><span v-else class="cmp-dim">{{ r.mine || r.jibun in cmpNearby ? '-' : '…' }}</span></td>
                         <td class="n"><b class="cmp-avg">{{ cmpAvgText(r.avg) }}</b></td>
                         <td class="n amt"><b>{{ cmpMoney(r.jeonseAvg) }}</b></td>
                         <td class="n amt">{{ cmpMoney(r.saleAvg) }}</td>
                       </tr>
-                      <tr v-if="!cmpRows.length"><td :colspan="rankConditions.length + 5" class="cmp-dim">{{ supLoaded ? '같은 동에 견줄 단지 거래가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
+                      <tr v-if="!cmpRows.length"><td :colspan="rankConditions.length + 6" class="cmp-dim">{{ supLoaded ? '같은 동에 견줄 단지 거래가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -11680,7 +11683,9 @@ tr.tone-take { background: #fff5f5; }
 .cmp-map :deep(.cmp-bub) { position: relative; cursor: pointer; }
 .cmp-map :deep(.cmp-bub .cb) { position: absolute; left: -10px; bottom: 9px; display: grid; min-width: 78px; border: 1.5px solid #2b4fd8; border-radius: 4px; background: #fff; box-shadow: 0 2px 6px rgba(17, 24, 39, .22); text-align: center; white-space: nowrap; overflow: visible; }
 .cmp-map :deep(.cmp-bub .cb b) { display: flex; align-items: center; justify-content: center; padding: 3px 8px 2px; font-size: 12px; font-weight: 400; color: #18213a; }
-.cmp-map :deep(.cmp-bub .cb b i) { width: 1px; height: 10px; margin: 0 6px; background: #c3c9d4; }   /* 이름 | 등수 세로 칸막이 */   /* 말풍선 글은 모두 굵기 없음(2026-11-10) */
+.cmp-map :deep(.cmp-bub .cb b i) { width: 1px; height: 10px; margin: 0 6px; background: #c3c9d4; }   /* 이름 | 등수 세로 칸막이 */
+.cmp-map :deep(.cmp-bub .cb span) { display: flex; align-items: center; justify-content: center; }
+.cmp-map :deep(.cmp-bub .cb span i) { width: 1px; height: 10px; margin: 0 6px; background: rgba(255, 255, 255, .55); }   /* 전세 | 연식 */   /* 말풍선 글은 모두 굵기 없음(2026-11-10) */
 .cmp-map :deep(.cmp-bub .cb span) { padding: 2px 8px 3px; background: #2b4fd8; color: #fff; font-size: 11.5px; font-weight: 400; }   /* 아래 띠(전세 · 등수) 굵기 없음(2026-11-10) */
 .cmp-map :deep(.cmp-bub .cb::after) { content: ''; position: absolute; left: 4px; bottom: -9px; border: 5px solid transparent; border-top: 5px solid #2b4fd8; border-left: 5px solid #2b4fd8; }   /* 말풍선 꼬리 — 왼쪽 아래, 끝이 단지 위치 */
 .cmp-map :deep(.cmp-bub.me .cb) { border-color: #f05a28; }

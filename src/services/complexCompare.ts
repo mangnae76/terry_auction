@@ -13,7 +13,8 @@ import { cacheKey, readCache, writeCache } from './marketCache';
  *  입지조건에서 '일자리'는 뺐다 — 교통이 편하면 일자리 접근성도 좋다(2026-11-10). 남은 조건은 모두 거리로 잰다 */
 export const LOCATION_SOURCES: Record<string, Array<keyof NearbyEnvironment>> = {
   교통: ['subway', 'busStop'],
-  인프라: ['mart', 'hospital', 'commerce', 'academy'],
+  // 인프라 = 큰 병원 · 큰 공원 · 상업지역(도시계획 용도지역). 마트 · 음식점 · 학원 같은 작은 가게는 뺐다(2026-11-10 사용자 기준)
+  인프라: ['hospital', 'bigPark', 'commercialZone'],
   공원: ['park'],
   유치원: ['daycare'],
   초등학교: ['school'],
@@ -41,13 +42,15 @@ export const PLACE_ICON: Partial<Record<keyof NearbyEnvironment, { ic: string; c
   hospital: { ic: '🏥', color: '#dc2626', label: '병원' },
   commerce: { ic: '🍽', color: '#d97706', label: '상권' },
   park: { ic: '🌳', color: '#15803d', label: '공원' },
+  bigPark: { ic: '🌳', color: '#15803d', label: '공원' },
+  commercialZone: { ic: '🏬', color: '#ea580c', label: '상업지역' },
 };
 
 export type ComplexNearby = { lat: number; lng: number; env: NearbyEnvironment };
 const NEARBY_TTL = 30 * 24 * 60 * 60 * 1000;
 /** 주소 하나의 좌표 + 주변시설 — 이 브라우저 → DB → 카카오 순. 못 찾으면 null */
 export const complexNearbyOf = async (address: string): Promise<ComplexNearby | null> => {
-  const key = cacheKey('nb', address);
+  const key = cacheKey('nb2', address);   // nb2 — 인프라에 큰 공원 · 상업지역을 더한 뒤(예전 nb 는 없다)
   const local = await browserCacheGet<ComplexNearby>(key, NEARBY_TTL);
   if (local) return local;
   const shared = await readCache<ComplexNearby>('cacheNearby', key, NEARBY_TTL);
@@ -73,11 +76,14 @@ export type CompareComplex = {
   saleAvg: number;
   /** 그 평형의 최근 12개월 전세 · 매매 줄(새것부터) */
   deals: CaseTradeRow[];
+  /** 건축년도(국토부 실거래의 건축년도 — 사용승인 해). 모르면 0 */
+  buildYear: number;
   mine: boolean;
 };
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 const t2 = (n: number) => Math.floor(n * 100 + 1e-6) / 100;
+const modeOf = (xs: number[]) => { const c = new Map<number, number>(); xs.forEach((x) => c.set(x, (c.get(x) ?? 0) + 1)); return [...c.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]?.[0] ?? 0; };
 const squash = (s: string) => String(s ?? '').replace(/\s+/g, '');
 
 /** 같은 동의 실거래 → 단지 목록. 단지마다 내 전용면적과 가장 가까운 평형(±5㎡ 안) 하나, 그 평형의 전세 · 매매가 한 건이라도 있어야 넣는다.
@@ -102,6 +108,8 @@ export const complexesOf = (rows: CaseTradeRow[], myArea: number, myJibun: strin
       jeonseAvg: avg(same.filter((r) => r.kind === '전세').map((r) => r.price)),
       saleAvg: avg(same.filter((r) => r.kind !== '전세').map((r) => r.price)),
       deals: same, mine: squash(list[0].jibun) === squash(myJibun),
+      // 단지 안에서 가장 많이 적힌 건축년도(동마다 다를 수 있다 — 가장 흔한 해)
+      buildYear: modeOf(list.map((r) => r.buildYear ?? 0).filter((y) => y > 1900)),
     });
   });
   return out;

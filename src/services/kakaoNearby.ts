@@ -1,3 +1,4 @@
+import { fetchCommercialZone } from './zoning';
 const KAKAO_REST_API_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY ?? '';
 // In dev: use vite proxy. In prod (mobile): call Kakao directly with auth header.
 const KAKAO_BASE =
@@ -140,6 +141,10 @@ export interface NearbyEnvironment {
   school: NearbyPlace[];
   /** 상권 — 음식점이 모인 곳을 상권으로 본다 */
   commerce: NearbyPlace[];
+  /** 큰 공원 — 어린이공원 · 소공원 · 쌈지공원은 뺀 공원(입지조건 인프라, 2026-11-10). 예전에 저장한 값엔 없을 수 있다 */
+  bigPark?: NearbyPlace[];
+  /** 가까운 상업지역(도시계획 용도지역, 브이월드) — 하나. 안에 있으면 1m */
+  commercialZone?: NearbyPlace[];
 }
 
 export const fetchNearbyEnvironment = async (
@@ -184,9 +189,15 @@ export const fetchNearbyEnvironment = async (
     ),
     searchByCategory(lng, lat, 'FD6', radius, 15),
   ]);
+  // 인프라 — 큰 병원 · 큰 공원 · 상업지역(2026-11-10). 병원 업종 15곳은 의원이 먼저 차서 종합병원이 밀린다 — '종합병원'으로 한 번 더 찾는다
+  const [bigHospital, commercialZone] = await Promise.all([
+    searchByKeyword(lng, lat, '종합병원', radius, 15).then((items) => items.filter((p) => /종합병원|대학병원/.test(p.category))),
+    fetchCommercialZone(lat, lng),
+  ]);
+  const bigPark = park.filter((p) => /공원$|공원\s|수목원|숲$/.test(p.name) && !/어린이|소공원|쌈지|놀이터|주차장|화장실|입구|정류장/.test(p.name));
   return {
     busStop: dedupe(busStop),
-    hospital: dedupe(hospital),
+    hospital: dedupe([...hospital, ...bigHospital]),
     clinic: dedupe(clinic),
     pharmacy: dedupe(pharmacy),
     mart: dedupe(mart),
@@ -199,5 +210,7 @@ export const fetchNearbyEnvironment = async (
     daycare: dedupe(daycare),
     school: dedupe(school),
     commerce: dedupe(commerce),
+    bigPark: dedupe(bigPark),
+    commercialZone,
   };
 };

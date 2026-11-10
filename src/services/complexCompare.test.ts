@@ -10,7 +10,7 @@ describe('complexCompare', () => {
   });
   it('단지마다 내 전용과 가장 가까운 평형 하나 · 그 평형만으로 평균 전세 · 매매, 12개월 밖은 뺀다', () => {
     const rows = [
-      row({ name: '파크', jibun: '747', kind: '전세', price: 300_000_000, areaM2: 59.9883 }),
+      row({ name: '파크', jibun: '747', kind: '전세', price: 300_000_000, areaM2: 59.9883, buildYear: 2018 }),
       row({ name: '파크', jibun: '747', kind: '전세', price: 400_000_000, areaM2: 59.98 }),
       row({ name: '파크', jibun: '747', kind: '매매', price: 600_000_000, areaM2: 84.5 }),
       row({ name: '예술인', jibun: '700', kind: '전세', price: 180_000_000, areaM2: 61.38 }),
@@ -18,6 +18,6 @@ describe('complexCompare', () => {
       row({ name: '큰평', jibun: '800', kind: '전세', price: 500_000_000, areaM2: 84.9 }),
     ];
     const out = complexesOf(rows, 59.99, '747', '20251110');
-    expect(out.map((c) => `${c.name}:${c.area}:${c.jeonseAvg}:${c.saleAvg}:${c.mine}`)).toEqual(['파크:59.98:350000000:0:true', '예술인:61.38:180000000:0:false']);
+    expect(out.map((c) => `${c.name}:${c.area}:${c.jeonseAvg}:${c.saleAvg}:${c.mine}:${c.buildYear}`)).toEqual(['파크:59.98:350000000:0:true:2018', '예술인:61.38:180000000:0:false:0']);
   });
 });
