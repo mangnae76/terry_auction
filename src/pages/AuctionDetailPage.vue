@@ -5604,14 +5604,16 @@ const cmpDraw = () => {
       mv.pin({ lat: p.lat, lng: p.lng }, { className: 'cmp-near', html: `<div class="kt-near" style="--c:${p.color}">${p.ic} ${cmpEsc(p.name)} · ${p.m.toLocaleString('ko-KR')}m</div>`, z: 20, interactive: false });
     });
   }
+  // 단지마다 말풍선 — 위 흰 칸에 단지 이름, 아래 색 띠에 평균 전세가 · 등수평균. 내 물건은 주황, 비교 단지는 파랑(2026-11-10 사용자 그림).
+  // 고른 단지는 테두리를 굵게 · 맨 앞으로
   rows.forEach((r) => {
     const on = r.jibun === pick?.jibun;
-    const label = `<b>${cmpEsc(r.name || r.jibun)}</b> · 등수평균 ${cmpAvgText(r.avg)} · 전세 ${cmpMoney(r.jeonseAvg)}`;
+    const eok = r.jeonseAvg > 0 ? `전세 ${(r.jeonseAvg / 1e8).toFixed(1)}억` : '전세 -';
     mv.pin(r.point!, {
-      className: `pa-pin${r.mine ? ' me' : ''}${on ? ' on' : ''}`,
-      html: on ? `<i class="pin-dot"></i><span class="pin-box"><span class="tx">${label}</span></span>` : '<i class="pin-dot"></i>',
+      className: `cmp-bub${r.mine ? ' me' : ''}${on ? ' on' : ''}`,
+      html: `<div class="cb"><b>${cmpEsc(r.name || r.jibun)}</b><span>${eok} · ${r.avg === null ? '-' : `${cmpAvgText(r.avg)}등`}</span></div>`,
       onClick: () => { cmpPick.value = r.jibun; },
-      z: on ? 1000 : r.mine ? 500 : 1,
+      z: on ? 1000 : r.mine ? 500 : 10,
     });
   });
   const key = rows.map((r) => r.jibun).join(',');
@@ -9048,7 +9050,7 @@ const goBack = () => router.back();
               </div>
               </Teleport>
               </div>
-              <p class="cmp-legend">고른 단지의 원 — 도보 5분(실선) · 10분(점선). 그림은 입지조건별 가장 가까운 시설입니다.</p>
+              <p class="cmp-legend">주황은 내 물건, 파랑은 비교 단지(평균 전세가 · 등수평균). 고른 단지의 원은 도보 5분(실선) · 10분(점선), 그림은 입지조건별 가장 가까운 시설입니다.</p>
               <div class="son-demand sup-tbl">
                 <div class="adm-table-wrap">
                   <table class="adm-table cmp-tbl">
@@ -11670,10 +11672,21 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-body > .adp-dm-block.boxed.cmp-box { margin-top: 10px; border: 1px solid #e3e8f0; border-radius: 10px; padding: 14px; background: #fff; }
 .adp-dm-body > .adp-dm-block:has(+ .cmp-box) { border-bottom: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; padding-bottom: 12px; }   /* 개별성 분석이 단락 끝 — 아래 테두리 */
 .cmp-sub { margin-left: 6px; font-size: 12px; font-weight: 400; color: #6b7280; }
-.cmp-map { position: relative; z-index: 0; isolation: isolate; border: 1px solid #e3e8f0; border-radius: 8px; overflow: hidden; background: #eef2f6; }   /* 지도 안 z-index 를 이 상자에 가둔다(시세분석 .map 과 같게) */
-.cmp-map-in { height: 460px; }
-.cmp-map-slot { margin-bottom: 6px; }
+.cmp-map { position: relative; z-index: 0; isolation: isolate; border: 1px solid #e3e8f0; border-radius: 10px; overflow: hidden; background: #eef2f6; }   /* 지도 안 z-index 를 이 상자에 가둔다(시세분석 .map 과 같게) */
+.cmp-map-in { height: 620px; }   /* 시세분석 지도(SonpumPricePage .map-in)와 같은 높이 · 둥글기(2026-11-10) */
+.cmp-map-slot { margin: 0 -8px 6px; }   /* 상자 안쪽 여백이 시세분석 카드보다 8px 넓어 — 지도 폭을 시세분석 지도와 같게 */
 .cmp-wait { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 13px; color: #6b7280; pointer-events: none; }
+.cmp-map :deep(.cmp-bub) { position: relative; cursor: pointer; }
+.cmp-map :deep(.cmp-bub .cb) { position: absolute; left: -10px; bottom: 9px; display: grid; min-width: 78px; border: 1.5px solid #2b4fd8; border-radius: 4px; background: #fff; box-shadow: 0 2px 6px rgba(17, 24, 39, .22); text-align: center; white-space: nowrap; overflow: visible; }
+.cmp-map :deep(.cmp-bub .cb b) { padding: 3px 8px 2px; font-size: 12px; font-weight: 800; color: #18213a; }
+.cmp-map :deep(.cmp-bub .cb span) { padding: 2px 8px 3px; background: #2b4fd8; color: #fff; font-size: 11.5px; font-weight: 700; }
+.cmp-map :deep(.cmp-bub .cb::after) { content: ''; position: absolute; left: 4px; bottom: -9px; border: 5px solid transparent; border-top: 5px solid #2b4fd8; border-left: 5px solid #2b4fd8; }   /* 말풍선 꼬리 — 왼쪽 아래, 끝이 단지 위치 */
+.cmp-map :deep(.cmp-bub.me .cb) { border-color: #f05a28; }
+.cmp-map :deep(.cmp-bub.me .cb span) { background: #f05a28; }
+.cmp-map :deep(.cmp-bub.me .cb::after) { border-top-color: #f05a28; border-left-color: #f05a28; }
+.cmp-map :deep(.cmp-bub.on .cb) { border-width: 2.5px; box-shadow: 0 0 0 3px rgba(43, 79, 216, .22), 0 3px 10px rgba(17, 24, 39, .3); }
+.cmp-map :deep(.cmp-bub.me.on .cb) { box-shadow: 0 0 0 3px rgba(240, 90, 40, .25), 0 3px 10px rgba(17, 24, 39, .3); }
+.cmp-map :deep(.cmp-bub.on .cb b) { font-size: 13px; }
 .cmp-map :deep(.cmp-near) { position: relative; }
 .cmp-map :deep(.cmp-near .kt-near) { position: absolute; left: 0; bottom: 4px; transform: translateX(-50%); }
 .fs-btn { position: absolute; left: 10px; top: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(17, 24, 39, .18); font: inherit; font-size: 12.5px; font-weight: 700; color: #111827; cursor: pointer; }
