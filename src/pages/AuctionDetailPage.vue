@@ -11437,6 +11437,12 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-block .adp-dm-judge { flex: 0 0 34px; text-align: right; }
 /* 웹 단지 시장분석 — 수요분석(AdminRegionDemandPage .adm-nav-scope · .dm-*)과 같은 값 */
 .sup-dm { padding: 14px 16px 12px; margin-top: 10px; }   /* 위 동 수요분석 상자와 띄운다 */
+/* 단지 수요분석은 따로 된 상자 — 위 동 수요분석 상자(.adm-supply)와 같은 테두리 · 둥글기, 사이를 띄운다(2026-11-10).
+   매매수요 단락 상자(제목 줄 · 옆 테두리로 이어 붙이는 .adp-dm-body > .adp-dm-block 규칙)에 묶이지 않게 */
+.adp-dm-body > .adp-dm-block.boxed.sup-dm,
+.adp-dm-body > .adp-dm-block.boxed.sup-dm:has(+ .adp-dm-head) {
+  margin-top: 10px; border: 1px solid #e3e8f0; border-radius: 10px; padding: 14px 14px 14px; background: #fff;
+}
 .sup-scope { margin: 0 0 14px; font-size: 15px; font-weight: 800; color: #111827; }   /* 위 "○○동 수요분석"(웹에서 15px)과 같게 */
 .sup-scope .area { display: inline-flex; align-items: center; margin-right: 4px; padding: 3px 11px; border: 1px solid rgba(43, 109, 243, .28); border-radius: 999px; background: rgba(43, 109, 243, .09); color: #2b6df3; line-height: 1.3; white-space: nowrap; }   /* 단지명 칩 — 위 동 수요분석 .scope-chip 과 같은 꼴 */
 .sup-head { margin: 0 0 8px 2px; font-size: 14px; font-weight: 700; color: #111827; }
