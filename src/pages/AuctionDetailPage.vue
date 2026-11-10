@@ -30,7 +30,7 @@ import {
   FIELD_CHECKLIST, FIELD_EXTERIOR_CHECKS, FIELD_INTERIOR_CHECKS, FIELD_MANAGE_CHECKS, FIELD_SAFETY_CHECKS, FIELD_COMFORT_CHECKS,
 } from '../services/fieldChecklist';
 import { getBuildingFacts } from '../services/buildingFacts';
-import { complexNameOf, totalParkingOf, areaTypePartsOf } from '../services/aptComplex';
+import { complexNameOf, totalParkingOf } from '../services/aptComplex';
 import { getComplexAreas, myGroupOf, areaTypeRowsOf, type ComplexAreas } from '../services/complexAreas';
 import { DEMAND_PLAIN } from '../services/demandGrade';
 import { openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
@@ -2997,7 +2997,7 @@ watch(() => [auction.value?.id, isApartment.value] as const, async ([id, apt]) =
   // 물건 문서 정보요약에도 남긴다 — 빈 칸일 때만(공급면적은 예전에 PDF 공용까지 더해 넣은 틀린 값도 바꾼다). 사람이 적은 값은 덮지 않는다
   const a = auction.value;
   const group = myGroupOf(got, Number(a.buildingAreaM2) || 0);
-  const supply = got?.mine?.supply || group?.supply || 0;
+  const supply = got?.mine?.supply || 0;   // 이 호실 건축물대장 값만 — 다른 호실 값으로 메우지 않는다
   if (!a.basicSummary) a.basicSummary = {};
   const v = a.basicSummary;
   const ex = Number(String(a.buildingHeader?.unitExclusiveArea ?? '').replace(/[^\d.]/g, '')) || Number(a.buildingAreaM2) || 0;
@@ -3011,13 +3011,15 @@ watch(() => [auction.value?.id, isApartment.value] as const, async ([id, apt]) =
 /** 내 평형 세대수 — 적어 둔 값이 먼저, 없으면 공동주택가격 호실 수 */
 const myAreaUnits = computed(() => sumVal('sum.areaUnits')
   || String(myGroupOf(complexAreas.value, Number(auction.value?.buildingAreaM2) || 0)?.count || ''));
-/** 공급면적 — 건축물대장(전용 + 주건축물 공용)이 먼저. PDF 공용면적엔 지하주차장까지 들어 있어 맞지 않는다 */
-const mySupplyM2 = computed(() => complexAreas.value?.mine?.supply
-  || myGroupOf(complexAreas.value, Number(auction.value?.buildingAreaM2) || 0)?.supply || 0);
-/** 단지정보 면적 종류 — 평형마다 세대수 · 내 평형. 조회 전이면 비율로 고른 내 평형만 */
-const aptAreaRows = computed(() => (complexAreas.value && auction.value?.aptComplexInfo
-  ? areaTypeRowsOf(auction.value.aptComplexInfo.areaTypes, complexAreas.value, Number(auction.value.buildingAreaM2) || 0)
-  : (auction.value ? areaTypePartsOf(auction.value).map((t) => ({ ...t, count: 0 })) : [])));
+/** 공급면적 — 이 호실 건축물대장(전용 + 주건축물 공용)만. 같은 전용의 다른 호실 값으로 메우지 않는다(추정값 금지).
+ *  PDF 공용면적엔 지하주차장까지 들어 있어 쓰지 않는다 */
+const mySupplyM2 = computed(() => complexAreas.value?.mine?.supply || 0);
+/** 단지정보 면적 종류 — 평형마다 세대수 · 내 평형. 조회 전이면 PDF 평형 이름만(짐작해 표시하지 않는다) */
+const aptAreaRows = computed(() => {
+  const types = auction.value?.aptComplexInfo?.areaTypes ?? '';
+  if (complexAreas.value) return areaTypeRowsOf(types, complexAreas.value, Number(auction.value?.buildingAreaM2) || 0);
+  return types.split(/\s*,\s*/).filter(Boolean).map((text) => ({ text, count: 0, mine: false }));
+});
 
 // 주차수 · 엘베 — PDF에 없으면 그 필지의 건축물대장(표제부)에서 채운다. 사람이 넣은 값은 덮지 않는다
 watch(() => auction.value?.id, async (id) => {

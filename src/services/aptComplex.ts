@@ -11,17 +11,3 @@ export const complexNameOf = (a: Partial<Src>): string =>
 /** 총 주차수 — 전유부 · 표제부에 없으면 단지정보 주차 수 */
 export const totalParkingOf = (a: Partial<Src>): string =>
   a.buildingHeader?.unitTotalParking || a.buildingHeader?.parking || a.aptComplexInfo?.parkingTotal || '';
-
-/** 단지정보 면적 종류(공급면적) 중 내 물건 평형 — 공급 ÷ 전용이 1.15~1.55 인 것이 하나뿐일 때만 고른다.
- *  PDF 공용면적은 지하주차장까지 든 계약면적이라 공급면적과 맞춰 보지 않는다. */
-export const areaTypePartsOf = (a: Partial<Src>): Array<{ text: string; mine: boolean }> => {
-  const list = String(a.aptComplexInfo?.areaTypes ?? '').split(/\s*,\s*/).filter(Boolean);
-  const ex = Number(String(a.buildingHeader?.unitExclusiveArea ?? '').match(/[\d.]+/)?.[0]) || Number(a.buildingAreaM2) || 0;
-  const fits = list.map((t) => {
-    const supply = Number(t.match(/[\d.]+/)?.[0]) || 0;
-    const r = ex > 0 ? supply / ex : 0;
-    return r >= 1.15 && r <= 1.55;
-  });
-  const one = fits.filter(Boolean).length === 1;
-  return list.map((text, i) => ({ text, mine: one && fits[i] }));
-};

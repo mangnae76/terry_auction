@@ -6696,7 +6696,7 @@ span.cal-day.has { cursor: help; }
       /* 아파트 평형별 세대수 · 공급면적(앱 complexAreas 와 같은 모듈) — 받기 전이면 PDF 값 */
       const areas = isApt ? areasFor(it.id) : null;
       const myGroup = areas && T.myGroupOf ? T.myGroupOf(areas, Number(a.buildingAreaM2) || 0) : null;
-      const supplyM2 = (areas && areas.mine && areas.mine.supply) || (myGroup && myGroup.supply) || 0;
+      const supplyM2 = (areas && areas.mine && areas.mine.supply) || 0;   /* 이 호실 건축물대장 값만 — 추정값 금지 */
       const areaUnits = sv('sum.areaUnits') || (myGroup ? String(myGroup.count) : '');
       const pubNow = CLOUD.pubPrice.get(it.id);
       /* 기준일을 왼쪽, 금액을 오른쪽에(앱과 같다) */
@@ -6842,7 +6842,7 @@ span.cal-day.has { cursor: help; }
         ...(() => {
           if (!/아파트/.test(a.propertyType || '') || !CLOUD.T || !CLOUD.T.myGroupOf) return [];
           const ar = areasFor(it.id); const g = ar ? CLOUD.T.myGroupOf(ar, Number(a.buildingAreaM2) || 0) : null;
-          const sup = (ar && ar.mine && ar.mine.supply) || (g && g.supply) || 0;
+          const sup = (ar && ar.mine && ar.mine.supply) || 0;   /* 이 호실 건축물대장 값만 */
           return sup ? [`<tr><th>공급면적</th><td colspan="3">${esc(CLOUD.T.exclusiveAreaText ? CLOUD.T.exclusiveAreaText(sup, Math.round((sup / 3.305785) * 100) / 100) : `${sup}㎡`)}</td></tr>`] : [];
         })(),
         `<tr><th>층</th><td>${v(h.unitFloor)}</td><th>층수(지하/지상)</th><td>${v(h.floors)}</td></tr>`,
@@ -6911,10 +6911,10 @@ span.cal-day.has { cursor: help; }
     const c = a.aptComplexInfo; const v = (x) => esc(x || '-'); const T = CLOUD.T || {};
     /* 단지명 — PDF 에 없으면 전유부 소재지의 건물명 · 면적 종류 — 내 물건 평형 표시(앱과 같은 aptComplex 모듈) */
     const name = T.complexNameOf ? T.complexNameOf(a) : c.name;
-    /* 면적 종류 — 평형마다 세대수 · 내 평형(받기 전이면 비율로 고른 내 평형만) */
+    /* 면적 종류 — 평형마다 세대수 · 내 평형(받기 전이면 PDF 평형 이름만 — 짐작해 표시하지 않는다) */
     const got = CLOUD.areas.get(it.id); const ready = got && !got.busy && got.value;
     const rows = ready && T.areaTypeRowsOf ? T.areaTypeRowsOf(c.areaTypes, got.value, Number(a.buildingAreaM2) || 0)
-      : T.areaTypePartsOf ? T.areaTypePartsOf(a).map((t) => ({ ...t, count: 0 })) : [];
+      : String(c.areaTypes || '').split(/\s*,\s*/).filter(Boolean).map((text) => ({ text, count: 0, mine: false }));
     const areas = rows.length ? rows.map((t) => `<span class="${t.mine ? 'it-apt-mine' : ''}">${esc(t.text)}${t.count ? ` ${t.count.toLocaleString('ko-KR')}세대` : ''}${t.mine ? '<small>내 물건</small>' : ''}</span>`).join(', ') : esc(c.areaTypes || '');
     return itCard('apt', '단지정보', kvTable([
       `<tr><th>단지명</th><td colspan="3">${v(name)}</td></tr>`,

@@ -72,7 +72,7 @@ export const areaTypeRowsOf = (areaTypes: string, areas: ComplexAreas | null | u
   const tokens = String(areaTypes ?? '').split(/\s*,\s*/).map((t) => t.trim()).filter(Boolean);
   const numOf = (t: string) => Number(t.match(/\d+/)?.[0]) || 0;
   const mineGroup = myGroupOf(areas, exclusiveM2);
-  const mineSupply = areas?.mine?.supply || mineGroup?.supply || 0;
+  const mineSupply = areas?.mine?.supply || 0;   // 이 호실 건축물대장 값만(추정값 금지)
   const out: Array<{ text: string; count: number; mine: boolean }> = [];
   const seen = new Set<number>();
   tokens.forEach((t) => {
