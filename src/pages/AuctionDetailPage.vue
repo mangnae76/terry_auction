@@ -9261,10 +9261,10 @@ const goBack = () => router.back();
                     </tbody>
                   </table></div></div>
                   <div class="son-demand sup-tbl"><div class="adm-table-wrap cmp-deals"><table class="adm-table cmp-tbl">
-                    <thead><tr><th>구분</th><th>계약일</th><th>전용</th><th>층</th><th>실거래가</th></tr></thead>
+                    <thead><tr><th>구분</th><th>계약일</th><th>면적<small>공급(전용)</small></th><th>층</th><th>실거래가</th></tr></thead>
                     <tbody>
                       <tr v-for="(d, i) in cmpPickedDeals" :key="i">
-                        <td><span :class="['cmp-kind', { j: d.kind === '전세', m: d.kind === '월세' }]">{{ d.kind === '직거래' ? '매매' : d.kind }}</span></td><td class="n">{{ d.contractDate }}</td><td class="n">{{ sonAreaUnit === 'py' ? `${(d.areaM2 / 3.305785).toFixed(1)}평` : `${trunc2(d.areaM2)}㎡` }}</td><td class="n">{{ d.floor ? `${d.floor}층` : '-' }}</td><td class="n amt"><b>{{ cmpMoney(d.price) }}</b></td>
+                        <td><span :class="['cmp-kind', { j: d.kind === '전세', m: d.kind === '월세' }]">{{ d.kind === '직거래' ? '매매' : d.kind }}</span></td><td class="n">{{ d.contractDate }}</td><td class="n">{{ areaPair(cmpPicked.supply, d.areaM2) }}</td><td class="n">{{ d.floor ? `${d.floor}층` : '-' }}</td><td class="n amt"><b>{{ cmpMoney(d.price) }}</b></td>
                       </tr>
                       <tr v-if="!cmpPickedDeals.length"><td colspan="5" class="cmp-dim">최근 {{ cmpMonths }}개월 같은 평형 {{ cmpKind }} 거래가 없습니다.</td></tr>
                     </tbody>
@@ -11946,6 +11946,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .fs-btn:hover { color: #2b6df3; }
 /* 전체화면 — 시세분석 전체화면과 같은 꼴: 남색 위 띠(52) · 지도가 아래를 꽉 채우고 · 왼쪽에 흰 상자(모서리 12 · 그림자)가 떠 있다(2026-11-11) */
 .cmp-map.fs { position: fixed; inset: 0; z-index: 2000; border: 0; border-radius: 0; display: grid; grid-template-columns: 340px minmax(0, 1fr); grid-template-rows: 52px minmax(0, 1fr); background: #fff; }
+.cmp-map-box { position: relative; isolation: isolate; }   /* 지도 도구 막대 · 전체화면 단추 · 범례의 기준 — 전체화면에서도 위 남색 띠 아래부터(시세분석처럼) */
 .cmp-map.fs .cmp-map-box { grid-column: 1 / -1; grid-row: 2; min-height: 0; }
 .cmp-map.fs .cmp-map-in { height: 100%; }
 .cmp-fs-top { grid-column: 1 / -1; grid-row: 1; display: flex; align-items: center; gap: 14px; padding: 0 14px; background: #213366; color: #fff; }
