@@ -1159,6 +1159,47 @@ export const fetchBuildingFacts = async (bCode10: string, jibun: string): Promis
   });
   return { parking, elevator, households, name: buildingNameFromRows(rows) };
 };
+/** 건축물대장 전유공용면적 — 한 호실의 전용 · 공급(전용 + 주건축물 공용)면적.
+ *  주건축물 공용(벽체 · 계단실 · 승강기)이 주거공용이고, 부속건축물 공용(지하주차장 · 관리사무소 …)은 기타공용이라 공급에 넣지 않는다.
+ *  2026타경50132 101동 2301호 — 59.9867 + 6.0765 + 17.1122 = 83.18㎡ (분양 평형 83㎡, 2026-11-10 확인) */
+const BLD_PUBUSE_API_PATH = BLD_TITLE_API_PATH.replace(/getBrTitleInfo$/, 'getBrExposPubuseAreaInfo');
+export type UnitArea = { exclusive: number; supply: number };
+export const fetchUnitSupply = async (bCode10: string, jibun: string, dong: string, ho: string): Promise<UnitArea | null> => {
+  const m = jibun.replace(/\s+/g, ' ').match(/^(산\s*)?(\d+)(?:-(\d+))?$/);
+  const hoNo = ho.replace(/\D/g, '');
+  if (!m || bCode10.length < 10 || !hoNo) return null;
+  const call = async (dongNm: string) => {
+    const url = buildApiUrl(BLD_PUBUSE_API_PATH);
+    setServiceKey(url);
+    url.searchParams.set('sigunguCd', bCode10.slice(0, 5));
+    url.searchParams.set('bjdongCd', bCode10.slice(5, 10));
+    url.searchParams.set('platGbCd', m[1] ? '1' : '0');
+    url.searchParams.set('bun', m[2].padStart(4, '0'));
+    url.searchParams.set('ji', (m[3] ?? '0').padStart(4, '0'));
+    if (dongNm) url.searchParams.set('dongNm', dongNm);
+    url.searchParams.set('hoNm', hoNo);
+    url.searchParams.set('numOfRows', '100');
+    url.searchParams.set('pageNo', '1');
+    url.searchParams.set('_type', 'json');
+    const json = await requestJson(url);
+    const code = String(json?.response?.header?.resultCode ?? '00');
+    if (!/^0+$/.test(code)) throw new Error(`건축물대장 조회 실패(${code})`);
+    return asArray(json?.response?.body?.items?.item);
+  };
+  // 건축물대장 동 이름은 '101동' 꼴 — 동이 없는 건물은 동 없이
+  const d = dong.trim();
+  let rows = await call(d ? (/동$/.test(d) ? d : `${d}동`) : '');
+  if (rows.length === 0 && d) rows = await call(d.replace(/동$/, ''));
+  let exclusive = 0; let common = 0;
+  rows.forEach((r) => {
+    const area = Number(r.area) || 0;
+    if (String(r.exposPubuseGbCdNm ?? '') === '전유') exclusive += area;
+    else if (String(r.mainAtchGbCdNm ?? '') === '주건축물') common += area;
+  });
+  if (exclusive <= 0) return null;
+  return { exclusive: Math.round(exclusive * 100) / 100, supply: Math.round((exclusive + common) * 100) / 100 };
+};
+
 /** 그 동의 연립·다세대 세대수(물건상세 매매수요) */
 export const fetchDongHouseholds = async (bCode10: string): Promise<number> => (await fetchDongUnits(bCode10)).villa;
 

@@ -31,6 +31,7 @@ import {
 } from '../services/fieldChecklist';
 import { getBuildingFacts } from '../services/buildingFacts';
 import { complexNameOf, totalParkingOf, areaTypePartsOf } from '../services/aptComplex';
+import { getComplexAreas, myGroupOf, areaTypeRowsOf, type ComplexAreas } from '../services/complexAreas';
 import { DEMAND_PLAIN } from '../services/demandGrade';
 import { openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
@@ -2984,6 +2985,26 @@ watch(
   { immediate: true },
 );
 
+// 아파트 평형별 세대수 · 공급면적, 내 호실 공급면적 — 정보요약 · 단지정보 면적 종류 · 건축물정보 전유부(아파트만, 2026-11-10)
+const complexAreas = ref<ComplexAreas | null>(null);
+watch(() => [auction.value?.id, isApartment.value] as const, async ([id, apt]) => {
+  complexAreas.value = null;
+  const addr = auction.value?.buildingHeader?.unitLocation || auction.value?.address;
+  if (!id || !apt || !addr) return;
+  const got = await getComplexAreas(addr);
+  if (auction.value?.id === id) complexAreas.value = got;
+}, { immediate: true });
+/** 내 평형 세대수 — 적어 둔 값이 먼저, 없으면 공동주택가격 호실 수 */
+const myAreaUnits = computed(() => sumVal('sum.areaUnits')
+  || String(myGroupOf(complexAreas.value, Number(auction.value?.buildingAreaM2) || 0)?.count || ''));
+/** 공급면적 — 건축물대장(전용 + 주건축물 공용)이 먼저. PDF 공용면적엔 지하주차장까지 들어 있어 맞지 않는다 */
+const mySupplyM2 = computed(() => complexAreas.value?.mine?.supply
+  || myGroupOf(complexAreas.value, Number(auction.value?.buildingAreaM2) || 0)?.supply || 0);
+/** 단지정보 면적 종류 — 평형마다 세대수 · 내 평형. 조회 전이면 비율로 고른 내 평형만 */
+const aptAreaRows = computed(() => (complexAreas.value && auction.value?.aptComplexInfo
+  ? areaTypeRowsOf(auction.value.aptComplexInfo.areaTypes, complexAreas.value, Number(auction.value.buildingAreaM2) || 0)
+  : (auction.value ? areaTypePartsOf(auction.value).map((t) => ({ ...t, count: 0 })) : [])));
+
 // 주차수 · 엘베 — PDF에 없으면 그 필지의 건축물대장(표제부)에서 채운다. 사람이 넣은 값은 덮지 않는다
 watch(() => auction.value?.id, async (id) => {
   const a = auction.value;
@@ -5550,7 +5571,7 @@ const callCourt = () => {
   window.location.href = `tel:${courtTelDigits.value}`;
 };
 const summaryApprovalAge = computed(() => summaryApprovalAgeOf(sumVal('sum.approval')));
-const summarySupplyArea = computed(() => areaText(sumVal('sum.supplyArea')));
+const summarySupplyArea = computed(() => areaText(mySupplyM2.value ? String(mySupplyM2.value) : sumVal('sum.supplyArea')));
 const summaryExclusiveArea = computed(() => areaText(sumVal('sum.exclusiveArea')));
 /** '주거용 전부 / 2021.05.25. ~ 2023.05.24.' — 옛 자료(슬래시 없음)도 같은 모양으로 맞춘다 */
 const tenantUsagePeriod = (raw: string) => {
@@ -5826,11 +5847,13 @@ const goBack = () => router.back();
               </dd>
             </div>
             <div class="adp-base-row">
-              <!-- 공급면적은 아파트만 — 다세대 등은 전용면적만 -->
-              <dt>{{ isApartment ? '공급/전용면적(㎡/평)' : '전용면적(㎡/평)' }}</dt>
-              <dd>
-                <template v-if="isApartment">{{ summarySupplyArea }} / </template><span class="adp-sum-hi">{{ summaryExclusiveArea }}</span>
-              </dd>
+              <dt>전용면적(㎡/평)</dt>
+              <dd><span class="adp-sum-hi">{{ summaryExclusiveArea }}</span></dd>
+            </div>
+            <!-- 공급면적은 아파트만 — 전용 아래 따로, 같은 꼴(2026-11-10) -->
+            <div v-if="isApartment" class="adp-base-row">
+              <dt>공급면적(㎡/평)</dt>
+              <dd>{{ summarySupplyArea }}</dd>
             </div>
             <div class="adp-base-row">
               <dt>대지면적(㎡/평)</dt>
@@ -5859,18 +5882,31 @@ const goBack = () => router.back();
                 {{ summaryFloorPair }}
               </dd>
             </div>
+            <!-- 아파트는 '총 / 해당면적' 세대수를 한 줄에(2026-11-10) -->
             <div class="adp-base-row">
-              <dt>세대수</dt>
+              <dt>{{ isApartment ? '세대수(총/해당면적)' : '세대수' }}</dt>
               <dd>
-                {{ sumVal('sum.units') ? `${Number(sumVal('sum.units')).toLocaleString('ko-KR')}세대` : '-' }}
+                <template v-if="isApartment">{{ sumVal('sum.units') ? Number(sumVal('sum.units')).toLocaleString('ko-KR') : '-' }} / {{ myAreaUnits ? `${Number(myAreaUnits).toLocaleString('ko-KR')}세대` : '-' }}</template>
+                <template v-else>{{ sumVal('sum.units') ? `${Number(sumVal('sum.units')).toLocaleString('ko-KR')}세대` : '-' }}</template>
               </dd>
             </div>
-            <!-- 해당면적 세대수는 같은 평형이 여러 세대인 아파트에서만 쓴다 -->
+            <!-- 공동주택가격 — 아파트만, 올해 1월 1일 기준(검증 조회). 아직이면 PDF 값(2026-11-10) -->
             <div v-if="isApartment" class="adp-base-row">
-              <dt>해당면적 세대수</dt>
+              <dt>공동주택가격</dt>
               <dd>
-                {{ sumVal('sum.areaUnits') ? `${Number(sumVal('sum.areaUnits')).toLocaleString('ko-KR')}세대` : '-' }}
+                <template v-if="officialPriceAuto">{{ formatMoney(officialPriceAuto) }}원 <span class="adp-na">({{ officialPriceYear }}-01-01 기준)</span></template>
+                <template v-else-if="auction?.officialPriceValue">{{ formatMoney(auction.officialPriceValue) }}원 <span class="adp-na">(PDF)</span></template>
+                <span v-else class="adp-na">{{ officialPriceDone ? '-' : '조회 중…' }}</span>
               </dd>
+            </div>
+            <!-- 체납 — 아파트만, PDF 체납조사(본건) · 체납금액. 정보요약 맨 아래(2026-11-10) -->
+            <div v-if="isApartment" class="adp-base-row">
+              <dt>체납조사(본건)</dt>
+              <dd>{{ auction?.arrearsInfo?.surveyDate || '-' }}</dd>
+            </div>
+            <div v-if="isApartment" class="adp-base-row">
+              <dt>체납금액</dt>
+              <dd>{{ auction?.arrearsInfo?.amount || '-' }}</dd>
             </div>
           </dl>
         </section>
@@ -5920,7 +5956,7 @@ const goBack = () => router.back();
           </header>
           <table v-if="!isCollapsed('apt')" class="adp-table adp-kv-table">
             <colgroup>
-              <col style="width: 84px" />   <!-- '체납조사(본건)'이 들어가는 폭 -->
+              <col style="width: 70px" />
               <col />
               <col style="width: 70px" />
               <col />
@@ -5930,16 +5966,13 @@ const goBack = () => router.back();
               <tr><th>세대수</th><td>{{ auction.aptComplexInfo.households || '-' }}</td><th>동 수</th><td>{{ auction.aptComplexInfo.buildings || '-' }}</td></tr>
               <tr><th>사용승인일</th><td>{{ auction.aptComplexInfo.approvalDate || '-' }}</td><th>시공사</th><td>{{ auction.aptComplexInfo.contractor || '-' }}</td></tr>
               <tr><th>주차 수</th><td>{{ auction.aptComplexInfo.parkingTotal || '-' }}</td><th>세대당 주차</th><td>{{ auction.aptComplexInfo.parkingPerHouse || '-' }}</td></tr>
-              <!-- 난방은 뺐고 그 자리에 체납(PDF 체납내역)을 둔다(2026-11-10) -->
-              <tr><th>체납조사(본건)</th><td>{{ auction.arrearsInfo?.surveyDate || '-' }}</td><th>체납금액</th><td>{{ auction.arrearsInfo?.amount || '-' }}</td></tr>
-              <tr v-if="auction.arrearsInfo?.note"><th>체납비고</th><td colspan="3" class="wrap">{{ auction.arrearsInfo.note }}</td></tr>
               <tr><th>용적률</th><td>{{ auction.aptComplexInfo.floorRatio || '-' }}</td><th>건폐율</th><td>{{ auction.aptComplexInfo.buildingCoverage || '-' }}</td></tr>
               <tr><th>최고층</th><td>{{ auction.aptComplexInfo.topFloor || '-' }}</td><th>최저층</th><td>{{ auction.aptComplexInfo.bottomFloor || '-' }}</td></tr>
               <tr><th>관리소번호</th><td colspan="3"><a v-if="auction.aptComplexInfo.managementPhone" :href="`tel:${auction.aptComplexInfo.managementPhone.replace(/[^\d+]/g, '')}`" class="adp-agency-phone">{{ auction.aptComplexInfo.managementPhone }}</a><span v-else>-</span></td></tr>
               <tr v-if="auction.aptComplexInfo.facilities"><th>편의시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.facilities }}</td></tr>
               <tr v-if="auction.aptComplexInfo.schools"><th>교육시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.schools }}</td></tr>
               <tr v-if="auction.aptComplexInfo.restPark"><th>휴식/공원</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.restPark }}</td></tr>
-              <tr v-if="auction.aptComplexInfo.areaTypes"><th>면적 종류</th><td colspan="3" class="wrap"><template v-for="(t, i) in areaTypePartsOf(auction)" :key="t.text">{{ i ? ', ' : '' }}<span v-if="t.mine" class="adp-apt-mine">{{ t.text }}<small>내 물건</small></span><template v-else>{{ t.text }}</template></template></td></tr>
+              <tr v-if="auction.aptComplexInfo.areaTypes"><th>면적 종류</th><td colspan="3" class="wrap"><template v-for="(t, i) in aptAreaRows" :key="t.text">{{ i ? ', ' : '' }}<span :class="{ 'adp-apt-mine': t.mine }">{{ t.text }}{{ t.count ? ` ${t.count.toLocaleString('ko-KR')}세대` : '' }}<small v-if="t.mine">내 물건</small></span></template></td></tr>
               <tr v-if="auction.aptComplexInfo.evCharger"><th>전기차충전소</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.evCharger }}</td></tr>
             </tbody>
           </table>
@@ -6216,6 +6249,8 @@ const goBack = () => router.back();
                     <th>전용면적</th><td>{{ auction?.buildingHeader?.unitExclusiveArea || (auction?.buildingAreaM2 ? exclusiveAreaText(auction.buildingAreaM2, auction.buildingAreaPyeong) : '-') }}</td>
                     <th>공용면적</th><td>{{ auction?.buildingHeader?.unitCommonArea || '-' }}</td>
                   </tr>
+                  <!-- 공급면적 — 아파트만, 건축물대장 전용 + 주건축물 공용(PDF 공용면적엔 지하주차장까지 들어 있다) -->
+                  <tr v-if="isApartment && mySupplyM2"><th>공급면적</th><td colspan="3">{{ exclusiveAreaText(mySupplyM2, Math.round((mySupplyM2 / 3.305785) * 100) / 100) }}</td></tr>
                   <tr>
                     <th>층</th><td>{{ auction?.buildingHeader?.unitFloor || '-' }}</td>
                     <th>층수(지하/지상)</th><td>{{ auction?.buildingHeader?.floors || '-' }}</td>
@@ -6286,8 +6321,8 @@ const goBack = () => router.back();
           </table>
         </section>
 
-        <!-- 체납내역 — 단지정보가 있으면 그 안에 들어가므로 단지정보가 없을 때만 따로 -->
-        <section v-if="isApartment && auction?.arrearsInfo && !auction?.aptComplexInfo" class="adp-card">
+        <!-- 체납내역 — 조사일 · 금액은 정보요약 맨 아래로 옮겼다(2026-11-10). 비고가 있을 때만 따로 -->
+        <section v-if="isApartment && auction?.arrearsInfo?.note" class="adp-card">
           <header class="adp-card-head" @click="toggleSection('arrears')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3z"/><path d="M12 9v4M12 17h.01"/></svg>체납내역</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('arrears') }]" alt="" />

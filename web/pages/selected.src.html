@@ -6693,17 +6693,30 @@ span.cal-day.has { cursor: help; }
       const hi = (t) => `<span class="it-hi">${t}</span>`;
       const age = T.summaryApprovalAgeOf(sv('sum.approval'));
       const isApt = /아파트/.test(a.propertyType || '');
+      /* 아파트 평형별 세대수 · 공급면적(앱 complexAreas 와 같은 모듈) — 받기 전이면 PDF 값 */
+      const areas = isApt ? areasFor(it.id) : null;
+      const myGroup = areas && T.myGroupOf ? T.myGroupOf(areas, Number(a.buildingAreaM2) || 0) : null;
+      const supplyM2 = (areas && areas.mine && areas.mine.supply) || (myGroup && myGroup.supply) || 0;
+      const areaUnits = sv('sum.areaUnits') || (myGroup ? String(myGroup.count) : '');
+      const pubNow = CLOUD.pubPrice.get(it.id);
+      const pubText = pubNow && pubNow.price ? `${Number(pubNow.price).toLocaleString('ko-KR')}원 <span class="it-na">(${esc(pubNow.year)}-01-01 기준)</span>`
+        : a.officialPriceValue ? `${Number(a.officialPriceValue).toLocaleString('ko-KR')}원 <span class="it-na">(PDF)</span>` : (!pubNow || pubNow.busy ? '<span class="it-na">조회 중…</span>' : '-');
+      const arr = a.arrearsInfo || {};
       /* 정보요약은 보기만 — 값은 PDF · 건축물대장에서 온 물건 자료(DB)라 고칠 까닭이 없어 편집을 뺐다(2026-11-02) */
       const summaryRows = [
         ['관할법원', `${esc(sv('sum.court') || '-')}${sv('sum.courtDept') ? `<span class="it-dept">${esc(sv('sum.courtDept'))}</span>` : ''}${sv('sum.courtPhone') ? ` <a class="it-tel" href="tel:${esc(sv('sum.courtPhone').replace(/[^0-9+]/g, ''))}">${esc(sv('sum.courtPhone'))}</a>` : ''}`],
         ['사용승인', hi(`${esc(sv('sum.approval') || '-')}${age ? ` / ${age}` : ''}`)],
-        isApt ? ['공급/전용면적(㎡/평)', `${T.summaryAreaText(sv('sum.supplyArea'))} / ${hi(T.summaryAreaText(sv('sum.exclusiveArea')))}`] : ['전용면적(㎡/평)', hi(T.summaryAreaText(sv('sum.exclusiveArea')))],
+        ['전용면적(㎡/평)', hi(T.summaryAreaText(sv('sum.exclusiveArea')))],
+        /* 공급면적은 아파트만 — 전용 아래 따로, 같은 꼴. 건축물대장(전용 + 주건축물 공용)이 먼저(2026-11-10) */
+        ...(isApt ? [['공급면적(㎡/평)', T.summaryAreaText(supplyM2 ? String(supplyM2) : sv('sum.supplyArea'))]] : []),
         ['대지면적(㎡/평)', T.summaryAreaText(sv('sum.landArea'))],
         ...(T.hasBuildingName(a.address || '') ? [] : [['건물명', sv('sum.buildingName') ? `<b class="it-name">${esc(sv('sum.buildingName'))}</b>` : '-']]),
         ['동/호', `${sv('sum.dong') ? `${hi(`${esc(sv('sum.dong'))}동`)} / ` : ''}${hi(sv('sum.ho') ? `${esc(sv('sum.ho'))}호` : '-호')}`],
         ['층', T.summaryFloorPairOf(sv('sum.floorCurrent'), sv('sum.floorTotal'))],
-        ['세대수', sv('sum.units') ? `${Number(sv('sum.units')).toLocaleString('ko-KR')}세대` : '-'],
-        ...(isApt ? [['해당면적 세대수', sv('sum.areaUnits') ? `${Number(sv('sum.areaUnits')).toLocaleString('ko-KR')}세대` : '-']] : []),
+        /* 아파트는 '총 / 해당면적' 세대수를 한 줄에, 그 아래 공동주택가격 · 맨 아래 체납(2026-11-10) */
+        isApt ? ['세대수(총/해당면적)', `${sv('sum.units') ? Number(sv('sum.units')).toLocaleString('ko-KR') : '-'} / ${areaUnits ? `${Number(areaUnits).toLocaleString('ko-KR')}세대` : '-'}`]
+          : ['세대수', sv('sum.units') ? `${Number(sv('sum.units')).toLocaleString('ko-KR')}세대` : '-'],
+        ...(isApt ? [['공동주택가격', pubText], ['체납조사(본건)', esc(arr.surveyDate || '-')], ['체납금액', esc(arr.amount || '-')]] : []),
       ];
       /* 기본정보 — 소유자·채무자·채권자·차수 / 감정가 · 회차별 최저가(비율·결과·날짜) · 보증금 */
       const fm = (n) => (n > 0 ? Number(n).toLocaleString('ko-KR') : '0');
@@ -6721,13 +6734,13 @@ span.cal-day.has { cursor: help; }
       const left = [
         itCard('doc', '정보요약', `<dl class="it-rows">${summaryRows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`),
         itCard('info', '기본정보', baseRows),
-        ...(isApt && a.aptComplexInfo ? [aptCardHtml(a)] : []),
+        ...(isApt && a.aptComplexInfo ? [aptCardHtml(it, a)] : []),
         statusCardHtml(it, a),
-        buildingCardHtml(a),
+        buildingCardHtml(it, a),
       ];
       const right = [
         locationCardHtml(it, a),
-        ...(isApt && a.arrearsInfo && !a.aptComplexInfo ? [arrearsCardHtml(a)] : []),   /* 단지정보가 있으면 그 안에 */
+        ...(isApt && a.arrearsInfo && a.arrearsInfo.note ? [arrearsCardHtml(a)] : []),   /* 조사일 · 금액은 정보요약 맨 아래 — 비고가 있을 때만 따로 */
       ];
       return `<div class="it-col">${left.join('')}</div><div class="it-col">${right.join('')}</div>`;
     }
@@ -6796,7 +6809,7 @@ span.cal-day.has { cursor: help; }
     const body = pdfBox + `<div class="it-kakao">${block('카카오목록검색', kakaoBody)}</div>`;
     return itCard('pin', '입지정보', body, false, tabs);   /* 알약은 머리 오른쪽 끝 — 아래 표 상자 오른쪽 끝선에 맞는다 */
   }
-  function buildingCardHtml(a) {
+  function buildingCardHtml(it, a) {
     const h = a.buildingHeader || {}; const v = (x) => esc(x || '-'); const full = a.address || a.roadAddress || '';
     /* 전용 '45.2㎡ (13.67평)' — 평을 적어 두지 않은 물건은 ㎡ 로 계산한다(앱과 같은 exclusiveAreaText, BUG-0018) */
     const exAll = CLOUD.T && CLOUD.T.exclusiveAreaText ? CLOUD.T.exclusiveAreaText(a.buildingAreaM2, a.buildingAreaPyeong) : `${a.buildingAreaM2 || 0}㎡ (${a.buildingAreaPyeong || 0}평)`;
@@ -6820,6 +6833,13 @@ span.cal-day.has { cursor: help; }
         `<tr><th>소재지</th><td colspan="3">${v(h.unitLocation || full)}</td></tr>`,
         ...(h.unitHouseholds || h.households ? [`<tr><th>총 가구/세대/호</th><td>${v(h.unitHouseholds || h.households)}</td><th>주용도</th><td>${v(h.mainUse || a.propertyType)}</td></tr>`] : []),
         `<tr><th>전용면적</th><td>${v(h.unitExclusiveArea || ex)}</td><th>공용면적</th><td>${v(h.unitCommonArea)}</td></tr>`,
+        /* 공급면적 — 아파트만, 건축물대장 전용 + 주건축물 공용(PDF 공용면적엔 지하주차장까지 들어 있다, 앱과 같다) */
+        ...(() => {
+          if (!/아파트/.test(a.propertyType || '') || !CLOUD.T || !CLOUD.T.myGroupOf) return [];
+          const ar = areasFor(it.id); const g = ar ? CLOUD.T.myGroupOf(ar, Number(a.buildingAreaM2) || 0) : null;
+          const sup = (ar && ar.mine && ar.mine.supply) || (g && g.supply) || 0;
+          return sup ? [`<tr><th>공급면적</th><td colspan="3">${esc(CLOUD.T.exclusiveAreaText ? CLOUD.T.exclusiveAreaText(sup, Math.round((sup / 3.305785) * 100) / 100) : `${sup}㎡`)}</td></tr>`] : [];
+        })(),
         `<tr><th>층</th><td>${v(h.unitFloor)}</td><th>층수(지하/지상)</th><td>${v(h.floors)}</td></tr>`,
         `<tr><th>사용승인일자</th><td>${v(h.approvalDate || a.approvalDate)}</td><th>승강기(비상/승용)</th><td>${v(h.elevator)}</td></tr>`,
         `<tr><th>구조</th><td>${v(h.unitStructure || a.structureType)}</td><th>총 주차수</th><td>${v(CLOUD.T && CLOUD.T.totalParkingOf ? CLOUD.T.totalParkingOf(a) : (h.unitTotalParking || h.parking))}</td></tr>`,
@@ -6868,19 +6888,34 @@ span.cal-day.has { cursor: help; }
     CLOUD.pubPrice.set(id, got);
     if (S.route === 'item' && S.itemId === id) renderItem();
   }
-  function aptCardHtml(a) {
-    const c = a.aptComplexInfo; const r = a.arrearsInfo || {}; const v = (x) => esc(x || '-'); const T = CLOUD.T || {};
+  /* 아파트 평형별 세대수 · 공급면적 — 물건마다 한 번(창을 열어 둔 동안). 호실 공급면적은 앱과 같은 저장소에 한 해 */
+  function areasFor(id) {
+    const got = CLOUD.areas.get(id);
+    if (got) return got.busy ? null : got.value;
+    const it = byId(id); const T = CLOUD.T; if (!it || !T || !T.getComplexAreas) return null;
+    const a = detailOf(it); const addr = (a.buildingHeader && a.buildingHeader.unitLocation) || a.address;
+    if (!addr) return null;
+    CLOUD.areas.set(id, { busy: true });
+    T.getComplexAreas(addr).catch(() => null).then((value) => {
+      CLOUD.areas.set(id, { value });
+      if (S.route === 'item' && S.itemId === id) renderItem();
+    });
+    return null;
+  }
+  function aptCardHtml(it, a) {
+    const c = a.aptComplexInfo; const v = (x) => esc(x || '-'); const T = CLOUD.T || {};
     /* 단지명 — PDF 에 없으면 전유부 소재지의 건물명 · 면적 종류 — 내 물건 평형 표시(앱과 같은 aptComplex 모듈) */
     const name = T.complexNameOf ? T.complexNameOf(a) : c.name;
-    const areas = T.areaTypePartsOf ? T.areaTypePartsOf(a).map((t) => (t.mine ? `<span class="it-apt-mine">${esc(t.text)}<small>내 물건</small></span>` : esc(t.text))).join(', ') : esc(c.areaTypes || '');
+    /* 면적 종류 — 평형마다 세대수 · 내 평형(받기 전이면 비율로 고른 내 평형만) */
+    const got = CLOUD.areas.get(it.id); const ready = got && !got.busy && got.value;
+    const rows = ready && T.areaTypeRowsOf ? T.areaTypeRowsOf(c.areaTypes, got.value, Number(a.buildingAreaM2) || 0)
+      : T.areaTypePartsOf ? T.areaTypePartsOf(a).map((t) => ({ ...t, count: 0 })) : [];
+    const areas = rows.length ? rows.map((t) => `<span class="${t.mine ? 'it-apt-mine' : ''}">${esc(t.text)}${t.count ? ` ${t.count.toLocaleString('ko-KR')}세대` : ''}${t.mine ? '<small>내 물건</small>' : ''}</span>`).join(', ') : esc(c.areaTypes || '');
     return itCard('apt', '단지정보', kvTable([
       `<tr><th>단지명</th><td colspan="3">${v(name)}</td></tr>`,
       `<tr><th>세대수</th><td>${v(c.households)}</td><th>동 수</th><td>${v(c.buildings)}</td></tr>`,
       `<tr><th>사용승인일</th><td>${v(c.approvalDate)}</td><th>시공사</th><td>${v(c.contractor)}</td></tr>`,
       `<tr><th>주차 수</th><td>${v(c.parkingTotal)}</td><th>세대당 주차</th><td>${v(c.parkingPerHouse)}</td></tr>`,
-      /* 난방은 뺐고 그 자리에 체납(PDF 체납내역) — 앱과 같다(2026-11-10) */
-      `<tr><th>체납조사(본건)</th><td>${v(r.surveyDate)}</td><th>체납금액</th><td>${v(r.amount)}</td></tr>`,
-      ...(r.note ? [`<tr><th>체납비고</th><td colspan="3">${esc(r.note)}</td></tr>`] : []),
       `<tr><th>용적률</th><td>${v(c.floorRatio)}</td><th>건폐율</th><td>${v(c.buildingCoverage)}</td></tr>`,
       `<tr><th>최고층</th><td>${v(c.topFloor)}</td><th>최저층</th><td>${v(c.bottomFloor)}</td></tr>`,
       `<tr><th>관리소번호</th><td colspan="3">${c.managementPhone ? `<a class="it-tel" href="tel:${esc(c.managementPhone.replace(/[^\d+]/g, ''))}">${esc(c.managementPhone)}</a>` : '-'}</td></tr>`,
@@ -9370,7 +9405,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
      로그인 전에는 예시 물건을 보여 주고, 로그인하면 앱과 같은 Firestore 물건으로 바꾼다.
      웹에서 바꾼 중요도·단계·보관·휴지통은 앱 저장소의 함수(saveAuction · archiveAuctions …)로 그대로 적는다 */
   const DEMO_ITEMS = items.slice();
-  const CLOUD = { on: false, synced: false, T: null, auth: null, store: null, raw: new Map(), nearby: new Map(), nearbyBusy: '', pubPrice: new Map(), geminiUid: null, prefsUid: null, regPrefs: null };
+  const CLOUD = { on: false, synced: false, T: null, auth: null, store: null, raw: new Map(), nearby: new Map(), nearbyBusy: '', pubPrice: new Map(), areas: new Map(), geminiUid: null, prefsUid: null, regPrefs: null };
   /* 로그인해 있던 사람(새로고침 · 다시 들어옴) — 확인이 끝날 때까지 예시 물건 · '로그인하면' 안내를 그리지 않는다.
      안 그러면 이미 로그인했는데도 잠깐 예시 물건과 로그인 단추가 보였다 */
   const EXPECT_IN = (() => { try { return localStorage.getItem('ta.web.in') === '1'; } catch (e) { return false; } })();
