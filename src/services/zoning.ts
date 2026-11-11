@@ -35,6 +35,25 @@ const polygonsOf = (g: Feature['geometry']): Ring[][] => {
   return [];
 };
 
+/** 이 점이 들어 있는 법정 읍면동 경계(가장 큰 다각형의 바깥 고리) — 브이월드 LT_C_ADEMD_INFO. 단지 입지비교 범위 '읍면동'을 지도에(2026-11-11) */
+const dongMemo = new Map<string, Promise<Array<{ lat: number; lng: number }> | null>>();
+export const dongShapeOf = (lat: number, lng: number) => {
+  const key = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+  if (!dongMemo.has(key)) dongMemo.set(key, (async () => {
+    const q = new URLSearchParams({ service: 'data', request: 'GetFeature', data: 'LT_C_ADEMD_INFO', geomFilter: `POINT(${lng} ${lat})`, format: 'json', size: '5', crs: 'EPSG:4326', geometry: 'true', attribute: 'true' });
+    try {
+      const res = await fetch(`${VWORLD_BASE}/req/data?${q.toString()}`);
+      if (!res.ok) return null;
+      const json = (await res.json()) as { response?: { result?: { featureCollection?: { features?: Feature[] } } } };
+      const f = json.response?.result?.featureCollection?.features?.[0];
+      const rings = polygonsOf(f?.geometry).map((poly) => poly[0] ?? []).sort((a, b) => b.length - a.length);
+      const ring = rings[0] ?? [];
+      return ring.length >= 3 ? ring.map((p) => ({ lat: p[1], lng: p[0] })) : null;
+    } catch { return null; }
+  })());
+  return dongMemo.get(key)!;
+};
+
 /** 이 점이 들어 있는 필지의 경계(바깥 고리, 위경도) — 브이월드 연속지적도(LP_PA_CBND_BUBUN). 아파트 단지 테두리를 그린다(2026-11-11).
  *  같은 점은 이 창에서 한 번만 받는다. 못 받으면 null */
 const parcelMemo = new Map<string, Promise<Array<{ lat: number; lng: number }> | null>>();

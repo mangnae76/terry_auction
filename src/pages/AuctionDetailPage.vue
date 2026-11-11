@@ -83,7 +83,7 @@ import RightsPanel from '../components/RightsPanel.vue';
 import SonpumPricePage from './SonpumPricePage.vue';
 import type { CasePropertyType } from '../services/caseTradeAnalysis';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
-import { parcelShapeOf } from '../services/zoning';
+import { dongShapeOf, parcelShapeOf } from '../services/zoning';
 import { complexesOf, complexNearbyOf, complexPointOf, metersBetween, LOCATION_SOURCES, nearestPlaceOf, PLACE_ICON, rankFromMeters, walkMinOf, WALK_DETOUR, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
 import KakaoMapTools from '../components/KakaoMapTools.vue';
 import { areaUnit, aptAreaText } from '../services/areaUnit';
@@ -5886,12 +5886,23 @@ watch(() => auction.value?.id, () => { cmpNearby.value = {}; cmpPoints.value = {
 const cmpMapEl = ref<HTMLElement | null>(null);
 let cmpMv: MapView | null = null; let cmpMvP: Promise<void> | null = null; let cmpFitted = '';
 const cmpEsc = (t: string) => t.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]!));
+/** 범위 '읍면동' 경계 — 물건마다 한 번 */
+const cmpDongShape = ref<Array<{ lat: number; lng: number }> | null>(null);
+let cmpDongAsked = false;
+watch(() => auction.value?.id, () => { cmpDongShape.value = null; cmpDongAsked = false; });
 /** 단지 테두리(연속지적도 필지 경계) — 단지마다 한 번 받아 둔다(null 이면 받는 중이거나 없음, 2026-11-11 사용자) */
 const cmpParcels = ref<Record<string, Array<{ lat: number; lng: number }> | null>>({});
 const cmpDraw = () => {
   const mv = cmpMv; if (!mv) return;
   mv.clear();
   const rows = cmpRows.value.filter((r) => r.point); const pick = cmpPicked.value;
+  // 범위가 지도에서 어디까지인지 — 읍면동이면 법정동 경계, 1km 면 선정물건에서 1km 원(2026-11-11 사용자)
+  const me = cmpMePt.value;
+  if (me && cmpRange.value === 1000) mv.circle(me, 1000, { color: '#475569', weight: 1.6, dash: true, fillOpacity: 0 });
+  if (me && cmpRange.value === 'dong') {
+    if (cmpDongShape.value) mv.polygon(cmpDongShape.value, { color: '#475569', weight: 2, dash: true, fillOpacity: 0.02 });
+    else if (!cmpDongAsked) { cmpDongAsked = true; void dongShapeOf(me.lat, me.lng).then((v) => { cmpDongShape.value = v; if (v) cmpDraw(); }); }
+  }
   // 단지 테두리 — 보고 있는 단지 하나만(처음엔 선정물건, 2026-11-11 사용자). 선정물건 주황 · 비교 단지 파랑. 처음 보는 단지는 받아 와서 다시 그린다
   rows.filter((r) => pick && cmpKeyOf(r) === cmpKeyOf(pick)).forEach((r) => {
     const key = cmpKeyOf(r); const sh = cmpParcels.value[key];
@@ -5937,7 +5948,7 @@ const cmpEnsureMap = async () => {
   }
   if (cmpMvP) { await cmpMvP; cmpDraw(); }
 };
-watch(() => `${cmpKind.value}|${cmpPick.value}|${cmpPicked.value ? cmpKeyOf(cmpPicked.value) : ''}|${cmpRows.value.map((r) => `${cmpKeyOf(r)}:${r.point ? 1 : 0}:${r.tot === null ? '' : Math.round(r.tot)}`).join(',')}`, () => { void cmpEnsureMap(); });
+watch(() => `${cmpRange.value}|${cmpKind.value}|${cmpPick.value}|${cmpPicked.value ? cmpKeyOf(cmpPicked.value) : ''}|${cmpRows.value.map((r) => `${cmpKeyOf(r)}:${r.point ? 1 : 0}:${r.tot === null ? '' : Math.round(r.tot)}`).join(',')}`, () => { void cmpEnsureMap(); });
 if (sonpumTab) watch(sonpumTab, (t) => { if (t === 'demand') void nextTick(() => { cmpMv?.relayout(); cmpFitted = ''; cmpDraw(); }); });
 /** 지도 도구 막대(시세분석 지도와 같은 것 — 주변 · 로드뷰 · 거리재기 …) */
 const cmpTools = shallowRef<{ k: unknown; map: unknown } | null>(null);
@@ -9534,7 +9545,7 @@ const goBack = () => router.back();
                   <KakaoMapTools v-if="cmpTools" :k="cmpTools.k" :map="cmpTools.map" :near="cmpMePoint" />
                   <button v-if="!cmpFs" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="cmpFs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
                   <!-- 범례 — 시세분석 지도처럼 왼쪽 아래(2026-11-11) -->
-                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span></div>
+                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span><span><i class="ring dash" />{{ cmpRange === 'dong' ? '읍면동 경계' : '반경 1km' }}</span></div>
                   <p v-if="!cmpRows.some((r) => r.point)" class="cmp-wait">{{ supLoaded ? '단지 위치를 찾는 중입니다…' : '실거래를 받는 중입니다…' }}</p>
                 </div>
                 <aside v-if="cmpFs" class="cmp-fs-list">
@@ -12374,7 +12385,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-map-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .cmp-map-legend .dot { width: 10px; height: 10px; border-radius: 50%; background: #2b4fd8; }
 .cmp-map-legend .dot.me { background: #f05a28; }
-.cmp-map-legend .ring { width: 14px; height: 0; border-top: 2px solid #2b6df3; }
+.cmp-map-legend .ring { width: 14px; height: 0; border-top: 2px solid #475569; }
 .cmp-map-legend .ring.dash { border-top-style: dashed; }
 .cmp-map.fs .cmp-map-legend { left: 12px; bottom: 12px; font-size: 13px; }   /* 전체화면 — 왼쪽 끝 아래(목록 밑, 2026-11-11 사용자) */   /* 전체화면 — 떠 있는 왼쪽 목록 옆으로 */
 .cmp-wait { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 13px; color: #6b7280; pointer-events: none; }
