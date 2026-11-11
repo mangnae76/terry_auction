@@ -5806,6 +5806,9 @@ const cmpRankOf = computed(() => {
 const cmpScore = (v: number | null) => (v === null ? '-' : String(Math.round(v)));
 const cmpPicked = computed(() => cmpRows.value.find((r) => cmpKeyOf(r) === cmpPick.value) ?? cmpRows.value.find((r) => r.mine) ?? null);
 /** 고른 단지 실거래가 표 — 거래(매매 · 전세) 단추를 따라 그 거래만(매매는 직거래 포함, 2026-11-11) */
+const CMP_DEALS_N = 6;
+const cmpDealsAll = ref(false);
+watch(() => cmpPick.value, () => { cmpDealsAll.value = false; });   // 다른 단지를 보면 다시 접는다
 const cmpPickedDeals = computed(() => (cmpPicked.value?.deals ?? []).filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세')));
 /** '3억 1,500' — 원 → 억 · 만 */
 const cmpMoney = (won: number) => {
@@ -9557,13 +9560,15 @@ const goBack = () => router.back();
                   <div class="son-demand sup-tbl"><div class="adm-table-wrap cmp-deals"><table class="adm-table cmp-tbl">
                     <thead><tr><th>구분</th><th>계약일</th><th>면적<small>공급(전용)</small></th><th>층</th><th>실거래가</th></tr></thead>
                     <tbody>
-                      <tr v-for="(d, i) in cmpPickedDeals" :key="i">
+                      <tr v-for="(d, i) in (cmpDealsAll ? cmpPickedDeals : cmpPickedDeals.slice(0, CMP_DEALS_N))" :key="i">
                         <td><span :class="['cmp-kind', { j: d.kind === '전세', m: d.kind === '월세' }]">{{ d.kind === '직거래' ? '매매' : d.kind }}</span></td><td class="n">{{ d.contractDate }}</td><td class="n">{{ areaPair(cmpPicked?.supply ?? null, d.areaM2) }}</td><td class="n">{{ d.floor ? `${d.floor}층` : '-' }}</td><td class="n amt"><b>{{ cmpMoney(d.price) }}</b></td>
                       </tr>
                       <tr v-if="!cmpPicked"><td colspan="5" class="cmp-dim">{{ supLoaded ? '해당 단지의 실거래 데이터가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
                       <tr v-else-if="!cmpPickedDeals.length"><td colspan="5" class="cmp-dim">최근 {{ cmpMonths }}개월 같은 평형 {{ cmpKind }} 거래가 없습니다.</td></tr>
                     </tbody>
                   </table></div></div>
+                  <!-- 거래가 많으면 처음엔 몇 줄만, 아래 '더보기'로 펼친다(잘려서 안쪽 스크롤로 보던 것, 2026-11-11 사용자) -->
+                  <button v-if="cmpPickedDeals.length > CMP_DEALS_N" type="button" class="cmp-more" @click="cmpDealsAll = !cmpDealsAll">{{ cmpDealsAll ? '접기' : `더보기 (${cmpPickedDeals.length - CMP_DEALS_N}건 더)` }}</button>
                 </div>
               </template>
               <!-- 점수 팝업 — 머리 줄을 잡고 옮긴다. 폰에서는 아래에서 올라오는 창(2026-11-11 시안) -->
@@ -12471,7 +12476,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
   font-size: 14px; font-weight: 800; white-space: nowrap; }
 .cmp-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
 .cmp-two .sup-tbl { margin-top: 0; }
-.cmp-deals { max-height: 330px; overflow-y: auto; }
+.cmp-more { display: block; width: 100%; height: 34px; margin-top: 6px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font: inherit; font-size: 13px; color: #374151; cursor: pointer; }
+.cmp-more:hover { background: #f7f9fc; }
 .sup-tbl .adm-table td.lft { text-align: left; }
 /* 단지 표 — 위 동 수요분석 표(AdminRegionDemandPage .adm-table)를 그대로 옮김 */
 .sup-tbl { margin-top: 0; }
