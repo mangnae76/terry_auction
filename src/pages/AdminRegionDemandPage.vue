@@ -839,9 +839,10 @@ const downloadCsv = () => {
 .dm-cell .fit { margin-left: 3px; font-size: 12px; font-weight: 800; color: #1f7a45; }
 .dm-cell .fit.bad { color: #c22e2e; }
 /* 종합 의견 — 수요지표 아래 한 줄 상자(사용자 시안) */
-.dm-opinion { display: grid; gap: 4px; margin-top: 12px; padding: 14px 18px; border: 1px solid #e3e8f0; border-radius: 12px; background: #fff; }
-.dm-opinion b { font-size: 15px; font-weight: 800; color: #111827; }
-.dm-opinion span { font-size: 13px; color: #111827; }   /* 의견 글은 검정(2026-11-10) */
+.dm-opinion { display: grid; gap: 6px; margin-top: 12px; padding: 16px 20px; border: 1px solid #bfd3fb; border-radius: 12px; background: #eef4ff; }   /* 결론 — 눈에 띄게 연파랑 상자(2026-11-11 사용자) */
+.dm-opinion b { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 800; color: #1e3a8a; }
+.dm-opinion b::before { content: '결론'; padding: 2px 8px; border-radius: 4px; background: #2b6df3; color: #fff; font-size: 12px; font-weight: 700; }
+.dm-opinion span { font-size: 14px; color: #111827; }   /* 의견 글은 검정(2026-11-10) */
 .dm-opinion .wait { color: #9ca3af; }
 /* 합격선 글 — 등급 대신(2026-11-10). 작고 회색, 한 줄 */
 .dm-cell .pass { font-size: 12px; font-weight: 700; color: #6b7280; white-space: nowrap; }

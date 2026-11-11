@@ -12285,9 +12285,10 @@ tr.tone-take { background: #fff5f5; }
 .sup-fit { margin-left: 3px; font-size: 12px; font-weight: 800; color: #1f7a45; }
 .sup-fit.bad { color: #c22e2e; }
 /* 단지 종합 의견 — 위 동 수요분석 .dm-opinion 과 같은 꼴 */
-.sup-opinion { display: grid; gap: 4px; margin: 4px 0 12px; padding: 14px 18px; border: 1px solid #e3e8f0; border-radius: 12px; background: #fff; }
-.sup-opinion b { font-size: 15px; font-weight: 800; color: #111827; }
-.sup-opinion span { font-size: 13px; color: #111827; }   /* 의견 글은 검정(2026-11-10) */
+.sup-opinion { display: grid; gap: 6px; margin: 4px 0 0; padding: 16px 20px; border: 1px solid #bfd3fb; border-radius: 12px; background: #eef4ff; }   /* 결론 — 위 동 수급분석과 같은 연파랑 상자(2026-11-11 사용자) */
+.sup-opinion b { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 800; color: #1e3a8a; }
+.sup-opinion b::before { content: '결론'; padding: 2px 8px; border-radius: 4px; background: #2b6df3; color: #fff; font-size: 12px; font-weight: 700; }
+.sup-opinion span { font-size: 14px; color: #111827; }   /* 의견 글은 검정(2026-11-10) */
 .sup-opinion .wait { color: #9ca3af; }
 /* 면적 · 룸수 · 세대구성 · 입지조건 줄 — 단지 입지비교 머리(예전 ① 실사용자 + 입지등수에서 옮김). 이름(회색) + 회색 상자 값(검정 굵게), 칸 사이 세로 칸막이 */
 .cmp-persona { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 12px; padding: 8px 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-size: 14px; }

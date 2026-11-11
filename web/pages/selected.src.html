@@ -560,7 +560,7 @@ button { cursor: pointer; }
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-nav-scope .area { font-size: 15px !important; }
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-nav.dm::after { left: 24px !important; right: 24px !important; }
 .app-market .son-demand .adm-nav.dm::after { display: none !important; }   /* 손품조사 동 수요분석 — 종합 의견과 ③ 상세수치 사이 줄은 뺀다(2026-11-10) */
-.app-market .son-demand .adm-nav.dm { margin-bottom: 16px !important; }
+.app-market[data-s="son"] .son-demand .adm-nav.dm { margin-bottom: 0 !important; }   /* 손품조사엔 아래 상세표가 없어(2026-11-11) 상자 아래 여백을 단지 수급분석과 같게 */
 .app-market[data-s="son"] .adp-dm-body > .adp-dm-head.sec2 { margin-top: 18px !important; }
 /* 입지/개별성 상자 안쪽 여백도 수요분석 상자와 같은 18 — 두 상자의 제목 · 표 시작선이 칼같이 맞게 */
 .app-market[data-s="son"] .adp-dm-body > :is(.adp-dm-head.sec2, .adp-dm-block, .adp-dm-block.boxed) { padding-left: 14px !important; padding-right: 14px !important; }
