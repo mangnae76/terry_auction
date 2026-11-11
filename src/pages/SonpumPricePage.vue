@@ -165,7 +165,8 @@ const enrichNow = async (id: number) => {
   // 한꺼번에 넣는다 — 하나씩 넣으면 넣을 때마다 표 · 지도를 다시 그려 버벅인다
   spots.value = { ...hitSpots, ...spots.value };
   elevs.value = { ...(cache?.elevs ?? {}), ...elevs.value };
-  units.value = { ...(cache?.units ?? {}), ...units.value };
+  // 공시가 호실 — 빈 목록(예전에 받다 실패한 것)은 저장값을 쓰지 않고 다시 받는다. 큰 단지(1,500세대)에서 한 번 실패하면 '공시가 없음'이 계속 남았다(2026-11-11)
+  units.value = { ...Object.fromEntries(Object.entries(cache?.units ?? {}).filter(([, v]) => v && v.length)), ...units.value };
   const lots = [...new Map(periodRows.value.filter((x) => x.jibun).map((x) => [x.jibun, x.umdNm])).entries()];
   // 새로 받은 값은 모았다가 0.5초마다 한 번에 넣는다
   const got = { spots: {} as Record<string, Spot>, elevs: {} as Record<string, number | null>, units: {} as Record<string, ApartUnit[]>, done: 0 };
