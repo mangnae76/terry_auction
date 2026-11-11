@@ -12401,7 +12401,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-steps button { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: #f3f5f9; font: inherit; font-size: 13px; color: #374151; cursor: pointer; }
 .cmp-steps button b { color: #2b6df3; font-weight: 800; }
 .cmp-steps button:hover { background: #eef2ff; }
-.cmp-no { margin-right: 4px; color: #2b6df3; }
+.cmp-no { margin-right: 4px; color: #111827; }   /* 상자 제목 번호 — 제목과 같은 검정(2026-11-11 사용자) */
 .adp-card-head > h2:has(+ .cmp-steps) { flex-grow: 0; }   /* 제목이 늘어나 단계 단추를 오른쪽 끝으로 밀던 것 — 제목 바로 옆에 */
 /* 평가표 점수 — 누르면 팝업 */
 .cmp-sc { border: 0; background: none; padding: 2px 6px; border-radius: 5px; font: inherit; font-size: 13px; color: #111827; cursor: pointer; text-decoration: underline dotted #9ca3af; text-underline-offset: 3px; }
