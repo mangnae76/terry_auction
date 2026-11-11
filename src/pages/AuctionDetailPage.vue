@@ -9534,7 +9534,7 @@ const goBack = () => router.back();
                 </div>
                 <aside v-if="cmpFs" class="cmp-fs-list">
                   <!-- 접기 — 지도를 넓게 보게 목록을 접는다(머리 줄만 남김, 2026-11-11 사용자) -->
-                  <div class="cmp-fs-lh"><b>단지 {{ cmpRows.length }}곳</b><button type="button" class="cmp-fs-fold" :aria-label="cmpFsFold ? '목록 펼치기' : '목록 접기'" :aria-expanded="!cmpFsFold" @click="cmpFsFold = !cmpFsFold"><img :src="chevronDownIcon" :class="['adp-chev', { up: !cmpFsFold }]" alt="" /></button></div>
+                  <div class="cmp-fs-lh"><b>단지 {{ cmpRows.length }}곳<small>단지를 누르면 아래에 순위 이유가 나옵니다.</small></b><button type="button" class="cmp-fs-fold" :aria-label="cmpFsFold ? '목록 펼치기' : '목록 접기'" :aria-expanded="!cmpFsFold" @click="cmpFsFold = !cmpFsFold"><img :src="chevronDownIcon" :class="['adp-chev', { up: !cmpFsFold }]" alt="" /></button></div>
                   <!-- 전체화면 거르기 — 왼쪽 창 머리 아래(목록 바로 위, 접어도 남는다). 아래 화면 거르기와 같은 값(2026-11-11 사용자) -->
                   <div class="cmp-fs-conds">
                     <div class="row2"><span class="lab">범위<span class="fseg" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRange === v }" :aria-checked="cmpRange === v" :data-t="t" @click="cmpRange = v">{{ t }}</button></span></span>
