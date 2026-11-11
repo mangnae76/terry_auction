@@ -12410,7 +12410,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .fs-btn { position: absolute; left: 10px; top: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(17, 24, 39, .18); font: inherit; font-size: 12.5px; font-weight: 400; color: #111827; cursor: pointer; }   /* 굵기 없음 — 다른 화면 전체화면 단추와 같게(2026-11-11) */
 .fs-btn:hover { color: #2b6df3; }
 /* 전체화면 — 시세분석 전체화면과 같은 꼴: 남색 위 띠(52) · 지도가 아래를 꽉 채우고 · 왼쪽에 흰 상자(모서리 12 · 그림자)가 떠 있다(2026-11-11) */
-.cmp-map.fs { position: fixed; inset: 0; z-index: 2000; border: 0; border-radius: 0; display: grid; grid-template-columns: 400px minmax(0, 1fr); grid-template-rows: 52px minmax(0, 1fr); background: #fff; }
+.cmp-map.fs { position: fixed; inset: 0; z-index: 2000; border: 0; border-radius: 0; display: grid; grid-template-columns: 456px minmax(0, 1fr); grid-template-rows: 52px minmax(0, 1fr); background: #fff; }
 .cmp-map-box { position: relative; isolation: isolate; }   /* 지도 도구 막대 · 전체화면 단추 · 범례의 기준 — 전체화면에서도 위 남색 띠 아래부터(시세분석처럼) */
 .cmp-map.fs .cmp-map-box { grid-column: 1 / -1; grid-row: 2; min-height: 0; }
 .cmp-map.fs .cmp-map-in { height: 100%; }
@@ -12426,7 +12426,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-fs-conds .fseg button::after { content: attr(data-t); height: 0; overflow: hidden; visibility: hidden; font-weight: 700; }   /* 굵어져도 폭 그대로 */
 .cmp-fs-conds .fseg button.on { background: #fff !important; color: #2b6df3 !important; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3 !important; }
 .cmp-fs-x:hover { background: rgba(255, 255, 255, .1); }
-.cmp-fs-list { grid-column: 1; grid-row: 2; position: relative; z-index: 2; align-self: start; max-height: calc(100% - 24px); margin: 12px 0 12px 12px; overflow-y: auto; padding: 10px 10px 14px; display: grid; gap: 6px; align-content: start; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 6px 20px rgba(17, 24, 39, .14); }
+.cmp-fs-list { scrollbar-gutter: stable; grid-column: 1; grid-row: 2; position: relative; z-index: 2; align-self: start; max-height: calc(100% - 24px); margin: 12px 0 12px 12px; overflow-y: auto; padding: 10px 10px 14px; display: grid; gap: 6px; align-content: start; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 6px 20px rgba(17, 24, 39, .14); }
 .cmp-fs-lh { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 2px 4px 4px; }
 .cmp-fs-lh > b { font-size: 15px; font-weight: 800; color: #111827; }   /* 전체화면 왼쪽 목록 — 글을 한 단계씩 키움(상자 제목 15 · 800, 2026-11-11 사용자) */
 .cmp-fs-fold { display: inline-grid; place-items: center; width: 30px; height: 30px; flex: 0 0 auto; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; cursor: pointer; }   /* 라운드 상자 + V 화살표 */
