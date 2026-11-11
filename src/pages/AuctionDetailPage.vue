@@ -2815,11 +2815,16 @@ const INDIV_GROUPS: IndivGroup[] = [
 /** 아파트 단지 개별성 — 건물외부 · 건물내부는 빼고 지하주차장 연결 · 용적률을 넣는다(2026-11-11 사용자). 빌라는 그대로.
  *  용적률은 정보요약(표제부 · 단지정보) 값이 자동으로 들어가고, 손으로 고칠 수 있다 */
 const APT_INDIV_EXTRA: IndivItem[] = [
-  { id: 'ind.ugLink', label: '지하주차장 연결', options: ['O', 'X'], rate: '5%' },
   { id: 'ind.far', label: '용적률', text: true, suffix: '%', rate: '5%' },
 ];
+/** 지하주차장 연결은 같은 단지 안에서도 동마다 달라 단지 내 개별성(호실 가격)으로(2026-11-11 사용자) */
+const APT_UNIT_EXTRA: IndivItem[] = [
+  { id: 'ind.ugLink', label: '지하주차장 연결', options: ['O', 'X'], rate: '5%' },
+];
 const indivGroups = computed<IndivGroup[]>(() => (isApartment.value
-  ? INDIV_GROUPS.map((g, i) => (i === 0 ? { ...g, items: [...g.items.filter((it) => it.id !== 'ind.mgmt' && it.id !== 'ind.inside'), ...APT_INDIV_EXTRA] } : g))
+  ? INDIV_GROUPS.map((g, i) => (i === 0
+    ? { ...g, items: [...g.items.filter((it) => it.id !== 'ind.mgmt' && it.id !== 'ind.inside'), ...APT_INDIV_EXTRA] }
+    : { ...g, items: [...g.items, ...APT_UNIT_EXTRA] }))
   : INDIV_GROUPS));
 /** PDF(건축물대장 · 단지정보) · 건축물대장 API 로 자동으로 채우는 항목 — 이름 글자를 블루그레이로(아래 watch 의 자동 채움과 같은 목록) */
 const INDIV_AUTO = new Set(['ind.age', 'ind.parking', 'ind.elevator', 'ind.corridor', 'ind.floorNum', 'ind.far']);
@@ -5637,7 +5642,7 @@ const rateRange = (raw: string): [number, number] => {
   return [Math.min(...ns), Math.max(...ns)];
 };
 const rateOf = (id: string) => rateRange(indivValue(`${id}.rate`) || (id === 'ind.floorNum' ? indivFloorRate() : INDIV_RATE_DEFAULT[id] ?? ''));
-/** 구역 내 개별성 점수(0~100) — 단지끼리 잴 수 있는 항목만: 년식 · 주차수 · 엘베 · 지하주차장 연결 · 용적률. 비중은 개별성 분석 '비율'(범위면 가운데).
+/** 구역 내 개별성 점수(0~100) — 단지끼리 잴 수 있는 항목만: 년식 · 주차수 · 엘베 · 경사 · 용적률(지하주차장 연결은 단지 내 개별성으로, 2026-11-11). 비중은 개별성 분석 '비율'(범위면 가운데).
  *  선정물건은 개별성 분석 값, 다른 단지는 년식(국토부 건축년도)만 — 건축물대장에 없는 값은 채우지 않는다 */
 const cmpZoneScore = (r: { mine: boolean; buildYear: number }) => {
   const mid = (id: string) => { const [a, b] = rateOf(id); return Math.abs((a + b) / 2); };
@@ -5648,7 +5653,7 @@ const cmpZoneScore = (r: { mine: boolean; buildYear: number }) => {
     const park = Number((indivParkingPerHome.value || '').replace(/[^\d.]/g, ''));
     if (park > 0) parts.push([mid('ind.parking'), Math.max(0, Math.min(100, ((park - 0.5) / 0.8) * 100))]);
     const el = indivValue('ind.elevator'); if (el) parts.push([mid('ind.elevator'), el === 'O' ? 100 : 0]);
-    const ug = indivValue('ind.ugLink'); if (ug) parts.push([mid('ind.ugLink'), ug === 'O' ? 100 : 0]);
+    const sl = indivValue('ind.slope'); if (sl) parts.push([mid('ind.slope'), sl === 'O' ? 0 : 100]);   // 경사 있으면 감점(현장에서 고른다)
     const far = Number(indivDisplay({ id: 'ind.far', label: '용적률', text: true, suffix: '%' } as IndivItem).replace(/[^\d.]/g, ''));
     if (far > 0) parts.push([mid('ind.far'), Math.max(0, Math.min(100, ((300 - far) / 100) * 100))]);
   }
@@ -5673,6 +5678,7 @@ const unitSign = (id: string): number => {
     case 'ind.view': return has('뻥뷰') ? 1 : 0;
     case 'ind.sunlight': return has('좋음') ? 1 : has('나쁨') ? -1 : 0;
     case 'ind.repair': return has('올수리', '부분수리') ? 1 : 0;
+    case 'ind.ugLink': return v === 'O' ? 1 : v === 'X' ? -1 : 0;
     default: return 0;
   }
 };
@@ -5681,7 +5687,7 @@ const unitAdj = (id: string): [number, number] => {
   const sg = unitSign(id); const [a, b] = rateOf(id).map(Math.abs) as [number, number];
   return sg > 0 ? [Math.min(a, b), Math.max(a, b)] : sg < 0 ? [-Math.max(a, b), -Math.min(a, b)] : [0, 0];
 };
-const UNIT_IDS = ['ind.floorNum', 'ind.direction', 'ind.type', 'ind.rooms', 'ind.view', 'ind.sunlight', 'ind.repair'];
+const UNIT_IDS = ['ind.floorNum', 'ind.direction', 'ind.type', 'ind.rooms', 'ind.view', 'ind.sunlight', 'ind.repair', 'ind.ugLink'];
 const unitAdjSum = computed<[number, number]>(() => UNIT_IDS.reduce<[number, number]>((acc, id) => { const [a, b] = unitAdj(id); return [acc[0] + a, acc[1] + b]; }, [0, 0]));
 const pctText = ([a, b]: [number, number]) => {
   const one = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n * 10) / 10)}%`;
@@ -5690,8 +5696,8 @@ const pctText = ([a, b]: [number, number]) => {
 /** 아파트 개별성 입력은 쓰는 표(단지 입지비교 · 호실 예상가) 안에서 바로 고른다 — 편집 단추 없이 고르면 곧바로 적는다(2026-11-11 시안).
  *  값은 개별성 분석과 같은 칸(indivValues)이라 개별성 분석 · PDF 에도 그대로 나온다. 개별성 분석은 접어 두고 비중 · 비율만 펼쳐 고친다 */
 const cmpIndOpen = ref(false);
-/** 단지 점수(cmpZoneScore)에 들어가는 구역 내 개별성 칸만 — 현관구조 · 경사는 점수에 안 들어가 여기 두지 않는다 */
-const ZONE_IDS = ['ind.age', 'ind.parking', 'ind.elevator', 'ind.ugLink', 'ind.far'];
+/** 단지 점수(cmpZoneScore)에 들어가는 구역 내 개별성 칸만 — 현관구조는 점수에 안 들어가 여기 두지 않는다 */
+const ZONE_IDS = ['ind.age', 'ind.parking', 'ind.elevator', 'ind.slope', 'ind.far'];
 const indivPicked = (item: IndivItem, opt: string) => (item.multi ? indivList(item.id).includes(opt) : indivValue(item.id) === opt);
 const indivPick = (item: IndivItem, opt: string) => {
   if (item.multi) toggleIndivMulti(item.id, opt);
