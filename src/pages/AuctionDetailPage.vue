@@ -9570,7 +9570,7 @@ const goBack = () => router.back();
                 </div>
               </div>
               <!-- 순위 맞춰 보기 가이드 — 전세가는 사는 값(입지 + 개별성)이 그대로 담긴 값이라, 종합 순위와 전세 평당가 순위를 견줘 점수가 맞는지 본다(2026-11-11 사용자) -->
-              <p class="cmp-guide">전세가는 실제로 살기 좋은 정도(입지 + 개별성)가 그대로 반영된 값입니다. 종합점수 순위와 전용 평당가(전세) 순위가 비슷하면 점수가 잘 맞는 것이고, 크게 다르면 선정물건 줄의 입지점수 · 개별성점수를 눌러 나오는 창에서 직접 입력 · 수정하세요.</p>
+              <p class="cmp-guide">전세가는 실제로 살기 좋은 정도(입지 + 개별성)가 그대로 반영된 값입니다. 종합점수 순위와 전용 평당가(전세) 순위가 비슷하면 점수가 잘 맞는 것이고, 크게 다르면 선정물건 줄의 점수를 눌러 입지 · 개별성 창에서 직접 입력 · 수정하세요.</p>
               <!-- 선정물건에서 직접 고를 것 — 비어 있는 현장 · 수동 칸만. 누르면 그 점수 팝업(2026-11-11 시안) -->
               <div v-if="cmpTodo.length" class="cmp-todo"><b>선정물건에서 직접 고를 것 {{ cmpTodo.length }}개</b><span>{{ cmpTodo.map((t) => t.label).join(' · ') }}</span>
                 <button v-if="cmpTodo.some((t) => t.kind === 'zone')" type="button" @click="cmpPopOpen('zone', cmpMineRow, $event)">개별성에서고르기</button>
@@ -9597,8 +9597,8 @@ const goBack = () => router.back();
               </template>
               <!-- 점수 팝업 — 머리 줄을 잡고 옮긴다. 폰에서는 아래에서 올라오는 창(2026-11-11 시안) -->
               <Teleport to="body">
-                <div v-if="cmpPop && cmpPopRow" class="cmp-pop" role="dialog" aria-modal="false" :aria-label="`${cmpPopRow.name || cmpPopRow.jibun} ${CMP_POP_TITLE[cmpPop.kind]}`" :style="cmpPopPos ? { left: `${cmpPopPos.x}px`, top: `${cmpPopPos.y}px` } : {}">
-                  <div class="cmp-pop-h" @pointerdown="cmpPopDown" @pointermove="cmpPopMove" @pointerup="cmpPopUp" @pointercancel="cmpPopUp"><span class="grip" aria-hidden="true">⋮⋮</span><h4><span v-if="cmpPopRow.mine" class="cmp-tag">선정물건</span>{{ cmpPopRow.name || cmpPopRow.jibun }} · {{ CMP_POP_TITLE[cmpPop.kind] }}</h4><button type="button" aria-label="닫기" @click="cmpPop = null">×</button></div>
+                <div v-if="cmpPop && cmpPopRow" class="cmp-pop" role="dialog" aria-modal="false" :aria-label="`입지 · 개별성 창 ${cmpPopRow.name || cmpPopRow.jibun} ${CMP_POP_TITLE[cmpPop.kind]}`" :style="cmpPopPos ? { left: `${cmpPopPos.x}px`, top: `${cmpPopPos.y}px` } : {}">
+                  <div class="cmp-pop-h" @pointerdown="cmpPopDown" @pointermove="cmpPopMove" @pointerup="cmpPopUp" @pointercancel="cmpPopUp"><span class="grip" aria-hidden="true">⋮⋮</span><h4><span class="cmp-pop-k">입지 · 개별성 창</span><span v-if="cmpPopRow.mine" class="cmp-tag">선정물건</span>{{ cmpPopRow.name || cmpPopRow.jibun }}</h4><button type="button" aria-label="닫기" @click="cmpPop = null">×</button></div>
                   <div class="cmp-pop-b">
                     <span class="cmp-ind-seg" role="tablist"><button v-for="[k, t] in CMP_POP_TABS" :key="k" type="button" role="tab" :data-t="t" :class="{ on: cmpPop.kind === k }" :aria-selected="cmpPop.kind === k" @click="cmpPop = { kind: k, key: cmpPop.key }">{{ t }}</button></span>
                     <template v-if="cmpPop.kind === 'loc'">
@@ -12455,6 +12455,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-pop { position: fixed; z-index: 3000; left: 50%; top: 120px; width: min(560px, calc(100vw - 32px)); max-height: min(600px, calc(100vh - 32px)); display: grid; grid-template-rows: auto minmax(0, 1fr); background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; box-shadow: 0 12px 32px rgba(17, 24, 39, .18); font-family: inherit; font-size: 13px; color: #111827; }
 .cmp-pop-h { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #e3e8f0; cursor: grab; touch-action: none; user-select: none; }
 .cmp-pop-h:active { cursor: grabbing; }
+.cmp-pop-k { margin-right: 8px; font-size: 12.5px; font-weight: 400; color: #6b7280; }   /* 창 이름(2026-11-11 사용자) */
 .cmp-pop-h .grip { color: #9ca3af; letter-spacing: -2px; }
 .cmp-pop-h h4 { flex: 1; min-width: 0; margin: 0; font-size: 14px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmp-pop-h > button { border: 0; background: none; padding: 0 4px; font-size: 18px; line-height: 1; color: #6b7280; cursor: pointer; }
