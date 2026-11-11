@@ -5578,14 +5578,15 @@ const cmpWho = computed(() => ((selectedRoomType.value?.details ?? []) as Array<
 type CmpRange = 'dong' | 500 | 1000;
 const CMP_FILTER_KEY = 'son.cmp.filter';
 const cmpSaved = (() => { try { return JSON.parse(localStorage.getItem(CMP_FILTER_KEY) ?? '{}') as { range?: CmpRange; months?: 6 | 12 | 24; years?: 1 | 2; tol?: 3 | 5 | 10; kind?: '매매' | '전세' }; } catch { return {}; } })();
-const cmpRange = ref<CmpRange>(cmpSaved.range ?? 'dong');
+const cmpRange = ref<CmpRange>(cmpSaved.range === 500 ? 'dong' : cmpSaved.range ?? 'dong');   // 500m 는 뺐다 — 예전에 고른 500m 는 읍면동으로
 /** 기간(개월) — 시세분석처럼 6개월 · 1년 · 2년(2026-11-11). 예전에 저장한 years(1 · 2)는 12 · 24 로 */
 const cmpMonths = ref<6 | 12 | 24>(cmpSaved.months ?? (cmpSaved.years === 2 ? 24 : 12));
 const CMP_PERIODS: Array<[6 | 12 | 24, string]> = [[6, '6개월'], [12, '1년'], [24, '2년']];
 const cmpTol = ref<3 | 5 | 10>(cmpSaved.tol ?? 5);
 const cmpKind = ref<'매매' | '전세'>(cmpSaved.kind ?? '전세');
 watch([cmpRange, cmpMonths, cmpTol, cmpKind], () => { try { localStorage.setItem(CMP_FILTER_KEY, JSON.stringify({ range: cmpRange.value, months: cmpMonths.value, tol: cmpTol.value, kind: cmpKind.value })); } catch { /* 이 창에서만 */ } });
-const CMP_RANGES: Array<[CmpRange, string]> = [['dong', '읍면동'], [500, '500m'], [1000, '1km']];
+/** 500m 는 같은 동과 거의 겹쳐 뺐다(2026-11-11 사용자) */
+const CMP_RANGES: Array<[CmpRange, string]> = [['dong', '읍면동'], [1000, '1km']];
 /** 단지 열쇠 — 동 · 지번(반경 범위에선 다른 동의 같은 지번이 있다). 선정물건은 'mine' */
 const cmpKeyOf = (c: { mine: boolean; umdNm: string; jibun: string }) => (c.mine ? 'mine' : `${c.umdNm}|${c.jibun}`);
 // 면적 글 — 아파트는 공급면적 먼저, 괄호 안 전용은 숫자만('83.17㎡ (59.98)' · '25.2평 (18.1)'). 단위는 손품조사 탭 줄 단추(sonAreaUnit)
