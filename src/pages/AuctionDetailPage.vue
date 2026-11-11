@@ -6084,7 +6084,8 @@ const cmpBases = computed(() => {
   const n = me ? me.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세')).length : 0;
   const ra = cmpRateEst.value;
   return [
-    { id: 'avg' as const, label: `단지 평균 ${cmpKind.value}가`, value: cmpUnitActual.value, text: cmpEok(cmpUnitActual.value), note: n ? `최근 ${cmpMonths.value}개월 같은 평형 ${n}건` : `최근 ${cmpMonths.value}개월 같은 평형 거래가 없습니다` },
+    { id: 'avg' as const, label: `면적 평균 ${cmpKind.value}가`,   // 단지 전체가 아니라 같은 전용면적만(2026-11-11 사용자)
+      value: cmpUnitActual.value, text: cmpEok(cmpUnitActual.value), note: n ? `${me ? areaPair(me.supply, me.area) : ''} · 최근 ${cmpMonths.value}개월 ${n}건` : `최근 ${cmpMonths.value}개월 같은 평형 거래가 없습니다` },
     { id: 'rate' as const, label: '전세가율로 본 매매가', value: cmpKind.value === '매매' && ra ? ra.sale : 0,
       // 값은 거래 단추와 상관없이 늘 보인다(전세 평균 ÷ 이웃 전세가율). 기준가로 고르는 것만 매매일 때(2026-11-11 사용자)
       text: ra ? cmpEok(ra.sale) : '-', note: ra ? `${ra.similar ? '연식 ±5년' : '연식 비슷한 단지가 없어 전체'} 이웃 ${ra.n}곳 전세가율 ${Math.round(ra.rate)}%${cmpKind.value === '매매' ? '' : ' · 매매일 때 기준가로'}` : '선정물건 전세 거래나 이웃 전세가율이 없습니다' },
@@ -9722,7 +9723,7 @@ const goBack = () => router.back();
 
             <!-- ② 선정물건 호실 예상가 — 단지 평균 실거래가 × (1 + 단지 내 개별성 보정 합). 구역 내 개별성은 가격을 바꾸지 않아 여기 두지 않는다(같은 %로 보여 헷갈렸다, 2026-11-11) -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box o-unit">
-              <div class="cmp-est-h"><h3><span class="cmp-no">③</span>선정물건 호실 예상가</h3><small class="cmp-q">같은 단지 안에서 내 호실의 가치는?</small>
+              <div class="cmp-est-h"><h3><span class="cmp-no">③</span>선정물건 호실 예상가<span v-if="cmpMineRow" class="cmp-scope-chip">{{ areaPair(cmpMineRow.supply, cmpMineRow.area) }}</span></h3><small class="cmp-q">같은 단지 안에서 내 호실의 가치는?</small>
                 <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>최근 {{ cmpMonths }}개월 · {{ cmpKind }} · 기준가 × (1 + 단지 내 개별성 보정) + 수리 금액</span></div>
               <!-- 기준가 두 가지 — 단지 평균 · 전세가율로(순위로 본 가격은 뺐다). 고른 카드가 기준 -->
               <div class="cmp-bases" role="radiogroup" aria-label="기준가">
