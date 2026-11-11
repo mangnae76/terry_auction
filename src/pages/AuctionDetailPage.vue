@@ -2904,12 +2904,14 @@ const indivDisplay = (item: IndivItem) => {
 };
 // 가격율 기본값은 0 — 항목마다 정해 둔 비율은 참고용이고, 직접 적은 값만 쓴다.
 // (층은 아파트/빌라 규칙으로 자동 계산되는 값이 있으면 그것을 쓴다)
+/** 아파트 구역 내 개별성 중 기본 비중을 두는 칸 — 지하주차장 연결 · 용적률 5%(2026-11-11 사용자. K-apt 연결 전까지 이 값, 직접 적으면 그 값) */
+const INDIV_RATE_DEFAULT: Record<string, string> = { 'ind.ugLink': '5', 'ind.far': '5' };
 const indivRateNum = (item: IndivItem) => {
   if (item.id === 'ind.floorNum') {
     const auto = indivFloorRate();
     if (auto) return auto;
   }
-  return '0';
+  return INDIV_RATE_DEFAULT[item.id] ?? '0';
 };
 const indivRateOf = (item: IndivItem) => `${indivValue(`${item.id}.rate`) || indivRateNum(item)}%`;
 // 가격율 합계 · 개별성 적용가는 화면에서 뺐다(웹 2026-11-06 · 앱 2026-11-09)
@@ -5628,7 +5630,7 @@ const rateRange = (raw: string): [number, number] => {
   if (!ns.length) return [0, 0];
   return [Math.min(...ns), Math.max(...ns)];
 };
-const rateOf = (id: string) => rateRange(indivValue(`${id}.rate`) || (id === 'ind.floorNum' ? indivFloorRate() : ''));
+const rateOf = (id: string) => rateRange(indivValue(`${id}.rate`) || (id === 'ind.floorNum' ? indivFloorRate() : INDIV_RATE_DEFAULT[id] ?? ''));
 /** 구역 내 개별성 점수(0~100) — 단지끼리 잴 수 있는 항목만: 년식 · 주차수 · 엘베 · 지하주차장 연결 · 용적률. 비중은 개별성 분석 '비율'(범위면 가운데).
  *  선정물건은 개별성 분석 값, 다른 단지는 년식(국토부 건축년도)만 — 건축물대장에 없는 값은 채우지 않는다 */
 const cmpZoneScore = (r: { mine: boolean; buildYear: number }) => {
