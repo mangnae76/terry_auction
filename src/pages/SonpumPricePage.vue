@@ -723,10 +723,16 @@ const fs = ref(webEmbed && !props.app && (() => { try { return localStorage.getI
 const fsList = computed(() => [...mapGroups.value].sort((a, b) => (orderOf.value[a.jibun] ?? 999) - (orderOf.value[b.jibun] ?? 999)));
 /** 표 줄을 누르면 지도의 그 점이 커지고 이름표가 뜬다 — 경매지번(같은 건물) 줄 · 맨 위 빨간 줄은 빨간 점(2026-11-10) */
 const pickMine = () => { focus.value = ''; meOpen.value = !meOpen.value; };
+/** 고른 거래 한 줄 — 표는 그 줄만 칠한다(같은 지번 줄이 다 칠해졌다, 2026-11-11 사용자). 지도는 그 건물(지번)을 고른다 */
+const pickedRow = ref('');
 const pickRow = (r: PriceRow) => {
-  if (r.same) { pickMine(); return; }
-  meOpen.value = false; focus.value = focus.value === r.jibun ? '' : r.jibun;
+  const k = rowKey(r); const again = pickedRow.value === k;
+  pickedRow.value = again ? '' : k;
+  if (r.same) { focus.value = ''; meOpen.value = !again; return; }
+  meOpen.value = false; focus.value = again ? '' : r.jibun;
 };
+watch([focus, meOpen], ([f, m]) => { if (!f && !m) pickedRow.value = ''; });
+const pickMineRow = () => { if (!webEmbed) { pickMine(); return; } const again = pickedRow.value === 'mine'; pickedRow.value = again ? '' : 'mine'; focus.value = ''; meOpen.value = !again; };   // 지도에서 고른 것을 풀면 줄도 푼다
 const fsGo = (g: { jibun: string; spot: { lat: number; lng: number } }) => { meOpen.value = false; focus.value = focus.value === g.jibun ? '' : g.jibun; if (focus.value && mv) mv.focus(g.spot, 16); };
 const onFsKey = (e: KeyboardEvent) => { if (e.key === 'Escape') fs.value = false; };
 watch(fs, async (on) => {
@@ -942,7 +948,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           </tr></thead>
           <tbody>
             <!-- 맨 위 고정 — 선정물건. 거래가 아니라 견줄 기준이라 실거래가 예상을 적는다 -->
-            <tr :class="['mine', { on: meOpen }]" @click="pickMine">
+            <tr :class="['mine', { on: webEmbed ? pickedRow === 'mine' : meOpen }]" @click="pickMineRow">
               <td v-if="webEmbed" class="ck-td" />
               <td><span class="kind me">{{ meName }}</span></td>
               <td class="r"><span class="est-lab">{{ kindF }} 예상</span></td>
@@ -967,7 +973,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
                 <button type="button" :class="['ab', { ok: okKey === 'mineC' }]" title="주소 복사" aria-label="주소 복사" @click="copy(props.auction.address, 'mineC')"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg></button>
               </span></td>
             </tr>
-            <tr v-for="r in listRows" :key="r.id" :class="{ on: r.same ? meOpen : (focus && focus === r.jibun), off: isOff(r) }" @click="pickRow(r)">
+            <tr v-for="r in listRows" :key="r.id" :class="{ on: webEmbed ? pickedRow === rowKey(r) : (r.same ? meOpen : (focus && focus === r.jibun)), off: isOff(r) }" @click="pickRow(r)">
               <td v-if="webEmbed" class="ck-td" @click.stop><input type="checkbox" :checked="isOff(r)" :aria-label="`${r.contractDate} ${r.name || r.jibun} 평균에서 빼기`" @change="toggleDrop(r)" /></td>
               <td><span :class="['kind', r.group === '전세' ? 'j' : r.group === '월세' ? 'm' : '']">{{ r.group }}</span></td>
               <td class="pa-num">{{ r.contractDate }}</td>

@@ -9632,7 +9632,7 @@ const goBack = () => router.back();
               <!-- 보고 있는 단지 거래 표는 뺐다 — 거래 하나하나는 가격(시세분석) 몫, 매매수요는 단지 리스트 평균으로 등수만 본다(2026-11-11 사용자) -->
               <!-- 점수 팝업 — 머리 줄을 잡고 옮긴다. 폰에서는 아래에서 올라오는 창(2026-11-11 시안) -->
               <Teleport to="body">
-                <div v-if="cmpPop && cmpPopRow" class="cmp-pop" role="dialog" aria-modal="false" :aria-label="`입지 창 ${cmpPopRow.name || cmpPopRow.jibun} ${CMP_POP_TITLE[cmpPop.kind]}`" :style="cmpPopPos ? { left: `${cmpPopPos.x}px`, top: `${cmpPopPos.y}px` } : {}">
+                <div v-if="cmpPop && cmpPopRow && (!sonpumTab || sonpumTab === 'demand')" class="cmp-pop" role="dialog" aria-modal="false" :aria-label="`입지 창 ${cmpPopRow.name || cmpPopRow.jibun} ${CMP_POP_TITLE[cmpPop.kind]}`" :style="cmpPopPos ? { left: `${cmpPopPos.x}px`, top: `${cmpPopPos.y}px` } : {}">
                   <div class="cmp-pop-h" @pointerdown="cmpPopDown" @pointermove="cmpPopMove" @pointerup="cmpPopUp" @pointercancel="cmpPopUp"><span class="grip" aria-hidden="true">⋮⋮</span><h4><span class="cmp-pop-k">입지 창</span>{{ cmpPopRow.name || cmpPopRow.jibun }}<span v-if="cmpPopRow.mine" class="cmp-tag">선정물건</span></h4><button type="button" aria-label="닫기" @click="cmpPop = null">×</button></div>
                   <div class="cmp-pop-b">
                     <template v-if="cmpPop">
