@@ -12439,6 +12439,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-tile.key { background: #5aae6e; box-shadow: 0 0 0 2px #4b9a5e inset; }
 .cmp-tile.key .k { color: #eaf6ee; }
 .cmp-tile.key .v { color: #fff; font-size: 23px; }
+.cmp-tile.key .s { color: #fff; }   /* 초록 칸 아래 면적 — 회색은 안 보여 흰 글(2026-11-11 사용자) */
 .cmp-tile .cap { justify-self: center; font-size: 11px; color: #fff; background: rgba(0, 0, 0, .18); border-radius: 999px; padding: 1px 8px; }
 /* 단지 입지비교 — 단지 수요분석과 같은 상자 · 표(sup-*), 지도는 시세분석 지도 점(웹 pa-pin) */
 .adp-dm-body > .adp-dm-block.boxed.cmp-box { margin-top: 10px; border: 1px solid #e3e8f0; border-radius: 10px; padding: 14px; background: #fff; }
