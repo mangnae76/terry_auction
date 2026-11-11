@@ -5700,7 +5700,21 @@ const indivPick = (item: IndivItem, opt: string) => {
 };
 /** 비중 · 비율 칸 — 기본값은 흐리지 않은 회색 글(placeholder), 고친 값은 파랑. 비우면 기본값으로 돌아간다 */
 const indivRateInput = (id: string, v: string) => { setIndivValue(`${id}.rate`, v.replace(/[^\d.~\-]/g, '')); persistSoon(); };
-const indivPickText = (id: string, v: string) => { setIndivValue(id, v.replace(/[^\d.]/g, '')); persistSoon(); };
+const indivPickText = (id: string, v: string, ym = false) => { setIndivValue(id, ym ? v.replace(/[^\d-]/g, '').slice(0, 7) : v.replace(/[^\d.]/g, '')); persistSoon(); };
+/** 자동 칸이 자료에 없어 비었나 — 물건을 열 때 한 번 정해 둔다(치는 동안 값이 생겨 입력칸이 글로 바뀌지 않게) */
+const autoMissCache = new Map<string, boolean>();
+const autoMissing = (id: string) => {
+  const key = `${auction.value?.id ?? ''}|${id}`;
+  if (!autoMissCache.has(key)) {
+    const empty = id === 'ind.age' ? !/^\d{4}-\d{2}$/.test(indivValue('ind.age'))
+      : id === 'ind.parking' ? indivParkingText.value === '-'
+      : id === 'ind.floorNum' ? !sumVal('sum.floorCurrent')
+      : id === 'ind.far' ? indivDisplay({ id, label: '용적률', text: true, suffix: '%' } as IndivItem) === '-'
+      : !indivValue(id);
+    autoMissCache.set(key, empty);
+  }
+  return autoMissCache.get(key)!;
+};
 /** 자동 칸(PDF · 건축물대장) 글 — 연식은 연월 · 연차, 주차는 세대당, 층은 '전체 중 해당' */
 const indivAutoText = (item: IndivItem) => {
   if (item.id === 'ind.age') return indivValue('ind.age') ? [indivValue('ind.age'), indivAgeYears.value].filter(Boolean).join(' · ') : '-';
@@ -9375,8 +9389,9 @@ const goBack = () => router.back();
                   <tr v-for="item in indivGroups[0].items.filter((it) => ZONE_IDS.includes(it.id))" :key="item.id">
                     <td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
                     <td class="lft cmp-ind-ct">
-                          <template v-if="item.id === 'ind.far'"><span class="cmp-ind-in"><input inputmode="decimal" :value="indivDisplay(item).replace(/[^\d.]/g, '')" placeholder="0" :aria-label="item.label" @input="indivPickText('ind.far', ($event.target as HTMLInputElement).value)" />%</span><small class="cmp-auto">자동 · 고칠 수 있음</small></template>
-                          <template v-else-if="INDIV_AUTO.has(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
+                          <!-- 자동 칸은 공식 자료 값 그대로(고치지 않는다). 자료에 없어 비었을 때만 직접 넣는다(2026-11-11 사용자) -->
+                          <template v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
+                          <template v-else-if="INDIV_AUTO.has(item.id)"><span v-if="item.id === 'ind.floorNum'" class="cmp-ind-in"><input inputmode="numeric" :value="sumVal('sum.floorTotal')" placeholder="전체" aria-label="전체 층" @input="setSumVal('sum.floorTotal', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층 중<input inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" aria-label="해당 층" @input="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층</span><span v-else-if="item.options" class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span><span v-else class="cmp-ind-in"><input :inputmode="item.yearMonth ? 'text' : 'decimal'" :value="indivValue(item.id)" :placeholder="item.yearMonth ? '2004-05' : item.id === 'ind.parking' ? '총 주차대수' : '0'" :aria-label="item.label" @input="indivPickText(item.id, ($event.target as HTMLInputElement).value, !!item.yearMonth)" />{{ item.yearMonth ? '' : item.id === 'ind.parking' ? '대' : item.suffix ?? '' }}</span><small class="cmp-auto">자료에 없어 직접 넣습니다</small></template>
                           <span v-else class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span>
                         </td>
                     <td class="n"><span class="cmp-rate-in"><input inputmode="decimal" :class="{ typed: !!indivValue(`${item.id}.rate`) }" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
@@ -9426,8 +9441,9 @@ const goBack = () => router.back();
                   <tbody>
                     <tr v-for="item in indivGroups[1].items" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
                         <td class="lft cmp-ind-ct">
-                          <template v-if="item.id === 'ind.far'"><span class="cmp-ind-in"><input inputmode="decimal" :value="indivDisplay(item).replace(/[^\d.]/g, '')" placeholder="0" :aria-label="item.label" @input="indivPickText('ind.far', ($event.target as HTMLInputElement).value)" />%</span><small class="cmp-auto">자동 · 고칠 수 있음</small></template>
-                          <template v-else-if="INDIV_AUTO.has(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
+                          <!-- 자동 칸은 공식 자료 값 그대로(고치지 않는다). 자료에 없어 비었을 때만 직접 넣는다(2026-11-11 사용자) -->
+                          <template v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
+                          <template v-else-if="INDIV_AUTO.has(item.id)"><span v-if="item.id === 'ind.floorNum'" class="cmp-ind-in"><input inputmode="numeric" :value="sumVal('sum.floorTotal')" placeholder="전체" aria-label="전체 층" @input="setSumVal('sum.floorTotal', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층 중<input inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" aria-label="해당 층" @input="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층</span><span v-else-if="item.options" class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span><span v-else class="cmp-ind-in"><input :inputmode="item.yearMonth ? 'text' : 'decimal'" :value="indivValue(item.id)" :placeholder="item.yearMonth ? '2004-05' : item.id === 'ind.parking' ? '총 주차대수' : '0'" :aria-label="item.label" @input="indivPickText(item.id, ($event.target as HTMLInputElement).value, !!item.yearMonth)" />{{ item.yearMonth ? '' : item.id === 'ind.parking' ? '대' : item.suffix ?? '' }}</span><small class="cmp-auto">자료에 없어 직접 넣습니다</small></template>
                           <span v-else class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span>
                         </td><td class="n"><span class="cmp-rate-in"><input inputmode="decimal" :class="{ typed: !!indivValue(`${item.id}.rate`) }" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td><td :class="['n', 'adp-ind-adj', unitSign(item.id) > 0 ? 'up' : unitSign(item.id) < 0 ? 'down' : 'zero']">{{ unitSign(item.id) === 0 ? '0%' : pctText(unitAdj(item.id)) }}</td></tr>
                     <tr class="cmp-sum"><td>합계</td><td /><td /><td :class="['n', 'adp-ind-adj', unitAdjSum[1] > 0 ? 'up' : unitAdjSum[0] < 0 ? 'down' : 'zero']"><b>{{ pctText(unitAdjSum) }}</b></td></tr>
@@ -12174,7 +12190,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-ind-seg button::after { content: attr(data-t); height: 0; overflow: hidden; visibility: hidden; font-weight: 700; pointer-events: none; }
 .cmp-ind-seg button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
 .cmp-ind-in { display: inline-flex; align-items: center; gap: 4px; }
-.cmp-ind-in input { width: 84px; height: 28px; box-sizing: border-box; padding: 0 8px; border: 1px solid #d7dde8; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 700; text-align: right; color: #111827; background: #fff; }
+.cmp-ind-in input { width: 84px; margin: 0 2px; height: 28px; box-sizing: border-box; padding: 0 8px; border: 1px solid #d7dde8; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 700; text-align: right; color: #111827; background: #fff; }
 .cmp-rate-in { display: inline-flex; align-items: center; gap: 2px; }
 .cmp-rate-in input { width: 68px; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1px solid #e3e8f0; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 700; text-align: right; color: #2b6df3; background: #fff; }
 .cmp-rate-in input::placeholder { color: #374151; font-weight: 400; opacity: 1; }   /* 기본값 — 흐리지 않게(값이 비어 보이지 않게) */
