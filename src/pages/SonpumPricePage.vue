@@ -78,7 +78,8 @@ const run = async () => {
     if (id !== runId) return;
     if (out.error) errorMsg.value = out.error;
     res.value = out; loadedMonths.value = months.value; fetchedAt.value = Date.now();
-    if (!rangeCond.value.mMax) rangeCond.value = { ...simCond(sim.value, me.value), floor: null };   // 직접범위의 층은 '전체'에서 시작
+    // 층은 고른(저장한) 그대로 — 11-10 에 여기서 '전체'로 되돌리게 바꿔, 유사도에서 고른 '같은 층'이 새로고침하면 풀렸다(2026-11-11 사용자)
+    if (!rangeCond.value.mMax) rangeCond.value = { ...simCond(sim.value, me.value), floor: rangeCond.value.floor === 0 ? 0 : null };
     void enrich(id);
   } catch (err) {
     errorMsg.value = userMessage(err);
