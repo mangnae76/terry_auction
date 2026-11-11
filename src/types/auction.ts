@@ -628,7 +628,7 @@ export interface AuctionDetail {
   /** 입지조건별 등수 — 조건명이 키 */
   realUserRanks?: Record<string, string>;
   /** 손품조사 › 매매수요 단지 입지비교 거르기 — 고른 값을 물건마다 남긴다(처음엔 1km · 6개월 · 매매, 2026-11-11) */
-  demandFilter?: { range: 'dong' | 1000 | 2000; months: 6 | 12 | 24; kind: '매매' | '전세' };
+  demandFilter?: { range: 'dong' | 100 | 300 | 500 | 1000 | 2000; months: 6 | 12 | 24; kind: '매매' | '전세' };
   /** @deprecated 자유입력 방식이던 시절의 필드 — 남은 데이터 보존용 */
   realUserArea?: string;
   realUserRooms?: string;

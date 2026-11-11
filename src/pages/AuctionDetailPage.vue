@@ -5604,9 +5604,12 @@ const cmpConds = computed(() => (cmpOn.value && !selectedRoomType.value ? [] : r
 /** 세대구성 — 고른 룸수(없으면 평형대)의 가족 */
 const cmpWho = computed(() => whoTextOf((selectedRoomType.value?.details ?? []) as Array<{ who: string; kinds: string[] }>));
 // 거르기 — 열 때마다 기본값 1km · 6개월 · 매매(2026-11-11 사용자 규칙 '이 규칙은 지켜줘'). 고른 값을 저장해 두지 않는다
-type CmpRange = 'dong' | 500 | 1000 | 2000;
+type CmpRange = 'dong' | 100 | 300 | 500 | 1000 | 2000;
 const cmpRange = ref<CmpRange>(1000);   // 읍면동 · 1km · 2km. 위 청라동 평균 칸은 범위와 상관없이 늘 읍면동
-const CMP_RANGES: Array<[CmpRange, string]> = [['dong', '읍면동'], [1000, '1km'], [2000, '2km']];
+// 범위 단추 — 아파트 읍면동 · 1km · 2km, 빌라는 건물이 촘촘해 읍면동 · 100m · 300m · 500m · 1km(2026-11-12 사용자)
+const CMP_RANGES = computed<Array<[CmpRange, string]>>(() => (isApartment.value
+  ? [['dong', '읍면동'], [1000, '1km'], [2000, '2km']]
+  : [['dong', '읍면동'], [100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']]));
 const cmpMonths = ref<6 | 12 | 24>(6);
 const CMP_PERIODS: Array<[6 | 12 | 24, string]> = [[6, '6개월'], [12, '1년'], [24, '2년']];
 /** 평형 폭 — ±3㎡(약 1평)로 고정. 아파트는 59 · 74 · 84㎡처럼 규격이라 넓혀도 같은 단지만 잡히고, ±10㎡는 다른 타입까지 섞였다(2026-11-11 사용자, 단추 뺌) */
@@ -5619,12 +5622,12 @@ let cmpFilterFor = '';
 watch(() => auction.value?.id, (id) => {
   if (!id) return;
   const f = auction.value?.demandFilter;
-  cmpRange.value = f?.range ?? 1000; cmpMonths.value = f?.months ?? 6; cmpKind.value = f?.kind ?? '매매';
+  cmpRange.value = f?.range && CMP_RANGES.value.some(([v]) => v === f.range) ? f.range : 1000; cmpMonths.value = f?.months ?? 6; cmpKind.value = f?.kind ?? '매매';   // 종류에 없는 범위(빌라의 2km 등)는 1km
   cmpFilterFor = id;
 }, { immediate: true });
 watch([cmpRange, cmpMonths, cmpKind], ([range, months, kind]) => {
   const a = auction.value; if (!a || cmpFilterFor !== a.id) return;
-  if (range === 500) return;
+  if (!CMP_RANGES.value.some(([v]) => v === range)) return;
   const cur = a.demandFilter ?? { range: 1000, months: 6, kind: '매매' };
   if (cur.range === range && cur.months === months && cur.kind === kind) return;
   a.demandFilter = { range, months, kind };
@@ -9596,7 +9599,7 @@ const goBack = () => router.back();
                   <KakaoMapTools v-if="cmpTools" :k="cmpTools.k" :map="cmpTools.map" :near="cmpMePoint" />
                   <button v-if="!cmpFs" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="cmpFs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
                   <!-- 범례 — 시세분석 지도처럼 왼쪽 아래(2026-11-11) -->
-                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 {{ cmpN }}</span><span><i class="ring dash" />읍면동 경계</span><span v-if="cmpRange !== 'dong'"><i class="ring dash blue" />반경 {{ (cmpRange as number) / 1000 }}km</span></div>
+                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 {{ cmpN }}</span><span><i class="ring dash" />읍면동 경계</span><span v-if="cmpRange !== 'dong'"><i class="ring dash blue" />반경 {{ (cmpRange as number) >= 1000 ? `${(cmpRange as number) / 1000}km` : `${cmpRange}m` }}</span></div>
                   <p v-if="!cmpRows.some((r) => r.point)" class="cmp-wait">{{ supLoaded ? `${cmpN} 위치를 찾는 중입니다…` : '실거래를 받는 중입니다…' }}</p>
                 </div>
                 <aside v-if="cmpFs" class="cmp-fs-list">
@@ -9604,7 +9607,7 @@ const goBack = () => router.back();
                   <div class="cmp-fs-lh"><b>{{ cmpN }} {{ cmpRows.length }}곳<small>{{ cmpN }}를 누르면 아래에 순위 이유가 나옵니다.</small></b><button type="button" class="cmp-fs-fold" :aria-label="cmpFsFold ? '목록 펼치기' : '목록 접기'" :aria-expanded="!cmpFsFold" @click="cmpFsFold = !cmpFsFold"><img :src="chevronDownIcon" :class="['adp-chev', { up: !cmpFsFold }]" alt="" /></button></div>
                   <!-- 전체화면 거르기 — 왼쪽 창 머리 아래(목록 바로 위, 접어도 남는다). 아래 화면 거르기와 같은 값(2026-11-11 사용자) -->
                   <div class="cmp-fs-conds">
-                    <div class="row2"><span class="lab">범위<span class="fseg" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRange === v }" :aria-checked="cmpRange === v" :data-t="t" @click="cmpRange = v">{{ t }}</button></span></span>
+                    <div :class="isApartment ? 'row2' : 'row1'"><span class="lab">범위<span class="fseg" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRange === v }" :aria-checked="cmpRange === v" :data-t="t" @click="cmpRange = v">{{ t }}</button></span></span>
                     <span class="lab">거래<span class="fseg" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" :data-t="`${k} ${cmpKindCount(k)}`" @click="cmpKind = k">{{ k }} {{ cmpKindCount(k) }}</button></span></span></div>
                     <span class="lab">기간<span class="fseg" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonths === m }" :aria-checked="cmpMonths === m" :data-t="t" @click="cmpMonths = m">{{ t }}</button></span></span>
                   </div>
@@ -12468,8 +12471,9 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-fs-x { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid rgba(255, 255, 255, .35); border-radius: 8px; background: transparent; font: inherit; font-size: 14px; color: #fff; cursor: pointer; }
 .cmp-fs-conds { display: grid; gap: 6px; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 9px; background: #f7f9fc; }   /* 왼쪽 창 — 범위 · 거래 · 기간 한 줄씩 */
 .cmp-fs-conds .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }   /* 범위 · 거래 한 줄(2026-11-11 사용자) */
+.cmp-fs-conds .row1 { display: grid; gap: 6px; }   /* 빌라 — 범위 단추가 다섯이라 범위 · 거래를 한 줄씩 */
 .cmp-fs-conds .lab { display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: center; gap: 10px; font-size: 13px; font-weight: 700; color: #6b7280; }   /* 단추 묶음은 오른쪽 끝까지 — 세 줄 끝점이 같다 */
-.cmp-fs-conds .fseg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 3px; border-radius: 6px; background: #eef1f6; }   /* 줄 안 단추는 같은 폭(읍면동 · 1km · 매매 · 전세 같은 크기, 2026-11-11 사용자) */
+.cmp-fs-conds .fseg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; padding: 3px; border-radius: 6px; background: #eef1f6; }   /* 줄 안 단추는 같은 폭(읍면동 · 1km · 매매 · 전세 같은 크기, 2026-11-11 사용자) */
 .cmp-fs-conds .fseg button { display: inline-grid; align-content: center; justify-content: center; height: 28px; padding: 0 8px; border: 0 !important; border-radius: 5px; background: transparent !important; font: inherit; font-size: 13px; font-weight: 400; color: #6b7280 !important; cursor: pointer; white-space: nowrap; box-shadow: none !important; }   /* 웹 공통 button 꾸밈을 덮는다 */
 .cmp-fs-conds .fseg button::after { content: attr(data-t); height: 0; overflow: hidden; visibility: hidden; font-weight: 700; }   /* 굵어져도 폭 그대로 */
 .cmp-fs-conds .fseg button.on { background: #fff !important; color: #2b6df3 !important; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3 !important; }
