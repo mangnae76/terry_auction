@@ -9150,16 +9150,16 @@ const goBack = () => router.back();
                     <colgroup><col style="width: 160px" /><col v-for="i in 10" :key="i" /></colgroup>
                     <thead><tr>
                       <th>단지/평형</th><th class="in">세대수</th><th class="in">매물수<small>(네이버 매물수)</small></th><th>거래량<small>(최근 12개월)</small></th>
-                      <th>평균가<small>(최근 12개월)</small></th><th>평균 전용면적<small>(㎡)</small></th><th>평균 건축연수<small>(년)</small></th>
+                      <th>평균가<small>(최근 12개월)</small></th><th v-if="isApartment">면적<small>공급(전용)</small></th><th v-else>평균 전용면적<small>(㎡)</small></th><th>{{ isApartment ? '건축연수' : '평균 건축연수' }}<small>(년)</small></th>
                       <th>매물 소화율<small>(%)</small></th><th>매물<br>소화기간</th><th class="turn">회전율<small>(%)</small></th><th>매물율<small>(%)</small></th>
                     </tr></thead>
                     <tbody><tr>
-                      <td class="nm ell"><span class="sup-nm" :title="supName || '단지'">{{ supName || '단지' }}</span><small v-if="supAreaUnits" class="sup-tbl-sub">전용 {{ trunc2(supMyArea) }}㎡</small></td>
+                      <td class="nm ell"><span class="sup-nm" :title="supName || '단지'">{{ supName || '단지' }}</span><small v-if="supAreaUnits && !isApartment" class="sup-tbl-sub">전용 {{ trunc2(supMyArea) }}㎡</small></td>
                       <td class="units in-tint">{{ supRow.units ? supRow.units.toLocaleString('ko-KR') : '-' }}</td>
                       <td class="in"><input class="adm-cell" inputmode="numeric" placeholder="입력" :value="supListings ? supListings.toLocaleString('ko-KR') : ''" @change="setSupVal('sup.listings', ($event.target as HTMLInputElement).value)" /></td>
                       <td class="n deal"><em class="pre">연</em>{{ supRow.yearly.toLocaleString('ko-KR') }}<em class="bar">|</em><em class="pre">월</em>{{ dec1(supRow.monthly) }}</td>
                       <td class="n amt"><span class="v">{{ supRow.avgPrice ? Math.round(supRow.avgPrice).toLocaleString('ko-KR') : '-' }}</span></td>
-                      <td class="n area"><span class="v">{{ supRow.avgArea ? dec1(supRow.avgArea) : '-' }}</span></td>
+                      <td class="n area"><span class="v">{{ !supRow.avgArea ? '-' : isApartment ? areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, supRow.avgArea) : dec1(supRow.avgArea) }}</span></td>
                       <td class="n age"><span class="v">{{ supRow.age || '-' }}</span></td>
                       <td class="n rate"><em v-if="supRow.absorb > 0" class="pre">연</em><span class="v">{{ supPct(supRow.absorb) }}</span></td>
                       <td class="n clear"><template v-if="supRow.clear > 0"><span class="v">{{ dec1(supRow.clear) }}개월</span><small v-if="supRow.clearYears"> / {{ supRow.clearYears }}</small></template><template v-else>-</template></td>
