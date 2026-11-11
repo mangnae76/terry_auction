@@ -6,7 +6,8 @@ const row = (o: Partial<CaseTradeRow>): CaseTradeRow => ({ kind: '매매', contr
 
 describe('complexCompare', () => {
   it('입지등수 — 도보 5분(400m) 1등 · 10분(800m) 2등 · 그 밖 3등', () => {
-    expect([rankFromMeters(400), rankFromMeters(401), rankFromMeters(800), rankFromMeters(801)]).toEqual([1, 2, 2, 3]);
+    // 직선 × 1.5 를 걷는 거리로 — 5분(400m) = 직선 266.7m, 10분 = 직선 533.3m
+    expect([rankFromMeters(266), rankFromMeters(268), rankFromMeters(533), rankFromMeters(534)]).toEqual([1, 2, 2, 3]);
   });
   it('단지마다 내 전용과 가장 가까운 평형 하나 · 그 평형만으로 평균 전세 · 매매, 12개월 밖은 뺀다', () => {
     const rows = [

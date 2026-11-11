@@ -83,7 +83,7 @@ import RightsPanel from '../components/RightsPanel.vue';
 import SonpumPricePage from './SonpumPricePage.vue';
 import type { CasePropertyType } from '../services/caseTradeAnalysis';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
-import { complexesOf, complexNearbyOf, complexPointOf, metersBetween, LOCATION_SOURCES, nearestPlaceOf, PLACE_ICON, rankFromMeters, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
+import { complexesOf, complexNearbyOf, complexPointOf, metersBetween, LOCATION_SOURCES, nearestPlaceOf, PLACE_ICON, rankFromMeters, walkMinOf, WALK_DETOUR, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
 import KakaoMapTools from '../components/KakaoMapTools.vue';
 import { areaUnit, aptAreaText } from '../services/areaUnit';
 import { createMapView, type MapView } from '../services/mapView';
@@ -5569,7 +5569,7 @@ const autoRankOf = (cond: string) => {
 const autoRankNote = (cond: string) => {
   const m = nearestMeters(cond);
   if (!(m > 0)) return nearbyEnv.value && cond in LOCATION_SOURCES ? '1km 안에 없음' : '';
-  return `가장 가까운 곳 ${m}m · 도보 ${Math.max(1, Math.round(m / WALK_M_PER_MIN))}분`;
+  return `가장 가까운 곳 ${m}m · 도보 ${Math.max(1, Math.round(walkMinOf(m)))}분`;
 };
 const rankOf = (cond: string) => auction.value?.realUserRanks?.[rankKey(cond)] ?? '';
 /** 화면·평균에 쓸 등수 — 손으로 적은 값이 있으면 그 값, 없으면 자동 */
@@ -5680,7 +5680,7 @@ const cmpLocW = (cond: string) => CMP_LOC_W_BY_ROOM[selectedRoomType.value?.id ?
 /** 거리 → 점수 — 걸어서 5분(400m) 이내 100점, 10분(800m) 80점, 15분(1,200m) 40점, 20분(1,600m) 넘으면 0점. 사이는 직선(도보 1분 80m, 직선거리).
  *  0분 100점이면 바로 앞 학교도 80점대라 만점이 없었다 — 10분이면 괜찮은 입지(2026-11-11 사용자) */
 const cmpDistScore = (m: number) => {
-  const min = m / WALK_M_PER_MIN;
+  const min = walkMinOf(m);   // 직선 × 1.5 를 길 따라 걷는 거리로
   if (min <= 5) return 100;
   if (min <= 10) return 100 - (min - 5) * 4;
   if (min <= 20) return 80 - (min - 10) * 8;
@@ -5892,8 +5892,8 @@ const cmpDraw = () => {
   mv.clear();
   const rows = cmpRows.value.filter((r) => r.point); const pick = cmpPicked.value;
   if (pick?.point) {
-    mv.circle(pick.point, WALK_M_PER_MIN * 10, { color: '#2b6df3', weight: 1.4, dash: true, fillOpacity: 0 });
-    mv.circle(pick.point, WALK_M_PER_MIN * 5, { color: '#2b6df3', weight: 1.6, fillOpacity: 0.07 });
+    mv.circle(pick.point, (WALK_M_PER_MIN * 10) / WALK_DETOUR, { color: '#2b6df3', weight: 1.4, dash: true, fillOpacity: 0 });
+    mv.circle(pick.point, (WALK_M_PER_MIN * 5) / WALK_DETOUR, { color: '#2b6df3', weight: 1.6, fillOpacity: 0.07 });
     // 조건별 가장 가까운 시설 — 지도 도구 '주변'과 같은 그림 · 색 상자(이름 · 거리), 단지와 선으로 잇는다
     pick.places.forEach((p) => {
       if (!p?.lat || !p.lng) return;
@@ -9529,7 +9529,7 @@ const goBack = () => router.back();
                   <KakaoMapTools v-if="cmpTools" :k="cmpTools.k" :map="cmpTools.map" :near="cmpMePoint" />
                   <button v-if="!cmpFs" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="cmpFs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
                   <!-- 범례 — 시세분석 지도처럼 왼쪽 아래(2026-11-11) -->
-                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span><span><i class="ring" />도보 5분(400m)</span><span><i class="ring dash" />도보 10분(800m)</span></div>
+                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span><span><i class="ring" />도보 5분(직선 270m)</span><span><i class="ring dash" />도보 10분(직선 530m)</span></div>
                   <p v-if="!cmpRows.some((r) => r.point)" class="cmp-wait">{{ supLoaded ? '단지 위치를 찾는 중입니다…' : '실거래를 받는 중입니다…' }}</p>
                 </div>
                 <aside v-if="cmpFs" class="cmp-fs-list">
@@ -9647,20 +9647,20 @@ const goBack = () => router.back();
                     <template v-if="cmpPop.kind === 'loc'">
                       <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
                         <colgroup><col style="width: 15%" /><col /><col style="width: 22%" /><col style="width: 13%" /><col style="width: 11%" /></colgroup>
-                        <thead><tr><th>조건</th><th>가장 가까운 곳</th><th>거리 · 도보</th><th>점수</th><th>비중</th></tr></thead>
+                        <thead><tr><th>조건</th><th>가장 가까운 곳</th><th>직선거리 · 도보</th><th>점수</th><th>비중</th></tr></thead>
                         <tbody>
                           <tr v-for="x in cmpLocParts(cmpPopRow)" :key="x.cond">
                             <td>{{ x.cond }}</td>
                             <td class="lft cmp-place"><template v-if="x.pl"><span class="cmp-ic">{{ x.pl.ic }}</span>{{ cmpPlaceName(x.pl.name) }}</template><template v-else>1km 안에 없음</template>
                               <!-- 초품아 — 선정물건만, 큰길을 건너면 초등학교 거리 점수 절반 -->
                               <span v-if="cmpPopRow.mine && x.cond === '초등학교'" class="cmp-hug"><span class="cmp-ind-seg" role="group" aria-label="초등학교 가는 길 큰길"><button v-for="[v, t] in [['O', '큰길안건넘'], ['X', '큰길건넘']]" :key="v" type="button" :data-t="t" :class="{ on: indivValue('ind.schoolHug') === v }" :aria-pressed="indivValue('ind.schoolHug') === v" @click="indivPick(SCHOOL_HUG_ITEM, v)">{{ t }}</button></span></span></td>
-                            <td class="n">{{ x.pl ? `${x.pl.m.toLocaleString('ko-KR')}m · ${Math.max(1, Math.round(x.pl.m / WALK_M_PER_MIN))}분` : '-' }}</td>
+                            <td class="n">{{ x.pl ? `${x.pl.m.toLocaleString('ko-KR')}m · ${Math.max(1, Math.round(walkMinOf(x.pl.m)))}분` : '-' }}</td>
                             <td class="n"><b>{{ Math.round(x.score) }}</b><small v-if="x.cut" class="cmp-auto">절반</small></td>
                             <td class="n">{{ x.w }}</td>
                           </tr>
                         </tbody>
                       </table></div></div>
-                      <p class="cmp-formula">입지조건까지 거리가 가까울수록 선호도가 높습니다.<br>걸어서 5분 이내 100점 · 10분 80점 · 15분 40점 · 20분 넘으면 0점(분당 {{ WALK_M_PER_MIN }}m 직선거리). 조건 점수 × 비중 ÷ 비중 합<template v-if="cmpPopRow.mine"> · 큰길을 건너면 초등학교 점수 절반</template><br>입지 점수 <b>{{ cmpScore(cmpPopRow.loc) }}</b> / 100</p>
+                      <p class="cmp-formula">입지조건까지 거리가 가까울수록 선호도가 높습니다.<br>걸어서 5분 이내 100점 · 10분 80점 · 15분 40점 · 20분 넘으면 0점(직선거리 × {{ WALK_DETOUR }}를 길 따라 걷는 거리로, 분당 {{ WALK_M_PER_MIN }}m). 조건 점수 × 비중 ÷ 비중 합<template v-if="cmpPopRow.mine"> · 큰길을 건너면 초등학교 점수 절반</template><br>입지 점수 <b>{{ cmpScore(cmpPopRow.loc) }}</b> / 100</p>
                     </template>
                     <template v-else-if="cmpPop.kind === 'zone'">
                       <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">

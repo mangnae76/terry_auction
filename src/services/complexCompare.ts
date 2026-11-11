@@ -23,7 +23,12 @@ export const LOCATION_SOURCES: Record<string, Array<keyof NearbyEnvironment>> = 
 };
 /** 도보 1분 ≈ 80m. 5분 안쪽 1등, 10분 안쪽 2등, 그 밖 3등 */
 export const WALK_M_PER_MIN = 80;
-export const rankFromMeters = (m: number) => (m <= WALK_M_PER_MIN * 5 ? 1 : m <= WALK_M_PER_MIN * 10 ? 2 : 3);
+/** 길 따라 돌아가는 몫 — 직선거리 × 1.5 를 걷는 거리로 본다(2026-11-11 사용자가 지도 거리재기로 잰 값: 안산파크푸르지오→중앙역 769m → 1.15km(1.50), 예술인→중앙역 808m → 1.12km(1.39)).
+ *  TMAP 보행자 경로를 붙이면 이 배수 대신 실제 거리로 바꾼다 */
+export const WALK_DETOUR = 1.5;
+/** 직선거리(m) → 걸어서 몇 분(길 따라) */
+export const walkMinOf = (m: number) => (m * WALK_DETOUR) / WALK_M_PER_MIN;
+export const rankFromMeters = (m: number) => { const min = walkMinOf(m); return min <= 5 ? 1 : min <= 10 ? 2 : 3; };
 
 /** 그 조건에서 가장 가까운 한 곳 — 없으면 null(1km 안에 없음). src 는 어느 시설 묶음에서 왔는지(지도 그림 · 색) */
 export const nearestPlaceOf = (env: NearbyEnvironment | null | undefined, cond: string): (NearbyPlace & { src: keyof NearbyEnvironment }) | null => {
