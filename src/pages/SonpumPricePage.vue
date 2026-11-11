@@ -713,8 +713,13 @@ const evenCols = () => {
     let gap = (cw - others() - addrNat) / ths.length;
     let addrW = addrNat;
     if (gap < 0) { gap = 0; addrW = Math.max(ADDR_MIN, cw - others()); }   // 모자라면 주소 칸만 줄인다(…으로 잘리고 말풍선으로 전체)
+    // 그래도 넘치면 다른 칸을 같은 비율로 줄여 합이 상자 폭을 넘지 않게 — 넘친 만큼 표가 흰 상자 밖으로 삐져나왔다(2026-11-11 사용자 'UI 깨짐')
+    const k = others() + addrW > cw ? Math.max(0.5, (cw - addrW) / others()) : 1;
+    const widths = ths.map((_, i) => Math.floor((i === ai ? addrW : nat[i] * k) + gap));
+    const over = widths.reduce((a, b) => a + b, 0) - cw;
+    if (over > 0 && ai >= 0) widths[ai] = Math.max(80, widths[ai] - over);
     const cg = document.createElement('colgroup');
-    ths.forEach((_, i) => { const c = document.createElement('col'); c.style.width = `${Math.floor((i === ai ? addrW : nat[i]) + gap)}px`; cg.appendChild(c); });
+    widths.forEach((w) => { const c = document.createElement('col'); c.style.width = `${w}px`; cg.appendChild(c); });
     t.insertBefore(cg, t.firstChild);
     t.style.tableLayout = 'fixed';
     t.style.minWidth = '';
