@@ -9728,8 +9728,8 @@ const goBack = () => router.back();
               <!-- 구역 내 · 단지 내 개별성 — 가로로 나란히(좁으면 위아래, 2026-11-11 사용자) -->
               <div class="cmp-two pair">
                 <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
-                  <colgroup><col style="width: 20%" /><col /><col style="width: 19%" /><col style="width: 22%" /></colgroup>
-                  <thead><tr><th>구역 내 개별성</th><th>내용</th><th>비율</th><th>보정</th></tr></thead>
+                  <colgroup><col style="width: 20%" /><col /><template v-if="zoneApplied"><col style="width: 19%" /><col style="width: 22%" /></template></colgroup>
+                  <thead><tr><th>구역 내 개별성</th><th>내용</th><th v-if="zoneApplied">비율</th><th v-if="zoneApplied">보정</th></tr></thead>
                   <tbody>
                     <!-- 구역 내 개별성 — 단지 자체(연식 · 주차 · 엘베 · 현관구조 · 경사 · 용적률). 기준가가 단지 평균이면 이미 담겨 있어 0(2026-11-11 사용자) -->
                     <tr v-for="item in ZONE_UNIT_ITEMS" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
@@ -9738,15 +9738,16 @@ const goBack = () => router.back();
                         <span v-else-if="item.options" class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span>
                         <b v-else>{{ indivAutoText(item) }}</b>
                       </td>
-                      <td class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
-                      <td :class="['n', 'adp-ind-adj', !zoneApplied || zoneSign(item.id) === 0 ? 'zero' : zoneSign(item.id) > 0 ? 'up' : 'down']">{{ !zoneApplied || zoneSign(item.id) === 0 ? '0%' : pctText(zoneAdj(item.id)) }}</td></tr>
-                    <tr v-if="!zoneApplied" class="cmp-zone-note"><td colspan="4">기준가가 이 단지 실거래 평균이라 이미 담겨 있어 보정하지 않습니다</td></tr>
+                      <td v-if="zoneApplied" class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
+                      <td v-if="zoneApplied" :class="['n', 'adp-ind-adj', !zoneApplied || zoneSign(item.id) === 0 ? 'zero' : zoneSign(item.id) > 0 ? 'up' : 'down']">{{ !zoneApplied || zoneSign(item.id) === 0 ? '0%' : pctText(zoneAdj(item.id)) }}</td></tr>
+                    <tr v-if="!zoneApplied" class="cmp-zone-note"><td colspan="2">손품 체크리스트 — 이 단지 실거래가에 이미 담겨 있어 가격 보정은 하지 않습니다. 실거래가 없을 때만 비율 · 보정이 열립니다</td></tr>
                   </tbody>
                 </table></div></div>
                 <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
                   <colgroup><col style="width: 20%" /><col /><col style="width: 19%" /><col style="width: 22%" /></colgroup>
                   <thead><tr><th>단지 내 개별성</th><th>내용</th><th>비율</th><th>보정</th></tr></thead>
                   <tbody>
+                    <tr class="cmp-zone-note"><td colspan="4">단지 대부분과 다를 때만 고르세요 — 같으면 이미 단지 평균에 담겨 있습니다</td></tr>
                     <template v-for="g in unitGroupsView" :key="g.title">
                     <tr v-for="item in g.items" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
                         <td class="lft cmp-ind-ct">
