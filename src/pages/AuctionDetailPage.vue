@@ -9624,7 +9624,7 @@ const goBack = () => router.back();
 
             <!-- ② 선정물건 호실 예상가 — 단지 평균 실거래가 × (1 + 단지 내 개별성 보정 합). 구역 내 개별성은 가격을 바꾸지 않아 여기 두지 않는다(같은 %로 보여 헷갈렸다, 2026-11-11) -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box o-unit">
-              <div class="cmp-est-h"><h3><span class="cmp-no">③</span>선정물건 호실 예상가</h3><small class="cmp-q">같은 단지 안에서 내 호실은?</small>
+              <div class="cmp-est-h"><h3><span class="cmp-no">③</span>선정물건 호실 예상가</h3><small class="cmp-q">같은 단지 안에서 내 호실의 가치는?</small>
                 <span class="cmp-est-desc">기준가 × (1 + 단지 내 개별성 보정) + 수리 금액 · 최근 {{ cmpMonths }}개월 · 거래 단추를 따른다</span></div>
               <!-- 기준가 세 가지 — 실거래가 적으면 순위로 · 전세가율로(강의 2026-11-11). 고른 카드가 기준 -->
               <div class="cmp-bases" role="radiogroup" aria-label="기준가">
