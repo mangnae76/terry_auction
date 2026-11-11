@@ -789,11 +789,12 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       </div>
       <p v-if="errorMsg" class="pa-err">{{ errorMsg }}</p>
       <div class="est">
-        <div class="tiles">
+        <!-- 웹 — 중간값 · 최저 · 최고는 뺐다. 거래가를 내 평수로 바꿔 만든 값이라 실제로 거래된 값이 아니다(2026-11-11 사용자) -->
+        <div :class="['tiles', { four: !props.app }]">
           <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? '매도가 예상' : '실거래가 예상' }}({{ kindF }})</InfoTip></span><span class="v pa-num">{{ view ? vfmt(view.est) : '-' }}</span><span v-if="view?.capped" class="cap">보증보험 한도 적용</span><span v-if="view" class="s rad">반경 {{ radText(radius) }} · {{ periodText(loadedMonths) }} · {{ view.n.toLocaleString('ko-KR') }}건</span></div>
-          <div class="tile"><span class="k">중간값</span><span class="v pa-num">{{ view ? vfmt(view.med) : '-' }}</span></div>
-          <div class="tile"><span class="k">최저가</span><span class="v pa-num">{{ view ? vfmt(view.min) : '-' }}</span></div>
-          <div class="tile"><span class="k">최고가</span><span class="v pa-num">{{ view ? vfmt(view.max) : '-' }}</span></div>
+          <div v-if="props.app" class="tile"><span class="k">중간값</span><span class="v pa-num">{{ view ? vfmt(view.med) : '-' }}</span></div>
+          <div v-if="props.app" class="tile"><span class="k">최저가</span><span class="v pa-num">{{ view ? vfmt(view.min) : '-' }}</span></div>
+          <div v-if="props.app" class="tile"><span class="k">최고가</span><span class="v pa-num">{{ view ? vfmt(view.max) : '-' }}</span></div>
           <div class="tile"><span class="k">{{ kindF === '월세' ? '평균 평당 월세' : '평균 평당가' }}</span><span class="v pa-num">{{ view ? vPy(view.avgPy) : '-' }}</span></div>
           <!-- 선정물건 정보 — 유사 거래를 찾는 가운데 기준(실제 범위는 아래 「계산 조건」 줄) -->
           <div v-if="isAptKind" class="tile"><span class="k">면적 공급(전용) / 연식</span><span class="v pa-num sm">{{ aptMyArea }}</span><span class="s">{{ me.year ? `${me.year}년식` : '-' }}</span></div>
@@ -1058,6 +1059,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 /* Ⓐ 띠 */
 .est { background: var(--soft); border-radius: 10px; padding: 14px; display: grid; gap: 12px; }
 .tiles { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+.tiles.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 1000px) { .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .tile { background: #fff; border-radius: 10px; padding: 13px 8px; text-align: center; display: grid; gap: 5px; box-shadow: 0 1px 2px rgba(17, 24, 39, .04); min-width: 0; }
 .tile .k { font-size: 13px; color: var(--sub); }
