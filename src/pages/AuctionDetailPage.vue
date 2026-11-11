@@ -9642,7 +9642,7 @@ const goBack = () => router.back();
                 <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :data-k="k" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" @click="cmpKind = k">{{ k }} {{ cmpKindCount(k) }}</button></span></span>
                 <span class="pa-lab">기간<span class="pa-seg pa-out" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonths === m }" :aria-checked="cmpMonths === m" :data-t="t" @click="cmpMonths = m">{{ t }}</button></span></span>
                 <!-- 고정 기준 — 고르는 단추 말고 늘 걸려 있는 조건(2026-11-11 사용자) -->
-                <span class="cmp-fixed"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">고정 기준 · 유사평형(전용 ±3㎡) · 최근 {{ cmpMonths }}개월 실거래 1건 이상인 {{ cmpN }} · 국토부 실거래</span></span>
+                <span class="cmp-fixed"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">고정기준 · 최근 {{ cmpMonths }}개월 실거래</span></span>
               </div>
               <p v-if="!cmpConds.length" class="cmp-noroom">매매수요 조사 맨 위에서 <b>룸수</b>를 고르면 세대구성에 맞는 입지조건과 {{ cmpN }}별 입지등수가 나옵니다.</p>
               <div class="son-demand sup-tbl">
