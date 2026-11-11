@@ -2807,7 +2807,7 @@ const INDIV_GROUPS: IndivGroup[] = [
         id: 'ind.rooms', label: '구조', multi: true,
         options: ['1방', '2방', '3방', '4방', '1화', '2화', '3화'], rate: '5%',
       },
-      { id: 'ind.view', label: '뷰', options: ['뻥뷰', '단지뷰'], rate: '5%' },
+      { id: 'ind.view', label: '뷰', options: ['뻥뷰', '단지뷰', '호수·강·공원뷰'], rate: '5%' },   // 호수 · 강 · 공원뷰는 조망 비율(ind.viewLake) — 저장값을 지우는 거르기가 이 목록을 본다
       { id: 'ind.sunlight', label: '일조량', survey: true, options: ['좋음', '보통', '나쁨'], rate: '5%' },
       { id: 'ind.repair', label: '수리유무', survey: true, multi: true, options: ['부분수리', '올수리', '샤시'], note: '20평대 기준 부분수리 1,000만 · 올수리 2,000만 · 샤시까지 3,000만(강의 2026-11-11)', rate: '10%' },
     ],
@@ -2832,16 +2832,20 @@ const APT_UNIT_EXTRA: IndivItem[] = [
 /** 아파트 타입 — 모양 하나(판상형 · 타워형 · 복층형) + 베이 하나(2 · 3 · 4베이). 다락은 뺐다(2026-11-11 사용자) */
 const TYPE_SHAPES = ['판상형', '타워형', '복층형'];
 const TYPE_BAYS = ['2베이', '3베이', '4베이'];
+/** 뷰 — 호수 · 강 · 공원이 보이는 조망은 따로(청라 레이크뷰 동이 같은 평형 +25%, 2026-11-11 사용자 확인). 하나만 고른다 */
+const VIEW_LAKE = '호수·강·공원뷰';
+const VIEW_OPTS = ['뻥뷰', '단지뷰', VIEW_LAKE];
 /** 묶음마다 하나만 고르는 칸 — 타입(모양 · 베이), 구조(방 · 화장실), 향(2026-11-11 사용자) */
 const UNIT_PICK_GROUPS: Record<string, Array<{ label: string; opts: string[] }>> = {
   'ind.type': [{ label: '타입 모양', opts: TYPE_SHAPES }, { label: '베이', opts: TYPE_BAYS }],
   'ind.rooms': [{ label: '방 수', opts: ['1방', '2방', '3방', '4방'] }, { label: '화장실 수', opts: ['1화', '2화', '3화'] }],
-  'ind.direction': [{ label: '향', opts: ['동', '서', '남', '북'] }],   // 향도 하나만(2026-11-11 사용자)
+  'ind.direction': [{ label: '향', opts: ['동', '서', '남', '북'] }],
+  'ind.view': [{ label: '뷰', opts: VIEW_OPTS }],   // 향도 하나만(2026-11-11 사용자)
 };
 const indivGroups = computed<IndivGroup[]>(() => (isApartment.value
   ? INDIV_GROUPS.map((g, i) => (i === 0
     ? { ...g, items: [...g.items.filter((it) => it.id !== 'ind.mgmt' && it.id !== 'ind.inside'), ...APT_INDIV_EXTRA] }
-    : { ...g, items: [...g.items.map((it) => (it.id === 'ind.type' ? { ...it, options: [...TYPE_SHAPES, ...TYPE_BAYS] } : it)), ...APT_UNIT_EXTRA] }))
+    : { ...g, items: [...g.items.map((it) => (it.id === 'ind.type' ? { ...it, options: [...TYPE_SHAPES, ...TYPE_BAYS] } : it.id === 'ind.view' ? { ...it, options: VIEW_OPTS } : it)), ...APT_UNIT_EXTRA] }))
   : INDIV_GROUPS));
 /** PDF(건축물대장 · 단지정보) · 건축물대장 API 로 자동으로 채우는 항목 — 이름 글자를 블루그레이로(아래 watch 의 자동 채움과 같은 목록) */
 const INDIV_AUTO = new Set(['ind.age', 'ind.parking', 'ind.elevator', 'ind.corridor', 'ind.floorNum', 'ind.far']);
@@ -2933,7 +2937,7 @@ const INDIV_RATE_DEFAULT: Record<string, string> = {
   'ind.age': '20~30', 'ind.parking': '5', 'ind.elevator': '10', 'ind.corridor': '15', 'ind.slope': '5', 'ind.far': '5',
   'ind.mgmt': '5', 'ind.inside': '5',
   'ind.direction': '5', 'ind.type': '5', 'ind.rooms': '5', 'ind.view': '5', 'ind.sunlight': '5', 'ind.repair': '10',
-  'ind.ugLink': '3', 'ind.dongPos': '5',   // 지하주차장 연결 동 약 3%(강의) · 동 위치는 강의 '층 · 동 · 타입 개별 편차 약 5%'
+  'ind.ugLink': '3', 'ind.dongPos': '5', 'ind.viewLake': '20~25',   // 지하주차장 연결 동 약 3%(강의) · 동 위치는 강의 '층 · 동 · 타입 개별 편차 약 5%'
 };
 /** 수리는 % 가 아니라 금액(만 원) — 20평대 기준 부분수리 1,000 · 올수리 2,000 · 샤시 +1,000(강의 2026-11-11). 칸에 적으면 그 금액 */
 const REPAIR_MAN: Record<string, number> = { 부분수리: 1000, 올수리: 2000, 샤시: 1000 };
@@ -5737,7 +5741,7 @@ const unitSign = (id: string): number => {
     case 'ind.direction': return has('남') ? 1 : has('북') && !has('동') && !has('서') ? -1 : 0;
     case 'ind.type': return has('판상형', '3베이', '4베이') ? 1 : has('타워형', '2베이', '복층형', '다락') ? -1 : 0;
     case 'ind.rooms': return has('3방', '4방', '2화', '3화') ? 1 : has('1방', '2방', '1화') ? -1 : 0;
-    case 'ind.view': return has('뻥뷰') ? 1 : 0;
+    case 'ind.view': return has('뻥뷰', VIEW_LAKE) ? 1 : 0;
     case 'ind.sunlight': return has('좋음') ? 1 : has('나쁨') ? -1 : 0;
     case 'ind.repair': return 0;   // 수리는 % 가 아니라 금액(repairMan)
     case 'ind.ugLink': return v === 'O' ? 1 : v === 'X' ? -1 : 0;
@@ -5746,8 +5750,10 @@ const unitSign = (id: string): number => {
   }
 };
 /** 단지 내 개별성 한 줄의 보정(%) 범위 — 방향 × 비율 크기 */
+/** 비율을 어느 칸에서 읽나 — 뷰가 호수 · 강 · 공원뷰면 조망 비율(기본 20~25%) */
+const rateIdOf = (id: string) => (id === 'ind.view' && indivValue('ind.view').includes(VIEW_LAKE) ? 'ind.viewLake' : id);
 const unitAdj = (id: string): [number, number] => {
-  const sg = unitSign(id); const [a, b] = rateOf(id).map(Math.abs) as [number, number];
+  const sg = unitSign(id); const [a, b] = rateOf(rateIdOf(id)).map(Math.abs) as [number, number];
   return sg > 0 ? [Math.min(a, b), Math.max(a, b)] : sg < 0 ? [-Math.max(a, b), -Math.min(a, b)] : [0, 0];
 };
 const UNIT_IDS = ['ind.floorNum', 'ind.direction', 'ind.type', 'ind.rooms', 'ind.view', 'ind.sunlight', 'ind.repair', 'ind.ugLink', 'ind.dongPos'];
@@ -9707,7 +9713,7 @@ const goBack = () => router.back();
               <!-- 구역 내 · 단지 내 개별성 — 가로로 나란히(좁으면 위아래, 2026-11-11 사용자) -->
               <div class="cmp-two pair">
                 <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
-                  <colgroup><col style="width: 22%" /><col /><col style="width: 17%" /><col style="width: 18%" /></colgroup>
+                  <colgroup><col style="width: 20%" /><col /><col style="width: 19%" /><col style="width: 22%" /></colgroup>
                   <thead><tr><th>구역 내 개별성</th><th>내용</th><th>비율</th><th>보정</th></tr></thead>
                   <tbody>
                     <!-- 구역 내 개별성 — 단지 자체(연식 · 주차 · 엘베 · 현관구조 · 경사 · 용적률). 기준가가 단지 평균이면 이미 담겨 있어 0(2026-11-11 사용자) -->
@@ -9723,7 +9729,7 @@ const goBack = () => router.back();
                   </tbody>
                 </table></div></div>
                 <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
-                  <colgroup><col style="width: 22%" /><col /><col style="width: 17%" /><col style="width: 18%" /></colgroup>
+                  <colgroup><col style="width: 20%" /><col /><col style="width: 19%" /><col style="width: 22%" /></colgroup>
                   <thead><tr><th>단지 내 개별성</th><th>내용</th><th>비율</th><th>보정</th></tr></thead>
                   <tbody>
                     <template v-for="g in unitGroupsView" :key="g.title">
@@ -9737,7 +9743,7 @@ const goBack = () => router.back();
                         </td>
                         <!-- 수리는 금액(만 원) — 고른 수리에 따른 기본 금액, 적으면 그 금액 -->
                         <td v-if="item.id === 'ind.repair'" class="n"><span class="cmp-rate-in"><input inputmode="numeric" :class="{ typed: !!indivValue('ind.repair.amt') }" :value="indivValue('ind.repair.amt') ? Number(indivValue('ind.repair.amt')).toLocaleString('ko-KR') : ''" :placeholder="repairDefaultMan().toLocaleString('ko-KR')" aria-label="수리 금액" @input="indivPickText('ind.repair.amt', ($event.target as HTMLInputElement).value)" />만</span></td>
-                        <td v-else class="n"><span class="cmp-rate-in"><input inputmode="decimal" :class="{ typed: !!indivValue(`${item.id}.rate`) }" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
+                        <td v-else class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="indivValue(`${rateIdOf(item.id)}.rate`)" :placeholder="indivRateNum({ ...item, id: rateIdOf(item.id) })" :aria-label="`${item.label} 비율`" @input="indivRateInput(rateIdOf(item.id), ($event.target as HTMLInputElement).value)" />%</span></td>
                         <td v-if="item.id === 'ind.repair'" :class="['n', 'adp-ind-adj', repairMan() > 0 ? 'up' : 'zero']">{{ repairText(repairMan()) }}</td>
                         <td v-else :class="['n', 'adp-ind-adj', unitSign(item.id) > 0 ? 'up' : unitSign(item.id) < 0 ? 'down' : 'zero']">{{ unitSign(item.id) === 0 ? '0%' : pctText(unitAdj(item.id)) }}</td></tr>
                     </template>
