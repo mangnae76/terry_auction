@@ -8809,7 +8809,6 @@ const goBack = () => router.back();
                 <span class="grp"><span class="k">세대구성</span><span class="val stack"><span v-for="t in CMP_WHO_ALL" :key="t" :class="{ on: t === (cmpWho || '룸수를 고르세요'), ph: t === '룸수를 고르세요' }" :aria-hidden="t !== (cmpWho || '룸수를 고르세요')">{{ t }}</span></span></span>
                 <i class="sep" aria-hidden="true" />
                 <span class="grp"><span class="k">입지조건</span><span class="val stack"><span v-for="t in CMP_COND_ALL" :key="t" :class="{ on: t === (cmpConds.join(' · ') || '룸수를 고르세요'), ph: t === '룸수를 고르세요' }" :aria-hidden="t !== (cmpConds.join(' · ') || '룸수를 고르세요')">{{ t }}</span></span></span>
-                <button type="button" :class="['cmp-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 고친 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동값으로</button>
                 </div>
               </div>
             <!-- 지역 수요분석(손품조사가 slot 으로 넣는다) — 순서를 정하려고 이 화면의 상자로 감싼다(slot 내용엔 이 화면 스타일이 닿지 않는다) -->
@@ -12338,8 +12337,6 @@ tr.tone-take { background: #fff5f5; }
 .cmp-persona .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
 .cmp-persona .pa-seg button { border: none; background: transparent; border-radius: 5px; height: 26px; padding: 0 11px; font: inherit; font-size: 14px; font-weight: 400; color: #6b7280; cursor: pointer; white-space: nowrap; }
 .cmp-persona .pa-seg button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }   /* 고른 룸수 — 시세분석 고르기 단추와 같은 파랑(2026-11-11 사용자, 검정에서 되돌림) */
-.cmp-reset { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 7px; background: #fff; font: inherit; font-size: 12.5px; color: #111827; cursor: pointer; }
-.cmp-reset.off { color: #c3c9d4; cursor: default; }
 input.cmp-rk.in { padding: 0; font: inherit; font-weight: 700; text-align: center; border-color: #2b6df3; background: #fff; }
 input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b45309; }   /* 손으로 고친 등수 */
 /* 단지 입지비교 거르기 — 시세분석 조건 줄(.pa-lab · .pa-seg · .kindF) 값 그대로(2026-11-11) */
