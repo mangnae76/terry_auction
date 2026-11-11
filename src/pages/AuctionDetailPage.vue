@@ -9528,7 +9528,7 @@ const goBack = () => router.back();
                         <td class="n"><button type="button" class="cmp-sc big" :aria-label="`${r.name || r.jibun} 종합 점수 계산 보기`" @click.stop="cmpPopOpen('tot', r, $event)">{{ cmpScore(r.tot) }}</button></td>
                         <td class="n"><span v-if="cmpRankOf.get(cmpKeyOf(r))" :class="['cmp-rk', { r1: cmpRankOf.get(cmpKeyOf(r)) === 1 }]">{{ cmpRankOf.get(cmpKeyOf(r)) }}</span><template v-else>-</template></td>
                         <!-- 연식은 시세 묶음 앞(순위 묶음 · 시세 묶음으로 나눈다, 2026-11-11) -->
-                        <td class="n">{{ r.buildYear ? `${r.buildYear}년` : '-' }}</td>
+                        <td class="n">{{ r.buildYear ? `${r.buildYear}년` : '-' }}<small v-if="r.buildYear" class="sup-tbl-sub">{{ new Date().getFullYear() - r.buildYear + 1 }}년차</small></td>
                         <!-- 고른 거래 쪽 평균을 굵게. 중간값은 고른 거래(매매 · 전세)의 가운데 값 -->
                         <td class="n amt"><b v-if="cmpKind === '매매'">{{ cmpMoney(r.saleAvg) }}</b><template v-else>{{ cmpMoney(r.saleAvg) }}</template></td>
                         <td class="n amt"><b v-if="cmpKind === '전세'">{{ cmpMoney(r.jeonseAvg) }}</b><template v-else>{{ cmpMoney(r.jeonseAvg) }}</template></td>
