@@ -3197,26 +3197,6 @@ const supOpinion = computed(() => {
   const base = supBase.value; const deals = supDealCount.value; const listings = supListings.value;
   return demandOpinionOf(listings > 0 ? (deals / listings) * 100 : 0, base > 0 ? (deals / base) * 100 : 0, supLoaded.value && base > 0 && listings > 0, true, base > 0 ? (listings / base) * 100 : 0, COMPLEX_BURDEN_LINE);   // 단지 수요분석은 아파트만 — 회전율 선 3%
 });
-/** 아래 표 한 줄 — 위 동 수요분석 표와 같은 칸. 해당평형(전용면적이 같은 거래) 기준, 평균가는 정상거래만 */
-const supRow = computed(() => {
-  const p = !!supAreaUnits.value;
-  const deals = p ? supDeals.value.filter((r) => Math.abs(r.areaM2 - supMyArea.value) < 0.005) : supDeals.value;
-  const normal = deals.filter((r) => r.kind === '매매');
-  const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
-  const base = supBase.value; const n = deals.length; const listings = supListings.value; const monthly = n / 12;
-  const by = avg(deals.map((r) => r.buildYear ?? 0).filter((y) => y > 1800));
-  const clear = listings > 0 && monthly > 0 ? listings / monthly : 0;
-  return {
-    units: base, yearly: n, monthly,
-    avgPrice: avg(normal.map((r) => r.price)), avgArea: avg(deals.map((r) => r.areaM2)),
-    age: by ? buildingAgeOf(Math.round(by)) : 0,
-    absorb: listings > 0 ? (n / listings) * 100 : 0,
-    clear, clearYears: clear >= 12 ? `${dec1(clear / 12)}년` : '',
-    turnover: base > 0 ? (n / base) * 100 : 0,
-    burden: base > 0 && listings > 0 ? (listings / base) * 100 : 0,
-  };
-});
-const supPct = (n: number) => (n > 0 ? `${dec1(n)}%` : '-');
 const setSupVal = (key: string, v: string | number) => setSumVal(key, String(supNum(String(v)) || ''));
 
 // 주차수 · 엘베 — PDF에 없으면 그 필지의 건축물대장(표제부)에서 채운다. 사람이 넣은 값은 덮지 않는다
@@ -9131,36 +9111,7 @@ const goBack = () => router.back();
                 <template v-if="supOpinion"><b>{{ supOpinion.title }}</b><span>{{ supOpinion.text }}</span></template>
                 <span v-else class="wait">현재 매물수(해당평형)를 넣으면 종합 의견이 나옵니다.</span>
               </div>
-              <p class="sup-note">
-                <template v-if="supAreaUnits">해당평형({{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2 || supMyArea) }}) 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 해당평형 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 계산합니다.</template>
-                <template v-else>단지 전체 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 총 세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 계산합니다.</template>
-              </p>
-              <!-- 위 동 수요분석 표와 같은 칸 · 꾸밈(son-demand 안이라 웹 공통 꾸밈도 같이 받는다). 해당평형 한 줄 -->
-              <div class="son-demand sup-tbl">
-                <div class="adm-table-wrap">
-                  <table class="adm-table even">
-                    <colgroup><col style="width: 160px" /><col v-for="i in 10" :key="i" /></colgroup>
-                    <thead><tr>
-                      <th>단지/평형</th><th class="in">세대수</th><th class="in">매물수<small>(네이버 매물수)</small></th><th>거래량<small>(최근 12개월)</small></th>
-                      <th>평균가<small>(최근 12개월)</small></th><th v-if="isApartment">면적<small>공급(전용)</small></th><th v-else>평균 전용면적<small>(㎡)</small></th><th>{{ isApartment ? '건축연수' : '평균 건축연수' }}<small>(년)</small></th>
-                      <th>매물 소화율<small>(%)</small></th><th>매물<br>소화기간</th><th class="turn">회전율<small>(%)</small></th><th>매물율<small>(%)</small></th>
-                    </tr></thead>
-                    <tbody><tr>
-                      <td class="nm ell"><span class="sup-nm" :title="supName || '단지'">{{ supName || '단지' }}</span><small v-if="supAreaUnits && !isApartment" class="sup-tbl-sub">전용 {{ trunc2(supMyArea) }}㎡</small></td>
-                      <td class="units in-tint">{{ supRow.units ? supRow.units.toLocaleString('ko-KR') : '-' }}</td>
-                      <td class="in"><input class="adm-cell" inputmode="numeric" placeholder="입력" :value="supListings ? supListings.toLocaleString('ko-KR') : ''" @change="setSupVal('sup.listings', ($event.target as HTMLInputElement).value)" /></td>
-                      <td class="n deal"><em class="pre">연</em>{{ supRow.yearly.toLocaleString('ko-KR') }}<em class="bar">|</em><em class="pre">월</em>{{ dec1(supRow.monthly) }}</td>
-                      <td class="n amt"><span class="v">{{ supRow.avgPrice ? Math.round(supRow.avgPrice).toLocaleString('ko-KR') : '-' }}</span></td>
-                      <td class="n area"><span class="v">{{ !supRow.avgArea ? '-' : isApartment ? areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, supRow.avgArea) : dec1(supRow.avgArea) }}</span></td>
-                      <td class="n age"><span class="v">{{ supRow.age || '-' }}</span></td>
-                      <td class="n rate"><em v-if="supRow.absorb > 0" class="pre">연</em><span class="v">{{ supPct(supRow.absorb) }}</span></td>
-                      <td class="n clear"><template v-if="supRow.clear > 0"><span class="v">{{ dec1(supRow.clear) }}개월</span><small v-if="supRow.clearYears"> / {{ supRow.clearYears }}</small></template><template v-else>-</template></td>
-                      <td class="n rate turn"><em v-if="supRow.turnover > 0" class="pre">연</em><span class="v">{{ supPct(supRow.turnover) }}</span></td>
-                      <td class="n rate"><span class="v">{{ supPct(supRow.burden) }}</span></td>
-                    </tr></tbody>
-                  </table>
-                </div>
-              </div>
+              <!-- 기준 줄 · 한 줄짜리 상세표는 뺐다 — 위 칸과 같은 숫자의 반복(2026-11-11 사용자) -->
             </section>
 
             <div v-if="!cmpOn" class="adp-dm-head sec2 o-indh">

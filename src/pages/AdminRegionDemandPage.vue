@@ -658,7 +658,8 @@ const downloadCsv = () => {
       </div>
 
       <p v-if="webEmbed && rows.length > 0 && !props.embed" class="dm-block-head">③ 상세수치</p>
-      <div v-if="rows.length > 0" class="adm-table-wrap">
+      <!-- 손품조사 매매수요(embed)에선 상세표를 뺀다 — 위 칸과 같은 숫자에, 평균가는 전체 평형이라 단지 입지비교 평균과 갈려 헷갈렸다(2026-11-11 사용자) -->
+      <div v-if="rows.length > 0 && !(webEmbed && props.embed)" class="adm-table-wrap">
         <!-- 지역분석 안 탭(embedded)은 시군구 하나만 보므로 '소속 구' 칸은 뺀다 — 모든 줄이 같은 값이다 -->
         <table :class="['adm-table', { even: embedded }]">
           <!-- 웹 — 동 이름 옆 '네이버 매물 ↗'이 들어가게 첫 칸만 넓히고(160) 나머지 열 칸이 남은 폭을 고르게 나눈다 -->
