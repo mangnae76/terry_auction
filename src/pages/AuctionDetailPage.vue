@@ -5902,8 +5902,7 @@ const cmpDraw = () => {
     }
   });
   if (pick?.point) {
-    mv.circle(pick.point, (WALK_M_PER_MIN * 10) / WALK_DETOUR, { color: '#2b6df3', weight: 1.4, dash: true, fillOpacity: 0 });
-    mv.circle(pick.point, (WALK_M_PER_MIN * 5) / WALK_DETOUR, { color: '#2b6df3', weight: 1.6, fillOpacity: 0.07 });
+    // 도보 5분 · 10분 원은 뺐다 — 시설 직선 · 거리와 단지 테두리가 같은 걸 더 정확히 보여 준다(2026-11-11 사용자)
     // 조건별 가장 가까운 시설 — 지도 도구 '주변'과 같은 그림 · 색 상자(이름 · 거리), 단지와 선으로 잇는다
     pick.places.forEach((p) => {
       if (!p?.lat || !p.lng) return;
@@ -9535,7 +9534,7 @@ const goBack = () => router.back();
                   <KakaoMapTools v-if="cmpTools" :k="cmpTools.k" :map="cmpTools.map" :near="cmpMePoint" />
                   <button v-if="!cmpFs" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="cmpFs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
                   <!-- 범례 — 시세분석 지도처럼 왼쪽 아래(2026-11-11) -->
-                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span><span><i class="ring" />도보 5분(직선 270m)</span><span><i class="ring dash" />도보 10분(직선 530m)</span></div>
+                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span></div>
                   <p v-if="!cmpRows.some((r) => r.point)" class="cmp-wait">{{ supLoaded ? '단지 위치를 찾는 중입니다…' : '실거래를 받는 중입니다…' }}</p>
                 </div>
                 <aside v-if="cmpFs" class="cmp-fs-list">
