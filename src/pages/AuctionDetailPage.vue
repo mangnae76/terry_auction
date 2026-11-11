@@ -2801,7 +2801,7 @@ const INDIV_GROUPS: IndivGroup[] = [
       { id: 'ind.direction', label: '향', multi: true, options: ['동', '서', '남', '북'], rate: '5%' },
       {
         id: 'ind.type', label: '타입', multi: true,
-        options: ['판상형', '타워형', '복층형', '2베이', '3베이', '4베이', '다락', '2방', '3방'], rate: '5%',   // 2방 · 3방 — 같은 평형 안 A · B타입 방 수(아파트, 2026-11-11)
+        options: ['판상형', '타워형', '복층형', '2베이', '3베이', '4베이', '다락', '2방', '3방', '1화', '2화'], rate: '5%',   // 2방 · 3방 — 같은 평형 안 A · B타입 방 수(아파트, 2026-11-11)
       },
       {
         id: 'ind.rooms', label: '구조', multi: true,
@@ -2834,12 +2834,14 @@ const TYPE_SHAPES = ['판상형', '타워형', '복층형'];
 const TYPE_BAYS = ['2베이', '3베이', '4베이'];
 /** 같은 평형인데 방 수가 다른 타입(59A 3방 · 59B 2방 등) — 구조 칸 대신 타입 안에서(2026-11-11 사용자) */
 const TYPE_ROOMS = ['2방', '3방'];
+/** 화장실 수 — 기록용(값 보정에는 넣지 않는다, 2026-11-11 사용자) */
+const TYPE_BATHS = ['1화', '2화'];
 /** 뷰 — 호수 · 강 · 공원이 보이는 조망은 따로(청라 레이크뷰 동이 같은 평형 +25%, 2026-11-11 사용자 확인). 하나만 고른다 */
 const VIEW_LAKE = '호수·강·공원뷰';
 const VIEW_OPTS = ['뻥뷰', '단지뷰', VIEW_LAKE];
 /** 묶음마다 하나만 고르는 칸 — 타입(모양 · 베이), 구조(방 · 화장실), 향(2026-11-11 사용자) */
 const UNIT_PICK_GROUPS: Record<string, Array<{ label: string; opts: string[] }>> = {
-  'ind.type': [{ label: '타입 모양', opts: TYPE_SHAPES }, { label: '베이', opts: TYPE_BAYS }, { label: '방 수', opts: TYPE_ROOMS }],
+  'ind.type': [{ label: '타입 모양', opts: TYPE_SHAPES }, { label: '베이', opts: TYPE_BAYS }, { label: '방 수', opts: TYPE_ROOMS }, { label: '화장실 수', opts: TYPE_BATHS }],
   'ind.rooms': [{ label: '방 수', opts: ['1방', '2방', '3방', '4방'] }, { label: '화장실 수', opts: ['1화', '2화', '3화'] }],
   'ind.direction': [{ label: '향', opts: ['동', '서', '남', '북'] }],
   'ind.view': [{ label: '뷰', opts: VIEW_OPTS }],   // 향도 하나만(2026-11-11 사용자)
@@ -2847,7 +2849,7 @@ const UNIT_PICK_GROUPS: Record<string, Array<{ label: string; opts: string[] }>>
 const indivGroups = computed<IndivGroup[]>(() => (isApartment.value
   ? INDIV_GROUPS.map((g, i) => (i === 0
     ? { ...g, items: [...g.items.filter((it) => it.id !== 'ind.mgmt' && it.id !== 'ind.inside'), ...APT_INDIV_EXTRA] }
-    : { ...g, items: [...g.items.map((it) => (it.id === 'ind.type' ? { ...it, options: [...TYPE_SHAPES, ...TYPE_BAYS, ...TYPE_ROOMS] } : it.id === 'ind.view' ? { ...it, options: VIEW_OPTS } : it.id === 'ind.direction' ? { ...it, label: '향/일조량' } : it)), ...APT_UNIT_EXTRA] }))
+    : { ...g, items: [...g.items.map((it) => (it.id === 'ind.type' ? { ...it, options: [...TYPE_SHAPES, ...TYPE_BAYS, ...TYPE_ROOMS, ...TYPE_BATHS] } : it.id === 'ind.view' ? { ...it, options: VIEW_OPTS } : it.id === 'ind.direction' ? { ...it, label: '향/일조량' } : it)), ...APT_UNIT_EXTRA] }))
   : INDIV_GROUPS));
 /** PDF(건축물대장 · 단지정보) · 건축물대장 API 로 자동으로 채우는 항목 — 이름 글자를 블루그레이로(아래 watch 의 자동 채움과 같은 목록) */
 const INDIV_AUTO = new Set(['ind.age', 'ind.parking', 'ind.elevator', 'ind.corridor', 'ind.floorNum', 'ind.far']);
