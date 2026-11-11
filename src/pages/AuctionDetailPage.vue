@@ -6114,7 +6114,9 @@ const zoneAdj = (id: string): [number, number] => {
 };
 const ZONE_UNIT_ITEMS = computed(() => indivGroups.value[0].items.filter((it) => ZONE_IDS.includes(it.id)));
 /** 기준가가 내 단지 실거래 평균이면 구역 내 개별성은 그 값에 이미 담겨 있어 다시 붙이지 않는다(두 번 세지 않게) — 이웃 단지 값(전세가율로)일 때만 */
-const zoneApplied = computed(() => cmpUnitBaseFrom.value !== 'avg');
+// 구역 내 개별성 보정은 붙이지 않는다 — 기준가 둘(단지 평균 · 이 단지 전세 ÷ 전세가율) 모두 이 단지 값이라 연식 · 주차 · 엘베 등이 이미 담겨 있다.
+// 전세가율 기준가에서 +35~45%가 더 붙어 두 번 셌다(2026-11-11 사용자). 구역 내 개별성은 손품 체크리스트로만
+const zoneApplied = computed(() => false);
 const zoneAdjSum = computed<[number, number]>(() => (zoneApplied.value ? ZONE_IDS.reduce<[number, number]>((acc, id) => { const [a, b] = zoneAdj(id); return [acc[0] + a, acc[1] + b]; }, [0, 0]) : [0, 0]));
 const totalAdj = computed<[number, number]>(() => [unitAdjSum.value[0] + zoneAdjSum.value[0], unitAdjSum.value[1] + zoneAdjSum.value[1]]);
 /** 같은 평형 고른 거래의 실거래 최저 · 최고(선정물건 단지) — 예상가가 이 범위를 넘지 않게 자른다(보정이 쌓여 12억이 넘던 것, 2026-11-11 사용자) */
@@ -9740,7 +9742,7 @@ const goBack = () => router.back();
                       </td>
                       <td v-if="zoneApplied" class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
                       <td v-if="zoneApplied" :class="['n', 'adp-ind-adj', !zoneApplied || zoneSign(item.id) === 0 ? 'zero' : zoneSign(item.id) > 0 ? 'up' : 'down']">{{ !zoneApplied || zoneSign(item.id) === 0 ? '0%' : pctText(zoneAdj(item.id)) }}</td></tr>
-                    <tr v-if="!zoneApplied" class="cmp-zone-note"><td colspan="2">손품 체크리스트 — 이 단지 실거래가에 이미 담겨 있어 가격 보정은 하지 않습니다. 실거래가 없을 때만 비율 · 보정이 열립니다</td></tr>
+                    <tr v-if="!zoneApplied" class="cmp-zone-note"><td colspan="2">손품 체크리스트 — 이 단지 실거래가 · 전세가에 이미 담겨 있어 가격 보정은 하지 않습니다</td></tr>
                   </tbody>
                 </table></div></div>
                 <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
