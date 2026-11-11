@@ -5595,6 +5595,22 @@ const CMP_PERIODS: Array<[6 | 12 | 24, string]> = [[6, '6개월'], [12, '1년'],
 /** 평형 폭 — ±3㎡(약 1평)로 고정. 아파트는 59 · 74 · 84㎡처럼 규격이라 넓혀도 같은 단지만 잡히고, ±10㎡는 다른 타입까지 섞였다(2026-11-11 사용자, 단추 뺌) */
 const cmpTol = ref<3 | 5 | 10>(3);
 const cmpKind = ref<'매매' | '전세'>('매매');   // 강의 — 단지 비교 기본 잣대는 매매
+// 고른 거르기는 그 물건 문서(DB)에 남긴다 — 바꾸면 리스트 · 평균가가 달라져, 다시 열어도 같은 숫자를 보게(2026-11-11 사용자). 처음엔 위 기본값
+let cmpFilterFor = '';
+watch(() => auction.value?.id, (id) => {
+  if (!id) return;
+  const f = auction.value?.demandFilter;
+  cmpRange.value = f?.range ?? 1000; cmpMonths.value = f?.months ?? 6; cmpKind.value = f?.kind ?? '매매';
+  cmpFilterFor = id;
+}, { immediate: true });
+watch([cmpRange, cmpMonths, cmpKind], ([range, months, kind]) => {
+  const a = auction.value; if (!a || cmpFilterFor !== a.id) return;
+  if (range === 500) return;
+  const cur = a.demandFilter ?? { range: 1000, months: 6, kind: '매매' };
+  if (cur.range === range && cur.months === months && cur.kind === kind) return;
+  a.demandFilter = { range, months, kind };
+  persistSoon();
+});
 /** 단지 열쇠 — 동 · 지번(반경 범위에선 다른 동의 같은 지번이 있다). 선정물건은 'mine' */
 const cmpKeyOf = (c: { mine: boolean; umdNm: string; jibun: string }) => (c.mine ? 'mine' : `${c.umdNm}|${c.jibun}`);
 // 면적 글 — 아파트는 공급면적 먼저, 괄호 안 전용은 숫자만('83.17㎡ (59.98)' · '25.2평 (18.1)'). 단위는 손품조사 탭 줄 단추(sonAreaUnit)

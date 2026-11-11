@@ -361,7 +361,7 @@ const condText = computed(() => `${region.value?.dong ?? ''} · 반경 ${radText
 const setSimMode = (m: 'sim' | 'range') => {
   if (m === simMode.value) return;
   // 직접범위로 가면 지금 유사도 범위에서 시작
-  if (m === 'range') rangeCond.value = { ...simCond(sim.value, me.value), floor: null };
+  if (m === 'range') rangeCond.value = { ...simCond(sim.value, me.value), floor: rangeCond.value.floor === 0 ? 0 : null };   // 고른 '같은 층'은 그대로
   simMode.value = m;
 };
 const AREA_MIN = 20; const AREA_MAX = 150;
