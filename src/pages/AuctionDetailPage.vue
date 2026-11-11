@@ -12453,7 +12453,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-fs-row.mine { background: #fff5f5; box-shadow: inset 0 -2px 0 #f3c9c9; }
 .cmp-fs-row.on { border-color: #2b4fd8; background: #eef2ff; box-shadow: none; }   /* 시세분석 전체화면 .fs-it.on 과 같게 */
 .cmp-fs-places { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 9px; background: #fff; font-size: 13px; color: #6b7280; }
-.cmp-fs-sec { display: grid; gap: 8px; padding: 10px 12px; border-radius: 8px; background: #f7f9fc; }   /* 입지 · 구역 내 개별성 — 옅은 바탕 칸으로 나눈다(선 대신) */
+.cmp-fs-sec { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 9px; background: #f7f9fc; }   /* 입지 · 구역 내 개별성 — 위 단지 줄(.cmp-fs-row)과 같은 바탕 + 테두리(2026-11-11 사용자) */
 .cmp-fs-sec > span { display: grid; grid-template-columns: 20px 4.6em minmax(0, 1fr) auto; align-items: center; gap: 6px; }
 .cmp-fs-sec > span.z { grid-template-columns: 6.4em minmax(0, 1fr) auto; }   /* 개별성 — 아이콘 없이 이름 · 값 · 점수 */
 .cmp-fs-places .sc { font-style: normal; font-size: 13px; color: #111827; }
