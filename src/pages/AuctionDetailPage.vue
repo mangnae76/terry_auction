@@ -5598,7 +5598,7 @@ const cmpMonths = ref<6 | 12 | 24>(cmpSaved.months ?? (cmpSaved.years === 2 ? 24
 const CMP_PERIODS: Array<[6 | 12 | 24, string]> = [[6, '6개월'], [12, '1년'], [24, '2년']];
 /** 평형 폭 — ±3㎡(약 1평)로 고정. 아파트는 59 · 74 · 84㎡처럼 규격이라 넓혀도 같은 단지만 잡히고, ±10㎡는 다른 타입까지 섞였다(2026-11-11 사용자, 단추 뺌) */
 const cmpTol = ref<3 | 5 | 10>(3);
-const cmpKind = ref<'매매' | '전세'>(cmpSaved.kind ?? '전세');
+const cmpKind = ref<'매매' | '전세'>(cmpSaved.kind ?? '매매');   // 처음엔 매매(강의 — 단지 비교 기본 잣대는 매매 평당가, 2026-11-11 사용자). 고른 값은 그대로 남는다
 watch([cmpRange, cmpMonths, cmpTol, cmpKind], () => { try { localStorage.setItem(CMP_FILTER_KEY, JSON.stringify({ range: cmpRange.value, months: cmpMonths.value, tol: cmpTol.value, kind: cmpKind.value })); } catch { /* 이 창에서만 */ } });
 /** 500m 는 같은 동과 거의 겹쳐 뺐다(2026-11-11 사용자) */
 const CMP_RANGES: Array<[CmpRange, string]> = [['dong', '읍면동'], [1000, '1km']];
