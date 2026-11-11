@@ -9547,7 +9547,8 @@ const goBack = () => router.back();
                   <div class="cmp-fs-rh"><span>단지</span><span>평균 {{ cmpKind }}가</span></div>
                   <button v-for="r in cmpRows" :key="cmpKeyOf(r)" type="button" :class="['cmp-fs-row', { on: cmpIsOn(r), mine: r.mine }]" @click="cmpFsGo(r)">
                     <span class="nm"><span class="nm-line"><b class="nmt">{{ r.name || r.jibun }}</b><span v-if="r.mine" class="cmp-tag">선정물건</span></span><small>종합 {{ cmpScore(r.tot) }}{{ cmpRankOf.get(cmpKeyOf(r)) ? ` · ${cmpRankOf.get(cmpKeyOf(r))}위` : '' }} · {{ areaPair(r.supply, r.area) }}{{ r.buildYear ? ` · ${r.buildYear}년` : '' }}</small></span>
-                    <span class="pr">{{ cmpMoney(cmpKind === '매매' ? r.saleAvg : r.jeonseAvg) }}</span>
+                    <!-- 금액은 이름 줄 높이, 그 아래 종합 줄 높이에 거래건수(2026-11-11 사용자) -->
+                    <span class="pr">{{ cmpMoney(cmpKind === '매매' ? r.saleAvg : r.jeonseAvg) }}<small>{{ r.deals.filter((d) => (cmpKind === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세')).length }}건</small></span>
                   </button>
                   </div>
                   <!-- 보고 있는 단지의 입지 · 구역 내 개별성 — 탭 없이 위아래로 한눈에(단지 4~5곳이라 높이가 된다, 2026-11-11 사용자) -->
@@ -12443,7 +12444,9 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-fs-row .nm .cmp-tag { flex: 0 0 auto; }   /* 칩이 줄 폭으로 늘지 않게 */
 .cmp-fs-rows { display: grid; gap: 6px; padding: 8px; border: 1px solid #e5e7eb; border-radius: 10px; }   /* 단지 줄 묶음 */
 .cmp-fs-rh { display: flex; justify-content: space-between; padding: 0 12px; font-size: 12px; color: #9ca3af; }   /* 묶음 머리 — 작은 회색 */
-.cmp-fs-row .pr { display: grid; justify-items: end; font-size: 15px; font-weight: 800; color: #111827; white-space: nowrap; }
+.cmp-fs-row .pr small { margin-top: 2px; font-size: 13px; font-weight: 400; color: #6b7280; }
+.cmp-fs-row { align-items: stretch; }
+.cmp-fs-row .pr { align-self: stretch; align-content: space-between; display: grid; justify-items: end; font-size: 15px; font-weight: 800; color: #111827; white-space: nowrap; }
 .cmp-fs-row.mine { background: #fff5f5; box-shadow: inset 0 -2px 0 #f3c9c9; }
 .cmp-fs-row.on { border-color: #2b4fd8; background: #eef2ff; box-shadow: none; }   /* 시세분석 전체화면 .fs-it.on 과 같게 */
 .cmp-fs-places { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 9px; background: #fff; font-size: 13px; color: #6b7280; }
