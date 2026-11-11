@@ -161,8 +161,20 @@ const enrichNow = async (id: number) => {
   if (!r) return;
   // 저장해 둔 값은 길어야 1.5초만 기다린다 — 브라우저 저장소가 늦어도 조회는 이어 간다
   const cacheP = Promise.race([browserCacheGet<LotCache>(lotKey(), LOT_TTL), new Promise<null>((ok) => { window.setTimeout(() => ok(null), 1500); })]);
-  if (!mySpot.value) mySpot.value = await geocodeAddress(props.auction.address).catch(() => null);   // 보통은 run 이 먼저 찾아 둔다
   const cache = await cacheP;
+  if (id !== runId) return;
+  // 선정물건 건물(같은 지번)의 공시가 · 엘베를 맨 먼저 — 예전엔 주변 지번 위치를 다 찾은 뒤에 받아, F5 하면 한참 '조회 중' · 엘베 '-'이고 엘베 조건도 안 걸렸다(2026-11-11 사용자)
+  const myLot = lot.value; const myUmd = region.value?.dong ?? '';
+  if (myLot) void (async () => {
+    const cu = cache?.units?.[myLot]; const ce = cache?.elevs?.[myLot];
+    const [u, e] = await Promise.all([
+      cu && cu.length ? Promise.resolve(cu) : r.bCode10 ? fetchApartUnits(r.bCode10, myLot).catch(() => [] as ApartUnit[]) : Promise.resolve([] as ApartUnit[]),
+      ce !== undefined ? Promise.resolve(ce) : getBuildingFacts(lotAddr(myUmd, myLot)).then((f) => (f ? f.elevator : null)).catch(() => null),
+    ]);
+    if (id !== runId) return;
+    units.value = { ...units.value, [myLot]: u }; elevs.value = { ...elevs.value, [myLot]: e };
+  })();
+  if (!mySpot.value) mySpot.value = await geocodeAddress(props.auction.address).catch(() => null);   // 보통은 run 이 먼저 찾아 둔다
   if (id !== runId) return;
   const retryMiss = !cache || Date.now() - cache.at > RETRY_MISS;
   const hitSpots = Object.fromEntries(Object.entries(cache?.spots ?? {}).filter(([, v]) => v || !retryMiss));
