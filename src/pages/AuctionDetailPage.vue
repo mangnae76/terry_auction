@@ -9485,7 +9485,7 @@ const goBack = () => router.back();
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
               <div class="cmp-est-h"><h3><span class="cmp-no">②</span>단지 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span><span class="cmp-q">내가 선정한 아파트 단지는 몇 등일까?</span></h3>
-                <span class="cmp-est-desc">최근 {{ cmpMonths }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 같은 평형 {{ cmpKind }} 실거래 · 아래 표나 지도에서 단지를 고르면 바뀝니다</span>
+                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>최근 {{ cmpMonths }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 같은 평형 {{ cmpKind }} 실거래 · 아래 표나 지도에서 단지를 고르면 바뀝니다</span>
               </div>
               <div class="cmp-est">
                 <div class="cmp-tiles">
@@ -9654,7 +9654,7 @@ const goBack = () => router.back();
             <!-- ② 선정물건 호실 예상가 — 단지 평균 실거래가 × (1 + 단지 내 개별성 보정 합). 구역 내 개별성은 가격을 바꾸지 않아 여기 두지 않는다(같은 %로 보여 헷갈렸다, 2026-11-11) -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box o-unit">
               <div class="cmp-est-h"><h3><span class="cmp-no">③</span>선정물건 호실 예상가</h3><small class="cmp-q">같은 단지 안에서 내 호실의 가치는?</small>
-                <span class="cmp-est-desc">기준가 × (1 + 단지 내 개별성 보정) + 수리 금액 · 최근 {{ cmpMonths }}개월 · 거래 단추를 따른다</span></div>
+                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>최근 {{ cmpMonths }}개월 · {{ cmpKind }} · 기준가 × (1 + 단지 내 개별성 보정) + 수리 금액</span></div>
               <!-- 기준가 세 가지 — 실거래가 적으면 순위로 · 전세가율로(강의 2026-11-11). 고른 카드가 기준 -->
               <div class="cmp-bases" role="radiogroup" aria-label="기준가">
                 <button v-for="b in cmpBases" :key="b.id" type="button" role="radio" :class="['cmp-base', { on: cmpUnitBaseFrom === b.id }]" :aria-checked="cmpUnitBaseFrom === b.id" :disabled="!(b.value > 0)" @click="cmpBasePick = b.id"><span class="k">{{ b.label }}</span><span class="v">{{ b.text }}</span><small>{{ b.note }}</small></button>
@@ -12445,6 +12445,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-sc { border: 0; background: none; padding: 2px 6px; border-radius: 5px; font: inherit; font-size: 13px; color: #111827; cursor: pointer; text-decoration: underline dotted #9ca3af; text-underline-offset: 3px; }
 .cmp-sc.big { font-weight: 800; }
 .cmp-sc:hover, .cmp-sc:focus-visible { background: #eef2ff; color: #2b6df3; outline: none; }
+.cmp-flt { flex: 0 0 auto; margin-right: 4px; vertical-align: -1px; color: #6b7280; }   /* 필터로 고른 조건을 적은 설명 앞 — 깔때기(2026-11-11 사용자 규칙) */
 .cmp-guide { margin: 10px 2px 0; padding: 9px 12px; border-radius: 8px; background: #f7f8fb; font-size: 12.5px; line-height: 1.6; color: #4b5563; }
 .cmp-todo { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: #f7f8fb; font-size: 13px; color: #374151; }
 .cmp-todo b { font-weight: 800; color: #111827; }
