@@ -6123,11 +6123,29 @@ const ZONE_UNIT_ITEMS = computed(() => indivGroups.value[0].items.filter((it) =>
 const zoneApplied = computed(() => cmpUnitBaseFrom.value !== 'avg');
 const zoneAdjSum = computed<[number, number]>(() => (zoneApplied.value ? ZONE_IDS.reduce<[number, number]>((acc, id) => { const [a, b] = zoneAdj(id); return [acc[0] + a, acc[1] + b]; }, [0, 0]) : [0, 0]));
 const totalAdj = computed<[number, number]>(() => [unitAdjSum.value[0] + zoneAdjSum.value[0], unitAdjSum.value[1] + zoneAdjSum.value[1]]);
+/** 같은 평형 고른 거래의 실거래 최저 · 최고(선정물건 단지) — 예상가가 이 범위를 넘지 않게 자른다(보정이 쌓여 12억이 넘던 것, 2026-11-11 사용자) */
+const cmpUnitRange = computed(() => {
+  const me = cmpRows.value.find((r) => r.mine); if (!me) return null;
+  const ps = me.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).map((d) => d.price);
+  return ps.length ? { min: Math.min(...ps), max: Math.max(...ps) } : null;
+});
+const cmpUnitRaw = computed<[number, number] | null>(() => {
+  const b = cmpUnitBase.value; if (!(b > 0)) return null;
+  const add = repairMan() * 1e4; const [lo, hi] = totalAdj.value;
+  return [b * (1 + lo / 100) + add, b * (1 + hi / 100) + add];
+});
+const cmpUnitClamp = computed(() => {
+  const raw = cmpUnitRaw.value; const r = cmpUnitRange.value;
+  if (!raw) return null;
+  if (!r) return { lo: raw[0], hi: raw[1], cut: '' };
+  const c = (v: number) => Math.min(r.max, Math.max(r.min, v));
+  const cut = raw[1] > r.max ? `실거래 최고가 ${cmpEok(r.max)}를 넘어 잘랐습니다` : raw[0] < r.min ? `실거래 최저가 ${cmpEok(r.min)}보다 낮아 잘랐습니다` : '';
+  return { lo: c(raw[0]), hi: c(raw[1]), cut };
+});
 const cmpUnitEst = computed(() => {
-  const b = cmpUnitBase.value; if (!(b > 0)) return '-';
-  const add = repairMan() * 1e4;
-  const [lo, hi] = totalAdj.value; const a = (b * (1 + lo / 100) + add) / 1e8; const z = (b * (1 + hi / 100) + add) / 1e8;
-  return lo === hi ? `${a.toFixed(2)}억` : `${a.toFixed(2)}~${z.toFixed(2)}억`;
+  const v = cmpUnitClamp.value; if (!v) return '-';
+  const a = v.lo / 1e8; const z = v.hi / 1e8;
+  return Math.abs(a - z) < 0.005 ? `${a.toFixed(2)}억` : `${a.toFixed(2)}~${z.toFixed(2)}억`;
 });
 const unitAdjText = computed(() => (repairMan() > 0 ? `${pctText(totalAdj.value)} · 수리 ${repairText(repairMan())}` : pctText(totalAdj.value)));
 const cmpEok = (w: number) => (w > 0 ? `${(w / 1e8).toFixed(2)}억` : '-');
@@ -9761,7 +9779,7 @@ const goBack = () => router.back();
                 <div class="cmp-tiles three">
                   <div class="cmp-tile"><span class="k">기준가({{ cmpBases.find((b) => b.id === cmpUnitBaseFrom)?.label ?? '없음' }})</span><span class="v">{{ cmpUnitBase ? cmpEok(cmpUnitBase) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">보정</span><span class="v">{{ unitAdjText }}</span></div>
-                  <div class="cmp-tile key"><span class="k">선정물건 예상 {{ cmpKind }}가</span><span class="v">{{ cmpUnitEst }}</span></div>
+                  <div class="cmp-tile key"><span class="k">선정물건 예상 {{ cmpKind }}가</span><span class="v">{{ cmpUnitEst }}</span><span v-if="cmpUnitClamp?.cut" class="s cut">{{ cmpUnitClamp.cut }}</span></div>
                 </div>
               </div>
             </section>
@@ -12563,6 +12581,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-tbl tr.cmp-grp td small { margin-left: 8px; font-weight: 400; color: #9ca3af; }
 .cmp-deals .cmp-tbl th small.inl, .cmp-tbl th small.inl { display: inline !important; margin-left: 2px; }   /* 말머리 한 줄 — 보고 있는 단지 표 */
 .cmp-tile.off .v { font-size: 12.5px; font-weight: 400; color: #9ca3af; }   /* 동 전체일 때 비워 둔 칸 */
+.cmp-tile.key .s.cut { font-size: 12px; font-weight: 400; color: rgba(255, 255, 255, .9); }
 .cmp-two.one { grid-template-columns: minmax(0, 1fr); }
 /* 점수 팝업 */
 .cmp-pop { position: fixed; z-index: 3000; left: 50%; top: 120px; width: min(560px, calc(100vw - 32px)); display: grid; grid-template-rows: auto auto;   /* 안쪽 스크롤 없이 내용만큼 높이(2026-11-11 사용자) */ background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; box-shadow: 0 12px 32px rgba(17, 24, 39, .18); font-family: inherit; font-size: 13px; color: #111827; }
