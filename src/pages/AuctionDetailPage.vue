@@ -5787,7 +5787,9 @@ const unitAdj = (id: string): [number, number] => {
   return sg > 0 ? [Math.min(a, b), Math.max(a, b)] : sg < 0 ? [-Math.max(a, b), -Math.min(a, b)] : [0, 0];
 };
 const UNIT_IDS = ['ind.floorNum', 'ind.direction', 'ind.type', 'ind.view', 'ind.repair', 'ind.dongPos'];   // 구조 · 일조량 뺐다(2026-11-11)
-const unitAdjSum = computed<[number, number]>(() => UNIT_IDS.reduce<[number, number]>((acc, id) => { const [a, b] = unitAdj(id); return [acc[0] + a, acc[1] + b]; }, [0, 0]));
+/** 호실 예상가 보정 칸 — 빌라는 구조(방 수) · 일조량도(빌라는 건물마다 달라 가격에 들어간다, 2026-11-12) */
+const unitIdList = computed(() => (isApartment.value ? UNIT_IDS : ['ind.floorNum', 'ind.type', 'ind.rooms', 'ind.direction', 'ind.sunlight', 'ind.view', 'ind.repair']));
+const unitAdjSum = computed<[number, number]>(() => unitIdList.value.reduce<[number, number]>((acc, id) => { const [a, b] = unitAdj(id); return [acc[0] + a, acc[1] + b]; }, [0, 0]));
 const pctText = ([a, b]: [number, number]) => {
   const one = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n * 10) / 10)}%`;
   return a === b ? one(a) : `${one(a)} ~ ${one(b)}`;
@@ -6092,7 +6094,12 @@ const UNIT_GROUPS = [
   // 구조(방 · 화장실)는 같은 단지 같은 평형이면 다 같아 뺐다, 일조량은 향으로 따진다(강의) — '향/일조량' 한 칸(2026-11-11 사용자)
   { title: '현장 확인', ids: ['ind.direction', 'ind.dongPos', 'ind.view', 'ind.repair'] },   // 지하주차장 연결은 뺐다 — 요즘 단지는 다 연결돼 같은 단지 안 차이가 없다(2026-11-11 사용자)
 ];
-const unitGroupsView = computed(() => UNIT_GROUPS.map((g) => ({ title: g.title, items: g.ids.map((id) => indivGroups.value[1].items.find((it) => it.id === id)).filter((it): it is IndivItem => !!it) })).filter((g) => g.items.length));
+const UNIT_GROUPS_VILLA = [
+  { title: '자동(서류)', ids: ['ind.floorNum'] },
+  { title: '서류 · 도면으로', ids: ['ind.type', 'ind.rooms'] },
+  { title: '현장 확인', ids: ['ind.direction', 'ind.sunlight', 'ind.view', 'ind.repair'] },
+];
+const unitGroupsView = computed(() => (isApartment.value ? UNIT_GROUPS : UNIT_GROUPS_VILLA).map((g) => ({ title: g.title, items: g.ids.map((id) => indivGroups.value[1].items.find((it) => it.id === id)).filter((it): it is IndivItem => !!it) })).filter((g) => g.items.length));
 /** 전용 평당가(원/평) — 고른 거래(매매 · 전세) 평균 ÷ 전용 평 */
 const cmpPerPy = (r: { area: number; saleAvg: number; jeonseAvg: number }, kind = cmpKind.value) => {
   const p = kind === '매매' ? r.saleAvg : r.jeonseAvg; return p > 0 && r.area > 0 ? p / (r.area / 3.305785) : 0;
@@ -6111,7 +6118,7 @@ const cmpBase = computed(() => {
   const my = Number(sumVal('sum.floorCurrent').match(/\d+/)?.[0] ?? 0);
   const allSame = o.rows.every((r) => r.same && me && Math.abs(r.areaM2 - me.area) < 0.05);
   // '기준가 · 35평 2층 매매가' — 평은 공급 평 반올림, 층은 같은 층으로 골랐을 때만(2026-11-11 사용자)
-  const py = me?.supply ? `${Math.round(me.supply.lo / 3.305785)}평 ` : '';
+  const py = me?.supply ? `${Math.round(me.supply.lo / 3.305785)}평 ` : me && !isApartment.value && me.area > 0 ? `${Number((me.area / 3.305785).toFixed(1))}평 ` : '';   // 빌라는 전용 평
   const label = allSame && me ? `기준가 · ${py}${o.sameFloor && my ? `${my}층 ` : ''}${o.kind}가` : `기준가 · 시세분석 예상 ${o.kind}가`;
   const list = o.rows.length <= 6 ? ` · ${o.rows.map((r) => [r.same ? (r.dong ? `${r.dong}동` : '') : r.name, r.floorNo ? `${r.floorNo}층` : '', cmpEok(r.price)].filter(Boolean).join(' ')).join(' · ')}` : '';
   return { label, value: o.est, note: `위 표에서 고른 ${o.n}건으로 낸 예상가${list}` };
@@ -6125,6 +6132,8 @@ const zoneSign = (id: string): number => {
   if (id === 'ind.elevator') return v === 'O' ? 1 : v === 'X' ? -1 : 0;
   if (id === 'ind.corridor') return v === '복도식' ? -1 : 0;   // 계단식이 보통, 복도식은 춥고 안전 문제로 싸다(강의)
   if (id === 'ind.slope') return v === 'O' ? -1 : 0;
+  // 빌라 건물외부 · 내부 — 나쁨 · 곰팡이 · 누수 · 결로는 감산, 좋음은 가산(양호 · 청결 등은 보통)
+  if (id === 'ind.mgmt' || id === 'ind.inside') { const has = (...xs: string[]) => xs.some((x) => v.includes(x)); return has('나쁨', '곰팡이', '누수', '결로') ? -1 : has('좋음') ? 1 : 0; }
   if (id === 'ind.far') { const f = Number(indivDisplay({ id: 'ind.far', label: '용적률', text: true, suffix: '%' } as IndivItem).replace(/[^\d.]/g, '')); return !f ? 0 : f <= 200 ? 1 : f >= 300 ? -1 : 0; }
   return 0;
 };
@@ -6132,7 +6141,9 @@ const zoneAdj = (id: string): [number, number] => {
   const sg = zoneSign(id); const [a, b] = rateOf(id).map(Math.abs) as [number, number];
   return sg > 0 ? [Math.min(a, b), Math.max(a, b)] : sg < 0 ? [-Math.max(a, b), -Math.min(a, b)] : [0, 0];
 };
-const ZONE_UNIT_ITEMS = computed(() => indivGroups.value[0].items.filter((it) => ZONE_IDS.includes(it.id)));
+/** 구역 내(빌라는 '빌라 개별성') 칸 — 빌라는 건물외부 · 건물내부까지(빌라 개별성 표 그대로) */
+const zoneIdList = computed(() => (isApartment.value ? ZONE_IDS : ['ind.age', 'ind.parking', 'ind.elevator', 'ind.corridor', 'ind.slope', 'ind.mgmt', 'ind.inside']));
+const ZONE_UNIT_ITEMS = computed(() => indivGroups.value[0].items.filter((it) => zoneIdList.value.includes(it.id)));
 /** 기준가가 내 단지 실거래 평균이면 구역 내 개별성은 그 값에 이미 담겨 있어 다시 붙이지 않는다(두 번 세지 않게) — 이웃 단지 값(전세가율로)일 때만 */
 // 구역 내 개별성 보정은 붙이지 않는다 — 기준가 둘(단지 평균 · 이 단지 전세 ÷ 전세가율) 모두 이 단지 값이라 연식 · 주차 · 엘베 등이 이미 담겨 있다.
 // 전세가율 기준가에서 +35~45%가 더 붙어 두 번 셌다(2026-11-11 사용자). 구역 내 개별성은 손품 체크리스트로만
@@ -6140,7 +6151,7 @@ const ZONE_UNIT_ITEMS = computed(() => indivGroups.value[0].items.filter((it) =>
 // 섞여 있으면 % 를 평균 전체에 붙여 이 단지 거래까지 부풀었다(+35~45%, 2026-11-11) — 섞임은 알리기만 한다
 const zoneApplied = computed(() => { const rs = sonPriceOut?.value?.rows ?? []; return rs.length > 0 && rs.every((r) => !r.same); });
 const zoneMixed = computed(() => { const rs = sonPriceOut?.value?.rows ?? []; return rs.some((r) => r.same) && rs.some((r) => !r.same) ? rs.filter((r) => !r.same).length : 0; });
-const zoneAdjSum = computed<[number, number]>(() => (zoneApplied.value ? ZONE_IDS.reduce<[number, number]>((acc, id) => { const [a, b] = zoneAdj(id); return [acc[0] + a, acc[1] + b]; }, [0, 0]) : [0, 0]));
+const zoneAdjSum = computed<[number, number]>(() => (zoneApplied.value ? zoneIdList.value.reduce<[number, number]>((acc, id) => { const [a, b] = zoneAdj(id); return [acc[0] + a, acc[1] + b]; }, [0, 0]) : [0, 0]));
 const totalAdj = computed<[number, number]>(() => [unitAdjSum.value[0] + zoneAdjSum.value[0], unitAdjSum.value[1] + zoneAdjSum.value[1]]);
 /** 같은 평형 고른 거래의 실거래 최저 · 최고(선정물건 단지) — 예상가가 이 범위를 넘지 않게 자른다(보정이 쌓여 12억이 넘던 것, 2026-11-11 사용자) */
 const cmpUnitRange = computed(() => {
@@ -9160,7 +9171,8 @@ const goBack = () => router.back();
               <!-- 기준 줄 · 한 줄짜리 상세표는 뺐다 — 위 칸과 같은 숫자의 반복(2026-11-11 사용자) -->
             </section>
 
-            <div v-if="!cmpOn" class="adp-dm-head sec2 o-indh">
+            <!-- 빌라 손품조사는 개별성을 시세분석 › 선정물건 호실 예상가로 옮겼다(2026-11-12 사용자) -->
+            <div v-if="!cmpOn && !personaOn" class="adp-dm-head sec2 o-indh">
               <strong class="adp-dm-title">{{ personaOn ? '개별성' : `${sonpumMode ? '' : '2. '}입지/개별성` }}<small v-if="!personaOn">(구역내등수)</small></strong>
             </div>
 
@@ -9330,7 +9342,7 @@ const goBack = () => router.back();
 
             <!-- ② 개별성 분석 (웹 · 아파트 손품조사는 ①) -->
             <!-- 아파트 손품조사는 입력을 단지 입지비교 · 호실 예상가 표와 점수 팝업으로 옮겨 이 카드를 없앤다(2026-11-11 시안) -->
-            <div v-if="!cmpOn" class="adp-dm-block boxed o-ind">
+            <div v-if="!cmpOn && !personaOn" class="adp-dm-block boxed o-ind">
             <div class="adp-dm-sub">
               {{ cmpOn ? '①' : personaOn ? '' : '②' }} 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
               <span v-if="cmpOn && !cmpIndOpen" class="cmp-ind-fold-note">아파트는 단지 입지비교 · 호실 예상가 표에서 바로 고릅니다</span>
@@ -9709,18 +9721,18 @@ const goBack = () => router.back();
             </section>
 
             <!-- 선정물건 호실 예상가 — 시세분석 탭(#sonUnitSlot)으로 옮겨 그린다(2026-11-11 사용자 시안). 기준가 = 시세분석 예상가, × (1 + 개별성 보정) + 수리 금액 -->
-            <Teleport v-if="webEmbed && isApartment && sonpumMode" defer to="#sonUnitSlot">
+            <Teleport v-if="webEmbed && sonpumMode" defer to="#sonUnitSlot">
             <section class="adp-dm-block boxed cmp-box o-unit">
-              <div class="cmp-est-h unit-h"><span class="unit-tag">보정</span><h3>선정물건 호실 예상가<span v-if="cmpMineRow" class="cmp-scope-chip">{{ areaPair(cmpMineRow.supply, cmpMineRow.area) }}</span></h3><small class="cmp-q">같은 단지 안에서 내 호실의 가치는?</small>
+              <div class="cmp-est-h unit-h"><span class="unit-tag">보정</span><h3>선정물건 호실 예상가<span v-if="cmpMineRow" class="cmp-scope-chip">{{ cmpArea(cmpMineRow.supply, cmpMineRow.area) }}</span></h3><small class="cmp-q">{{ isApartment ? '같은 단지 안에서 내 호실의 가치는?' : '비슷한 빌라들 사이에서 내 호실의 가치는?' }}</small>
                 <span class="cmp-est-desc"><span class="cmp-desc-hi">기준가 = 위 표 예상 실거래가 · 기준가 × (1 + 개별성 보정) + 수리 금액</span></span></div>
               <div class="cmp-bases one"><div class="cmp-base on"><span class="k">{{ cmpBase.label }}</span><span class="v">{{ cmpEok(cmpBase.value) }}</span><small>{{ cmpBase.note }}</small></div></div>
               <!-- 구역 내 · 단지 내 개별성 — 가로로 나란히(좁으면 위아래, 2026-11-11 사용자) -->
               <!-- 구역 내 개별성 — 위 표가 모두 이 단지 거래면 접어 둔다(이미 담겨 있다). 다른 단지 거래가 섞이면 열려 % 로 보정 -->
-              <div v-if="!zoneApplied" :class="['cmp-zone-off', { warn: zoneMixed }]"><b>구역 내 개별성</b><span v-if="zoneMixed">위 표에 다른 단지 거래 {{ zoneMixed }}건이 섞여 있습니다. 이 단지 거래만 쓰려면 그 줄을 제외하세요. 다른 단지 거래만 남으면 열려 연식 · 주차 · 엘베 · 현관 · 경사 · 용적률을 % 로 보정합니다.</span><span v-else>기준가가 모두 이 단지 거래라 쓰지 않습니다. 이 단지 거래가 없어 다른 단지 거래만 쓸 때 열려 연식 · 주차 · 엘베 · 현관 · 경사 · 용적률을 % 로 보정합니다.</span></div>
+              <div v-if="!zoneApplied" :class="['cmp-zone-off', { warn: zoneMixed }]"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span v-if="zoneMixed">위 표에 다른 {{ isApartment ? '단지' : '건물' }} 거래 {{ zoneMixed }}건이 섞여 있습니다. 이 {{ isApartment ? '단지' : '건물' }} 거래만 쓰려면 그 줄을 제외하세요. 다른 {{ isApartment ? '단지' : '건물' }} 거래만 남으면 열려 연식 · 주차 · 엘베 · 현관 · 경사 · 용적률을 % 로 보정합니다.</span><span v-else>기준가가 모두 이 {{ isApartment ? '단지' : '건물' }} 거래라 쓰지 않습니다. 이 {{ isApartment ? '단지' : '건물' }} 거래가 없어 다른 {{ isApartment ? '단지' : '건물' }} 거래만 쓸 때 열려 연식 · 주차 · 엘베 · 현관 · 경사 · 용적률을 % 로 보정합니다.</span></div>
               <div :class="['cmp-two', zoneApplied ? 'pair' : 'solo']">
                 <div v-if="zoneApplied" class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
                   <colgroup><col style="width: 20%" /><col /><template v-if="zoneApplied"><col style="width: 19%" /><col style="width: 22%" /></template></colgroup>
-                  <thead><tr><th>구역 내 개별성</th><th>내용</th><th v-if="zoneApplied">비율</th><th v-if="zoneApplied">보정</th></tr></thead>
+                  <thead><tr><th>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</th><th>내용</th><th v-if="zoneApplied">비율</th><th v-if="zoneApplied">보정</th></tr></thead>
                   <tbody>
                     <!-- 구역 내 개별성 — 단지 자체(연식 · 주차 · 엘베 · 현관구조 · 경사 · 용적률). 기준가가 단지 평균이면 이미 담겨 있어 0(2026-11-11 사용자) -->
                     <tr v-for="item in ZONE_UNIT_ITEMS" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
@@ -9736,7 +9748,7 @@ const goBack = () => router.back();
                 </table></div></div>
                 <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
                   <colgroup><col style="width: 20%" /><col /><col style="width: 19%" /><col style="width: 22%" /></colgroup>
-                  <thead><tr><th>단지 내 개별성</th><th>내용 <span class="cmp-th-hint">(해당 물건과 유사 물건이 다를 경우에만 선택하세요)</span></th><th>비율</th><th>보정</th></tr></thead>
+                  <thead><tr><th>{{ isApartment ? '단지 내 개별성' : '호실 개별성' }}</th><th>내용 <span class="cmp-th-hint">(해당 물건과 유사 물건이 다를 경우에만 선택하세요)</span></th><th>비율</th><th>보정</th></tr></thead>
                   <tbody>
                     <template v-for="g in unitGroupsView" :key="g.title">
                     <tr v-for="item in g.items" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
@@ -9756,7 +9768,7 @@ const goBack = () => router.back();
                     <tr class="cmp-sum"><td>합계</td><td /><td /><td :class="['n', 'adp-ind-adj', totalAdj[1] > 0 || repairMan() > 0 ? 'up' : totalAdj[0] < 0 ? 'down' : 'zero']"><b>{{ unitAdjText }}</b></td></tr>
                   </tbody>
                 </table></div></div>
-                <p class="cmp-ind-note">비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 향/일조량 · 뷰 · 수리유무 · 동 위치는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다. 층은 4층부터 탑층 아래까지가 기준층이라 0%, 수리는 20평대 기준 금액입니다.</p>
+                <p class="cmp-ind-note"><template v-if="isApartment">비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 향/일조량 · 뷰 · 수리유무 · 동 위치는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다. 층은 4층부터 탑층 아래까지가 기준층이라 0%, 수리는 20평대 기준 금액입니다.</template><template v-else>비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 향 · 일조량 · 뷰 · 수리유무 · 건물외부 · 건물내부는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다. 층은 4층부터 탑층 아래까지가 기준층이라 0%입니다.</template></p>
               </div>
               <div class="cmp-est">
                 <!-- 기준가 칸은 뺐다 — 위 기준가 카드와 같은 값이라 겹친다(2026-11-11 사용자) -->
@@ -12549,7 +12561,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 #sonUnitSlot .unit-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 #sonUnitSlot .unit-h h3 { margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
 #sonUnitSlot .unit-tag { font-size: 13px; font-weight: 700; color: #2b4fd8; background: #eef2ff; border-radius: 5px; padding: 3px 8px; }   /* 시세분석 '결론 · 입력' 표와 같은 꼴 */
-.cmp-th-hint { font-weight: 400; font-size: 12px; color: #2563eb; }   /* 내용 머리 옆 파란 안내(2026-11-11 사용자) */
+.cmp-th-hint { display: block; font-weight: 400; font-size: 12px; color: #2563eb; white-space: normal; }   /* '내용' 아래 줄 — 옆 칸과 겹치지 않게 */   /* 내용 머리 옆 파란 안내(2026-11-11 사용자) */
 .cmp-zone-off.warn { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
 .cmp-zone-off b { flex: 0 0 auto; font-size: 14px; font-weight: 800; color: #6b7280; }   /* 기준가 층 거르기 — 같은층 · ±1층 · 전체 */
 :root[data-theme="dark"] .cmp-zone-off { background: transparent; border-color: rgba(255, 255, 255, .18); color: #9ca3af; }
