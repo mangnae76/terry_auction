@@ -9546,16 +9546,18 @@ const goBack = () => router.back();
                 <button v-if="cmpTodo.some((t) => t.kind === 'zone')" type="button" @click="cmpPopOpen('zone', cmpMineRow, $event)">개별성에서고르기</button>
                 <button v-if="cmpTodo.some((t) => t.kind === 'loc')" type="button" @click="cmpPopOpen('loc', cmpMineRow, $event)">입지에서고르기</button>
               </div>
-              <template v-if="cmpPicked">
-                <p class="sup-head cmp-pick">고른 단지 <span class="area cmp-chip">{{ cmpPicked.name || cmpPicked.jibun }}</span> <small class="cmp-sub">지도 점이나 위 표 줄을 누르면 바뀝니다</small></p>
+              <!-- 고른 단지 — 실거래가 없어 단지를 못 만들어도 상자는 남기고 '데이터가 없습니다'(2026-11-11 사용자, 청라 호반베르디움) -->
+              <template v-if="cmpOn">
+                <p class="sup-head cmp-pick">고른 단지 <span class="area cmp-chip">{{ cmpPicked?.name || cmpPicked?.jibun || supName || '선정물건' }}</span> <small class="cmp-sub">지도 점이나 위 표 줄을 누르면 바뀝니다</small></p>
                 <div class="cmp-two one">
                   <div class="son-demand sup-tbl"><div class="adm-table-wrap cmp-deals"><table class="adm-table cmp-tbl">
                     <thead><tr><th>구분</th><th>계약일</th><th>면적<small>공급(전용)</small></th><th>층</th><th>실거래가</th></tr></thead>
                     <tbody>
                       <tr v-for="(d, i) in cmpPickedDeals" :key="i">
-                        <td><span :class="['cmp-kind', { j: d.kind === '전세', m: d.kind === '월세' }]">{{ d.kind === '직거래' ? '매매' : d.kind }}</span></td><td class="n">{{ d.contractDate }}</td><td class="n">{{ areaPair(cmpPicked.supply, d.areaM2) }}</td><td class="n">{{ d.floor ? `${d.floor}층` : '-' }}</td><td class="n amt"><b>{{ cmpMoney(d.price) }}</b></td>
+                        <td><span :class="['cmp-kind', { j: d.kind === '전세', m: d.kind === '월세' }]">{{ d.kind === '직거래' ? '매매' : d.kind }}</span></td><td class="n">{{ d.contractDate }}</td><td class="n">{{ areaPair(cmpPicked?.supply ?? null, d.areaM2) }}</td><td class="n">{{ d.floor ? `${d.floor}층` : '-' }}</td><td class="n amt"><b>{{ cmpMoney(d.price) }}</b></td>
                       </tr>
-                      <tr v-if="!cmpPickedDeals.length"><td colspan="5" class="cmp-dim">최근 {{ cmpMonths }}개월 같은 평형 {{ cmpKind }} 거래가 없습니다.</td></tr>
+                      <tr v-if="!cmpPicked"><td colspan="5" class="cmp-dim">{{ supLoaded ? '해당 단지의 실거래 데이터가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
+                      <tr v-else-if="!cmpPickedDeals.length"><td colspan="5" class="cmp-dim">최근 {{ cmpMonths }}개월 같은 평형 {{ cmpKind }} 거래가 없습니다.</td></tr>
                     </tbody>
                   </table></div></div>
                 </div>
