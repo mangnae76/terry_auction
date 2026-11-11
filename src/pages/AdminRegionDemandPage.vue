@@ -46,7 +46,7 @@ type EmbedFilter = {
   rows?: DongTradeDetailRow[]; asOf?: number; label?: string;
 };
 /** boxNo — 손품조사 매매수요 안에서 상자 번호(④). 있으면 제목 '④ 읍면동 수급분석', 안쪽 ① ② ③ 번호는 뺀다(상자 번호와 겹쳐서, 2026-11-11) */
-const props = defineProps<{ embed?: EmbedFilter | null; chip?: { tone: string; text: string } | null; boxNo?: string }>();
+const props = defineProps<{ embed?: EmbedFilter | null; chip?: { tone: string; text: string } | null; boxNo?: string; dongLabel?: boolean }>();   // dongLabel — 번호 없이 '읍면동 수급분석'(손품조사 빌라)
 const embedded = computed(() => !!props.embed);
 const auth = useAuthStore();
 
@@ -597,7 +597,7 @@ const downloadCsv = () => {
       <!-- 앱 매매수요와 같은 짜임 — 위 ① 수치(거래량 · 세대수 · 매물수) 3칸, 아래 ② 지표 4칸. 두 줄은 시작과 끝이 같다.
            칸에 마우스를 대면 그 값과 이어진 칸이 같이 빨갛게 켜진다(앱 DM_LIT_LINKS 와 같은 짝) -->
       <section v-if="webEmbed && rows.length > 0" class="adm-nav dm">
-        <p class="adm-nav-scope"><span><template v-if="props.boxNo">{{ props.boxNo }} 읍면동 </template>수급분석<span class="area scope-name">{{ dmAreaShort }}</span><small class="scope-q">이 동네는 내놓으면 얼마나 빨리 팔릴까?</small></span><SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
+        <p class="adm-nav-scope"><span><template v-if="props.boxNo">{{ props.boxNo }} </template><template v-if="props.boxNo || props.dongLabel">읍면동 </template>수급분석<span class="area scope-name">{{ dmAreaShort }}</span><small class="scope-q">이 동네는 내놓으면 얼마나 빨리 팔릴까?</small></span><SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
         <p v-if="!props.embed" class="dm-block-head">① 기초수치</p>
         <div class="dm-row c3">
           <div v-for="c in dmInputs" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">

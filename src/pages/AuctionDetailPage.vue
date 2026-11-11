@@ -9161,12 +9161,13 @@ const goBack = () => router.back();
             </section>
 
             <div v-if="!cmpOn" class="adp-dm-head sec2 o-indh">
-              <strong class="adp-dm-title">{{ sonpumMode ? '' : '2. ' }}입지/개별성<small>(구역내등수)</small></strong>
+              <strong class="adp-dm-title">{{ personaOn ? '개별성' : `${sonpumMode ? '' : '2. '}입지/개별성` }}<small v-if="!personaOn">(구역내등수)</small></strong>
             </div>
 
 
             <!-- ① 실사용자 + 입지등수 — 웹 · 아파트 손품조사에선 아래 단지 입지비교에 합쳤다(룸수 · 세대구성 · 등수 고치기, 2026-11-11 시안) -->
-            <div v-if="!cmpOn" class="adp-dm-block boxed o-rank">
+            <!-- 빌라 손품조사(personaOn)는 입지등수 표를 뺐다 — 빌라 입지비교의 입지점수 · 순위가 대신한다(2026-11-12 사용자) -->
+            <div v-if="!cmpOn && !personaOn" class="adp-dm-block boxed o-rank">
             <div class="adp-dm-sub">{{ personaOn ? '입지등수' : '① 실사용자 + 입지등수' }} <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>초기화</button></div>
             <table :class="['adp-table adp-ruser-table', { tight: !webEmbed }]">
               <!-- 웹 손품조사 — 면적 · 룸수 · 세대구성은 맨 위 '① 실사용자' 줄에 있어 여기선 입지조건 · 등수만(2026-11-12) -->
@@ -9331,7 +9332,7 @@ const goBack = () => router.back();
             <!-- 아파트 손품조사는 입력을 단지 입지비교 · 호실 예상가 표와 점수 팝업으로 옮겨 이 카드를 없앤다(2026-11-11 시안) -->
             <div v-if="!cmpOn" class="adp-dm-block boxed o-ind">
             <div class="adp-dm-sub">
-              {{ cmpOn ? '①' : '②' }} 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
+              {{ cmpOn ? '①' : personaOn ? '' : '②' }} 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
               <span v-if="cmpOn && !cmpIndOpen" class="cmp-ind-fold-note">아파트는 단지 입지비교 · 호실 예상가 표에서 바로 고릅니다</span>
               <button v-if="!editingSurvey.individuality && (!cmpOn || cmpIndOpen)" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else-if="editingSurvey.individuality" class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
