@@ -9,6 +9,17 @@ import type { ApartUnit } from './vworldApi';
 export const PY = 3.305785;
 /** 보증보험 전세 한도 — 공동주택가 × 126% */
 export const HUG_RATE = 1.26;
+/** 시세분석 → 선정물건 호실 예상가(손품조사, 2026-11-11 사용자 시안) — 표에서 고른 거래로 낸 예상가와 그 거래들 */
+export type SonPriceOut = {
+  kind: '매매' | '전세' | '월세';
+  est: number;
+  n: number;
+  /** 층 단추 '같은 층' — 층은 이미 기준가에 담겨 단지 내 개별성의 층 보정을 0 으로 */
+  sameFloor: boolean;
+  /** 다른 단지 거래가 섞였나 — 섞이면 구역 내 개별성을 열어 보정 */
+  other: boolean;
+  rows: Array<{ same: boolean; name: string; dong?: string; floorNo: number; price: number; areaM2: number }>;
+};
 export const RADII = [100, 300, 500, 1000] as const;
 export const PERIODS = [3, 6, 12, 24] as const;   // 3년은 뺐다(2026-11-02)
 export const radText = (m: number) => (m >= 1000 ? `${m / 1000}km` : `${m}m`);

@@ -9,6 +9,7 @@ import { analyzeAddress, floorOfHo, pickCaseTrade, type CasePropertyType, type C
 import {
   PY, HUG_RATE, RADII, PERIODS, SIM_STEPS, radText, periodText, simCond, simDefText, groupOf, floorNum, matchUnit, inRange,
   estStats, jeonseEstimate, distM, visitOrder, type PriceCond, type PriceRow,
+  type SonPriceOut,
 } from '../services/priceAnalysis';
 import { fetchApartUnits, type ApartUnit } from '../services/vworldApi';
 import { getComplexAreas, type ComplexAreas } from '../services/complexAreas';
@@ -314,6 +315,18 @@ const view = computed(() => {
   if (kindF.value === '월세') { const m = estStats(monthRows.value, myPy.value); return m ? { ...m, capped: false } : null; }
   return stats.value ? { ...stats.value, capped: false } : null;
 });
+// 손품조사 웹 — 아래 '선정물건 호실 예상가'가 이 예상가 · 고른 거래를 기준가로 쓴다(2026-11-11 사용자 시안)
+const sonPriceOut = inject<Ref<SonPriceOut | null> | null>('sonPriceOut', null);
+if (sonPriceOut) {
+  watch([view, kindF, () => rangeCond.value.floor], () => {
+    const v = view.value;
+    const rs = kindF.value === '전세' ? jeonseRows.value : kindF.value === '월세' ? monthRows.value : saleRows.value;
+    sonPriceOut.value = v ? {
+      kind: kindF.value, est: v.est, n: v.n, sameFloor: rangeCond.value.floor === 0, other: rs.some((r) => !r.same),
+      rows: rs.map((r) => ({ same: !!r.same, name: r.name || r.jibun, dong: r.dong, floorNo: r.floorNo, price: r.price, areaM2: r.areaM2 })),
+    } : null;
+  }, { immediate: true });
+}
 // 띠 첫 칸 ⓘ — 셈하는 법 · 계산 조건(예전 띠 아래 두 줄)
 /* 웹 — '기준' ⓘ: 유사도와 직접범위가 어떻게 이어지는지(따로 움직이고, 직접범위는 들어갈 때 유사도 범위에서 시작) */
 const modeTip: TipRow[] = [

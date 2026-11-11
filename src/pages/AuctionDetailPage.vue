@@ -69,7 +69,8 @@ import { cached, cachedEntryOrStale, loadOrFail, cacheKey, readCache, writeCache
 // 셈은 화면 밖에 따로 둔다 — 표로 매번 확인할 수 있게 (profitMath.test.ts · registryAnalysis.test.ts)
 import { taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxProfitOf } from '../services/profitMath';
 import { baseDateOf, isTakenOver, normalizeYmd } from '../services/registryAnalysis';
-import { VWORLD_KEY_EXPIRES, PRICE_YEAR } from '../services/vworldApi';
+import { VWORLD_KEY_EXPIRES, PRICE_YEAR, fetchApartUnits, type ApartUnit } from '../services/vworldApi';
+import { HUG_RATE, matchUnit, type SonPriceOut } from '../services/priceAnalysis';
 import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
 import { addressParts, buildingNameOf, hasBuildingName, isUnitToken } from '../utils/addressName';
@@ -5881,6 +5882,33 @@ const cmpMoney = (won: number) => {
 // 반경 범위면 ① 후보 좌표만 먼저(네 곳씩) → ② 반경 안 단지만 주변시설(두 곳씩). 같은 동이면 ②만
 let cmpRun = 0;
 const cmpAddr = (c: CompareComplex) => { const r = supRegion.value; return r ? `${r.sido} ${r.sigungu} ${c.umdNm} ${c.jibun}` : ''; };
+// 보고 있는 단지 거래 표 — 시세분석 표와 같은 칸(주소만 뺀다, 2026-11-11 사용자). 공시가(호실 공동주택가격) · 엘베는 고른 단지만 받는다
+const cmpUnits = ref<Record<string, ApartUnit[]>>({});
+const cmpElev = ref<Record<string, number | null>>({});
+watch(() => (cmpOn.value && cmpPicked.value ? cmpKeyOf(cmpPicked.value) : ''), async (k) => {
+  const c = cmpPicked.value; if (!k || !c) return;
+  const addr = cmpAddr(c); if (!addr) return;
+  if (!(k in cmpUnits.value)) {
+    const rg = await resolveRegionFromAddress(addr).catch(() => null);
+    const us = rg?.bCode10 ? await fetchApartUnits(rg.bCode10, c.jibun).catch(() => []) : [];
+    cmpUnits.value = { ...cmpUnits.value, [k]: us };
+  }
+  if (!(k in cmpElev.value)) { const f = await getBuildingFacts(addr).catch(() => null); cmpElev.value = { ...cmpElev.value, [k]: f ? f.elevator : null }; }
+}, { immediate: true });
+/** 거래 한 줄의 공시가 — 동을 알면 그 동 호실에서, 같은 층 · 같은 전용 */
+const cmpPubOf = (d: { areaM2: number; floor: string; dong?: string }) => {
+  const c = cmpPicked.value; if (!c) return 0;
+  const us = cmpUnits.value[cmpKeyOf(c)] ?? [];
+  const dn = String(d.dong ?? '').replace(/\D/g, '');
+  const inDong = dn ? us.filter((u) => u.dong.replace(/\D/g, '') === dn) : [];
+  return matchUnit(inDong.length ? inDong : us, d.areaM2, Number(d.floor) || 0).pub;
+};
+const cmpUnitsReady = computed(() => !!cmpPicked.value && cmpKeyOf(cmpPicked.value) in cmpUnits.value);
+const cmpPickedDist = computed(() => { const c = cmpPicked.value; if (!c) return null; if (c.mine) return 0; const me = cmpMePt.value; return me && c.point ? Math.round(metersBetween(me, c.point)) : null; });
+const n0 = (w: number) => Math.round(w).toLocaleString('ko-KR');
+const pctOf = (a: number, b: number) => (a > 0 && b > 0 ? `${Math.round((a / b) * 100)}%` : '-');
+const cmpGoNaver = () => { const c = cmpPicked.value; if (c) void openNaverSpot(cmpAddr(c), 'apt'); };
+const cmpGoPlanet = () => { const c = cmpPicked.value; if (c) void openPlanetSpot(`${c.umdNm} ${c.jibun}`); };
 const cmpPool = async <T,>(items: T[], n: number, run: number, fn: (x: T) => Promise<void>) => {
   let i = 0;
   await Promise.all(Array.from({ length: n }, async () => { while (i < items.length && run === cmpRun) { const x = items[i]; i += 1; await fn(x).catch(() => undefined); } }));
@@ -6064,7 +6092,7 @@ const cmpTodo = computed(() => {
 /** 매매수요 조사 단계 — 눌러서 그 상자로(이름은 각 상자 제목) */
 const CMP_STEPS = [
   { no: '①', t: '실사용자', sel: '.o-persona' }, { no: '②', t: '단지입지비교', sel: '.o-est' },
-  { no: '③', t: '호실예상가', sel: '.o-unit' }, { no: '④', t: '읍면동수급', sel: '.o-demand' }, { no: '⑤', t: '단지수급', sel: '.o-sup' },
+  { no: '③', t: '읍면동수급', sel: '.o-demand' }, { no: '④', t: '단지수급', sel: '.o-sup' },   // 호실 예상가는 시세분석으로 옮겼다(2026-11-11)
 ];
 const cmpGo = async (ev: Event, sel: string) => {
   const card = (ev.currentTarget as HTMLElement).closest('.adp-card');
@@ -6085,61 +6113,20 @@ const cmpPerPy = (r: { area: number; saleAvg: number; jeonseAvg: number }, kind 
 };
 /** 전세가율(%) — 평균 전세가 ÷ 평균 매매가 */
 const cmpJeonseRate = (r: { saleAvg: number; jeonseAvg: number }) => (r.saleAvg > 0 && r.jeonseAvg > 0 ? (r.jeonseAvg / r.saleAvg) * 100 : 0);
-const cmpRateEst = computed(() => {
-  const me = cmpRows.value.find((r) => r.mine); if (!me || !(me.jeonseAvg > 0)) return null;
-  const all = cmpRows.value.filter((r) => !r.mine && cmpJeonseRate(r) > 0);
-  const like = all.filter((r) => !me.buildYear || !r.buildYear || Math.abs(r.buildYear - me.buildYear) <= 5);
-  const near = like.length ? like : all;   // 연식 ±5년 이웃이 없으면 이웃 전체로(값은 보이되 '연식 차이 큼'이라 적는다)
-  if (!near.length) return null;
-  const rate = near.reduce((a, r) => a + cmpJeonseRate(r), 0) / near.length;
-  return { rate, n: near.length, sale: me.jeonseAvg / (rate / 100), similar: like.length > 0 };
-});
-/** 호실 예상가 기준가 — 이 단지 해당평형 실거래를 층으로 걸러(2026-11-11 사용자 '실거래가 넣고 동일한 조건에서 필터').
- *  같은층 → 없으면 ±1층 → 없으면 기준층(4층 ~ 탑층 아래) 중간값 + 층 보정. 같은층 · ±1층은 평균, 층 보정 0 */
-type CmpFloorMode = 'same' | 'near' | 'std';
-const CMP_FLOOR_MODES: Array<[CmpFloorMode, string]> = [['same', '같은층'], ['near', '±1층'], ['std', '전체']];
-const cmpFloorPick = ref<CmpFloorMode>((() => { try { const v = localStorage.getItem('son.cmpFloor'); return v === 'near' || v === 'std' ? v : 'same'; } catch { return 'same' as const; } })());
-watch(cmpFloorPick, (v) => { try { localStorage.setItem('son.cmpFloor', v); } catch { /* 저장 못 해도 화면은 그대로 */ } });
-const cmpMedian = (xs: number[]) => { const a = [...xs].sort((x, y) => x - y); const m = a.length; return !m ? 0 : m % 2 ? a[(m - 1) / 2] : (a[m / 2 - 1] + a[m / 2]) / 2; };
-const cmpUnitStd = computed(() => {
-  const me = cmpRows.value.find((r) => r.mine); if (!me) return null;
-  const ds = me.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0);
-  if (!ds.length) return null;
-  const top = Number(sumVal('sum.floorTotal').match(/\d+/)?.[0] ?? 0);
-  const my = Number(sumVal('sum.floorCurrent').match(/\d+/)?.[0] ?? 0);
-  const fl = (d: { floor: string }) => Number(d.floor) || 0;
-  const tries: CmpFloorMode[] = cmpFloorPick.value === 'same' ? ['same', 'near', 'std'] : cmpFloorPick.value === 'near' ? ['near', 'std'] : ['std'];
-  for (const m of tries) {
-    if (m !== 'std') {
-      if (!my) continue;
-      const use = ds.filter((d) => (m === 'same' ? fl(d) === my : Math.abs(fl(d) - my) <= 1));
-      if (use.length) return { mode: m, value: use.reduce((a, d) => a + d.price, 0) / use.length, deals: use, n: use.length, std: false, top, my };
-      continue;
-    }
-    const std = ds.filter((d) => { const f = fl(d); return f >= 4 && (!top || f < top); });
-    const use = std.length >= 3 ? std : ds;
-    return { mode: m, value: cmpMedian(use.map((d) => d.price)), deals: [] as typeof ds, n: use.length, std: use === std, top, my };
-  }
-  return null;
-});
-/** 기준가가 같은층 · ±1층 실거래 — 단지 내 개별성의 층은 0 */
-const cmpFloorZero = computed(() => cmpUnitStd.value?.mode === 'same' || cmpUnitStd.value?.mode === 'near');
-/** 이 단지에 해당평형 거래가 있으면 구역 내 개별성은 이미 가격에 담겨 숨긴다 — 없을 때만 보이고 보정한다(2026-11-11 사용자) */
-const cmpMineHasDeals = computed(() => { const me = cmpRows.value.find((r) => r.mine); return !!me && me.deals.some((d) => d.price > 0); });
+/** 호실 예상가 기준가 — 시세분석 표에서 고른 거래로 낸 예상가(손품조사 › 시세분석, 2026-11-11 사용자 시안).
+ *  매매수요에서 따로 계산하던 기준가(단지 평균 · 전세가율 · 기준층 중간값)는 숫자가 갈려 없앴다 */
+const sonPriceOut = inject<Ref<SonPriceOut | null> | null>('sonPriceOut', null);
+const unitKind = computed(() => sonPriceOut?.value?.kind ?? cmpKind.value);
+const cmpFloorZero = computed(() => !!sonPriceOut?.value?.sameFloor);   // 시세분석 '같은 층' — 층은 이미 기준가에 담겨 있다
 const cmpBase = computed(() => {
-  const st = cmpUnitStd.value;
+  const o = sonPriceOut?.value;
+  if (!o || !(o.est > 0)) return { label: '기준가', value: 0, note: '위 시세분석 표에 고른 거래가 없습니다' };
   const me = cmpRows.value.find((r) => r.mine);
-  const py = me ? `${pyPair(me.supply, me.area)} ` : '';
-  if (st) {
-    const deals = st.deals.map((d) => [d.dong ? `${d.dong}동` : '', d.floor ? `${d.floor}층` : '', cmpEok(d.price)].filter(Boolean).join(' ')).join(' · ');
-    if (st.mode === 'same') return { label: `${py}해당평형 ${st.my}층 ${cmpKind.value}가`, value: st.value, note: `최근 ${cmpMonths.value}개월 ${st.my}층 ${st.n}건 평균 — ${deals}` };
-    if (st.mode === 'near') return { label: `${py}해당평형 ${Math.max(1, st.my - 1)} ~ ${st.my + 1}층 ${cmpKind.value}가`, value: st.value, note: `${cmpFloorPick.value === 'same' ? `${st.my}층 거래가 없어 ±1층 · ` : ''}최근 ${cmpMonths.value}개월 ${st.n}건 평균 — ${deals}` };
-    const where = st.std ? `기준층(4층 ~ ${st.top ? `${st.top - 1}층` : '탑층 아래'})` : '전체 층';
-    return { label: `${py}해당평형 ${st.std ? '기준층 ' : ''}${cmpKind.value}가`, value: st.value, note: `${cmpFloorPick.value !== 'std' && st.my ? `${st.my}층 · ±1층 거래가 없어 ` : ''}최근 ${cmpMonths.value}개월 ${where} ${st.n}건 중간값` };
-  }
-  const ra = cmpRateEst.value;
-  if (cmpKind.value === '매매' && ra) return { label: '전세가율로 본 매매가', value: ra.sale, note: `해당평형 매매 거래가 없어 — 전세 평균 ÷ ${ra.similar ? '연식 ±5년' : ''} 이웃 ${ra.n}곳 전세가율 ${Math.round(ra.rate)}%` };
-  return { label: `${py}해당평형 ${cmpKind.value}가`, value: 0, note: `최근 ${cmpMonths.value}개월 해당평형 ${cmpKind.value} 거래가 없습니다` };
+  const my = Number(sumVal('sum.floorCurrent').match(/\d+/)?.[0] ?? 0);
+  const allSame = o.rows.every((r) => r.same && me && Math.abs(r.areaM2 - me.area) < 0.05);
+  const label = allSame && me ? `기준가 · ${pyPair(me.supply, me.area)} 해당평형 ${o.sameFloor && my ? `${my}층 ` : ''}${o.kind}가` : `기준가 · 시세분석 예상 ${o.kind}가`;
+  const list = o.rows.length <= 6 ? ` · ${o.rows.map((r) => [r.same ? (r.dong ? `${r.dong}동` : '') : r.name, r.floorNo ? `${r.floorNo}층` : '', cmpEok(r.price)].filter(Boolean).join(' ')).join(' · ')}` : '';
+  return { label, value: o.est, note: `위 표에서 고른 ${o.n}건으로 낸 예상가${list}` };
 });
 const cmpUnitBase = computed(() => cmpBase.value.value);
 /** 구역 내 개별성 ± — 단지 자체의 장단점을 가격 %로(단지 내 개별성과 같은 방식, 2026-11-11 사용자). 1 가산 · 0 보통 · -1 감산 */
@@ -6161,13 +6148,16 @@ const ZONE_UNIT_ITEMS = computed(() => indivGroups.value[0].items.filter((it) =>
 /** 기준가가 내 단지 실거래 평균이면 구역 내 개별성은 그 값에 이미 담겨 있어 다시 붙이지 않는다(두 번 세지 않게) — 이웃 단지 값(전세가율로)일 때만 */
 // 구역 내 개별성 보정은 붙이지 않는다 — 기준가 둘(단지 평균 · 이 단지 전세 ÷ 전세가율) 모두 이 단지 값이라 연식 · 주차 · 엘베 등이 이미 담겨 있다.
 // 전세가율 기준가에서 +35~45%가 더 붙어 두 번 셌다(2026-11-11 사용자). 구역 내 개별성은 손품 체크리스트로만
-const zoneApplied = computed(() => !cmpMineHasDeals.value);
+// 구역 내 개별성 — 고른 거래가 모두 다른 단지일 때만(강의 '실거래 없을 때 시세조사 방법'). 이 단지 거래가 하나라도 있으면 이미 담겨 있다.
+// 섞여 있으면 % 를 평균 전체에 붙여 이 단지 거래까지 부풀었다(+35~45%, 2026-11-11) — 섞임은 알리기만 한다
+const zoneApplied = computed(() => { const rs = sonPriceOut?.value?.rows ?? []; return rs.length > 0 && rs.every((r) => !r.same); });
+const zoneMixed = computed(() => { const rs = sonPriceOut?.value?.rows ?? []; return rs.some((r) => r.same) && rs.some((r) => !r.same) ? rs.filter((r) => !r.same).length : 0; });
 const zoneAdjSum = computed<[number, number]>(() => (zoneApplied.value ? ZONE_IDS.reduce<[number, number]>((acc, id) => { const [a, b] = zoneAdj(id); return [acc[0] + a, acc[1] + b]; }, [0, 0]) : [0, 0]));
 const totalAdj = computed<[number, number]>(() => [unitAdjSum.value[0] + zoneAdjSum.value[0], unitAdjSum.value[1] + zoneAdjSum.value[1]]);
 /** 같은 평형 고른 거래의 실거래 최저 · 최고(선정물건 단지) — 예상가가 이 범위를 넘지 않게 자른다(보정이 쌓여 12억이 넘던 것, 2026-11-11 사용자) */
 const cmpUnitRange = computed(() => {
   const me = cmpRows.value.find((r) => r.mine); if (!me) return null;
-  const ps = me.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).map((d) => d.price);
+  const ps = me.deals.filter((d) => (unitKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).map((d) => d.price);
   return ps.length ? { min: Math.min(...ps), max: Math.max(...ps) } : null;
 });
 const cmpUnitRaw = computed<[number, number] | null>(() => {
@@ -9138,7 +9128,7 @@ const goBack = () => router.back();
             <!-- 아파트만 — 빌라는 단지 개념이 없다 -->
             <section v-if="webEmbed && isApartment" class="adp-dm-block boxed sup-dm o-sup">
               <!-- 제목 '수요분석' 왼쪽, 단지 이름은 오른쪽에 알약 없이 파란 글(2026-11-11 사용자) -->
-              <p class="sup-scope"><span class="cmp-no">⑤</span>단지 수급분석<span class="area">{{ supName || '단지' }}</span><small class="cmp-q">이 단지는 내놓으면 얼마나 빨리 팔릴까?</small></p>
+              <p class="sup-scope"><span class="cmp-no">④</span>단지 수급분석<span class="area">{{ supName || '단지' }}</span><small class="cmp-q">이 단지는 내놓으면 얼마나 빨리 팔릴까?</small></p>
               <p class="sup-head">기초수치</p>
               <div class="sup-row">
                 <div :class="['sup-cell', { lit: supLit('deal') }]" @mouseenter="supLitKey = 'deal'" @mouseleave="supLitKey = ''">
@@ -9728,13 +9718,23 @@ const goBack = () => router.back();
                 <p class="sup-head cmp-pick">보고 있는 단지 <span class="area cmp-chip">{{ cmpPicked?.name || cmpPicked?.jibun || supName || '선정물건' }}</span> <small class="cmp-sub">단지 리스트 표나 지도에서 단지를 누르면 아래 표 내용이 바뀝니다.</small><button v-if="cmpPicked && !cmpPicked.mine" type="button" class="cmp-back" @click="cmpPick = ''">선정물건으로</button></p>
                 <div class="cmp-two one">
                   <div class="son-demand sup-tbl"><div class="adm-table-wrap cmp-deals"><table class="adm-table cmp-tbl">
-                    <thead><tr><th>구분</th><th>계약일</th><th>면적 <small class="inl">공급(전용)</small></th><th>동 · 층</th><th>실거래가</th></tr></thead>
+                    <thead><tr><th>구분</th><th>계약일</th><th>실거래가</th><th>평당가</th><th>공시가 <small class="inl">매매가율</small></th><th>전세 <small class="inl">갭</small></th><th>면적 <small class="inl">공급(전용)</small></th><th>엘베</th><th>건축</th><th>거리</th><th>동 · 층</th><th>바로가기</th></tr></thead>
                     <tbody>
                       <tr v-for="(d, i) in (cmpDealsAll ? cmpPickedDeals : cmpPickedDeals.slice(0, CMP_DEALS_N))" :key="i">
-                        <td><span :class="['cmp-kind', { j: d.kind === '전세', m: d.kind === '월세' }]">{{ d.kind === '직거래' ? '매매' : d.kind }}</span></td><td class="n">{{ d.contractDate }}</td><td class="n">{{ areaPair(cmpPicked?.supply ?? null, d.areaM2) }}</td><td class="n">{{ [d.dong ? `${d.dong}동` : '', d.floor ? `${d.floor}층` : ''].filter(Boolean).join(' ') || '-' }}</td><td class="n amt"><b>{{ cmpMoney(d.price) }}</b></td>
+                        <td><span :class="['cmp-kind', { j: d.kind === '전세', m: d.kind === '월세' }]">{{ d.kind === '직거래' ? '매매' : d.kind }}</span></td><td class="n">{{ d.contractDate }}</td>
+                        <td class="n amt"><b>{{ n0(d.price) }}</b></td><td class="n">{{ d.areaM2 > 0 ? n0(d.price / (d.areaM2 / 3.305785)) : '-' }}</td>
+                        <template v-if="cmpPubOf(d)"><td class="n two">{{ n0(cmpPubOf(d)) }}<small>{{ pctOf(d.price, cmpPubOf(d)) }}</small></td>
+                          <td v-if="d.kind === '전세'" class="n two">{{ n0(cmpPubOf(d) * HUG_RATE) }}<small :class="{ neg: d.price > cmpPubOf(d) * HUG_RATE }">{{ d.price > cmpPubOf(d) * HUG_RATE ? `한도초과 ${n0(d.price - cmpPubOf(d) * HUG_RATE)}` : '한도 안' }}</small></td>
+                          <td v-else class="n two">{{ n0(cmpPubOf(d) * HUG_RATE) }}<small :class="{ neg: d.price - cmpPubOf(d) * HUG_RATE < 0 }">갭 {{ n0(d.price - cmpPubOf(d) * HUG_RATE) }}</small></td></template>
+                        <template v-else><td class="n cmp-dim">{{ cmpUnitsReady ? '공시가 없음' : '조회 중' }}</td><td class="n">-</td></template>
+                        <td class="n">{{ areaPair(cmpPicked?.supply ?? null, d.areaM2) }}</td>
+                        <td class="n">{{ !cmpPicked || !(cmpKeyOf(cmpPicked) in cmpElev) ? '조회 중' : cmpElev[cmpKeyOf(cmpPicked)] == null ? '-' : (cmpElev[cmpKeyOf(cmpPicked)] ?? 0) > 0 ? `${cmpElev[cmpKeyOf(cmpPicked)]}대있음` : '없음' }}</td>
+                        <td class="n">{{ d.buildYear || cmpPicked?.buildYear || '-' }}</td><td class="n">{{ cmpPickedDist == null ? '-' : `${n0(cmpPickedDist)}m` }}</td>
+                        <td class="n">{{ [d.dong ? `${d.dong}동` : '', d.floor ? `${d.floor}층` : ''].filter(Boolean).join(' ') || '-' }}</td>
+                        <td class="n"><span class="cmp-acts"><button type="button" class="ab n" title="네이버 부동산에서 이 단지 보기" aria-label="네이버 부동산에서 보기" @click="cmpGoNaver">N</button><button type="button" class="ab p" title="부동산플래닛에서 보기 — 주소를 복사해 두고 지도를 엽니다" aria-label="부동산플래닛에서 보기" @click="cmpGoPlanet">P</button></span></td>
                       </tr>
-                      <tr v-if="!cmpPicked"><td colspan="5" class="cmp-dim">{{ supLoaded ? '해당 단지의 실거래 데이터가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
-                      <tr v-else-if="!cmpPickedDeals.length"><td colspan="5" class="cmp-dim">최근 {{ cmpMonths }}개월 해당평형 {{ cmpKind }} 거래가 없습니다.</td></tr>
+                      <tr v-if="!cmpPicked"><td colspan="12" class="cmp-dim">{{ supLoaded ? '해당 단지의 실거래 데이터가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
+                      <tr v-else-if="!cmpPickedDeals.length"><td colspan="12" class="cmp-dim">최근 {{ cmpMonths }}개월 해당평형 {{ cmpKind }} 거래가 없습니다.</td></tr>
                     </tbody>
                   </table></div></div>
                   <!-- 거래가 많으면 처음엔 몇 줄만, 아래 '더보기'로 펼친다(잘려서 안쪽 스크롤로 보던 것, 2026-11-11 사용자) -->
@@ -9769,14 +9769,15 @@ const goBack = () => router.back();
               </Teleport>
             </section>
 
-            <!-- ② 선정물건 호실 예상가 — 단지 평균 실거래가 × (1 + 단지 내 개별성 보정 합). 구역 내 개별성은 가격을 바꾸지 않아 여기 두지 않는다(같은 %로 보여 헷갈렸다, 2026-11-11) -->
-            <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box o-unit">
-              <div class="cmp-est-h"><h3><span class="cmp-no">③</span>선정물건 호실 예상가<span v-if="cmpMineRow" class="cmp-scope-chip">{{ areaPair(cmpMineRow.supply, cmpMineRow.area) }}</span></h3><small class="cmp-q">같은 단지 안에서 내 호실의 가치는?</small>
-                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>최근 {{ cmpMonths }}개월 · {{ cmpKind }} · 기준가 × (1 + 단지 내 개별성 보정) + 수리 금액</span></div>
-              <!-- 기준가 하나 — 고르는 카드 두 개는 결과가 1억 넘게 갈려 헷갈렸다(2026-11-11 사용자) -->
-              <div class="cmp-conds cmp-floor-f"><span class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="기준가 층"><button v-for="[v, t] in CMP_FLOOR_MODES" :key="v" type="button" role="radio" :class="{ on: cmpFloorPick === v }" :aria-checked="cmpFloorPick === v" :data-t="t" @click="cmpFloorPick = v">{{ t }}</button></span></span></div>
+            <!-- 선정물건 호실 예상가 — 시세분석 탭(#sonUnitSlot)으로 옮겨 그린다(2026-11-11 사용자 시안). 기준가 = 시세분석 예상가, × (1 + 개별성 보정) + 수리 금액 -->
+            <Teleport v-if="webEmbed && isApartment && sonpumMode" defer to="#sonUnitSlot">
+            <section class="adp-dm-block boxed cmp-box o-unit">
+              <div class="cmp-est-h"><h3>선정물건 호실 예상가<span v-if="cmpMineRow" class="cmp-scope-chip">{{ areaPair(cmpMineRow.supply, cmpMineRow.area) }}</span></h3><small class="cmp-q">같은 단지 안에서 내 호실의 가치는?</small>
+                <span class="cmp-est-desc"><span class="cmp-desc-hi">기준가 = 위 표 예상 실거래가 · 기준가 × (1 + 개별성 보정) + 수리 금액</span></span></div>
               <div class="cmp-bases one"><div class="cmp-base on"><span class="k">{{ cmpBase.label }}</span><span class="v">{{ cmpEok(cmpBase.value) }}</span><small>{{ cmpBase.note }}</small></div></div>
               <!-- 구역 내 · 단지 내 개별성 — 가로로 나란히(좁으면 위아래, 2026-11-11 사용자) -->
+              <!-- 구역 내 개별성 — 위 표가 모두 이 단지 거래면 접어 둔다(이미 담겨 있다). 다른 단지 거래가 섞이면 열려 % 로 보정 -->
+              <div v-if="!zoneApplied" :class="['cmp-zone-off', { warn: zoneMixed }]"><b>구역 내 개별성</b><span v-if="zoneMixed">위 표에 다른 단지 거래 {{ zoneMixed }}건이 섞여 있습니다. 이 단지 거래만 쓰려면 그 줄을 제외하세요. 다른 단지 거래만 남으면 열려 연식 · 주차 · 엘베 · 현관 · 경사 · 용적률을 % 로 보정합니다.</span><span v-else>기준가가 모두 이 단지 거래라 쓰지 않습니다. 이 단지 거래가 없어 다른 단지 거래만 쓸 때 열려 연식 · 주차 · 엘베 · 현관 · 경사 · 용적률을 % 로 보정합니다.</span></div>
               <div :class="['cmp-two', zoneApplied ? 'pair' : 'solo']">
                 <div v-if="zoneApplied" class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
                   <colgroup><col style="width: 20%" /><col /><template v-if="zoneApplied"><col style="width: 19%" /><col style="width: 22%" /></template></colgroup>
@@ -9823,10 +9824,11 @@ const goBack = () => router.back();
                 <!-- 기준가 칸은 뺐다 — 위 기준가 카드와 같은 값이라 겹친다(2026-11-11 사용자) -->
                 <div class="cmp-tiles two">
                   <div class="cmp-tile"><span class="k">보정</span><span class="v">{{ unitAdjText }}</span></div>
-                  <div class="cmp-tile key"><span class="k">선정물건 예상 {{ cmpKind }}가</span><span class="v">{{ cmpUnitEst }}</span><span v-if="cmpUnitFormula" class="s cut">{{ cmpUnitFormula }}</span><span v-if="cmpUnitClamp?.cut" class="s cut">{{ cmpUnitClamp.cut }}</span></div>
+                  <div class="cmp-tile key"><span class="k">선정물건 예상 {{ unitKind }}가</span><span class="v">{{ cmpUnitEst }}</span><span v-if="cmpUnitFormula" class="s cut">{{ cmpUnitFormula }}</span><span v-if="cmpUnitClamp?.cut" class="s cut">{{ cmpUnitClamp.cut }}</span></div>
                 </div>
               </div>
             </section>
+            </Teleport>
           </div>
         </section>
 
@@ -12587,7 +12589,9 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .o-unit .cmp-two.pair { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }   /* 구역 내 · 단지 내 나란히 */
 .o-unit .cmp-two.pair > .cmp-ind-note { grid-column: 1 / -1; }
 .o-unit .cmp-two.solo > .cmp-ind-note { grid-column: 1 / -1; }   /* 이 단지 거래가 있으면 단지 내 개별성만 */
-.cmp-conds.cmp-floor-f { margin-bottom: 8px; }   /* 기준가 층 거르기 — 같은층 · ±1층 · 전체 */
+.cmp-zone-off { display: flex; gap: 10px; align-items: baseline; margin-bottom: 12px; padding: 10px 14px; border: 1px dashed #cbd5e1; border-radius: 8px; background: #fafbfc; font-size: 12px; color: #6b7280; }   /* 구역 내 개별성 접힘 — 이 단지 거래만 쓸 때 */
+.cmp-zone-off.warn { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
+.cmp-zone-off b { flex: 0 0 auto; font-size: 14px; font-weight: 800; color: #6b7280; }   /* 기준가 층 거르기 — 같은층 · ±1층 · 전체 */
 @media (max-width: 1100px) { .o-unit .cmp-two.pair { grid-template-columns: minmax(0, 1fr); } }
 .cmp-tbl tr.cmp-zone-note td { font-size: 12px; color: #9ca3af; text-align: left; }
 /* 개별성 입력을 쓰는 표 안에서 — 자동 칸은 이름 블루그레이 + '자동', 수동 칸은 고르기 단추(시세분석 단추 꼴 · 굵은 폭 미리 잡기, 2026-11-11) */
@@ -12631,6 +12635,12 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-tile.off .v { font-size: 12.5px; font-weight: 400; color: #9ca3af; }   /* 동 전체일 때 비워 둔 칸 */
 .cmp-tile.key .s.cut { font-size: 12px; font-weight: 400; color: rgba(255, 255, 255, .9); }
 .cmp-two.one { grid-template-columns: minmax(0, 1fr); }
+.cmp-deals td.two small { display: block; font-size: 12px; color: #6b7280; }   /* 공시가 아래 매매가율 · 전세 아래 갭 — 시세분석 표와 같게 */
+.cmp-deals td.two small.neg { color: #dc2626; }
+.cmp-acts { display: inline-flex; gap: 4px; }
+.cmp-acts .ab { width: 24px; height: 24px; padding: 0; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.cmp-acts .ab.n { color: #03c75a; }
+.cmp-acts .ab.p { color: #2b6df3; }
 /* 점수 팝업 */
 .cmp-pop { position: fixed; z-index: 3000; left: 50%; top: 120px; width: min(560px, calc(100vw - 32px)); display: grid; grid-template-rows: auto auto;   /* 안쪽 스크롤 없이 내용만큼 높이(2026-11-11 사용자) */ background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; box-shadow: 0 12px 32px rgba(17, 24, 39, .18); font-family: inherit; font-size: 13px; color: #111827; }
 .cmp-pop-h { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #e3e8f0; cursor: grab; touch-action: none; user-select: none; }

@@ -13,6 +13,7 @@ import AdminRegionDemandPage from './AdminRegionDemandPage.vue';
 import SonpumPricePage from './SonpumPricePage.vue';
 import AuctionDetailPage from './AuctionDetailPage.vue';
 import { areaUnit } from '../services/areaUnit';
+import type { SonPriceOut } from '../services/priceAnalysis';
 
 // 손품조사 화면을 손품분석 모드로 — 본건사진 · 입지/개별성만, 그 사이에 아래 수요분석을 끼운다
 provide('sonpumMode', true);
@@ -46,6 +47,9 @@ const sonAskReady = ref(false);
 provide('sonAskReady', sonAskReady);
 // 면적 단위 — 고정카드 오른쪽 단추(services/areaUnit) 하나로 모든 탭이 같이(2026-11-11, 예전엔 이 탭 줄에 따로 있었다)
 provide('sonAreaUnit', areaUnit);
+/** 시세분석에서 고른 거래 · 예상가 → 아래 선정물건 호실 예상가의 기준가(2026-11-11 사용자 시안) */
+const sonPriceOut = ref<SonPriceOut | null>(null);
+provide('sonPriceOut', sonPriceOut);
 const priceSeen = ref(false);
 watch(tab, (v) => { if (v === 'price') priceSeen.value = true; }, { immediate: true });
 // 웹 경로에 지금 탭 — '홈 › 시장분석 › 손품분석 › 수요분석'
@@ -120,7 +124,7 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
           <template #son-demand>
             <div class="son-demand">
               <p v-if="loading" class="son-msg">{{ region?.label }} 최근 12개월 거래를 받는 중입니다…</p>
-              <AdminRegionDemandPage v-if="demandEmbed && rows.length" :embed="demandEmbed" :box-no="kindOf(auction?.propertyType ?? '') === 'apt' ? '④' : ''" class="adm-supply" />
+              <AdminRegionDemandPage v-if="demandEmbed && rows.length" :embed="demandEmbed" :box-no="kindOf(auction?.propertyType ?? '') === 'apt' ? '③' : ''" class="adm-supply" />
               <p v-else-if="!loading && region" class="son-msg">이 지역의 최근 12개월 거래가 없습니다.</p>
             </div>
           </template>
@@ -130,6 +134,8 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
       <div v-if="casePreset && (tab === 'price' || priceSeen)" v-show="tab === 'price'" class="son-price">
         <SonpumPricePage :auction="auction" :kind="casePreset.kind" />
       </div>
+      <!-- 선정물건 호실 예상가 — 매매수요에서 옮겨 왔다(2026-11-11 사용자 시안). 위 시세분석 예상가 × (1 + 개별성 보정). 아파트만 -->
+      <div v-show="tab === 'price'" id="sonUnitSlot" class="app-detail tab-survey son-detail son-unit" />
       <!-- 네이버 매물조사 — 선정물건 손품조사의 그 단락(물건 값 그대로, 고치면 물건에 저장). 위 손품조사 화면이 여기로 옮겨 그린다 -->
       <div v-show="tab === 'price'" id="sonNaverSlot" class="app-detail tab-survey son-detail son-naver" />
       <!-- 경매사례 — 웹이 시장분석 › 경매사례 화면을 이 자리에 그린다(운영자만) -->
