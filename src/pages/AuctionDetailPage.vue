@@ -9572,7 +9572,7 @@ const goBack = () => router.back();
                   <!-- 단지를 고르기 전엔 동 전체(평균 · 평당가 · 건수 · 단지 수), 고르면 그 단지(중간값 · 최저 · 최고 · 면적까지). 칸 자리는 그대로 — 흔들리지 않게 -->
                   <template v-if="cmpPick">
                   <!-- 단지를 고르면 그 단지 '같은 평형(전용면적이 같은 거래)'만의 평균 — 단지 전체로 읽히지 않게 면적을 적는다(2026-11-11 사용자) -->
-                  <div class="cmp-tile key"><span class="k">{{ cmpPicked ? `${pyPair(cmpPicked.supply, cmpPicked.area)} ` : '' }}해당평형 평균 {{ cmpKind }}가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.avg) : '-' }}</span></div>
+                  <div class="cmp-tile key"><span class="k">해당평형 평균 {{ cmpKind }}가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.avg) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">중간값</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.med) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">최저가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.min) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">최고가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.max) : '-' }}</span></div>
