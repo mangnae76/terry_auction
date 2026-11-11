@@ -3108,7 +3108,8 @@ const supLoaded = ref(false);
 watch([() => auction.value?.id, () => webEmbed] as const, async ([id, web]) => {
   supRows.value = []; supLoaded.value = false; supDongRows.value = []; supAllRows.value = []; supRegion.value = null;
   const a = auction.value;
-  if (!id || !web || !a?.address || !isApartment.value) return;   // 단지 수요분석은 아파트만
+  // 아파트 · 빌라 모두 — 빌라도 입지비교(건물마다)에 이 실거래를 쓴다(2026-11-12). 단지 수급 상자는 아파트만 보인다
+  if (!id || !web || !a?.address || (!isApartment.value && !sonpumMode)) return;
   const out = await analyzeAddress({ address: a.address, propertyType: priceKind.value, years: 1 }).catch(() => null);
   if (auction.value?.id !== id) return;
   supRows.value = out?.rows ?? []; supLoaded.value = true;
@@ -5581,6 +5582,14 @@ const hasTypedRank = computed(() => rankConditions.value.some((c) => !!rankOf(c)
 // 단지마다 내 전용면적과 가장 가까운 평형의 최근 12개월 평균 전세가 · 매매가를 옆에 둔다(국토부 · DB). 짐작한 값은 넣지 않는다
 /** 단지 입지비교가 켜지는 곳(웹 · 아파트 · 손품조사) — 여기선 ① 실사용자 + 입지등수를 단지 입지비교에 합친다 */
 const cmpOn = computed(() => webEmbed && isApartment.value && sonpumMode);
+/** 단지 입지비교 — 빌라도 같은 화면(빌라는 단지가 아니라 건물마다, 2026-11-12 사용자). 글의 '단지' 자리에 넣는 이름 */
+const cmpN = computed(() => (isApartment.value ? '단지' : '빌라'));
+/** 비교 표 · 칸의 면적 — 아파트 '공급㎡ (전용)', 빌라 '55.14㎡ / 16.68평'(빌라 규칙, 소수는 있을 때만) */
+const cmpArea = (supply: { lo: number; hi: number } | null, area: number) => {
+  if (isApartment.value) return areaPair(supply, area);
+  if (!(area > 0)) return '-';
+  return `${Number((Math.floor(area * 100 + 1e-6) / 100).toFixed(2))}㎡ / ${Number((area / 3.305785).toFixed(2))}평`;
+};
 /** 매매수요 맨 위 '① 실사용자' 줄 — 아파트 · 빌라 모두(빌라도 아파트와 같은 꼴, 2026-11-12 사용자) */
 const personaOn = computed(() => webEmbed && sonpumMode);
 /** 빌라 전용 — '55.14㎡ / 16.68평'(빌라 규칙: ㎡ 먼저 / 평). 소수는 있을 때만(15평 · 16.7평), 2026-11-12 사용자 */
@@ -5644,7 +5653,7 @@ let cmpRows2yFor = '';
 watch(() => auction.value?.id, () => { cmpRows2y.value = null; cmpRows2yFor = ''; });
 watch([() => auction.value?.id, cmpMonths, () => webEmbed] as const, async ([id, mo, web]) => {
   const a = auction.value;
-  if (mo !== 24 || !id || !web || !a?.address || !isApartment.value) return;
+  if (mo !== 24 || !id || !web || !a?.address) return;
   if (cmpRows2yFor === id && cmpRows2y.value) return;
   cmpRows2yFor = id;
   const out = await analyzeAddress({ address: a.address, propertyType: priceKind.value, years: 2 }).catch(() => null);
@@ -5669,7 +5678,9 @@ const cmpCandidatesNow = (range: CmpRange = cmpRange.value): CompareComplex[] =>
   const src = range === 'dong' ? (dong ? all.filter((r) => cmpSquash(r.umdNm) === dong) : supDongRows.value) : all;
   const list = complexesOf(src, myArea, myJibun, cmpFrom.value, cmpTol.value, supRegion.value?.dong ?? '');
   if (!list.some((c) => c.mine)) list.push({ jibun: myJibun, name: supName.value, umdNm: supRegion.value?.dong ?? '', area: myArea, jeonseAvg: 0, saleAvg: 0, deals: [], mine: true, buildYear: 0 });
-  return list.map((c) => (c.mine ? { ...c, name: supName.value || c.name } : c));
+  // 빌라 — 건물이 많아 주변시설을 다 찾으면 무거워진다. 거래가 많은 건물부터 50곳까지(선정물건은 늘)
+  const capped = isApartment.value ? list : [...list.filter((c) => c.mine), ...list.filter((c) => !c.mine).sort((a, b) => b.deals.length - a.deals.length).slice(0, 50)];
+  return capped.map((c) => (c.mine ? { ...c, name: supName.value || c.name } : c));
 };
 const cmpMePt = computed(() => (supRegion.value?.lat ? { lat: supRegion.value.lat, lng: supRegion.value.lng } : null));
 /** 반경 범위면 좌표를 아는 단지 중 반경 안만 */
@@ -5893,7 +5904,7 @@ watch(() => `${cmpRange.value}|${cmpCandidates.value.filter((c) => !c.mine).map(
   const todo = cmpList.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpNearby.value));
   await cmpPool(todo, 2, run, async (c) => { const nb = await complexNearbyOf(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpNearby.value = { ...cmpNearby.value, [cmpKeyOf(c)]: nb }; });
   // 공급면적 — 단지 문서에 있으면 바로, 없으면 건축물대장을 받아 단지 문서에 둔다(한 곳씩 — 큰 단지는 여러 쪽)
-  const sup = cmpList.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpSupply.value));
+  const sup = isApartment.value ? cmpList.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpSupply.value)) : [];   // 빌라는 공급면적을 쓰지 않는다
   await cmpPool(sup, 1, run, async (c) => {
     const ar = await getComplexAreas(cmpAddr(c)).catch(() => null);
     const v = cmpSupplyOf(ar?.groups ?? [], c.area);
@@ -8861,7 +8872,7 @@ const goBack = () => router.back();
           </header>
           <!-- 웹 · 아파트 손품조사(cmpOn) — 보이는 순서: 실사용자 → 전세 칸 줄 → 단지 입지비교 → 입지/개별성 → 지역 수요분석 → 단지 수요분석(2026-11-11).
                테두리 규칙이 앞뒤 형제(+)를 보므로 마크업 순서는 그대로 두고 flex order 로만 바꾼다 -->
-          <div v-if="!isCollapsed('demand')" :class="['adp-dm-body', { 'cmp-order': cmpOn }]">
+          <div v-if="!isCollapsed('demand')" :class="['adp-dm-body', { 'cmp-order': personaOn }]">
             <!-- 1. 수요분석 — 손품분석에서는 지역분석 수요분석(수요분석 상자 · 동 표)이 대신한다(slot 'son-demand') -->
             <!-- 매매수요 조사 맨 위 — 선정물건 면적 · 룸수 · 세대구성 · 입지조건(웹 · 아파트, 2026-11-11). 룸수를 고르면 아래 단지 입지비교 조건 · 등수가 같이 바뀐다 -->
               <div v-if="personaOn" class="cmp-persona top o-persona">
@@ -9149,7 +9160,7 @@ const goBack = () => router.back();
 
 
             <!-- ① 실사용자 + 입지등수 — 웹 · 아파트 손품조사에선 아래 단지 입지비교에 합쳤다(룸수 · 세대구성 · 등수 고치기, 2026-11-11 시안) -->
-            <div v-if="!cmpOn" class="adp-dm-block boxed">
+            <div v-if="!cmpOn" class="adp-dm-block boxed o-rank">
             <div class="adp-dm-sub">{{ personaOn ? '입지등수' : '① 실사용자 + 입지등수' }} <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>초기화</button></div>
             <table :class="['adp-table adp-ruser-table', { tight: !webEmbed }]">
               <!-- 웹 손품조사 — 면적 · 룸수 · 세대구성은 맨 위 '① 실사용자' 줄에 있어 여기선 입지조건 · 등수만(2026-11-12) -->
@@ -9539,9 +9550,9 @@ const goBack = () => router.back();
           </div>
 
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
-            <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
-              <div class="cmp-est-h"><h3><span class="cmp-no">②</span>단지 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}<template v-if="cmpPick && cmpPicked"> · {{ cmpPicked.name || cmpPicked.jibun }}</template></span><span class="cmp-q">내가 선정한 아파트 단지는 몇 등일까?</span></h3>
-                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><template v-if="cmpPick"><span class="cmp-desc-hi">최근 {{ cmpMonths }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 해당평형 {{ cmpKind }} 실거래</span> · 다시 누르면 동 전체로 돌아갑니다</template><template v-else><span class="cmp-desc-hi">최근 {{ cmpMonths }}개월 · 유사평형(전용 ±{{ cmpTol }}㎡) {{ cmpKind }} 실거래</span> · 단지 {{ cmpRows.length }}곳 전체 · 단지를 누르면 그 단지로 바뀝니다</template></span>
+            <section v-if="webEmbed && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
+              <div class="cmp-est-h"><h3><span class="cmp-no">②</span>{{ cmpN }} 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}<template v-if="cmpPick && cmpPicked"> · {{ cmpPicked.name || cmpPicked.jibun }}</template></span><span class="cmp-q">{{ isApartment ? '내가 선정한 아파트 단지는 몇 등일까?' : '내가 선정한 빌라는 주변 빌라 중 몇 등일까?' }}</span></h3>
+                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><template v-if="cmpPick"><span class="cmp-desc-hi">최근 {{ cmpMonths }}개월 · {{ cmpPicked ? cmpArea(cmpPicked.supply, cmpPicked.area) : '-' }} 해당평형 {{ cmpKind }} 실거래</span> · 다시 누르면 동 전체로 돌아갑니다</template><template v-else><span class="cmp-desc-hi">최근 {{ cmpMonths }}개월 · 유사평형(전용 ±{{ cmpTol }}㎡) {{ cmpKind }} 실거래</span> · {{ cmpN }} {{ cmpRows.length }}곳 전체 · {{ cmpN }}를 누르면 그 {{ cmpN }}로 바뀝니다</template></span>
               </div>
               <div class="cmp-est">
                 <div class="cmp-tiles">
@@ -9553,14 +9564,14 @@ const goBack = () => router.back();
                   <div class="cmp-tile"><span class="k">최저가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.min) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">최고가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.max) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">평균 평당가</span><span class="v">{{ cmpEst ? cmpPy(cmpEst.perPy) : '-' }}</span></div>
-                  <div class="cmp-tile"><span class="k">면적 공급(전용) / 연식</span><span class="v sm">{{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }}</span><span class="s">{{ cmpEst?.year ? `${cmpEst.year}년식` : '-' }}</span></div>
+                  <div class="cmp-tile"><span class="k">{{ isApartment ? '면적 공급(전용)' : '전용(㎡/평)' }} / 연식</span><span class="v sm">{{ cmpPicked ? cmpArea(cmpPicked.supply, cmpPicked.area) : '-' }}</span><span class="s">{{ cmpEst?.year ? `${cmpEst.year}년식` : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">{{ cmpKind }} 거래건수</span><span class="v">{{ cmpEst?.n ?? 0 }}건</span></div>
                   </template>
                   <template v-else>
                   <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · {{ supRegion?.dong || '동 전체' }}</span><span class="v">{{ cmpAll ? cmpEok(cmpAll.avg) : '-' }}</span><span class="s">유사평형(전용 ±{{ cmpTol }}㎡)</span></div>
-                  <div v-for="k in ['중간값', '최저가', '최고가']" :key="k" class="cmp-tile off"><span class="k">{{ k }}</span><span class="v sm">단지를 누르면 보입니다</span></div>
+                  <div v-for="k in ['중간값', '최저가', '최고가']" :key="k" class="cmp-tile off"><span class="k">{{ k }}</span><span class="v sm">{{ cmpN }}를 누르면 보입니다</span></div>
                   <div class="cmp-tile"><span class="k">평균 평당가</span><span class="v">{{ cmpAll ? cmpPy(cmpAll.perPy) : '-' }}</span></div>
-                  <div class="cmp-tile"><span class="k">단지 수</span><span class="v">{{ cmpAll?.complexes ?? 0 }}곳</span></div>
+                  <div class="cmp-tile"><span class="k">{{ cmpN }} 수</span><span class="v">{{ cmpAll?.complexes ?? 0 }}곳</span></div>
                   <div class="cmp-tile"><span class="k">{{ cmpKind }} 거래건수</span><span class="v">{{ cmpAll?.n ?? 0 }}건</span></div>
                   </template>
                 </div>
@@ -9575,7 +9586,7 @@ const goBack = () => router.back();
               <div :class="['cmp-map', { fs: cmpFs }]">
                 <div v-if="cmpFs" class="cmp-fs-top">
                   <button type="button" class="cmp-fs-x" @click="cmpFs = false"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>전체화면 닫기</button>
-                  <b>단지 입지비교<small>{{ [auction?.caseNumber, [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ')].filter(Boolean).join(' · ') }}</small></b>
+                  <b>{{ cmpN }} 입지비교<small>{{ [auction?.caseNumber, [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ')].filter(Boolean).join(' · ') }}</small></b>
                 </div>
                 <!-- 지도 칸 — 도구 막대 · 전체화면 단추는 이 칸 안에(전체화면에서 오른쪽 목록과 겹치지 않게) -->
                 <div class="cmp-map-box">
@@ -9583,12 +9594,12 @@ const goBack = () => router.back();
                   <KakaoMapTools v-if="cmpTools" :k="cmpTools.k" :map="cmpTools.map" :near="cmpMePoint" />
                   <button v-if="!cmpFs" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="cmpFs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
                   <!-- 범례 — 시세분석 지도처럼 왼쪽 아래(2026-11-11) -->
-                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span><span><i class="ring dash" />읍면동 경계</span><span v-if="cmpRange !== 'dong'"><i class="ring dash blue" />반경 {{ (cmpRange as number) / 1000 }}km</span></div>
-                  <p v-if="!cmpRows.some((r) => r.point)" class="cmp-wait">{{ supLoaded ? '단지 위치를 찾는 중입니다…' : '실거래를 받는 중입니다…' }}</p>
+                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 {{ cmpN }}</span><span><i class="ring dash" />읍면동 경계</span><span v-if="cmpRange !== 'dong'"><i class="ring dash blue" />반경 {{ (cmpRange as number) / 1000 }}km</span></div>
+                  <p v-if="!cmpRows.some((r) => r.point)" class="cmp-wait">{{ supLoaded ? `${cmpN} 위치를 찾는 중입니다…` : '실거래를 받는 중입니다…' }}</p>
                 </div>
                 <aside v-if="cmpFs" class="cmp-fs-list">
                   <!-- 접기 — 지도를 넓게 보게 목록을 접는다(머리 줄만 남김, 2026-11-11 사용자) -->
-                  <div class="cmp-fs-lh"><b>단지 {{ cmpRows.length }}곳<small>단지를 누르면 아래에 순위 이유가 나옵니다.</small></b><button type="button" class="cmp-fs-fold" :aria-label="cmpFsFold ? '목록 펼치기' : '목록 접기'" :aria-expanded="!cmpFsFold" @click="cmpFsFold = !cmpFsFold"><img :src="chevronDownIcon" :class="['adp-chev', { up: !cmpFsFold }]" alt="" /></button></div>
+                  <div class="cmp-fs-lh"><b>{{ cmpN }} {{ cmpRows.length }}곳<small>{{ cmpN }}를 누르면 아래에 순위 이유가 나옵니다.</small></b><button type="button" class="cmp-fs-fold" :aria-label="cmpFsFold ? '목록 펼치기' : '목록 접기'" :aria-expanded="!cmpFsFold" @click="cmpFsFold = !cmpFsFold"><img :src="chevronDownIcon" :class="['adp-chev', { up: !cmpFsFold }]" alt="" /></button></div>
                   <!-- 전체화면 거르기 — 왼쪽 창 머리 아래(목록 바로 위, 접어도 남는다). 아래 화면 거르기와 같은 값(2026-11-11 사용자) -->
                   <div class="cmp-fs-conds">
                     <div class="row2"><span class="lab">범위<span class="fseg" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRange === v }" :aria-checked="cmpRange === v" :data-t="t" @click="cmpRange = v">{{ t }}</button></span></span>
@@ -9598,9 +9609,9 @@ const goBack = () => router.back();
                   <template v-if="!cmpFsFold">
                   <!-- 단지 줄을 테두리 상자 하나로 묶고 위에 회색 머리(단지 · 평균 ○○가) — 줄마다 '평균 ○○가'를 적지 않는다(2026-11-11 사용자) -->
                   <div class="cmp-fs-rows">
-                  <div class="cmp-fs-rh"><span>단지</span><span>평균 {{ cmpKind }}가</span></div>
+                  <div class="cmp-fs-rh"><span>{{ cmpN }}</span><span>평균 {{ cmpKind }}가</span></div>
                   <button v-for="r in cmpRows" :key="cmpKeyOf(r)" type="button" :class="['cmp-fs-row', { on: cmpIsOn(r), mine: r.mine }]" @click="cmpFsGo(r)">
-                    <span class="nm"><span class="nm-line"><b class="nmt">{{ r.name || r.jibun }}</b><span v-if="r.mine" class="cmp-tag">선정물건</span></span><small>입지 {{ cmpScore(r.tot) }}{{ cmpRankOf.get(cmpKeyOf(r)) ? ` · ${cmpRankOf.get(cmpKeyOf(r))}위` : '' }} · {{ areaPair(r.supply, r.area) }}{{ r.buildYear ? ` · ${r.buildYear}년` : '' }}</small></span>
+                    <span class="nm"><span class="nm-line"><b class="nmt">{{ r.name || r.jibun }}</b><span v-if="r.mine" class="cmp-tag">선정물건</span></span><small>입지 {{ cmpScore(r.tot) }}{{ cmpRankOf.get(cmpKeyOf(r)) ? ` · ${cmpRankOf.get(cmpKeyOf(r))}위` : '' }} · {{ cmpArea(r.supply, r.area) }}{{ r.buildYear ? ` · ${r.buildYear}년` : '' }}</small></span>
                     <!-- 금액은 이름 줄 높이, 그 아래 종합 줄 높이에 거래건수(2026-11-11 사용자) -->
                     <span class="pr">{{ cmpMoney(cmpKind === '매매' ? r.saleAvg : r.jeonseAvg) }}<small>{{ r.deals.filter((d) => (cmpKind === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세')).length }}건</small></span>
                   </button>
@@ -9625,20 +9636,20 @@ const goBack = () => router.back();
                 <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :data-k="k" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" @click="cmpKind = k">{{ k }}</button></span></span>
                 <span class="pa-lab">기간<span class="pa-seg pa-out" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonths === m }" :aria-checked="cmpMonths === m" :data-t="t" @click="cmpMonths = m">{{ t }}</button></span></span>
                 <!-- 고정 기준 — 고르는 단추 말고 늘 걸려 있는 조건(2026-11-11 사용자) -->
-                <span class="cmp-fixed"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">고정 기준 · 유사평형(전용 ±3㎡) · 최근 {{ cmpMonths }}개월 실거래 1건 이상인 단지 · 국토부 실거래</span></span>
+                <span class="cmp-fixed"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">고정 기준 · 유사평형(전용 ±3㎡) · 최근 {{ cmpMonths }}개월 실거래 1건 이상인 {{ cmpN }} · 국토부 실거래</span></span>
               </div>
-              <p v-if="!cmpConds.length" class="cmp-noroom">매매수요 조사 맨 위에서 <b>룸수</b>를 고르면 세대구성에 맞는 입지조건과 단지별 입지등수가 나옵니다.</p>
+              <p v-if="!cmpConds.length" class="cmp-noroom">매매수요 조사 맨 위에서 <b>룸수</b>를 고르면 세대구성에 맞는 입지조건과 {{ cmpN }}별 입지등수가 나옵니다.</p>
               <div class="son-demand sup-tbl">
                 <div class="adm-table-wrap">
                   <table class="adm-table cmp-tbl">
                     <colgroup><col style="width: 200px" /></colgroup>
                     <thead><tr>
-                      <th>단지 리스트<small>(공급(전용))</small></th>
+                      <th>{{ cmpN }} 리스트<small>{{ isApartment ? '(공급(전용))' : '(전용 ㎡/평)' }}</small></th>
                       <th :aria-sort="cmpSortAria('tot')" @click="cmpSortBy('tot')">입지점수<i :class="['sdir', { on: cmpSortK === 'tot' }]" aria-hidden="true">{{ cmpSortK === 'tot' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>100점 · 거리</small></th><th>순위<small>입지</small></th><th :aria-sort="cmpSortAria('year')" @click="cmpSortBy('year')">연식<i :class="['sdir', { on: cmpSortK === 'year' }]" aria-hidden="true">{{ cmpSortK === 'year' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(건축년도)</small></th><th :aria-sort="cmpSortAria('sale')" @click="cmpSortBy('sale')">평균 매매가<i :class="['sdir', { on: cmpSortK === 'sale' }]" aria-hidden="true">{{ cmpSortK === 'sale' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th :aria-sort="cmpSortAria('jeonse')" @click="cmpSortBy('jeonse')">평균 전세가<i :class="['sdir', { on: cmpSortK === 'jeonse' }]" aria-hidden="true">{{ cmpSortK === 'jeonse' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th>전용 평당가<small>({{ cmpKind }})</small></th><th>전세가율<small>전세 ÷ 매매</small></th>
                     </tr></thead>
                     <tbody>
                       <tr v-for="r in cmpRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine, on: cmpIsOn(r) }]" tabindex="0" @click="cmpToggle(cmpKeyOf(r))" @keydown.enter="cmpToggle(cmpKeyOf(r))">
-                        <td class="nm" :data-tip="r.name || r.jibun" data-tip-pos="left"><span class="cmp-nm-line"><span class="cmp-nm">{{ r.name || r.jibun }}</span><span v-if="r.mine" class="cmp-tag">선정물건</span></span><small class="sup-tbl-sub">{{ areaPair(r.supply, r.area) }}</small></td>
+                        <td class="nm" :data-tip="r.name || r.jibun" data-tip-pos="left"><span class="cmp-nm-line"><span class="cmp-nm">{{ r.name || r.jibun }}</span><span v-if="r.mine" class="cmp-tag">선정물건</span></span><small class="sup-tbl-sub">{{ cmpArea(r.supply, r.area) }}</small></td>
                         <!-- 점수를 누르면 계산 내역 팝업(조건별 등수 칸은 팝업으로, 2026-11-11 시안) -->
                         <td class="n"><button type="button" class="cmp-sc" :aria-label="`${r.name || r.jibun} 입지 점수 계산 보기`" @click.stop="cmpPopOpen('loc', r, $event)">{{ cmpScore(r.loc) }}</button></td>
                         <td class="n"><span v-if="cmpRankOf.get(cmpKeyOf(r))" :class="['cmp-rk', { r1: cmpRankOf.get(cmpKeyOf(r)) === 1 }]">{{ cmpRankOf.get(cmpKeyOf(r)) }}</span><template v-else>-</template></td>
@@ -9651,7 +9662,7 @@ const goBack = () => router.back();
                         <td class="n">{{ cmpPerPy(r) > 0 ? `${Math.round(cmpPerPy(r) / 1e4).toLocaleString('ko-KR')}만` : '-' }}</td>
                         <td class="n">{{ cmpJeonseRate(r) > 0 ? `${Math.round(cmpJeonseRate(r))}%` : '-' }}</td>
                       </tr>
-                      <tr v-if="!cmpRows.length"><td :colspan="8" class="cmp-dim">{{ supLoaded ? '범위 안에 견줄 단지 거래가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
+                      <tr v-if="!cmpRows.length"><td :colspan="8" class="cmp-dim">{{ supLoaded ? `범위 안에 견줄 ${cmpN} 거래가 없습니다.` : '실거래를 받는 중입니다…' }}</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -12348,6 +12359,7 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-body.cmp-order > .adp-dm-block.cmp-box.o-unit { margin-top: 10px !important; }   /* 위 단지 입지비교와 띄운다(웹 ':has(.dm-result) 0 !important' 에 덮였다) */
 .cmp-gap { height: 18px; }   /* 한 상자 안 — 칸 줄과 지도 사이(2026-11-11) */
 .adp-dm-body.cmp-order > .o-indh { order: 4; }
+.adp-dm-body.cmp-order > .o-rank { order: 4; }   /* 빌라 — 입지/개별성 제목 바로 아래 입지등수 표 */
 .adp-dm-body.cmp-order > .o-ind { order: 5; }
 .adp-dm-body.cmp-order > .o-demand { order: 6; margin-top: 10px; }
 .adp-dm-body.cmp-order > .o-sup { order: 7; }
