@@ -967,7 +967,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td class="pa-num">{{ me.year || '-' }}</td>
               <td class="r pa-num">0m</td>
               <td class="pa-num">{{ me.floor || '-' }}</td>
-              <td class="l"><div class="pa-addr"><span class="addr">{{ myAddr }}</span><span class="chips"><span class="same">경매지번</span></span></div></td>
+              <td class="l"><div class="pa-addr"><span class="addr" :title="myAddr">{{ myAddr }}</span><span class="chips"><span class="same">경매지번</span></span></div></td>
               <td class="acts-td"><span class="acts">
                 <button type="button" class="ab n" title="네이버 부동산에서 이 빌라 보기" aria-label="네이버 부동산에서 보기" @click="goNaver(props.auction.address)">N</button>
                 <button type="button" :class="['ab p', { ok: okKey === 'mineP' }]" :title="`부동산플래닛에서 보기 — 「${region?.dong} ${lot}」를 복사해 두고 지도를 엽니다`" aria-label="부동산플래닛에서 보기" @click="goPlanet(`${region?.dong ?? ''} ${lot}`, 'mineP')">P</button>
@@ -999,7 +999,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td class="pa-num">{{ r.buildYear || '-' }}</td>
               <td class="r pa-num">{{ r.dist ?? '-' }}m</td>
               <td class="pa-num">{{ r.floorNo || '-' }}</td>
-              <td class="l"><div class="pa-addr"><span class="addr"><i v-if="orderOf[r.jibun]" class="no" :title="`임장 순서 ${orderOf[r.jibun]}번 — 지도 번호와 같다`">{{ orderOf[r.jibun] }}</i>{{ addrOf(r) }}</span><span v-if="r.same" class="chips"><span class="same">경매지번</span><span v-if="Math.abs(r.areaM2 - me.areaM2) <= 0.05" class="same eq">같은면적</span></span><span v-else-if="fieldChips(r.jibun).length" class="chips"><span v-for="c in fieldChips(r.jibun)" :key="c.t" :class="['pa-fc', c.k]">{{ c.t }}</span></span></div></td>
+              <td class="l"><div class="pa-addr"><span class="addr" :title="addrOf(r)"><i v-if="orderOf[r.jibun]" class="no" :title="`임장 순서 ${orderOf[r.jibun]}번 — 지도 번호와 같다`">{{ orderOf[r.jibun] }}</i>{{ addrOf(r) }}</span><span v-if="r.same" class="chips"><span class="same">경매지번</span><span v-if="Math.abs(r.areaM2 - me.areaM2) <= 0.05" class="same eq">같은면적</span></span><span v-else-if="fieldChips(r.jibun).length" class="chips"><span v-for="c in fieldChips(r.jibun)" :key="c.t" :class="['pa-fc', c.k]">{{ c.t }}</span></span></div></td>
               <td class="acts-td" @click.stop><span class="acts">
                 <button type="button" class="ab n" title="네이버 부동산에서 이 빌라 보기 — 그 건물을 가운데 두고 지도를 바로 엽니다" aria-label="네이버 부동산에서 보기" @click="goNaver(fullAddr(r))">N</button>
                 <button type="button" :class="['ab p', { ok: okKey === `${r.id}P` }]" :title="`부동산플래닛에서 보기 — 「${r.umdNm} ${r.jibun}」를 복사해 두고 지도를 엽니다`" aria-label="부동산플래닛에서 보기" @click="goPlanet(`${r.umdNm} ${r.jibun}`, `${r.id}P`)">P</button>
