@@ -38,6 +38,9 @@ export const APT_TURNOVER_STATS: Array<[string, string]> = [
   ['2023년', '1.76% · 2.99% · 3.23% · 3.04%'],
   ['출처', '직방(국토부 실거래 기준, 2023년 12월 발표)'],
 ];
+/** 단지 하나의 매물율 합격선(%) — 대장 아파트는 세대수의 2~3% 매물이 정상 거래 수준, 그보다 쌓이면 잘 안 나간다(2026-11-11 사용자 기준점).
+ *  동 전체(여러 단지 합)는 5% 그대로(DEMAND_GRADE_RULES.burden.b) */
+export const COMPLEX_BURDEN_LINE = 3;
 export const turnoverLineOf = (apt: boolean) => (apt ? APT_TURNOVER_LINE : DEMAND_GRADE_RULES.turnover.b);
 
 /** 소수 한 자리 — 0 이면 떼고 정수로('100.0' → '100', '3.6' 그대로). 수요지표 값 공통(2026-11-10) */
@@ -52,16 +55,16 @@ export const DEMAND_PASS_TEXT: Record<DemandMetric, string> = {
 };
 
 /** 막대 뒤 합격선 글 — 아파트 회전율만 3%(빌라 1.5%) */
-export const demandPassText = (m: DemandMetric, apt = false) => (m === 'turnover' ? `${turnoverLineOf(apt)}% 이상 적합` : DEMAND_PASS_TEXT[m]);
+export const demandPassText = (m: DemandMetric, apt = false, complex = false) => (m === 'turnover' ? `${turnoverLineOf(apt)}% 이상 적합` : m === 'burden' && complex ? `${COMPLEX_BURDEN_LINE}% 이하 적합` : DEMAND_PASS_TEXT[m]);
 
 /** 종합 의견 — 매물(소화기간 10개월 · 매물율 5% 선) × 거래(회전율 1.5% 선, 아파트 3%) 네 칸. 등급 대신 한 줄(2026-11-10 사용자 시안 'Level 3 · 저매물 / 저거래').
  *  매물이 많고 적음은 세대수가 아니라 팔리는 속도로 본다 — 1년치가 쌓였으면 세대수 대비 적어도 '고매물'(2026-11-10 사용자 결정, 성포동 329건 · 329건).
  *  소화기간 = 1,200 ÷ 소화율 이라 소화율로 받는다(거래 0건이면 소화율 0 → 고매물). 선은 DEMAND_PASS_TEXT 와 같은 합격선. 값이 없으면 null */
 // 매물율이 5%를 넘으면 소화기간과 상관없이 '고매물'(많이 쌓였다, 2026-11-10 사용자 결정) — 둘 중 하나만 넘어도 고매물
-export const demandOpinionOf = (absorb: number, turnover: number, ready: boolean, apt = false, burden = 0): { level: number; title: string; text: string } | null => {
+export const demandOpinionOf = (absorb: number, turnover: number, ready: boolean, apt = false, burden = 0, burdenLine: number = DEMAND_GRADE_RULES.burden.b): { level: number; title: string; text: string } | null => {
   if (!ready) return null;
   const clearMonths = absorb > 0 ? 1200 / absorb : Infinity;
-  const lowListing = clearMonths <= DEMAND_GRADE_RULES.clear.b && burden <= DEMAND_GRADE_RULES.burden.b;
+  const lowListing = clearMonths <= DEMAND_GRADE_RULES.clear.b && burden <= burdenLine;
   const highDeal = turnover >= turnoverLineOf(apt);
   // 거래가 얼마나 활발한지 한 낱말 — 아파트 3~5% 다소 · 5~8% · 8%↑ 매우(ⓘ 단계와 같다), 빌라 1.5~3% 다소 · 3%↑
   const lively = apt
@@ -78,7 +81,7 @@ export const demandOpinionOf = (absorb: number, turnover: number, ready: boolean
 export const demandFitText = (g: DemandGrade) => (g === '-' ? '' : g === 'A' || g === 'B' ? '적합' : '부적합');
 
 /** 네 지표 말풍선 — 웹 수요분석 · 단지 수요분석. 기준 줄은 등급(A·B·C) 대신 합격선 한 줄(DEMAND_PASS_TEXT 와 같은 말, 2026-11-10). what = '연립·다세대' 같은 종류 이름 */
-export const demandTip = (metric: DemandMetric, what: string, apt = false): Array<[string, string]> => ({
+export const demandTip = (metric: DemandMetric, what: string, apt = false, complex = false): Array<[string, string]> => ({
   turnover: [
     ['공식', '12개월 거래량 ÷ 총 세대수 × 100'],
     ['의미', `${what} 중 1년에 몇 %가 손바뀜되나`],
@@ -95,8 +98,14 @@ export const demandTip = (metric: DemandMetric, what: string, apt = false): Arra
     ['공식', '총 매물수 ÷ 총 세대수 × 100'],
     ['의미', `${what} 가운데 지금 팔려고 내놓은 집이 몇 %인가`],
     ['예', '1,000세대에 매물 30건이면 3%'],
-    ['기준', '5% 이하 적합 · 초과 부적합'],
-    ['위험', '5%가 넘으면 물건이 적체 — 잘 안 나간다는 뜻(종합 의견 고매물)'],
+    ...(complex ? [
+      ['기준', `${COMPLEX_BURDEN_LINE}% 이하 적합 · 초과 부적합`],
+      ['참고', '대장 아파트는 세대수의 2~3%가 매물로 나와 있으면 정상 거래 수준'],
+      ['위험', `${COMPLEX_BURDEN_LINE}%가 넘으면 물건이 쌓이는 중 — 잘 안 나간다는 뜻(종합 의견 고매물)`],
+    ] as Array<[string, string]> : [
+      ['기준', '5% 이하 적합 · 초과 부적합'],
+      ['위험', '5%가 넘으면 물건이 적체 — 잘 안 나간다는 뜻(종합 의견 고매물)'],
+    ] as Array<[string, string]>),
   ],
   clear: [
     ['공식', '총 매물수 ÷ 월평균 거래량'],

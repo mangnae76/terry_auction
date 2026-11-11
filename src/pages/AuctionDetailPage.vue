@@ -32,7 +32,7 @@ import {
 import { getBuildingFacts } from '../services/buildingFacts';
 import { complexNameOf, totalParkingOf } from '../services/aptComplex';
 import { getComplexAreas, supplyRowsOf, areaUnitsOf, sameExclusiveCountOf, type ComplexAreas } from '../services/complexAreas';
-import { DEMAND_PLAIN, dec1, demandFitText, demandGradeOf, demandOpinionOf, demandPassText, demandTip, type DemandMetric } from '../services/demandGrade';
+import { COMPLEX_BURDEN_LINE, DEMAND_PLAIN, dec1, demandFitText, demandGradeOf, demandOpinionOf, demandPassText, demandTip, type DemandMetric } from '../services/demandGrade';
 import { openNaverComplexListing, openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { computed, inject, markRaw, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -3133,7 +3133,9 @@ const supStats = computed(() => {
   const burden = base > 0 && listings > 0 ? (listings / base) * 100 : 0;
   const row = (id: DemandMetric, label: string, plain: string, value: string, ok: boolean, n: number) => {
     const grade = demandGradeOf(id, ok, n);
-    return { id, label, plain, value, grade, fit: demandFitText(grade) };
+    // 매물율은 단지 하나 기준 3%(대장 아파트 2~3% 정상, 동 전체는 5%)
+    const fit = id === 'burden' && ok ? (n <= COMPLEX_BURDEN_LINE ? '적합' : '부적합') : demandFitText(grade);
+    return { id, label, plain, value, grade, fit };
   };
   // 중요한 것부터 — 종합 의견을 정하는 거래 회전율 · 매물율을 앞에, 그다음 짝인 매물 소화율 · 소화기간(2026-11-10)
   return [
@@ -3175,13 +3177,13 @@ const supTip = (m: DemandMetric): Array<[string, string]> => {
     burden: [['공식', `${listings} ÷ ${units} × 100`], ['의미', `${who} 가운데 지금 팔려고 내놓은 집이 몇 %인가`], ['예', '123세대에 매물 6건이면 약 5%']],
     clear: [['공식', `${listings} ÷ ${p ? '해당평형 월평균 거래량' : '월평균 거래량'}`], ['의미', `${who} 매물이 다 팔리는 데 걸리는 달 수`]],
   };
-  return [...head[m], ...demandTip(m, who, true).filter(([k]) => k !== '공식' && k !== '의미' && k !== '예')];
+  return [...head[m], ...demandTip(m, who, true, true).filter(([k]) => k !== '공식' && k !== '의미' && k !== '예')];
 };
 const openSupNaver = () => { const addr = auction.value?.address; if (addr) void openNaverComplexListing(addr, 'apt'); };
 /** 종합 의견 — 매물수(해당평형)를 넣었을 때만 */
 const supOpinion = computed(() => {
   const base = supBase.value; const deals = supDealCount.value; const listings = supListings.value;
-  return demandOpinionOf(listings > 0 ? (deals / listings) * 100 : 0, base > 0 ? (deals / base) * 100 : 0, supLoaded.value && base > 0 && listings > 0, true, base > 0 ? (listings / base) * 100 : 0);   // 단지 수요분석은 아파트만 — 회전율 선 3%
+  return demandOpinionOf(listings > 0 ? (deals / listings) * 100 : 0, base > 0 ? (deals / base) * 100 : 0, supLoaded.value && base > 0 && listings > 0, true, base > 0 ? (listings / base) * 100 : 0, COMPLEX_BURDEN_LINE);   // 단지 수요분석은 아파트만 — 회전율 선 3%
 });
 /** 아래 표 한 줄 — 위 동 수요분석 표와 같은 칸. 해당평형(전용면적이 같은 거래) 기준, 평균가는 정상거래만 */
 const supRow = computed(() => {
@@ -9052,7 +9054,7 @@ const goBack = () => router.back();
                 <div v-for="c in supStats" :key="c.id" :class="['sup-cell', { lit: supLit(c.id) }]" @mouseenter="supLitKey = c.id" @mouseleave="supLitKey = ''">
                   <!-- ⓘ — 위 동 수요분석과 같은 말풍선(services/demandGrade) -->
                   <div class="sup-h"><InfoTip :rows="supTip(c.id)" under="box">{{ c.label }}</InfoTip><em class="sup-plain">{{ c.plain }}</em></div>
-                  <div class="sup-b"><b><UnitText :text="c.value" /><em class="sup-bar">|</em><span class="sup-pass">{{ demandPassText(c.id, true) }}</span></b></div>
+                  <div class="sup-b"><b><UnitText :text="c.value" /><em class="sup-bar">|</em><span class="sup-pass">{{ demandPassText(c.id, true, true) }}</span></b></div>
                 </div>
               </div>
               <!-- 종합 의견 — 위 동 수요분석과 같은 상자 -->
