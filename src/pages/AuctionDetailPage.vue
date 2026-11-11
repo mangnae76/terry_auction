@@ -9609,7 +9609,7 @@ const goBack = () => router.back();
                 </div>
               </div>
               <!-- 순위 맞춰 보기 가이드 — 전세가는 사는 값(입지 + 개별성)이 그대로 담긴 값이라, 종합 순위와 전세 평당가 순위를 견줘 점수가 맞는지 본다(2026-11-11 사용자) -->
-              <p class="cmp-guide">전세가에는 입지와 개별성이 다 담겨 있습니다. 입지점수 순위가 평당가 순위와 크게 다르면, 입지점수를 눌러 입지 창에서 세부 내용을 확인하세요.</p>
+              <p class="cmp-guide">실거래가에는 입지와 개별성이 다 담겨 있습니다. 입지점수 순위가 평당가 순위와 크게 다르면, 입지점수를 눌러 입지 창에서 세부 내용을 확인하세요.</p>
               <!-- 선정물건에서 직접 고를 것 — 비어 있는 현장 · 수동 칸만. 누르면 그 점수 팝업(2026-11-11 시안) -->
               <div v-if="cmpTodo.length" class="cmp-todo"><b>선정물건에서 직접 고를 것 {{ cmpTodo.length }}개</b><span>{{ cmpTodo.map((t) => t.label).join(' · ') }}</span>
                 <button v-if="cmpTodo.some((t) => t.kind === 'zone')" type="button" @click="cmpPopOpen('zone', cmpMineRow, $event)">개별성에서고르기</button>
