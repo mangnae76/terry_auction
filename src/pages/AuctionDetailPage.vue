@@ -2904,8 +2904,14 @@ const indivDisplay = (item: IndivItem) => {
 };
 // 가격율 기본값은 0 — 항목마다 정해 둔 비율은 참고용이고, 직접 적은 값만 쓴다.
 // (층은 아파트/빌라 규칙으로 자동 계산되는 값이 있으면 그것을 쓴다)
-/** 아파트 구역 내 개별성 중 기본 비중을 두는 칸 — 지하주차장 연결 · 용적률 5%(2026-11-11 사용자. K-apt 연결 전까지 이 값, 직접 적으면 그 값) */
-const INDIV_RATE_DEFAULT: Record<string, string> = { 'ind.ugLink': '5', 'ind.far': '5' };
+/** 개별성 비율 기본값 — 물건마다 적지 않아도 모든 물건에 들어간다(2026-11-11 사용자 '자동화하려는 것'). 물건에 직접 적은 값이 있으면 그 값.
+ *  값은 사용자가 안산파크푸르지오 물건에 적어 둔 비율 그대로. 지하주차장 연결 · 용적률은 5%(K-apt 연결 전까지),
+ *  수리유무 · 건물외부 · 건물내부는 적힌 값이 없어 항목 참고 비율. 층은 층수 규칙(indivFloorRate)이 따로 정한다 */
+const INDIV_RATE_DEFAULT: Record<string, string> = {
+  'ind.age': '20~30', 'ind.parking': '5', 'ind.elevator': '10', 'ind.corridor': '15', 'ind.slope': '5', 'ind.ugLink': '5', 'ind.far': '5',
+  'ind.mgmt': '5', 'ind.inside': '5',
+  'ind.direction': '5', 'ind.type': '5', 'ind.rooms': '5', 'ind.view': '5', 'ind.sunlight': '5', 'ind.repair': '10',
+};
 const indivRateNum = (item: IndivItem) => {
   if (item.id === 'ind.floorNum') {
     const auto = indivFloorRate();
@@ -9274,7 +9280,7 @@ const goBack = () => router.back();
 
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
-              <div class="cmp-est-h"><h3>단지 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span><span class="cmp-q">내 선정물건 아파트 단지는 몇 등일까?</span></h3>
+              <div class="cmp-est-h"><h3>단지 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span><span class="cmp-q">내가 선정한 아파트 단지는 몇 등일까?</span></h3>
                 <span class="cmp-est-desc">최근 {{ cmpMonths }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 같은 평형 {{ cmpKind }} 실거래 · 아래 표나 지도에서 단지를 고르면 바뀝니다</span>
               </div>
               <div class="cmp-est">
@@ -12055,7 +12061,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-conds .kindF button.on[data-k="전세"] { background: #b7791f; color: #fff; }
 /* 시세분석 결론 칸 줄 — SonpumPricePage .zone-h · .pa-tag · .est · .tiles · .tile 값 그대로(2026-11-11) */
 .cmp-est-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.cmp-scope-chip { display: inline-flex; align-items: center; margin-left: 8px; padding: 2px 9px; border: 1px solid rgba(43, 109, 243, .28); border-radius: 999px; background: rgba(43, 109, 243, .09); color: #2b6df3; font-size: 12.5px; font-weight: 700; line-height: 1.4; white-space: nowrap; }   /* 지역 칩 — 작게(2026-11-11) */
+.cmp-scope-chip { display: inline-flex; align-items: center; margin-left: 8px; color: #2b6df3; font-size: 12.5px; font-weight: 700; line-height: 1.4; white-space: nowrap; }   /* 지역 — 알약은 빼고 파란 글만(2026-11-11 사용자) */
 .cmp-q { margin-left: 8px; font-size: 12.5px;   /* h3 안은 span — 웹의 'h3 > small 은 14' 규칙에 걸려 '누구한테 팔까?'보다 커졌다(2026-11-11) */
    font-weight: 400; color: #6b7280; }   /* '누구한테 팔까?'와 같은 꼴의 물음 */
 .cmp-est-h h3 { display: inline-flex; align-items: center; margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
@@ -12181,7 +12187,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-avg { font-size: 15px; font-weight: 800; color: #e03e3e; }
 .cmp-dim { color: #9ca3af; }
 .cmp-pick { margin-top: 16px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.cmp-chip { display: inline-flex; align-items: center; padding: 3px 11px; border: 1px solid rgba(43, 109, 243, .28); border-radius: 999px; background: rgba(43, 109, 243, .09); color: #2b6df3; font-size: 14px; font-weight: 800; white-space: nowrap; }
+.cmp-chip { display: inline-flex; align-items: center; color: #2b6df3;   /* 고른 단지 이름 — 알약은 빼고 파란 글만(2026-11-11 사용자) */
+  font-size: 14px; font-weight: 800; white-space: nowrap; }
 .cmp-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
 .cmp-two .sup-tbl { margin-top: 0; }
 .cmp-deals { max-height: 330px; overflow-y: auto; }
