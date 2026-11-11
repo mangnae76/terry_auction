@@ -9555,9 +9555,11 @@ const goBack = () => router.back();
                   <!-- 한 상자 — 제목은 보고 있는 단지 이름 + 종합점수 · 순위, 안에 입지 · 구역 내 개별성(2026-11-11 사용자) -->
                   <div v-if="cmpPicked" class="cmp-fs-places">
                     <p class="cmp-fs-pt"><b>{{ cmpPicked.name || cmpPicked.jibun }}</b><span v-if="cmpPicked.mine" class="cmp-tag">선정물건</span><em>종합 <b>{{ cmpScore(cmpPicked.tot) }}</b> / 100<template v-if="cmpRankOf.get(cmpKeyOf(cmpPicked))"> · {{ cmpRankOf.get(cmpKeyOf(cmpPicked)) }}위</template></em></p>
+                    <div class="cmp-fs-sec">
                     <p class="cmp-fs-ph"><b>입지</b><em>입지점수 <b>{{ cmpScore(cmpPicked.loc) }}</b> / 100</em></p>
                     <span v-for="x in cmpLocParts(cmpPicked)" :key="x.cond"><i>{{ x.pl?.ic ?? '·' }}</i><span class="c">{{ x.cond }}</span><b>{{ x.pl ? `${cmpPlaceName(x.pl.name)} ${x.pl.m.toLocaleString('ko-KR')}m` : '1km 안에 없음' }}</b><em class="sc">{{ Math.round(x.score) }}점</em></span>
-                    <i class="cmp-fs-sep" aria-hidden="true" />
+                    </div>
+                    <div class="cmp-fs-sec">
                     <p class="cmp-fs-ph"><b>구역 내 개별성</b><em>개별성점수 <b>{{ cmpScore(cmpPicked.zone) }}</b> / 100</em></p>
                     <template v-if="cmpPicked.mine">
                       <span v-for="item in ZONE_ITEMS" :key="item.id" class="z"><span class="c">{{ item.label }}</span><b v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)">{{ indivAutoText(item) }}</b><b v-else-if="indivValue(item.id)">{{ indivValue(item.id) }}</b><button v-else type="button" class="cmp-fs-pick" @click="cmpPopOpen('zone', cmpPicked, $event)">고르세요</button><em class="sc">{{ cmpZoneParts(cmpPicked).has(item.id) ? `${Math.round(cmpZoneParts(cmpPicked).get(item.id)!.v)}점` : '-' }}</em></span>
@@ -9566,6 +9568,7 @@ const goBack = () => router.back();
                       <span class="z"><span class="c">연식</span><b>{{ cmpPicked.buildYear ? `${cmpPicked.buildYear}년` : '-' }}</b><em class="sc">{{ cmpZoneParts(cmpPicked).has('ind.age') ? `${Math.round(cmpZoneParts(cmpPicked).get('ind.age')!.v)}점` : '-' }}</em></span>
                       <small class="cmp-fs-pn">다른 단지는 건축물대장 값이 없어 연식만으로 계산합니다</small>
                     </template>
+                    </div>
                   </div>
                   </template>
                 </aside>
@@ -12450,14 +12453,14 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-fs-row.mine { background: #fff5f5; box-shadow: inset 0 -2px 0 #f3c9c9; }
 .cmp-fs-row.on { border-color: #2b4fd8; background: #eef2ff; box-shadow: none; }   /* 시세분석 전체화면 .fs-it.on 과 같게 */
 .cmp-fs-places { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 9px; background: #fff; font-size: 13px; color: #6b7280; }
-.cmp-fs-places > span { display: grid; grid-template-columns: 20px 4.6em minmax(0, 1fr) auto; align-items: center; gap: 6px; }
-.cmp-fs-places > span.z { grid-template-columns: 6.4em minmax(0, 1fr) auto; }   /* 개별성 — 아이콘 없이 이름 · 값 · 점수 */
+.cmp-fs-sec { display: grid; gap: 8px; padding: 10px 12px; border-radius: 8px; background: #f7f9fc; }   /* 입지 · 구역 내 개별성 — 옅은 바탕 칸으로 나눈다(선 대신) */
+.cmp-fs-sec > span { display: grid; grid-template-columns: 20px 4.6em minmax(0, 1fr) auto; align-items: center; gap: 6px; }
+.cmp-fs-sec > span.z { grid-template-columns: 6.4em minmax(0, 1fr) auto; }   /* 개별성 — 아이콘 없이 이름 · 값 · 점수 */
 .cmp-fs-places .sc { font-style: normal; font-size: 13px; color: #111827; }
 .cmp-fs-pt { display: flex; align-items: center; gap: 0; margin: 0 0 4px; padding-bottom: 8px; border-bottom: 1px solid #eef1f6; }
 .cmp-fs-places .cmp-fs-pt > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 800; color: #111827; }
 .cmp-fs-pt em { margin-left: auto; padding-left: 8px; font-style: normal; font-size: 12.5px; color: #6b7280; white-space: nowrap; }
 .cmp-fs-pt em b { font-size: 15px; font-weight: 800; color: #111827; }
-.cmp-fs-sep { display: block; height: 1px; margin: 4px 0; background: #eef1f6; }
 .cmp-fs-ph { display: flex; align-items: baseline; gap: 6px; margin: 0 0 2px; }
 .cmp-fs-ph > b { font-size: 14px; font-weight: 800; color: #111827; }
 .cmp-fs-ph small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #9ca3af; }
