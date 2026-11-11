@@ -160,6 +160,7 @@
       "node web/build.mjs",
       "mkdir -p dist/web && cp web/site/selected.html web/site/pdfparse.js web/site/pdfparse.css dist/web/",
       "mkdir -p dist/web/manual && cp web/manual/*.html dist/web/manual/",
+      "mkdir -p dist/web/ebook && cp web/ebook/*.html dist/web/ebook/",
       "rm -rf dist/company && mkdir -p dist/company && cp -R company/. dist/company/"
     ]
   }
