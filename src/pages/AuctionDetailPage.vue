@@ -5894,10 +5894,10 @@ const cmpDraw = () => {
   const mv = cmpMv; if (!mv) return;
   mv.clear();
   const rows = cmpRows.value.filter((r) => r.point); const pick = cmpPicked.value;
-  // 단지 테두리 — 선정물건 주황, 비교 단지 파랑. 처음 보는 단지는 받아 와서 다시 그린다
-  rows.forEach((r) => {
+  // 단지 테두리 — 보고 있는 단지 하나만(처음엔 선정물건, 2026-11-11 사용자). 선정물건 주황 · 비교 단지 파랑. 처음 보는 단지는 받아 와서 다시 그린다
+  rows.filter((r) => pick && cmpKeyOf(r) === cmpKeyOf(pick)).forEach((r) => {
     const key = cmpKeyOf(r); const sh = cmpParcels.value[key];
-    if (sh) mv.polygon(sh, { color: r.mine ? '#f05a28' : '#2b4fd8', weight: cmpIsOn(r) || r.mine ? 2.4 : 1.6, fillOpacity: r.mine ? 0.08 : 0.05 });
+    if (sh) mv.polygon(sh, { color: r.mine ? '#f05a28' : '#2b4fd8', weight: 2.4, fillOpacity: 0.08 });
     else if (!(key in cmpParcels.value)) {
       cmpParcels.value = { ...cmpParcels.value, [key]: null };
       void parcelShapeOf(r.point!.lat, r.point!.lng).then((v) => { cmpParcels.value = { ...cmpParcels.value, [key]: v }; if (v) cmpDraw(); });
