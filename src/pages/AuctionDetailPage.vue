@@ -5990,7 +5990,7 @@ const cmpTodo = computed(() => {
 /** 매매수요 조사 단계 — 눌러서 그 상자로(이름은 각 상자 제목) */
 const CMP_STEPS = [
   { no: '①', t: '실사용자', sel: '.o-persona' }, { no: '②', t: '단지입지비교', sel: '.o-est' },
-  { no: '③', t: '호실예상가', sel: '.o-unit' }, { no: '④', t: '수요분석', sel: '.o-demand' },
+  { no: '③', t: '호실예상가', sel: '.o-unit' }, { no: '④', t: '수급분석', sel: '.o-demand' },
 ];
 const cmpGo = async (ev: Event, sel: string) => {
   const card = (ev.currentTarget as HTMLElement).closest('.adp-card');
@@ -9011,7 +9011,7 @@ const goBack = () => router.back();
             <!-- 아파트만 — 빌라는 단지 개념이 없다 -->
             <section v-if="webEmbed && isApartment" class="adp-dm-block boxed sup-dm o-sup">
               <!-- 제목 '수요분석' 왼쪽, 단지 이름은 오른쪽에 알약 없이 파란 글(2026-11-11 사용자) -->
-              <p class="sup-scope">수요분석<span class="area">{{ supName || '단지' }}</span></p>
+              <p class="sup-scope">수급분석<span class="area">{{ supName || '단지' }}</span><small class="cmp-q">이 단지는 내놓으면 얼마나 빨리 팔릴까?</small></p>
               <p class="sup-head">① 기초수치</p>
               <div class="sup-row">
                 <div :class="['sup-cell', { lit: supLit('deal') }]" @mouseenter="supLitKey = 'deal'" @mouseleave="supLitKey = ''">
