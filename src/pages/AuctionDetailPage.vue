@@ -12105,7 +12105,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .o-unit .cmp-two { margin-bottom: 12px; grid-template-columns: minmax(0, 1fr); }
 .cmp-nm-line { display: flex; align-items: center; min-width: 0; }
 .cmp-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }   /* 긴 단지 이름은 칸을 넘으면 …(마우스를 대면 전체 이름) */
-.cmp-tbl td.nm { max-width: 0; }
+.cmp-tbl td.nm { max-width: 0; text-align: center; }   /* 단지 평가표 단지 이름 가로 가운데(2026-11-11) */
+.cmp-tbl td.nm .cmp-nm-line { justify-content: center; }
 .cmp-row { cursor: pointer; }
 .sup-tbl .adm-table tbody tr.cmp-row:hover td { background: #f7f9fc; }
 .sup-tbl .adm-table tbody tr.cmp-row.mine td { background: #fff5f5; box-shadow: inset 0 -2px 0 #efb7b7; }
