@@ -9631,7 +9631,7 @@ const goBack = () => router.back();
                           <tr><td class="cmp-ind-nm auto">연식</td><td class="lft cmp-ind-ct"><b>{{ cmpPopRow.buildYear ? `${cmpPopRow.buildYear}년` : '-' }}</b><small class="cmp-auto">국토부 실거래</small></td><td class="n">{{ cmpZoneParts(cmpPopRow).has('ind.age') ? Math.round(cmpZoneParts(cmpPopRow).get('ind.age')!.v) : '-' }}</td><td class="n">{{ Math.round(Math.abs((rateOf('ind.age')[0] + rateOf('ind.age')[1]) / 2)) || 25 }}%</td></tr>
                         </tbody>
                       </table></div></div>
-                      <p class="cmp-formula"><template v-if="cmpPopRow.mine">칸 점수 × 비중 ÷ 비중 합. 비중은 점수 무게이고 가격에는 들어가지 않습니다. 비중은 눌러서 바꿀 수 있습니다(파란 숫자가 고친 값)</template><template v-else>다른 단지는 건축물대장 값이 없어 연식만으로 계산합니다</template><br>구역 내 개별성 점수 <b>{{ cmpScore(cmpPopRow.zone) }}</b> / 100</p>
+                      <p class="cmp-formula"><template v-if="cmpPopRow.mine">칸 점수 × 비중 ÷ 비중 합. 비중은 점수 무게이고 가격에는 들어가지 않습니다. 비중은 눌러서 바꿀 수 있습니다</template><template v-else>다른 단지는 건축물대장 값이 없어 연식만으로 계산합니다</template><br>구역 내 개별성 점수 <b>{{ cmpScore(cmpPopRow.zone) }}</b> / 100</p>
                     </template>
                     <template v-else>
                       <p class="cmp-formula">입지 {{ cmpScore(cmpPopRow.loc) }} × 60% + 구역 내 개별성 {{ cmpScore(cmpPopRow.zone) }} × 40%<br>종합 점수 <b>{{ cmpScore(cmpPopRow.tot) }}</b> / 100<template v-if="cmpRankOf.get(cmpKeyOf(cmpPopRow))"> · {{ cmpRankOf.get(cmpKeyOf(cmpPopRow)) }}위 / {{ cmpRankOf.size }}곳</template></p>
@@ -9673,7 +9673,7 @@ const goBack = () => router.back();
                     <tr class="cmp-sum"><td>합계</td><td /><td /><td :class="['n', 'adp-ind-adj', unitAdjSum[1] > 0 || repairMan() > 0 ? 'up' : unitAdjSum[0] < 0 ? 'down' : 'zero']"><b>{{ unitAdjText }}</b></td></tr>
                   </tbody>
                 </table></div></div>
-                <p class="cmp-ind-note">비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다(파란 숫자가 고친 값). 향 · 뷰 · 일조량 · 수리유무 · 동 위치는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다. 층은 4층부터 탑층 아래까지가 기준층이라 0%, 수리는 20평대 기준 금액입니다.</p>
+                <p class="cmp-ind-note">비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 향 · 뷰 · 일조량 · 수리유무 · 동 위치는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다. 층은 4층부터 탑층 아래까지가 기준층이라 0%, 수리는 20평대 기준 금액입니다.</p>
               </div>
               <div class="cmp-est">
                 <div class="cmp-tiles three">
@@ -12421,8 +12421,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-ind-in { display: inline-flex; align-items: center; gap: 4px; }
 .cmp-ind-in input { width: 84px; margin: 0 2px; height: 28px; box-sizing: border-box; padding: 0 8px; border: 1px solid #d7dde8; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 700; text-align: right; color: #111827; background: #fff; }
 .cmp-rate-in { display: inline-flex; align-items: center; gap: 2px; }
-.cmp-rate-in input { width: 68px; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1px solid #e3e8f0; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 700; text-align: right; color: #2b6df3; background: #fff; }
-.cmp-rate-in input::placeholder { color: #374151; font-weight: 400; opacity: 1; }   /* 기본값 — 흐리지 않게(값이 비어 보이지 않게) */
+.cmp-rate-in input { width: 68px; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1px solid #e3e8f0; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 400; text-align: right; color: #374151; background: #fff; }   /* 기본값 · 고친 값 같은 색 — 기본값도 강의 값이라 구분할 까닭이 없다(2026-11-11 사용자) */
+.cmp-rate-in input::placeholder { color: #374151; font-weight: 400; opacity: 1; }
 .cmp-ind-note { margin: 8px 2px 0; font-size: 12.5px; color: #6b7280; line-height: 1.6; }
 .cmp-hug { display: inline-flex; align-items: center; gap: 6px; margin-left: 10px; vertical-align: middle; }
 /* 단계 · 번호(2026-11-11 시안) */
