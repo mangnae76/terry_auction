@@ -3160,7 +3160,7 @@ const SUP_TIPS: Record<'deal' | 'units' | 'areaUnits' | 'listings', Array<[strin
   deal: [['출처', '국토부 아파트 매매 실거래 — 이 단지(같은 지번)'], ['기간', '조회일부터 지난 12개월'], ['계산', '정상 + 직거래, 계약해제 제외'], ['해당평형', '이 호실과 전용면적이 같은 거래']],
   units: [['출처', 'PDF 단지정보 · 건축물대장 세대수']],
   areaUnits: [['출처', '건축물대장 전유공용면적'], ['기준', '이 호실과 전용면적이 같은 세대(네이버 평형과 같은 묶음)']],
-  listings: [['입력', '네이버 부동산에서 이 평형(해당평형) 매매 매물을 세어 적는다'], ['단추', '네이버매물 — 이 단지를 가운데 둔 매매 지도']],
+  listings: [['입력', '네이버 부동산에서 해당평형 매매 매물을 세어 적는다'], ['단추', '네이버매물 — 이 단지를 가운데 둔 매매 지도']],
 };
 /** 칸에 마우스를 대면 그 값과 이어진 칸이 같이 빨갛게 — 위 동 수요분석(DM_LIT_LINKS)과 같은 짝.
  *  세대수 칸은 계산에 실제로 쓰는 쪽(해당 세대수가 있으면 해당 세대수)이 켜진다 */
@@ -6102,8 +6102,9 @@ const cmpBases = computed(() => {
   const n = me ? me.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세')).length : 0;
   const ra = cmpRateEst.value;
   return [
-    { id: 'avg' as const, label: `면적 평균 ${cmpKind.value}가`,   // 단지 전체가 아니라 같은 전용면적만(2026-11-11 사용자)
-      value: cmpUnitActual.value, text: cmpEok(cmpUnitActual.value), note: n ? `${me ? areaPair(me.supply, me.area) : ''} · 최근 ${cmpMonths.value}개월 ${n}건` : `최근 ${cmpMonths.value}개월 같은 평형 거래가 없습니다` },
+    // 단지 전체가 아니라 같은 전용면적만 — 이름은 공급 평수로 '35평 해당면적 평균 매매가'(2026-11-11 사용자)
+    { id: 'avg' as const, label: `${me?.supply ? `${Math.round(me.supply.lo / 3.305785)}평 ` : ''}해당평형 평균 ${cmpKind.value}가`,
+      value: cmpUnitActual.value, text: cmpEok(cmpUnitActual.value), note: n ? `${me ? areaPair(me.supply, me.area) : ''} · 최근 ${cmpMonths.value}개월 ${n}건` : `최근 ${cmpMonths.value}개월 해당평형 거래가 없습니다` },
     { id: 'rate' as const, label: '전세가율로 본 매매가', value: cmpKind.value === '매매' && ra ? ra.sale : 0,
       // 값은 거래 단추와 상관없이 늘 보인다(전세 평균 ÷ 이웃 전세가율). 기준가로 고르는 것만 매매일 때(2026-11-11 사용자)
       text: ra ? cmpEok(ra.sale) : '-', note: ra ? `${ra.similar ? '연식 ±5년' : '연식 비슷한 단지가 없어 전체'} 이웃 ${ra.n}곳 전세가율 ${Math.round(ra.rate)}%${cmpKind.value === '매매' ? '' : ' · 매매일 때 기준가로'}` : '선정물건 전세 거래나 이웃 전세가율이 없습니다' },
@@ -9146,7 +9147,7 @@ const goBack = () => router.back();
                 <span v-else class="wait">현재 매물수(해당평형)를 넣으면 종합 의견이 나옵니다.</span>
               </div>
               <p class="sup-note">
-                <template v-if="supAreaUnits">수요지표는 이 평형(전용 {{ trunc2(supMyArea) }}㎡) 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 해당평형 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 계산합니다.</template>
+                <template v-if="supAreaUnits">수요지표는 해당평형({{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, supMyArea) }}) 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 해당평형 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 계산합니다.</template>
                 <template v-else>수요지표는 단지 전체 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 총 세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 계산합니다.</template>
               </p>
               <!-- 위 동 수요분석 표와 같은 칸 · 꾸밈(son-demand 안이라 웹 공통 꾸밈도 같이 받는다). 해당평형 한 줄 -->
@@ -9572,14 +9573,14 @@ const goBack = () => router.back();
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
               <div class="cmp-est-h"><h3><span class="cmp-no">②</span>단지 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}<template v-if="cmpPick && cmpPicked"> · {{ cmpPicked.name || cmpPicked.jibun }}</template></span><span class="cmp-q">내가 선정한 아파트 단지는 몇 등일까?</span></h3>
-                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><template v-if="cmpPick"><span class="cmp-desc-hi">최근 {{ cmpMonths }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 같은 평형 {{ cmpKind }} 실거래</span> · 다시 누르면 동 전체로 돌아갑니다</template><template v-else><span class="cmp-desc-hi">최근 {{ cmpMonths }}개월 · 유사평형(전용 ±{{ cmpTol }}㎡) {{ cmpKind }} 실거래</span> · 단지 {{ cmpRows.length }}곳 전체 · 단지를 누르면 그 단지로 바뀝니다</template></span>
+                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><template v-if="cmpPick"><span class="cmp-desc-hi">최근 {{ cmpMonths }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 해당평형 {{ cmpKind }} 실거래</span> · 다시 누르면 동 전체로 돌아갑니다</template><template v-else><span class="cmp-desc-hi">최근 {{ cmpMonths }}개월 · 유사평형(전용 ±{{ cmpTol }}㎡) {{ cmpKind }} 실거래</span> · 단지 {{ cmpRows.length }}곳 전체 · 단지를 누르면 그 단지로 바뀝니다</template></span>
               </div>
               <div class="cmp-est">
                 <div class="cmp-tiles">
                   <!-- 단지를 고르기 전엔 동 전체(평균 · 평당가 · 건수 · 단지 수), 고르면 그 단지(중간값 · 최저 · 최고 · 면적까지). 칸 자리는 그대로 — 흔들리지 않게 -->
                   <template v-if="cmpPick">
                   <!-- 단지를 고르면 그 단지 '같은 평형(전용면적이 같은 거래)'만의 평균 — 단지 전체로 읽히지 않게 면적을 적는다(2026-11-11 사용자) -->
-                  <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · 이 평형</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.avg) : '-' }}</span><span class="s">{{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '' }}</span></div>
+                  <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · 해당평형</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.avg) : '-' }}</span><span class="s">{{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '' }}</span></div>
                   <div class="cmp-tile"><span class="k">중간값</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.med) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">최저가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.min) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">최고가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.max) : '-' }}</span></div>
@@ -9702,7 +9703,7 @@ const goBack = () => router.back();
                         <td><span :class="['cmp-kind', { j: d.kind === '전세', m: d.kind === '월세' }]">{{ d.kind === '직거래' ? '매매' : d.kind }}</span></td><td class="n">{{ d.contractDate }}</td><td class="n">{{ areaPair(cmpPicked?.supply ?? null, d.areaM2) }}</td><td class="n">{{ [d.dong ? `${d.dong}동` : '', d.floor ? `${d.floor}층` : ''].filter(Boolean).join(' ') || '-' }}</td><td class="n amt"><b>{{ cmpMoney(d.price) }}</b></td>
                       </tr>
                       <tr v-if="!cmpPicked"><td colspan="5" class="cmp-dim">{{ supLoaded ? '해당 단지의 실거래 데이터가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
-                      <tr v-else-if="!cmpPickedDeals.length"><td colspan="5" class="cmp-dim">최근 {{ cmpMonths }}개월 같은 평형 {{ cmpKind }} 거래가 없습니다.</td></tr>
+                      <tr v-else-if="!cmpPickedDeals.length"><td colspan="5" class="cmp-dim">최근 {{ cmpMonths }}개월 해당평형 {{ cmpKind }} 거래가 없습니다.</td></tr>
                     </tbody>
                   </table></div></div>
                   <!-- 거래가 많으면 처음엔 몇 줄만, 아래 '더보기'로 펼친다(잘려서 안쪽 스크롤로 보던 것, 2026-11-11 사용자) -->
@@ -9789,8 +9790,8 @@ const goBack = () => router.back();
                 <p class="cmp-ind-note">비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 향/일조량 · 뷰 · 수리유무 · 동 위치는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다. 층은 4층부터 탑층 아래까지가 기준층이라 0%, 수리는 20평대 기준 금액입니다.</p>
               </div>
               <div class="cmp-est">
-                <div class="cmp-tiles three">
-                  <div class="cmp-tile"><span class="k">기준가({{ cmpBases.find((b) => b.id === cmpUnitBaseFrom)?.label ?? '없음' }})</span><span class="v">{{ cmpUnitBase ? cmpEok(cmpUnitBase) : '-' }}</span></div>
+                <!-- 기준가 칸은 뺐다 — 위 기준가 카드와 같은 값이라 겹친다(2026-11-11 사용자) -->
+                <div class="cmp-tiles two">
                   <div class="cmp-tile"><span class="k">보정</span><span class="v">{{ unitAdjText }}</span></div>
                   <div class="cmp-tile key"><span class="k">선정물건 예상 {{ cmpKind }}가</span><span class="v">{{ cmpUnitEst }}</span><span v-if="cmpUnitClamp?.cut" class="s cut">{{ cmpUnitClamp.cut }}</span></div>
                 </div>
@@ -12547,7 +12548,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-tbl th[aria-sort], .cmp-tbl th:has(> .sdir) { cursor: pointer; white-space: nowrap; }
 .cmp-tbl .sdir { margin-left: 3px; font-style: normal; font-size: 10px; color: #c3c9d4; }   /* 정렬 삼각형 — 시세분석 표와 같은 꼴 */
 .cmp-tbl .sdir.on { color: #2b4fd8; }
-.cmp-tiles.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cmp-tiles.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .adp-ind-adj.up { color: #c22e2e; font-weight: 700; }
 .adp-ind-adj.down { color: #1d4ed8; font-weight: 700; }
 .adp-ind-adj.zero { color: #9ca3af; }
