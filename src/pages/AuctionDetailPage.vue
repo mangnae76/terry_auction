@@ -5612,6 +5612,8 @@ const CMP_PERIODS: Array<[6 | 12 | 24, string]> = [[6, '6개월'], [12, '1년'],
 /** 평형 폭 — ±3㎡(약 1평)로 고정. 아파트는 59 · 74 · 84㎡처럼 규격이라 넓혀도 같은 단지만 잡히고, ±10㎡는 다른 타입까지 섞였다(2026-11-11 사용자, 단추 뺌) */
 const cmpTol = ref<3 | 5 | 10>(3);
 const cmpKind = ref<'매매' | '전세'>('매매');   // 강의 — 단지 비교 기본 잣대는 매매
+/** 거래 단추 옆 건수 — 지금 리스트(범위 · 기간 · 유사평형)에 든 매매 · 전세 실거래 수(시세분석 '매매 3'과 같은 꼴, 2026-11-12 사용자) */
+const cmpKindCount = (k: '매매' | '전세') => cmpRows.value.reduce((n, r) => n + r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length, 0).toLocaleString('ko-KR');
 // 고른 거르기는 그 물건 문서(DB)에 남긴다 — 바꾸면 리스트 · 평균가가 달라져, 다시 열어도 같은 숫자를 보게(2026-11-11 사용자). 처음엔 위 기본값
 let cmpFilterFor = '';
 watch(() => auction.value?.id, (id) => {
@@ -9603,7 +9605,7 @@ const goBack = () => router.back();
                   <!-- 전체화면 거르기 — 왼쪽 창 머리 아래(목록 바로 위, 접어도 남는다). 아래 화면 거르기와 같은 값(2026-11-11 사용자) -->
                   <div class="cmp-fs-conds">
                     <div class="row2"><span class="lab">범위<span class="fseg" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRange === v }" :aria-checked="cmpRange === v" :data-t="t" @click="cmpRange = v">{{ t }}</button></span></span>
-                    <span class="lab">거래<span class="fseg" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" :data-t="k" @click="cmpKind = k">{{ k }}</button></span></span></div>
+                    <span class="lab">거래<span class="fseg" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" :data-t="`${k} ${cmpKindCount(k)}`" @click="cmpKind = k">{{ k }} {{ cmpKindCount(k) }}</button></span></span></div>
                     <span class="lab">기간<span class="fseg" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonths === m }" :aria-checked="cmpMonths === m" :data-t="t" @click="cmpMonths = m">{{ t }}</button></span></span>
                   </div>
                   <template v-if="!cmpFsFold">
@@ -9633,7 +9635,7 @@ const goBack = () => router.back();
               <!-- 거르기 — 지도 밑 · 표 바로 위(표를 보면서 바꾸게, 2026-11-11). 시세분석 조건 줄과 같은 단추 · 순서(범위 → 거래 → 기간 → 평형). 표 · 지도 · 위 칸 줄이 같이 바뀐다 -->
               <div class="cmp-conds">
                 <span class="pa-lab">범위<span class="pa-seg pa-out" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRange === v }" :aria-checked="cmpRange === v" :data-t="t" @click="cmpRange = v">{{ t }}</button></span></span>
-                <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :data-k="k" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" @click="cmpKind = k">{{ k }}</button></span></span>
+                <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :data-k="k" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" @click="cmpKind = k">{{ k }} {{ cmpKindCount(k) }}</button></span></span>
                 <span class="pa-lab">기간<span class="pa-seg pa-out" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonths === m }" :aria-checked="cmpMonths === m" :data-t="t" @click="cmpMonths = m">{{ t }}</button></span></span>
                 <!-- 고정 기준 — 고르는 단추 말고 늘 걸려 있는 조건(2026-11-11 사용자) -->
                 <span class="cmp-fixed"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">고정 기준 · 유사평형(전용 ±3㎡) · 최근 {{ cmpMonths }}개월 실거래 1건 이상인 {{ cmpN }} · 국토부 실거래</span></span>
@@ -12390,6 +12392,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-conds .pa-seg.pa-out button::after, .cmp-persona .pa-seg button::after { content: attr(data-t); height: 0; overflow: hidden; visibility: hidden; font-weight: 700; pointer-events: none; }
 .cmp-conds .pa-seg.pa-out button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
 .cmp-conds .kindF button { font-weight: 700; }
+.cmp-conds .kindF button { min-width: 84px; }   /* '전세 1,234'까지 들어가게 — 건수 자릿수가 바뀌어도 상자 폭이 그대로(2026-11-12) */
+.cmp-fs-conds .fseg[aria-label="거래 종류"] button { min-width: 76px; }
 .cmp-conds .kindF button[data-k="매매"] { background: #eef2ff; color: #2b3a67; }
 .cmp-conds .kindF button[data-k="전세"] { background: #fdf3e1; color: #b7791f; }
 .cmp-conds .kindF button.on[data-k="매매"] { background: #2b3a67; color: #fff; }
