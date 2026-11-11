@@ -5679,6 +5679,25 @@ const pctText = ([a, b]: [number, number]) => {
   const one = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n * 10) / 10)}%`;
   return a === b ? one(a) : `${one(a)} ~ ${one(b)}`;
 };
+/** 아파트 개별성 입력은 쓰는 표(단지 입지비교 · 호실 예상가) 안에서 바로 고른다 — 편집 단추 없이 고르면 곧바로 적는다(2026-11-11 시안).
+ *  값은 개별성 분석과 같은 칸(indivValues)이라 개별성 분석 · PDF 에도 그대로 나온다. 개별성 분석은 접어 두고 비중 · 비율만 펼쳐 고친다 */
+const cmpIndOpen = ref(false);
+/** 단지 점수(cmpZoneScore)에 들어가는 구역 내 개별성 칸만 — 현관구조 · 경사는 점수에 안 들어가 여기 두지 않는다 */
+const ZONE_IDS = ['ind.age', 'ind.parking', 'ind.elevator', 'ind.ugLink', 'ind.far'];
+const indivPicked = (item: IndivItem, opt: string) => (item.multi ? indivList(item.id).includes(opt) : indivValue(item.id) === opt);
+const indivPick = (item: IndivItem, opt: string) => {
+  if (item.multi) toggleIndivMulti(item.id, opt);
+  else setIndivValue(item.id, indivValue(item.id) === opt ? '' : opt);
+  persistSoon();
+};
+const indivPickText = (id: string, v: string) => { setIndivValue(id, v.replace(/[^\d.]/g, '')); persistSoon(); };
+/** 자동 칸(PDF · 건축물대장) 글 — 연식은 연월 · 연차, 주차는 세대당, 층은 '전체 중 해당' */
+const indivAutoText = (item: IndivItem) => {
+  if (item.id === 'ind.age') return indivValue('ind.age') ? [indivValue('ind.age'), indivAgeYears.value].filter(Boolean).join(' · ') : '-';
+  if (item.id === 'ind.parking') return indivParkingText.value;
+  if (item.id === 'ind.floorNum') return indivFloorText.value;
+  return indivDisplay(item);
+};
 type CmpPlace = { cond: string; name: string; m: number; lat?: number; lng?: number; ic: string; color: string };
 type CmpRow = CompareComplex & { ranks: Array<number | null>; avg: number | null; sum: number; point: { lat: number; lng: number } | null; places: Array<CmpPlace | null>; supply: { lo: number; hi: number } | null; loc: number | null; zone: number | null; tot: number | null };
 const cmpRows = computed<CmpRow[]>(() => {
@@ -9028,10 +9047,13 @@ const goBack = () => router.back();
             <div class="adp-dm-block boxed o-ind">
             <div class="adp-dm-sub">
               {{ cmpOn ? '①' : '②' }} 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
-              <button v-if="!editingSurvey.individuality" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
+              <span v-if="cmpOn && !cmpIndOpen" class="cmp-ind-fold-note">아파트는 단지 입지비교 · 호실 예상가 표에서 바로 고릅니다</span>
+              <button v-if="!editingSurvey.individuality && (!cmpOn || cmpIndOpen)" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+              <button v-else-if="editingSurvey.individuality" class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
+              <!-- 아파트 손품조사는 입력을 아래 두 표로 옮겨 접어 둔다 — 펼치면 비중 · 비율을 고친다(2026-11-11) -->
+              <button v-if="cmpOn" type="button" class="adp-photo-fold" :aria-label="cmpIndOpen ? '접기' : '펼치기'" @click.stop="cmpIndOpen = !cmpIndOpen"><img :src="chevronDownIcon" :class="['adp-chev', { up: !cmpIndOpen }]" alt="" /></button>
             </div>
-          <div class="adp-ind-body">
+          <div v-show="!cmpOn || cmpIndOpen" class="adp-ind-body">
             <!-- 빌라 개별성 · 호실 개별성 — 넓으면 나란히, 좁으면 위아래 -->
             <div class="adp-ind-pair">
             <table v-for="(g, gi) in indivGroups" :key="g.title" class="adp-table adp-ind-table">
@@ -9250,7 +9272,7 @@ const goBack = () => router.back();
 
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
-              <div class="cmp-est-h"><h3>단지 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span><small class="cmp-q">내 선정물건 아파트 단지는 몇 등일까?</small></h3>
+              <div class="cmp-est-h"><h3>단지 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span><span class="cmp-q">내 선정물건 아파트 단지는 몇 등일까?</span></h3>
                 <span class="cmp-est-desc">최근 {{ cmpMonths }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 같은 평형 {{ cmpKind }} 실거래 · 아래 표나 지도에서 단지를 고르면 바뀝니다</span>
               </div>
               <div class="cmp-est">
@@ -9334,6 +9356,24 @@ const goBack = () => router.back();
                   </table>
                 </div>
               </div>
+              <!-- 선정물건 구역 내 개별성 — 고르면 위 표 '구역 내 개별성' 점수가 바로 바뀐다. 비중은 점수 무게(가격에는 안 들어간다, 2026-11-11 시안) -->
+              <p class="sup-head cmp-pick">선정물건 구역 내 개별성 <small class="cmp-sub">고르면 위 표의 구역 내 개별성 점수가 바로 바뀝니다 · 비중은 점수 무게이고 가격에는 들어가지 않습니다 · 다른 단지는 연식만으로 계산합니다</small></p>
+              <div class="son-demand sup-tbl cmp-ind-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
+                <colgroup><col style="width: 18%" /><col /><col style="width: 12%" /></colgroup>
+                <thead><tr><th>구역 내 개별성</th><th>내용</th><th>비중</th></tr></thead>
+                <tbody>
+                  <tr v-for="item in indivGroups[0].items.filter((it) => ZONE_IDS.includes(it.id))" :key="item.id">
+                    <td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
+                    <td class="lft cmp-ind-ct">
+                          <template v-if="item.id === 'ind.far'"><span class="cmp-ind-in"><input inputmode="decimal" :value="indivDisplay(item).replace(/[^\d.]/g, '')" placeholder="0" :aria-label="item.label" @input="indivPickText('ind.far', ($event.target as HTMLInputElement).value)" />%</span><small class="cmp-auto">자동 · 고칠 수 있음</small></template>
+                          <template v-else-if="INDIV_AUTO.has(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
+                          <span v-else class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span>
+                        </td>
+                    <td class="n">{{ indivRateOf(item) }}</td>
+                  </tr>
+                  <tr class="cmp-sum"><td>선정물건 점수</td><td /><td class="n"><b>{{ cmpScore(cmpRows.find((r) => r.mine)?.zone ?? null) }}</b></td></tr>
+                </tbody>
+              </table></div></div>
               <template v-if="cmpPicked">
                 <p class="sup-head cmp-pick">고른 단지 <span class="area cmp-chip">{{ cmpPicked.name || cmpPicked.jibun }}</span> <small class="cmp-sub">지도 점이나 위 표 줄을 누르면 바뀝니다</small></p>
                 <div class="cmp-two">
@@ -9370,9 +9410,15 @@ const goBack = () => router.back();
                 <span class="cmp-est-desc">단지 평균 {{ cmpKind }}가 × (1 + 단지 내 개별성 보정) · 최근 {{ cmpMonths }}개월 · 거래 단추를 따른다</span></div>
               <div class="cmp-two">
                 <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
+                  <colgroup><col style="width: 18%" /><col /><col style="width: 12%" /><col style="width: 12%" /></colgroup>
                   <thead><tr><th>단지 내 개별성</th><th>내용</th><th>비율</th><th>보정</th></tr></thead>
                   <tbody>
-                    <tr v-for="item in indivGroups[1].items" :key="item.id"><td>{{ item.label }}</td><td>{{ item.id === 'ind.floorNum' ? indivFloorText : indivDisplay(item) }}</td><td class="n">{{ indivRateOf(item) }}</td><td :class="['n', 'adp-ind-adj', unitSign(item.id) > 0 ? 'up' : unitSign(item.id) < 0 ? 'down' : 'zero']">{{ unitSign(item.id) === 0 ? '0%' : pctText(unitAdj(item.id)) }}</td></tr>
+                    <tr v-for="item in indivGroups[1].items" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
+                        <td class="lft cmp-ind-ct">
+                          <template v-if="item.id === 'ind.far'"><span class="cmp-ind-in"><input inputmode="decimal" :value="indivDisplay(item).replace(/[^\d.]/g, '')" placeholder="0" :aria-label="item.label" @input="indivPickText('ind.far', ($event.target as HTMLInputElement).value)" />%</span><small class="cmp-auto">자동 · 고칠 수 있음</small></template>
+                          <template v-else-if="INDIV_AUTO.has(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
+                          <span v-else class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span>
+                        </td><td class="n">{{ indivRateOf(item) }}</td><td :class="['n', 'adp-ind-adj', unitSign(item.id) > 0 ? 'up' : unitSign(item.id) < 0 ? 'down' : 'zero']">{{ unitSign(item.id) === 0 ? '0%' : pctText(unitAdj(item.id)) }}</td></tr>
                     <tr class="cmp-sum"><td>합계</td><td /><td /><td :class="['n', 'adp-ind-adj', unitAdjSum[1] > 0 ? 'up' : unitAdjSum[0] < 0 ? 'down' : 'zero']"><b>{{ pctText(unitAdjSum) }}</b></td></tr>
                   </tbody>
                 </table></div></div>
@@ -12008,7 +12054,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 /* 시세분석 결론 칸 줄 — SonpumPricePage .zone-h · .pa-tag · .est · .tiles · .tile 값 그대로(2026-11-11) */
 .cmp-est-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .cmp-scope-chip { display: inline-flex; align-items: center; margin-left: 8px; padding: 2px 9px; border: 1px solid rgba(43, 109, 243, .28); border-radius: 999px; background: rgba(43, 109, 243, .09); color: #2b6df3; font-size: 12.5px; font-weight: 700; line-height: 1.4; white-space: nowrap; }   /* 지역 칩 — 작게(2026-11-11) */
-.cmp-q { margin-left: 8px; font-size: 12.5px; font-weight: 400; color: #6b7280; }   /* '누구한테 팔까?'와 같은 꼴의 물음 */
+.cmp-q { margin-left: 8px; font-size: 12.5px;   /* h3 안은 span — 웹의 'h3 > small 은 14' 규칙에 걸려 '누구한테 팔까?'보다 커졌다(2026-11-11) */
+   font-weight: 400; color: #6b7280; }   /* '누구한테 팔까?'와 같은 꼴의 물음 */
 .cmp-est-h h3 { display: inline-flex; align-items: center; margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
 .cmp-est-tag { font-size: 13px; font-weight: 700; color: #2b4fd8; background: #eef2ff; border-radius: 5px; padding: 3px 8px; }
 .cmp-est-desc { margin-left: auto; padding-right: 14px; font-size: 12px; color: #6b7280; text-align: right; }   /* 오른쪽 — 아래 마지막 칸(거래건수) 오른쪽 선에 맞춘다(2026-11-11) */
@@ -12103,6 +12150,21 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .adp-ind-adj.zero { color: #9ca3af; }
 .sup-tbl .adm-table tbody tr.cmp-sum td { background: #f7f9fc; font-weight: 700; }
 .o-unit .cmp-two { margin-bottom: 12px; grid-template-columns: minmax(0, 1fr); }
+/* 개별성 입력을 쓰는 표 안에서 — 자동 칸은 이름 블루그레이 + '자동', 수동 칸은 고르기 단추(시세분석 단추 꼴 · 굵은 폭 미리 잡기, 2026-11-11) */
+.cmp-ind-tbl { margin-top: 0; }
+.cmp-tbl td.cmp-ind-nm { font-weight: 800; color: #111827; white-space: nowrap; }
+.cmp-tbl td.cmp-ind-nm.auto { color: #64748b; }
+.cmp-tbl td.cmp-ind-ct { text-align: left; white-space: normal; }
+.cmp-ind-ct > b { font-weight: 700; color: #111827; }
+.cmp-auto { margin-left: 6px; font-size: 12px; font-weight: 400; color: #94a3b8; }
+.cmp-ind-seg { display: inline-flex; flex-wrap: wrap; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; }
+.cmp-ind-seg button { display: inline-grid; align-content: center; border: none; background: transparent; border-radius: 5px; height: 26px; padding: 0 10px; font: inherit; font-size: 13px; font-weight: 400; color: #6b7280; cursor: pointer; white-space: nowrap; }
+.cmp-ind-seg button::after { content: attr(data-t); height: 0; overflow: hidden; visibility: hidden; font-weight: 700; pointer-events: none; }
+.cmp-ind-seg button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
+.cmp-ind-in { display: inline-flex; align-items: center; gap: 4px; }
+.cmp-ind-in input { width: 84px; height: 28px; box-sizing: border-box; padding: 0 8px; border: 1px solid #d7dde8; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 700; text-align: right; color: #111827; background: #fff; }
+.cmp-ind-fold-note { font-size: 12.5px; font-weight: 400; color: #6b7280; }
+.adp-dm-sub > .adp-edit-btn + .adp-photo-fold { margin-left: 6px; }
 .cmp-nm-line { display: flex; align-items: center; min-width: 0; }
 .cmp-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }   /* 긴 단지 이름은 칸을 넘으면 …(마우스를 대면 전체 이름) */
 .cmp-tbl td.nm { max-width: 0; text-align: center; }   /* 단지 평가표 단지 이름 가로 가운데(2026-11-11) */
