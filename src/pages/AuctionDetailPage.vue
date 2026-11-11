@@ -5924,6 +5924,8 @@ const cmpMePoint = computed(() => cmpRows.value.find((r) => r.mine)?.point ?? nu
 /** 전체화면 — 시세분석 지도처럼. 고른 보기는 새로고침 · 다른 물건에서도 남긴다(닫아야 풀린다) */
 const CMP_FS_KEY = 'son.cmp.fs';
 const cmpFs = ref(webEmbed && (() => { try { return localStorage.getItem(CMP_FS_KEY) === '1'; } catch { return false; } })());
+/** 전체화면 왼쪽 목록 접기 */
+const cmpFsFold = ref(false);
 const onCmpFsKey = (e: KeyboardEvent) => { if (e.key === 'Escape') cmpFs.value = false; };
 watch(cmpFs, async (on) => {
   try { if (on) localStorage.setItem(CMP_FS_KEY, '1'); else localStorage.removeItem(CMP_FS_KEY); } catch { /* 이 창에서만 */ }
@@ -9520,14 +9522,17 @@ const goBack = () => router.back();
                   <p v-if="!cmpRows.some((r) => r.point)" class="cmp-wait">{{ supLoaded ? '단지 위치를 찾는 중입니다…' : '실거래를 받는 중입니다…' }}</p>
                 </div>
                 <aside v-if="cmpFs" class="cmp-fs-list">
-                  <b class="cmp-fs-lh">단지 {{ cmpRows.length }}곳 <small>오른쪽 금액은 평균 {{ cmpKind }}가</small></b>
+                  <!-- 접기 — 지도를 넓게 보게 목록을 접는다(머리 줄만 남김, 2026-11-11 사용자) -->
+                  <div class="cmp-fs-lh"><b>단지 {{ cmpRows.length }}곳 <small>오른쪽 금액은 평균 {{ cmpKind }}가</small></b><button type="button" class="cmp-fs-fold" :aria-label="cmpFsFold ? '목록 펼치기' : '목록 접기'" :aria-expanded="!cmpFsFold" @click="cmpFsFold = !cmpFsFold"><img :src="chevronDownIcon" :class="['adp-chev', { up: !cmpFsFold }]" alt="" /></button></div>
+                  <template v-if="!cmpFsFold">
                   <button v-for="r in cmpRows" :key="cmpKeyOf(r)" type="button" :class="['cmp-fs-row', { on: cmpIsOn(r), mine: r.mine }]" @click="cmpFsGo(r)">
-                    <span class="nm"><span v-if="r.mine" class="cmp-tag">선정물건</span>{{ r.name || r.jibun }}<small>종합 {{ cmpScore(r.tot) }}{{ cmpRankOf.get(cmpKeyOf(r)) ? ` · ${cmpRankOf.get(cmpKeyOf(r))}위` : '' }} · {{ areaPair(r.supply, r.area) }}{{ r.buildYear ? ` · ${r.buildYear}년` : '' }}</small></span>
+                    <span class="nm"><span v-if="r.mine" class="cmp-tag">선정물건</span><b class="nmt">{{ r.name || r.jibun }}</b><small>종합 {{ cmpScore(r.tot) }}{{ cmpRankOf.get(cmpKeyOf(r)) ? ` · ${cmpRankOf.get(cmpKeyOf(r))}위` : '' }} · {{ areaPair(r.supply, r.area) }}{{ r.buildYear ? ` · ${r.buildYear}년` : '' }}</small></span>
                     <span class="pr">{{ cmpMoney(cmpKind === '매매' ? r.saleAvg : r.jeonseAvg) }}</span>
                   </button>
                   <div v-if="cmpPicked" class="cmp-fs-places">
                     <span v-for="(p, i) in cmpPicked.places" :key="i"><i>{{ p?.ic ?? '·' }}</i>{{ cmpConds[i] }} <b>{{ p ? `${cmpPlaceName(p.name)} ${p.m.toLocaleString('ko-KR')}m` : '-' }}</b><em v-if="cmpPicked.ranks[i]" :class="['cmp-rk', { r1: cmpPicked.ranks[i] === 1 }]">{{ cmpPicked.ranks[i] }}</em></span>
                   </div>
+                  </template>
                 </aside>
               </div>
               </Teleport>
@@ -12350,7 +12355,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-map-legend .dot.me { background: #f05a28; }
 .cmp-map-legend .ring { width: 14px; height: 0; border-top: 2px solid #2b6df3; }
 .cmp-map-legend .ring.dash { border-top-style: dashed; }
-.cmp-map.fs .cmp-map-legend { left: 364px; }   /* 전체화면 — 떠 있는 왼쪽 목록 옆으로 */
+.cmp-map.fs .cmp-map-legend { left: 12px; bottom: 12px; font-size: 13px; }   /* 전체화면 — 왼쪽 끝 아래(목록 밑, 2026-11-11 사용자) */   /* 전체화면 — 떠 있는 왼쪽 목록 옆으로 */
 .cmp-wait { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 13px; color: #6b7280; pointer-events: none; }
 .cmp-map :deep(.cmp-bub) { position: relative; cursor: pointer; }
 .cmp-map :deep(.cmp-bub .cb) { position: absolute; left: -10px; bottom: 9px; display: grid; min-width: 78px; border: 1.5px solid #2b4fd8; border-radius: 4px; background: #fff; box-shadow: 0 2px 6px rgba(17, 24, 39, .22); text-align: center; white-space: nowrap; overflow: visible; }
@@ -12373,7 +12378,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .fs-btn { position: absolute; left: 10px; top: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(17, 24, 39, .18); font: inherit; font-size: 12.5px; font-weight: 400; color: #111827; cursor: pointer; }   /* 굵기 없음 — 다른 화면 전체화면 단추와 같게(2026-11-11) */
 .fs-btn:hover { color: #2b6df3; }
 /* 전체화면 — 시세분석 전체화면과 같은 꼴: 남색 위 띠(52) · 지도가 아래를 꽉 채우고 · 왼쪽에 흰 상자(모서리 12 · 그림자)가 떠 있다(2026-11-11) */
-.cmp-map.fs { position: fixed; inset: 0; z-index: 2000; border: 0; border-radius: 0; display: grid; grid-template-columns: 340px minmax(0, 1fr); grid-template-rows: 52px minmax(0, 1fr); background: #fff; }
+.cmp-map.fs { position: fixed; inset: 0; z-index: 2000; border: 0; border-radius: 0; display: grid; grid-template-columns: 400px minmax(0, 1fr); grid-template-rows: 52px minmax(0, 1fr); background: #fff; }
 .cmp-map-box { position: relative; isolation: isolate; }   /* 지도 도구 막대 · 전체화면 단추 · 범례의 기준 — 전체화면에서도 위 남색 띠 아래부터(시세분석처럼) */
 .cmp-map.fs .cmp-map-box { grid-column: 1 / -1; grid-row: 2; min-height: 0; }
 .cmp-map.fs .cmp-map-in { height: 100%; }
@@ -12383,22 +12388,27 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-fs-x { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid rgba(255, 255, 255, .35); border-radius: 8px; background: transparent; font: inherit; font-size: 14px; color: #fff; cursor: pointer; }
 .cmp-fs-x:hover { background: rgba(255, 255, 255, .1); }
 .cmp-fs-list { grid-column: 1; grid-row: 2; position: relative; z-index: 2; align-self: start; max-height: calc(100% - 24px); margin: 12px 0 12px 12px; overflow-y: auto; padding: 10px 10px 14px; display: grid; gap: 6px; align-content: start; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 6px 20px rgba(17, 24, 39, .14); }
-.cmp-fs-lh { padding: 0 4px; font-size: 13px; font-weight: 800; color: #111827; }
-.cmp-fs-lh small { margin-left: 4px; font-size: 12px; font-weight: 400; color: #6b7280; }
+.cmp-fs-lh { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 2px 4px 4px; }
+.cmp-fs-lh > b { font-size: 15px; font-weight: 800; color: #111827; }   /* 전체화면 왼쪽 목록 — 글을 한 단계씩 키움(상자 제목 15 · 800, 2026-11-11 사용자) */
+.cmp-fs-fold { display: inline-grid; place-items: center; width: 30px; height: 30px; flex: 0 0 auto; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; cursor: pointer; }   /* 라운드 상자 + V 화살표 */
+.cmp-fs-fold:hover { background: #f7f9fc; }
+.cmp-fs-fold .adp-chev { width: 16px; height: 16px; }
+.cmp-fs-lh small { margin-left: 6px; font-size: 13px; font-weight: 400; color: #6b7280; }
 /* 단지 줄 — 시세분석 전체화면 유사물건 목록(.fs-it)과 같은 크기 · 굵기 */
-.cmp-fs-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 9px; background: #f7f9fc; font: inherit; text-align: left; cursor: pointer; }
+.cmp-fs-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 9px; background: #f7f9fc; font: inherit; text-align: left; cursor: pointer; }
 .cmp-fs-row:hover { border-color: #c7d0e2; }
-.cmp-fs-row .nm { display: grid; min-width: 0; font-size: 13px; font-weight: 700; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cmp-fs-row .nm small { font-size: 12px; font-weight: 400; color: #6b7280; }
+.cmp-fs-row .nm { display: grid; gap: 2px; min-width: 0; font-size: 15px; font-weight: 700; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmp-fs-row .nm .nmt { font-weight: 800; color: #111827; overflow: hidden; text-overflow: ellipsis; }   /* 단지 이름 굵게(2026-11-11 사용자) */
+.cmp-fs-row .nm small { font-size: 13px; font-weight: 400; color: #6b7280; }
 .cmp-fs-row .nm .cmp-tag { justify-self: start; margin-bottom: 2px; }   /* 칩이 줄 폭으로 늘지 않게 */
-.cmp-fs-row .pr { font-size: 12.5px; font-weight: 800; color: #111827; white-space: nowrap; }
+.cmp-fs-row .pr { font-size: 15px; font-weight: 800; color: #111827; white-space: nowrap; }
 .cmp-fs-row.mine { background: #fff5f5; box-shadow: inset 0 -2px 0 #f3c9c9; }
 .cmp-fs-row.on { border-color: #2b4fd8; background: #eef2ff; box-shadow: none; }   /* 시세분석 전체화면 .fs-it.on 과 같게 */
-.cmp-fs-places { display: grid; gap: 6px; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 9px; background: #fff; font-size: 12px; color: #6b7280; }
+.cmp-fs-places { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 9px; background: #fff; font-size: 13px; color: #6b7280; }
 .cmp-fs-places span { display: flex; align-items: center; gap: 6px; }
 .cmp-fs-places b { font-weight: 400; color: #111827; }
 .cmp-fs-places i { font-style: normal; }
-.cmp-fs-places .cmp-rk { margin-left: auto; width: 22px; height: 22px; font-style: normal; font-size: 12px; }
+.cmp-fs-places .cmp-rk { margin-left: auto; width: 24px; height: 24px; font-style: normal; font-size: 13px; }
 .cmp-legend { margin: 0 2px 12px; font-size: 12px; color: #9ca3af; }
 .cmp-ic { margin-right: 6px; }
 .sup-tbl .adm-table td.cmp-place { white-space: normal; word-break: keep-all; }   /* 긴 시설 이름은 잘리지 않고 줄을 바꾼다 */
