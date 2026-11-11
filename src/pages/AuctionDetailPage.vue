@@ -5973,7 +5973,11 @@ const CMP_STEPS = [
   { no: '①', t: '실사용자', sel: '.o-persona' }, { no: '②', t: '단지입지비교', sel: '.o-est' },
   { no: '③', t: '호실예상가', sel: '.o-unit' }, { no: '④', t: '수요분석', sel: '.o-demand' },
 ];
-const cmpGo = (ev: Event, sel: string) => { (ev.currentTarget as HTMLElement).closest('.adp-dm-body')?.querySelector(sel)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+const cmpGo = async (ev: Event, sel: string) => {
+  const card = (ev.currentTarget as HTMLElement).closest('.adp-card');
+  if (isCollapsed('demand')) { toggleSection('demand'); await nextTick(); }   // 접혀 있으면 펴고 간다
+  card?.querySelector(sel)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
 /** 호실 예상가 표 — 자동(서류) · 서류 · 도면으로 · 현장 확인으로 나눠 보인다 */
 const UNIT_GROUPS = [
   { title: '자동(서류)', ids: ['ind.floorNum'] },
@@ -8738,6 +8742,8 @@ const goBack = () => router.back();
         <section class="adp-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('demand')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V10M9 21V4M15 21v-7M21 21v-11"/></svg>매매수요 조사</h2>
+            <!-- 단계 — 제목 옆(세로 길이를 아낀다, 2026-11-11 사용자). 눌러도 카드가 접히지 않게 -->
+            <nav v-if="cmpOn" class="cmp-steps" aria-label="매매수요 조사 단계" @click.stop><button v-for="st in CMP_STEPS" :key="st.no" type="button" @click="cmpGo($event, st.sel)"><b>{{ st.no }}</b>{{ st.t }}</button></nav>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('demand') }]" alt="" />
           </header>
           <!-- 웹 · 아파트 손품조사(cmpOn) — 보이는 순서: 실사용자 → 전세 칸 줄 → 단지 입지비교 → 입지/개별성 → 지역 수요분석 → 단지 수요분석(2026-11-11).
@@ -8745,8 +8751,6 @@ const goBack = () => router.back();
           <div v-if="!isCollapsed('demand')" :class="['adp-dm-body', { 'cmp-order': cmpOn }]">
             <!-- 1. 수요분석 — 손품분석에서는 지역분석 수요분석(수요분석 상자 · 동 표)이 대신한다(slot 'son-demand') -->
             <!-- 매매수요 조사 맨 위 — 선정물건 면적 · 룸수 · 세대구성 · 입지조건(웹 · 아파트, 2026-11-11). 룸수를 고르면 아래 단지 입지비교 조건 · 등수가 같이 바뀐다 -->
-              <!-- 단계 — 눌러서 그 상자로(2026-11-11 시안) -->
-              <nav v-if="cmpOn" class="cmp-steps o-steps" aria-label="매매수요 조사 단계"><button v-for="st in CMP_STEPS" :key="st.no" type="button" @click="cmpGo($event, st.sel)"><b>{{ st.no }}</b>{{ st.t }}</button></nav>
               <div v-if="cmpOn" class="cmp-persona top o-persona">
                 <!-- 이름 + '누구한테 팔까?'(이 집을 살 · 살 사람이 누구인지 정하는 줄). 아이콘은 흰 카드 제목(본건사진 · 매매수요 조사)에만 쓴다 -->
                 <b class="ttl"><span class="cmp-no">①</span>실사용자<small>누구한테 팔까?</small></b>
@@ -12233,7 +12237,6 @@ tr.tone-take { background: #fff5f5; }
 /* 웹 · 아파트 손품조사 보이는 순서(마크업 순서는 그대로) */
 .adp-dm-body.cmp-order { display: flex; flex-direction: column; }
 .adp-dm-body.cmp-order > * { order: 10; }
-.adp-dm-body.cmp-order > .o-steps { order: 0; }
 .adp-dm-body.cmp-order > .o-persona { order: 1; }
 .adp-dm-body.cmp-order > :is(.o-persona, .o-est, .o-unit, .o-demand) { scroll-margin-top: 140px; }
 .adp-dm-body.cmp-order > .o-est { order: 2; }
@@ -12393,11 +12396,12 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-ind-note { margin: 8px 2px 0; font-size: 12.5px; color: #6b7280; line-height: 1.6; }
 .cmp-hug { display: inline-flex; align-items: center; gap: 6px; margin-left: 10px; vertical-align: middle; }
 /* 단계 · 번호(2026-11-11 시안) */
-.cmp-steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
+.cmp-steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 auto 0 14px; cursor: default; }   /* 카드 제목 바로 옆(접기 화살표는 오른쪽 끝 그대로) */
 .cmp-steps button { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: #f3f5f9; font: inherit; font-size: 13px; color: #374151; cursor: pointer; }
 .cmp-steps button b { color: #2b6df3; font-weight: 800; }
 .cmp-steps button:hover { background: #eef2ff; }
 .cmp-no { margin-right: 4px; color: #2b6df3; }
+.adp-card-head > h2:has(+ .cmp-steps) { flex-grow: 0; }   /* 제목이 늘어나 단계 단추를 오른쪽 끝으로 밀던 것 — 제목 바로 옆에 */
 /* 평가표 점수 — 누르면 팝업 */
 .cmp-sc { border: 0; background: none; padding: 2px 6px; border-radius: 5px; font: inherit; font-size: 13px; color: #111827; cursor: pointer; text-decoration: underline dotted #9ca3af; text-underline-offset: 3px; }
 .cmp-sc.big { font-weight: 800; }
