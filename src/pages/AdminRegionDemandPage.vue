@@ -598,7 +598,7 @@ const downloadCsv = () => {
            칸에 마우스를 대면 그 값과 이어진 칸이 같이 빨갛게 켜진다(앱 DM_LIT_LINKS 와 같은 짝) -->
       <section v-if="webEmbed && rows.length > 0" class="adm-nav dm">
         <p class="adm-nav-scope"><span><template v-if="props.boxNo">{{ props.boxNo }} 읍면동 </template>수급분석<span class="area scope-name">{{ dmAreaShort }}</span><small class="scope-q">이 동네는 내놓으면 얼마나 빨리 팔릴까?</small></span><SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
-        <p class="dm-block-head">{{ props.boxNo ? '' : '① ' }}기초수치</p>
+        <p v-if="!props.embed" class="dm-block-head">① 기초수치</p>
         <div class="dm-row c3">
           <div v-for="c in dmInputs" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
             <div class="dm-head"><InfoTip :rows="c.tip" under="box">{{ c.label }}</InfoTip></div>
@@ -618,7 +618,7 @@ const downloadCsv = () => {
             <div v-else :class="['dm-body', { 'has-note': c.note }]"><b :class="{ wait: c.wait }"><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" unit="건" /><UnitText v-else :text="c.value" /></b><small v-if="c.note" class="dm-note">{{ c.note }}</small></div>
           </div>
         </div>
-        <p class="dm-block-head">{{ props.boxNo ? '' : '② ' }}수요지표</p>
+        <p v-if="!props.embed" class="dm-block-head">② 수요지표</p>
         <div class="dm-row c4">
           <div v-for="c in dmResults" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
             <div class="dm-head"><InfoTip :rows="c.tip" under="box">{{ c.label }}</InfoTip><em class="dm-plain">{{ c.plain }}</em></div>

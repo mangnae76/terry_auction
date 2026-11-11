@@ -9100,7 +9100,6 @@ const goBack = () => router.back();
             <section v-if="webEmbed && isApartment" class="adp-dm-block boxed sup-dm o-sup">
               <!-- 제목 '수요분석' 왼쪽, 단지 이름은 오른쪽에 알약 없이 파란 글(2026-11-11 사용자) -->
               <p class="sup-scope"><span class="cmp-no">④</span>단지 수급분석<span class="area">{{ supName || '단지' }}</span><small class="cmp-q">이 단지는 내놓으면 얼마나 빨리 팔릴까?</small></p>
-              <p class="sup-head">기초수치</p>
               <div class="sup-row">
                 <div :class="['sup-cell', { lit: supLit('deal') }]" @mouseenter="supLitKey = 'deal'" @mouseleave="supLitKey = ''">
                   <div class="sup-h"><InfoTip :rows="SUP_TIPS.deal" under="box">{{ supAreaUnits ? '거래량(해당평형)' : '거래량' }}</InfoTip></div>
@@ -9125,7 +9124,6 @@ const goBack = () => router.back();
                   <div class="sup-b"><input class="sup-in" inputmode="numeric" placeholder="입력" aria-label="현재 매물수" :value="supListings ? supListings.toLocaleString('ko-KR') : ''" @change="setSupVal('sup.listings', ($event.target as HTMLInputElement).value)" /><button type="button" class="sup-nv" :title="`${supName || '이 단지'} — 네이버 부동산 매매 매물`" @click="openSupNaver">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></div>
                 </div>
               </div>
-              <p class="sup-head">수요지표</p>
               <div class="sup-row">
                 <div v-for="c in supStats" :key="c.id" :class="['sup-cell', { lit: supLit(c.id) }]" @mouseenter="supLitKey = c.id" @mouseleave="supLitKey = ''">
                   <!-- ⓘ — 위 동 수요분석과 같은 말풍선(services/demandGrade) -->
@@ -9139,8 +9137,8 @@ const goBack = () => router.back();
                 <span v-else class="wait">현재 매물수(해당평형)를 넣으면 종합 의견이 나옵니다.</span>
               </div>
               <p class="sup-note">
-                <template v-if="supAreaUnits">수요지표는 해당평형({{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, supMyArea) }}) 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 해당평형 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 계산합니다.</template>
-                <template v-else>수요지표는 단지 전체 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 총 세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 계산합니다.</template>
+                <template v-if="supAreaUnits">해당평형({{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, Math.floor(supMyArea * 100 + 1e-6) / 100) }}) 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 해당평형 세대수 {{ supAreaUnits.toLocaleString('ko-KR') }}세대로 계산합니다.</template>
+                <template v-else>단지 전체 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 총 세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 계산합니다.</template>
               </p>
               <!-- 위 동 수요분석 표와 같은 칸 · 꾸밈(son-demand 안이라 웹 공통 꾸밈도 같이 받는다). 해당평형 한 줄 -->
               <p class="sup-head sup-tbl-head">상세수치</p>
