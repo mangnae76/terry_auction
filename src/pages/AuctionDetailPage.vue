@@ -2942,6 +2942,9 @@ const indivDisplay = (item: IndivItem) => {
 /** 개별성 비율 기본값 — 물건마다 적지 않아도 모든 물건에 들어간다(2026-11-11 사용자 '자동화하려는 것'). 물건에 직접 적은 값이 있으면 그 값.
  *  값은 사용자가 안산파크푸르지오 물건에 적어 둔 비율 그대로. 지하주차장 연결 · 용적률은 5%(K-apt 연결 전까지),
  *  수리유무 · 건물외부 · 건물내부는 적힌 값이 없어 항목 참고 비율. 층은 층수 규칙(indivFloorRate)이 따로 정한다 */
+/** 빌라 개별성 기본 비율(2026-11-12 사용자) — 연식 20 · 주차 5 · 엘베 10 · 현관구조 5 · 경사 5 · 건물외부 5 · 건물내부 5. 나머지는 아래 공통 값 */
+const INDIV_RATE_VILLA: Record<string, string> = { 'ind.age': '20', 'ind.parking': '5', 'ind.elevator': '10', 'ind.corridor': '5', 'ind.slope': '5', 'ind.mgmt': '5', 'ind.inside': '5' };
+const rateDefaultOf = (id: string) => (!/아파트/.test(auction.value?.propertyType ?? '') && INDIV_RATE_VILLA[id]) || INDIV_RATE_DEFAULT[id] || '';
 const INDIV_RATE_DEFAULT: Record<string, string> = {
   'ind.age': '20~30', 'ind.parking': '5', 'ind.elevator': '10', 'ind.corridor': '15', 'ind.slope': '5', 'ind.far': '5',
   'ind.mgmt': '5', 'ind.inside': '5',
@@ -2966,7 +2969,7 @@ const indivRateNum = (item: IndivItem) => {
     const auto = indivFloorRate();
     if (auto) return auto;
   }
-  return INDIV_RATE_DEFAULT[item.id] ?? '0';
+  return rateDefaultOf(item.id) || '0';
 };
 const indivRateOf = (item: IndivItem) => `${indivValue(`${item.id}.rate`) || indivRateNum(item)}%`;
 // 가격율 합계 · 개별성 적용가는 화면에서 뺐다(웹 2026-11-06 · 앱 2026-11-09)
@@ -5743,7 +5746,7 @@ const rateRange = (raw: string): [number, number] => {
   if (!ns.length) return [0, 0];
   return [Math.min(...ns), Math.max(...ns)];
 };
-const rateOf = (id: string) => rateRange(indivValue(`${id}.rate`) || (id === 'ind.floorNum' ? indivFloorRate() : INDIV_RATE_DEFAULT[id] ?? ''));
+const rateOf = (id: string) => rateRange(indivValue(`${id}.rate`) || (id === 'ind.floorNum' ? indivFloorRate() : rateDefaultOf(id)));
 /** 구역 내 개별성 점수(0~100) — 단지끼리 잴 수 있는 항목만: 년식 · 주차수 · 엘베 · 경사 · 용적률(지하주차장 연결은 단지 내 개별성으로, 2026-11-11). 비중은 개별성 분석 '비율'(범위면 가운데).
  *  선정물건은 개별성 분석 값, 다른 단지는 년식(국토부 건축년도)만 — 건축물대장에 없는 값은 채우지 않는다 */
 /** 칸별 점수(0~100)와 비중 — 점수 팝업이 칸마다 보여 준다(2026-11-11 시안) */
