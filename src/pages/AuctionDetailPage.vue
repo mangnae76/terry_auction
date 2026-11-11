@@ -5979,7 +5979,7 @@ const cmpGo = async (ev: Event, sel: string) => {
   if (isCollapsed('demand')) { toggleSection('demand'); await nextTick(); }   // 접혀 있으면 펴고 간다
   card?.querySelector(sel)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
-/** 호실 예상가 표 — 자동(서류) · 서류 · 도면으로 · 현장 확인으로 나눠 보인다 */
+/** 호실 예상가 표 줄 순서 — 자동(층) → 서류 · 도면(타입 · 구조) → 현장 확인. 묶음 이름 줄은 길기만 해서 뺐다(2026-11-11 사용자) */
 const UNIT_GROUPS = [
   { title: '자동(서류)', ids: ['ind.floorNum'] },
   { title: '서류 · 도면으로', ids: ['ind.type', 'ind.rooms'] },
@@ -9632,11 +9632,10 @@ const goBack = () => router.back();
               </div>
               <div class="cmp-two">
                 <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
-                  <colgroup><col style="width: 18%" /><col /><col style="width: 12%" /><col style="width: 12%" /></colgroup>
+                  <colgroup><col style="width: 16%" /><col /><col style="width: 11%" /><col style="width: 20%" /></colgroup>
                   <thead><tr><th>단지 내 개별성</th><th>내용</th><th>비율</th><th>보정</th></tr></thead>
                   <tbody>
                     <template v-for="g in unitGroupsView" :key="g.title">
-                    <tr class="cmp-grp"><td colspan="4">{{ g.title }}</td></tr>
                     <tr v-for="item in g.items" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
                         <td class="lft cmp-ind-ct">
                           <!-- 자동 칸은 공식 자료 값 그대로(고치지 않는다). 자료에 없어 비었을 때만 직접 넣는다(2026-11-11 사용자) -->
@@ -12248,7 +12247,8 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-body.cmp-order > .o-persona { order: 1; }
 .adp-dm-body.cmp-order > :is(.o-persona, .o-est, .o-unit, .o-demand) { scroll-margin-top: 140px; }
 .adp-dm-body.cmp-order > .o-est { order: 2; }
-.adp-dm-body.cmp-order > .o-unit { order: 3; margin-top: 10px; }
+.adp-dm-body.cmp-order > .o-unit { order: 3; }
+.adp-dm-body.cmp-order > .adp-dm-block.cmp-box.o-unit { margin-top: 10px !important; }   /* 위 단지 입지비교와 띄운다(웹 ':has(.dm-result) 0 !important' 에 덮였다) */
 .cmp-gap { height: 18px; }   /* 한 상자 안 — 칸 줄과 지도 사이(2026-11-11) */
 .adp-dm-body.cmp-order > .o-indh { order: 4; }
 .adp-dm-body.cmp-order > .o-ind { order: 5; }
