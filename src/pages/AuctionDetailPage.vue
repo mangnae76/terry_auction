@@ -5536,7 +5536,14 @@ const ROOM_TYPES = [
 const roomOpen = ref(false);
 /** 매매수요 조사 맨 위 줄 — 세대구성 · 입지조건에 나올 수 있는 글 전부(상자 폭을 가장 긴 글에 맞춰 둔다) */
 /** 세대구성 글 — 누가 살지 고르게 하지 않고 다 같이 띄운다(1인가구(청년 · 중장년) · 2인가구(신혼 · 중장년), 2026-11-11 사용자) */
-const whoTextOf = (details: Array<{ who: string; kinds: string[] }>) => details.map((d) => (d.kinds.length ? `${d.who}(${d.kinds.join(' · ')})` : d.who)).join(' · ');
+// 짧게 묶는다 — '1 · 2인가구(청년 · 중장년 · 신혼)', '3 · 4인가족'. 길면 실사용자 줄이 두 줄로 넘어갔다(2026-11-11)
+const whoTextOf = (details: Array<{ who: string; kinds: string[] }>) => {
+  if (!details.length) return '';
+  const nums = details.map((d) => (d.who.match(/^(\d+)/) ?? [])[1]).filter(Boolean);
+  const tail = details.every((d) => /가족$/.test(d.who)) ? '인가족' : '인가구';
+  const kinds = [...new Set(details.flatMap((d) => d.kinds))];
+  return `${nums.join(' · ')}${tail}${kinds.length ? `(${kinds.join(' · ')})` : ''}`;
+};
 const CMP_WHO_ALL = [...new Set([...ROOM_TYPES.map((r) => whoTextOf(r.details)), '룸수를 고르세요'])];
 const CMP_COND_ALL = [...new Set([...ROOM_TYPES.map((r) => r.conditions.join(' · ')), '룸수를 고르세요'])];
 /** 1.5룸 · 4룸은 뺐다(2026-11-11 사용자) — 예전에 고른 물건은 2룸 · 3룸으로 본다 */
