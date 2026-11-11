@@ -40,7 +40,16 @@ const dot = (pos: any) => keep(new k.CustomOverlay({ map, position: pos, content
 const lenOf = (path: any[]) => new k.Polyline({ path }).getLength();
 
 // 재는 동안은 지도 위 핀이 클릭을 가로채지 않게(핀 위를 눌러도 점이 찍히게) — 지도 상자에 표시
-const measuring = (onOff: boolean) => { (root.value?.closest('.map') as HTMLElement | null)?.classList.toggle('kt-measuring', onOff); };
+// 단지 입지비교 지도(.cmp-map)도 같이 — 예전엔 '.map'만 찾아 말풍선 · 시설 표가 오른쪽 클릭을 가로채 [끝내기]가 안 됐다(2026-11-11)
+const mapBox = () => root.value?.closest('.map, .cmp-map') as HTMLElement | null;
+// 오른쪽 클릭은 지도 위 무엇(점 · 말풍선 · 글 상자) 위에서 눌러도 끝낸다 — 카카오 'rightclick' 은 표식 위에선 오지 않는다
+const onCtx = (e: MouseEvent) => { if (tool.value === 'dist' || tool.value === 'area') { e.preventDefault(); finish(); } };
+const measuring = (onOff: boolean) => {
+  const box = mapBox(); if (!box) return;
+  box.classList.toggle('kt-measuring', onOff);
+  box.removeEventListener('contextmenu', onCtx, true);
+  if (onOff) box.addEventListener('contextmenu', onCtx, true);
+};
 
 // ===== 확대 =====
 const zoom = (d: number) => map.setLevel(Math.max(1, Math.min(14, map.getLevel() + d)), { animate: true });
@@ -87,7 +96,6 @@ const startTool = (t: Tool) => {
       liveLbl.setPosition(e.latLng);
       liveLbl.setContent(`<div class="kt-lbl live">${fmtLen(total)}</div>`);
     });
-    on('rightclick', finish);
   } else if (t === 'area') {
     hint.value = '지도를 눌러 꼭짓점을 찍으세요 · 오른쪽 클릭이나 [끝내기]로 마칩니다';
     on('click', (e) => {
@@ -105,7 +113,6 @@ const startTool = (t: Tool) => {
       liveLbl.setPosition(e.latLng);
       liveLbl.setContent(`<div class="kt-lbl live">${p.length > 2 ? fmtArea(new k.Polygon({ path: p }).getArea()) : '점을 더 찍으세요'}</div>`);
     });
-    on('rightclick', finish);
   } else if (t === 'radius') {
     hint.value = '가운데를 누르고, 반경 끝을 한 번 더 누르세요';
     on('click', (e) => {
@@ -442,7 +449,7 @@ onBeforeUnmount(() => {
 .kt-rv-msg { position: absolute; inset: 0; margin: 0; display: grid; place-items: center; color: #fff; font-size: 13px; background: rgba(17, 24, 39, .7); }
 .kt-rv-x { position: absolute; right: 8px; top: 8px; z-index: 2; width: 30px; height: 30px; border: 0; border-radius: 8px; background: rgba(255, 255, 255, .92); font-size: 14px; cursor: pointer; }
 /* 지도 위 표식(카카오가 지도 안에 그린다 — :deep 없이 전역 이름이라 kt- 로 묶는다) */
-:global(.kt-measuring .pa-pin), :global(.kt-measuring .pa-pin *), :global(.kt-measuring .trip-marker), :global(.kt-measuring .trade-map-marker-wrap) { pointer-events: none !important; }
+:global(.kt-measuring .cmp-bub), :global(.kt-measuring .cmp-bub *), :global(.kt-measuring .cmp-near), :global(.kt-measuring .cmp-near *), :global(.kt-measuring .kt-dot), :global(.kt-measuring .kt-lbl), :global(.kt-measuring .pa-pin), :global(.kt-measuring .pa-pin *), :global(.kt-measuring .trip-marker), :global(.kt-measuring .trade-map-marker-wrap) { pointer-events: none !important; }
 :global(.kt-lbl) { background: #fff; border: 1px solid #e03e3e; border-radius: 6px; padding: 3px 8px; font-size: 12px; color: #111827; white-space: nowrap; box-shadow: 0 1px 4px rgba(17, 24, 39, .2); }
 :global(.kt-lbl.live) { border-color: #9ca3af; color: #4b5563; }
 :global(.kt-lbl.end) { border-width: 2px; font-size: 12.5px; }
