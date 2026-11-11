@@ -2845,7 +2845,7 @@ const UNIT_PICK_GROUPS: Record<string, Array<{ label: string; opts: string[] }>>
 const indivGroups = computed<IndivGroup[]>(() => (isApartment.value
   ? INDIV_GROUPS.map((g, i) => (i === 0
     ? { ...g, items: [...g.items.filter((it) => it.id !== 'ind.mgmt' && it.id !== 'ind.inside'), ...APT_INDIV_EXTRA] }
-    : { ...g, items: [...g.items.map((it) => (it.id === 'ind.type' ? { ...it, options: [...TYPE_SHAPES, ...TYPE_BAYS] } : it.id === 'ind.view' ? { ...it, options: VIEW_OPTS } : it)), ...APT_UNIT_EXTRA] }))
+    : { ...g, items: [...g.items.map((it) => (it.id === 'ind.type' ? { ...it, options: [...TYPE_SHAPES, ...TYPE_BAYS] } : it.id === 'ind.view' ? { ...it, options: VIEW_OPTS } : it.id === 'ind.direction' ? { ...it, label: '향/일조량' } : it)), ...APT_UNIT_EXTRA] }))
   : INDIV_GROUPS));
 /** PDF(건축물대장 · 단지정보) · 건축물대장 API 로 자동으로 채우는 항목 — 이름 글자를 블루그레이로(아래 watch 의 자동 채움과 같은 목록) */
 const INDIV_AUTO = new Set(['ind.age', 'ind.parking', 'ind.elevator', 'ind.corridor', 'ind.floorNum', 'ind.far']);
@@ -5756,7 +5756,7 @@ const unitAdj = (id: string): [number, number] => {
   const sg = unitSign(id); const [a, b] = rateOf(rateIdOf(id)).map(Math.abs) as [number, number];
   return sg > 0 ? [Math.min(a, b), Math.max(a, b)] : sg < 0 ? [-Math.max(a, b), -Math.min(a, b)] : [0, 0];
 };
-const UNIT_IDS = ['ind.floorNum', 'ind.direction', 'ind.type', 'ind.rooms', 'ind.view', 'ind.sunlight', 'ind.repair', 'ind.ugLink', 'ind.dongPos'];
+const UNIT_IDS = ['ind.floorNum', 'ind.direction', 'ind.type', 'ind.view', 'ind.repair', 'ind.ugLink', 'ind.dongPos'];   // 구조 · 일조량 뺐다(2026-11-11)
 const unitAdjSum = computed<[number, number]>(() => UNIT_IDS.reduce<[number, number]>((acc, id) => { const [a, b] = unitAdj(id); return [acc[0] + a, acc[1] + b]; }, [0, 0]));
 const pctText = ([a, b]: [number, number]) => {
   const one = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n * 10) / 10)}%`;
@@ -6056,8 +6056,9 @@ const cmpGo = async (ev: Event, sel: string) => {
 /** 호실 예상가 표 줄 순서 — 자동(층) → 서류 · 도면(타입 · 구조) → 현장 확인. 묶음 이름 줄은 길기만 해서 뺐다(2026-11-11 사용자) */
 const UNIT_GROUPS = [
   { title: '자동(서류)', ids: ['ind.floorNum'] },
-  { title: '서류 · 도면으로', ids: ['ind.type', 'ind.rooms'] },
-  { title: '현장 확인', ids: ['ind.direction', 'ind.dongPos', 'ind.ugLink', 'ind.view', 'ind.sunlight', 'ind.repair'] },
+  { title: '서류 · 도면으로', ids: ['ind.type'] },
+  // 구조(방 · 화장실)는 같은 단지 같은 평형이면 다 같아 뺐다, 일조량은 향으로 따진다(강의) — '향/일조량' 한 칸(2026-11-11 사용자)
+  { title: '현장 확인', ids: ['ind.direction', 'ind.dongPos', 'ind.ugLink', 'ind.view', 'ind.repair'] },
 ];
 const unitGroupsView = computed(() => UNIT_GROUPS.map((g) => ({ title: g.title, items: g.ids.map((id) => indivGroups.value[1].items.find((it) => it.id === id)).filter((it): it is IndivItem => !!it) })).filter((g) => g.items.length));
 /** 전용 평당가(원/평) — 고른 거래(매매 · 전세) 평균 ÷ 전용 평 */
@@ -9750,7 +9751,7 @@ const goBack = () => router.back();
                     <tr class="cmp-sum"><td>합계</td><td /><td /><td :class="['n', 'adp-ind-adj', totalAdj[1] > 0 || repairMan() > 0 ? 'up' : totalAdj[0] < 0 ? 'down' : 'zero']"><b>{{ unitAdjText }}</b></td></tr>
                   </tbody>
                 </table></div></div>
-                <p class="cmp-ind-note">비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 향 · 뷰 · 일조량 · 수리유무 · 동 위치는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다. 층은 4층부터 탑층 아래까지가 기준층이라 0%, 수리는 20평대 기준 금액입니다.</p>
+                <p class="cmp-ind-note">비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 향/일조량 · 뷰 · 수리유무 · 동 위치는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다. 층은 4층부터 탑층 아래까지가 기준층이라 0%, 수리는 20평대 기준 금액입니다.</p>
               </div>
               <div class="cmp-est">
                 <div class="cmp-tiles three">
