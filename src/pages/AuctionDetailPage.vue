@@ -2916,10 +2916,11 @@ const indivFloorRate = () => {
     return '';
   }
   if (kind === '빌라') {
-    // 2·3층이 기준층, 그 위(또는 탑층)는 -10%
-    if (num === '2' || num === '3') return '0';
-    if (isTop || (num && Number(num) >= 4)) return '-10';
-    return '';
+    // 엘베 따라(2026-11-12 사용자) — 엘베 없으면 4 · 5층 −10% · 3층 −5% · 2층 0, 엘베 있으면 4층까지 0 · 5층 −10%. 1층은 보정 없음
+    const n = Number(num) || 0; if (!n) return '';
+    const hasElev = indivValue('ind.elevator') === 'O';
+    if (hasElev) return n >= 5 ? '-10' : '0';
+    return n >= 4 ? '-10' : n === 3 ? '-5' : n === 2 ? '0' : '';
   }
   return '';
 };
@@ -5771,6 +5772,7 @@ const unitSign = (id: string): number => {
   if (id === 'ind.floorNum') {
     const n = Number(sumVal('sum.floorCurrent').match(/\d+/)?.[0] ?? 0); const t = Number(sumVal('sum.floorTotal').match(/\d+/)?.[0] ?? 0);
     if (!n || cmpFloorZero.value) return 0;   // 기준가가 같은 층 · ±1층 실거래면 층은 이미 담겨 있다(두 번 깎지 않게)
+    if (!isApartment.value) { const r = Number(indivFloorRate() || 0); return r < 0 ? -1 : r > 0 ? 1 : 0; }   // 빌라 — 엘베 · 층 표(indivFloorRate)대로
     return n <= 3 || (t > 0 && n === t) ? -1 : 0;   // 1 ~ 3층 · 탑층은 감산, 4층 ~ 탑층 아래는 기준층이라 0(강의 2026-11-11)
   }
   if (!v) return 0;
