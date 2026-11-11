@@ -6463,7 +6463,7 @@ const goBack = () => router.back();
               <tr v-if="auction.aptComplexInfo.facilities"><th>편의시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.facilities }}</td></tr>
               <tr v-if="auction.aptComplexInfo.schools"><th>교육시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.schools }}</td></tr>
               <tr v-if="auction.aptComplexInfo.restPark"><th>휴식/공원</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.restPark }}</td></tr>
-              <tr v-if="aptAreaRows.length"><th>면적종류</th><td colspan="3" class="wrap"><template v-for="(t, i) in aptAreaRows" :key="t.text">{{ i ? ', ' : '' }}<span :class="{ 'adp-apt-mine': t.mine }">{{ t.text }}{{ t.count ? ` ${t.count.toLocaleString('ko-KR')}세대` : '' }}<small v-if="t.mine">내 물건</small></span></template></td></tr>
+              <tr v-if="aptAreaRows.length"><th>면적종류<small class="adp-th-sub">공급(전용)</small></th><td colspan="3" class="wrap"><template v-for="(t, i) in aptAreaRows" :key="t.text">{{ i ? ', ' : '' }}<span :class="{ 'adp-apt-mine': t.mine }">{{ t.text }}{{ t.count ? ` ${t.count.toLocaleString('ko-KR')}세대` : '' }}<small v-if="t.mine">내 물건</small></span></template></td></tr>
               <tr v-if="auction.aptComplexInfo.evCharger"><th>전기차충전소</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.evCharger }}</td></tr>
             </tbody>
           </table>
@@ -10185,6 +10185,7 @@ const goBack = () => router.back();
 </template>
 
 <style scoped>
+.adp-th-sub { display: block; font-size: 11.5px; font-weight: 400; color: #6b7280; }   /* 표 머리 아래 작은 글 — '면적종류' 밑 '공급(전용)' */
 .adp-loc2-fetch {
   display: inline-block; margin-left: 8px;
   border: 1px solid #d1d5db; background: #fff; border-radius: 6px;

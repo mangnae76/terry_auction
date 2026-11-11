@@ -43,6 +43,25 @@ export interface ApartPrice {
  *  구 번호만 바뀌는 게 아니라 법정동 순번까지 바뀌어서 계산으로는 못 구한다. */
 const LEGACY_LD_CODES: Record<string, string> = {
   '2827510100': '2826010300', // 인천 서해구 검암동 ← 인천 서구 검암동
+  '2827511100': '2826012200', // 인천 서해구 청라동 ← 인천 서구 청라동(2026타경414 청라 한양수자인레이크블루, 2026-11-11 확인)
+};
+/** 표에 없는 인천 서해구(28275) · 검단구(28290) 동 — 공시가격이 아직 옛 서구(28260) 코드로만 있다. 옛 서구 법정동을 차례로 물어
+ *  같은 지번에 자료가 있는 코드를 찾아 이 브라우저에 적어 둔다(동 하나에 한 번, 2026-11-11) */
+const OLD_SEOGU_DONGS = Array.from({ length: 30 }, (_, i) => `28260${10100 + i * 100}`);
+const LEGACY_FOUND_KEY = 'vw.legacy';
+const legacyFound = (): Record<string, string> => { try { return JSON.parse(localStorage.getItem(LEGACY_FOUND_KEY) ?? '{}') as Record<string, string>; } catch { return {}; } };
+const legacyRows = async (bCode10: string, lotText: string): Promise<PriceRow[]> => {
+  const known = LEGACY_LD_CODES[bCode10] ?? legacyFound()[bCode10];
+  if (known) return callOnce(buildPnu(known, lotText));
+  if (!/^(28275|28290)/.test(bCode10)) return [];
+  for (const old of OLD_SEOGU_DONGS) {
+    const first = await callPage(buildPnu(old, lotText), 1, PRICE_YEAR);
+    if (first.length) {
+      try { localStorage.setItem(LEGACY_FOUND_KEY, JSON.stringify({ ...legacyFound(), [bCode10]: old })); } catch { /* 이 창에서만 */ }
+      return callOnce(buildPnu(old, lotText));
+    }
+  }
+  return [];
 };
 
 /** 지번에서 PNU 19자리를 만든다. 법정동코드10 + 산여부1 + 본번4 + 부번4 */
@@ -112,10 +131,7 @@ export const fetchApartUnits = async (bCode10: string, lotText: string): Promise
   const hit = await readAptComplex(id);
   if (hit?.units?.length) { void browserCachePut(localKey, hit.units); return hit.units; }
   let rows = await callOnce(pnu);
-  if (rows.length === 0) {
-    const legacy = LEGACY_LD_CODES[bCode10];
-    if (legacy) rows = await callOnce(buildPnu(legacy, lotText));
-  }
+  if (rows.length === 0) rows = await legacyRows(bCode10, lotText);
   const best = new Map<string, PriceRow>();
   rows.filter((r) => num(r.pblntfPc) > 0).forEach((r) => {
     const k = `${r.dongNm ?? ''}|${r.hoNm ?? ''}`;
@@ -154,10 +170,7 @@ export const fetchApartHousingPrice = async (params: {
   if (hit) return hit;
 
   let rows = await callOnce(pnu);
-  if (rows.length === 0) {
-    const legacy = LEGACY_LD_CODES[params.bCode10];
-    if (legacy) rows = await callOnce(buildPnu(legacy, params.lotText));
-  }
+  if (rows.length === 0) rows = await legacyRows(params.bCode10, params.lotText);
   if (rows.length === 0) return null;
 
   const wantHo = String(params.ho ?? '').replace(/\D/g, '');

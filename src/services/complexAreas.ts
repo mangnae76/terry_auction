@@ -75,7 +75,7 @@ export const myGroupOf = (areas: ComplexAreas | null | undefined): AreaGroup | n
 };
 
 /** 단지정보 면적종류 — 전용면적이 같은 세대끼리 묶어 세고(평형 기준, area-by-exclusive), 그 안의 공급면적은 범위로 옆에 적는다.
- *  '전용 59.99㎡ · 공급 83.18~83.21㎡' 123세대 — 같은 전용 안에서 공급이 갈려도 세대수는 하나로 */
+ *  '83.18~83.21㎡ (59.99)' 123세대 — 공급㎡ (전용). 같은 전용 안에서 공급이 갈려도 세대수는 하나로 */
 export const supplyRowsOf = (areas: ComplexAreas | null | undefined): Array<{ text: string; count: number; mine: boolean }> => {
   const by = new Map<string, { exclusive: number; lo: number; hi: number; count: number }>();
   (areas?.groups ?? []).forEach((g) => {
@@ -87,7 +87,8 @@ export const supplyRowsOf = (areas: ComplexAreas | null | undefined): Array<{ te
   const mineEx = areas?.mine?.exclusive?.toFixed(2) ?? '';
   return [...by.values()].sort((x, y) => x.exclusive - y.exclusive).map((r) => {
     const sup = r.lo.toFixed(2) === r.hi.toFixed(2) ? r.lo.toFixed(2) : `${r.lo.toFixed(2)}~${r.hi.toFixed(2)}`;
-    return { text: `전용 ${r.exclusive.toFixed(2)}㎡ · 공급 ${sup}㎡`, count: r.count, mine: !!mineEx && r.exclusive.toFixed(2) === mineEx };
+    // 아파트 면적 표기는 '공급㎡ (전용)' 하나로(2026-11-11 사용자 규칙 — 매매수요 조사 실사용자 면적과 같은 꼴)
+    return { text: `${sup}㎡ (${r.exclusive.toFixed(2)})`, count: r.count, mine: !!mineEx && r.exclusive.toFixed(2) === mineEx };
   });
 };
 

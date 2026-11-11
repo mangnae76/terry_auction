@@ -3616,6 +3616,7 @@ img.eb-cv { aspect-ratio: auto; height: auto; max-height: 260px; object-fit: con
 .hm-list small i { font-style: normal; margin-right: 6px; padding: 1px 6px; border-radius: 4px; background: var(--blue-soft); color: var(--blue); font-weight: 700; }
 .hm-list .chev { flex: 0 0 auto; color: var(--faint); }
 .adp-rank-hint { color: var(--muted) !important; }   /* 입지등수 안내글 — 밤 화면에서도 읽히게 웹 회색 */
+.it-th-sub { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }   /* 표 머리 아래 작은 글 — '면적종류' 밑 '공급(전용)' */
 .snap-cover { position: absolute; left: 0; right: 0; z-index: 35; background: var(--bg); pointer-events: none; }   /* 새로고침 덮개 — 보던 화면 그림(누를 수 없음), 진짜 화면이 다 그려지면 걷는다 */
 /* 최근 분석 한 줄 — 첫 줄 사건 · 주소 … 오른쪽 끝 날짜, 둘째 줄 꼬리표 칩 + 설명(홈 · 전체보기 창 같은 꼴) */
 .hm-recent .t1 { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
@@ -6944,7 +6945,7 @@ span.cal-day.has { cursor: help; }
       `<tr><th>최고층</th><td>${v(c.topFloor)}</td><th>최저층</th><td>${v(c.bottomFloor)}</td></tr>`,
       `<tr><th>관리소번호</th><td colspan="3">${c.managementPhone ? `<a class="it-tel" href="tel:${esc(c.managementPhone.replace(/[^\d+]/g, ''))}">${esc(c.managementPhone)}</a>` : '-'}</td></tr>`,
       ...[['편의시설', c.facilities], ['교육시설', c.schools], ['휴식/공원', c.restPark]].filter(([, x]) => x).map(([k, x]) => `<tr><th>${k}</th><td colspan="3">${esc(x)}</td></tr>`),
-      ...(rows.length ? [`<tr><th>면적종류</th><td colspan="3">${areas}</td></tr>`] : []),
+      ...(rows.length ? [`<tr><th>면적종류<small class="it-th-sub">공급(전용)</small></th><td colspan="3">${areas}</td></tr>`] : []),   /* 아파트 면적은 '공급㎡ (전용)' 하나로(2026-11-11) */
       ...(c.evCharger ? [`<tr><th>전기차충전소</th><td colspan="3">${esc(c.evCharger)}</td></tr>`] : []),
     ], 4));
   }
