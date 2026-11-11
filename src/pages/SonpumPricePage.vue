@@ -776,7 +776,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
     <!-- Ⓐ 결론 — 제목 줄에 조회(지역은 물건 카드에서 온다, 기간만 고른다) -->
     <div class="zone">
       <div class="zone-h"><span class="pa-tag">결론</span><h3>{{ webEmbed ? '이 물건 매도가 예상' : '이 물건 실거래가 예상' }}</h3>
-        <span class="bar-desc">{{ regionText || '지역 확인 중' }} · {{ KIND_LABEL[kind] }} 실거래</span>
+        <span :class="['bar-desc', { hi: webEmbed }]"><svg v-if="webEmbed" class="flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ regionText || '지역 확인 중' }}{{ webEmbed ? ` · 반경 ${radText(radius)} · ${periodText(loadedMonths)}` : '' }} · {{ KIND_LABEL[kind] }} 실거래</span>
         <span class="pa-load-r">
           <span v-if="progress.total && progress.done < progress.total" class="prog">위치 찾는 중 {{ progress.done }} / {{ progress.total }}</span>
           <template v-if="!props.months">
@@ -790,7 +790,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <p v-if="errorMsg" class="pa-err">{{ errorMsg }}</p>
       <div class="est">
         <div class="tiles">
-          <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? '매도가 예상' : '실거래가 예상' }}({{ kindF }})</InfoTip></span><span class="v pa-num">{{ view ? vfmt(view.est) : '-' }}</span><span v-if="view?.capped" class="cap">보증보험 한도 적용</span></div>
+          <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? '매도가 예상' : '실거래가 예상' }}({{ kindF }})</InfoTip></span><span class="v pa-num">{{ view ? vfmt(view.est) : '-' }}</span><span v-if="view?.capped" class="cap">보증보험 한도 적용</span><span v-if="view" class="s rad">반경 {{ radText(radius) }} · {{ periodText(loadedMonths) }} · {{ view.n.toLocaleString('ko-KR') }}건</span></div>
           <div class="tile"><span class="k">중간값</span><span class="v pa-num">{{ view ? vfmt(view.med) : '-' }}</span></div>
           <div class="tile"><span class="k">최저가</span><span class="v pa-num">{{ view ? vfmt(view.min) : '-' }}</span></div>
           <div class="tile"><span class="k">최고가</span><span class="v pa-num">{{ view ? vfmt(view.max) : '-' }}</span></div>
@@ -1036,6 +1036,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa-err { margin: 0; color: var(--red); font-size: 13px; }
 
 .bar-desc { font-size: 13px; color: var(--sub); margin-left: 4px; min-width: 0; }
+.bar-desc.hi { color: #2563eb; }   /* 웹 — 어느 동네 · 반경 · 기간으로 낸 값인지 파란 글(2026-11-11 사용자) */
+.bar-desc .flt { margin-right: 4px; vertical-align: -1px; color: #111827; }   /* 필터 설명 앞 깔때기(규칙) */
 .pa-load-r { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
 .pa-load-r .prog { font-size: 12px; color: var(--sub); white-space: nowrap; min-width: 10.5em; text-align: right; font-variant-numeric: tabular-nums; }   /* 숫자가 늘어도 옆 단추를 밀지 않게 */
 .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
@@ -1068,6 +1070,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .tile.key { position: relative; }   /* 말풍선은 이 칸 아래 밖에 — 칸 안 금액을 가리지 않게 */
 .tile.key :deep(.itip-bubble) { left: 0; transform: none; z-index: 600; }   /* 왼쪽 끝 칸 — 오른쪽으로 펼친다 */
 .tile.key :deep(.itip-bubble)::before { left: 40px; transform: none; }
+.tile.key .s.rad { color: #fff; }   /* 초록 칸 아래 — 어느 반경 · 기간 · 몇 건으로 낸 값인지(2026-11-11 사용자) */
 .tile .s { font-size: 12px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hk-sub { display: block; font-size: 11px; font-weight: 400; color: var(--sub); }   /* 아파트 면적 머리 — '공급(전용)' */
 .tile .cap { justify-self: center; font-size: 11px; color: #fff; background: rgba(0, 0, 0, .18); border-radius: 999px; padding: 1px 8px; }
