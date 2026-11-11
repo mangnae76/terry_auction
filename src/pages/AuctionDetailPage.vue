@@ -9486,7 +9486,7 @@ const goBack = () => router.back();
                   <div class="cmp-tile"><span class="k">최저가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.min) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">최고가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.max) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">평균 평당가</span><span class="v">{{ cmpEst ? cmpPy(cmpEst.perPy) : '-' }}</span></div>
-                  <div class="cmp-tile"><span class="k">면적 / 연식</span><span class="v sm">{{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }}</span><span class="s">{{ cmpEst?.year ? `${cmpEst.year}년식` : '-' }}</span></div>
+                  <div class="cmp-tile"><span class="k">면적 공급(전용) / 연식</span><span class="v sm">{{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }}</span><span class="s">{{ cmpEst?.year ? `${cmpEst.year}년식` : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">{{ cmpKind }} 거래건수</span><span class="v">{{ cmpEst?.n ?? 0 }}건</span></div>
                 </div>
               </div>

@@ -738,7 +738,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <div class="tile"><span class="k">최고가</span><span class="v pa-num">{{ view ? vfmt(view.max) : '-' }}</span></div>
           <div class="tile"><span class="k">{{ kindF === '월세' ? '평균 평당 월세' : '평균 평당가' }}</span><span class="v pa-num">{{ view ? vPy(view.avgPy) : '-' }}</span></div>
           <!-- 선정물건 정보 — 유사 거래를 찾는 가운데 기준(실제 범위는 아래 「계산 조건」 줄) -->
-          <div v-if="isAptKind" class="tile"><span class="k">면적 / 연식</span><span class="v pa-num sm">{{ aptMyArea }}</span><span class="s">{{ me.year ? `${me.year}년식` : '-' }}</span></div>
+          <div v-if="isAptKind" class="tile"><span class="k">면적 공급(전용) / 연식</span><span class="v pa-num sm">{{ aptMyArea }}</span><span class="s">{{ me.year ? `${me.year}년식` : '-' }}</span></div>
           <div v-else class="tile"><span class="k">전용 / 연식</span><span class="v pa-num sm">{{ myPy ? `${myPy.toFixed(2)}평` : '-' }} / {{ me.year ? `${me.year}년식` : '-' }}</span></div>
           <div class="tile"><span class="k">유사 거래건수</span><span class="v pa-num">{{ view?.n ?? 0 }}건</span></div>
         </div>
