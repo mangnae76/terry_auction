@@ -9542,12 +9542,13 @@ const goBack = () => router.back();
                   </button>
                   </div>
                   <!-- 보고 있는 단지의 입지 · 구역 내 개별성 — 탭 없이 위아래로 한눈에(단지 4~5곳이라 높이가 된다, 2026-11-11 사용자) -->
+                  <!-- 한 상자 — 제목은 보고 있는 단지 이름 + 종합점수 · 순위, 안에 입지 · 구역 내 개별성(2026-11-11 사용자) -->
                   <div v-if="cmpPicked" class="cmp-fs-places">
-                    <p class="cmp-fs-ph"><b>입지</b><small>{{ cmpPicked.name || cmpPicked.jibun }}</small><em>입지점수 <b>{{ cmpScore(cmpPicked.loc) }}</b> / 100</em></p>
+                    <p class="cmp-fs-pt"><b>{{ cmpPicked.name || cmpPicked.jibun }}</b><span v-if="cmpPicked.mine" class="cmp-tag">선정물건</span><em>종합 <b>{{ cmpScore(cmpPicked.tot) }}</b> / 100<template v-if="cmpRankOf.get(cmpKeyOf(cmpPicked))"> · {{ cmpRankOf.get(cmpKeyOf(cmpPicked)) }}위</template></em></p>
+                    <p class="cmp-fs-ph"><b>입지</b><em>입지점수 <b>{{ cmpScore(cmpPicked.loc) }}</b> / 100</em></p>
                     <span v-for="x in cmpLocParts(cmpPicked)" :key="x.cond"><i>{{ x.pl?.ic ?? '·' }}</i><span class="c">{{ x.cond }}</span><b>{{ x.pl ? `${cmpPlaceName(x.pl.name)} ${x.pl.m.toLocaleString('ko-KR')}m` : '1km 안에 없음' }}</b><em class="sc">{{ Math.round(x.score) }}점</em></span>
-                  </div>
-                  <div v-if="cmpPicked" class="cmp-fs-places">
-                    <p class="cmp-fs-ph"><b>구역 내 개별성</b><small>{{ cmpPicked.name || cmpPicked.jibun }}</small><em>개별성점수 <b>{{ cmpScore(cmpPicked.zone) }}</b> / 100</em></p>
+                    <i class="cmp-fs-sep" aria-hidden="true" />
+                    <p class="cmp-fs-ph"><b>구역 내 개별성</b><em>개별성점수 <b>{{ cmpScore(cmpPicked.zone) }}</b> / 100</em></p>
                     <template v-if="cmpPicked.mine">
                       <span v-for="item in ZONE_ITEMS" :key="item.id" class="z"><span class="c">{{ item.label }}</span><b v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)">{{ indivAutoText(item) }}</b><b v-else-if="indivValue(item.id)">{{ indivValue(item.id) }}</b><button v-else type="button" class="cmp-fs-pick" @click="cmpPopOpen('zone', cmpPicked, $event)">고르세요</button><em class="sc">{{ cmpZoneParts(cmpPicked).has(item.id) ? `${Math.round(cmpZoneParts(cmpPicked).get(item.id)!.v)}점` : '-' }}</em></span>
                     </template>
@@ -12442,6 +12443,11 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-fs-places > span { display: grid; grid-template-columns: 20px 4.6em minmax(0, 1fr) auto; align-items: center; gap: 6px; }
 .cmp-fs-places > span.z { grid-template-columns: 6.4em minmax(0, 1fr) auto; }   /* 개별성 — 아이콘 없이 이름 · 값 · 점수 */
 .cmp-fs-places .sc { font-style: normal; font-size: 13px; color: #111827; }
+.cmp-fs-pt { display: flex; align-items: center; gap: 0; margin: 0 0 4px; padding-bottom: 8px; border-bottom: 1px solid #eef1f6; }
+.cmp-fs-pt > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 800; color: #111827; }
+.cmp-fs-pt em { margin-left: auto; padding-left: 8px; font-style: normal; font-size: 12.5px; color: #6b7280; white-space: nowrap; }
+.cmp-fs-pt em b { font-size: 15px; font-weight: 800; color: #111827; }
+.cmp-fs-sep { display: block; height: 1px; margin: 4px 0; background: #eef1f6; }
 .cmp-fs-ph { display: flex; align-items: baseline; gap: 6px; margin: 0 0 2px; }
 .cmp-fs-ph > b { font-size: 14px; font-weight: 800; color: #111827; }
 .cmp-fs-ph small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #9ca3af; }
