@@ -6009,10 +6009,12 @@ const cmpRankEst = computed(() => {
 });
 const cmpRateEst = computed(() => {
   const me = cmpRows.value.find((r) => r.mine); if (!me || !(me.jeonseAvg > 0)) return null;
-  const near = cmpRows.value.filter((r) => !r.mine && cmpJeonseRate(r) > 0 && (!me.buildYear || !r.buildYear || Math.abs(r.buildYear - me.buildYear) <= 5));
+  const all = cmpRows.value.filter((r) => !r.mine && cmpJeonseRate(r) > 0);
+  const like = all.filter((r) => !me.buildYear || !r.buildYear || Math.abs(r.buildYear - me.buildYear) <= 5);
+  const near = like.length ? like : all;   // 연식 ±5년 이웃이 없으면 이웃 전체로(값은 보이되 '연식 차이 큼'이라 적는다)
   if (!near.length) return null;
   const rate = near.reduce((a, r) => a + cmpJeonseRate(r), 0) / near.length;
-  return { rate, n: near.length, sale: me.jeonseAvg / (rate / 100) };
+  return { rate, n: near.length, sale: me.jeonseAvg / (rate / 100), similar: like.length > 0 };
 });
 const cmpUnitActual = computed(() => { const r = cmpRows.value.find((x) => x.mine); return r ? (cmpKind.value === '매매' ? r.saleAvg : r.jeonseAvg) : 0; });
 /** 기준가 세 가지 — 카드로 나란히 놓고 고른다(2026-11-11 시안). 고른 것은 다른 물건에서도 그대로(값이 없으면 있는 것으로) */
@@ -6029,7 +6031,8 @@ const cmpBases = computed(() => {
     { id: 'rank' as const, label: `순위로 본 ${cmpKind.value}가`, value: re?.side === 'between' ? re.mid : 0,
       text: re ? `${cmpEok(re.mid)}${re.side === 'above' ? ' 이상' : re.side === 'below' ? ' 이하' : ''}` : '-', note: re ? (re.side === 'between' ? nb : `${nb} — 끝 순위라 한계값`) : '위아래 순위 단지에 거래가 없습니다' },
     { id: 'rate' as const, label: '전세가율로 본 매매가', value: cmpKind.value === '매매' && ra ? ra.sale : 0,
-      text: cmpKind.value === '매매' && ra ? cmpEok(ra.sale) : '-', note: cmpKind.value !== '매매' ? '매매를 고르면 나옵니다' : ra ? `연식 ±5년 이웃 ${ra.n}곳 전세가율 ${Math.round(ra.rate)}%` : '선정물건 전세 거래나 이웃 전세가율이 없습니다' },
+      // 값은 거래 단추와 상관없이 늘 보인다(전세 평균 ÷ 이웃 전세가율). 기준가로 고르는 것만 매매일 때(2026-11-11 사용자)
+      text: ra ? cmpEok(ra.sale) : '-', note: ra ? `${ra.similar ? '연식 ±5년' : '연식 비슷한 단지가 없어 전체'} 이웃 ${ra.n}곳 전세가율 ${Math.round(ra.rate)}%${cmpKind.value === '매매' ? '' : ' · 매매일 때 기준가로'}` : '선정물건 전세 거래나 이웃 전세가율이 없습니다' },
   ];
 });
 /** 호실 예상가 기준 — 고른 카드(값이 있으면), 아니면 단지 평균 → 순위로 → 전세가율로 */
