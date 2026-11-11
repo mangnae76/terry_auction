@@ -9396,7 +9396,7 @@ const goBack = () => router.back();
                         </td>
                     <td class="n"><span class="cmp-rate-in"><input inputmode="decimal" :class="{ typed: !!indivValue(`${item.id}.rate`) }" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
                   </tr>
-                  <tr class="cmp-sum"><td>선정물건 점수</td><td /><td class="n"><b>{{ cmpScore(cmpRows.find((r) => r.mine)?.zone ?? null) }}</b></td></tr>
+                  <tr class="cmp-sum"><td>{{ cmpRows.find((r) => r.mine)?.name || supName || '선정물건' }} 점수</td><td /><td class="n"><b>{{ cmpScore(cmpRows.find((r) => r.mine)?.zone ?? null) }}</b></td></tr>
                 </tbody>
               </table></div></div>
               <p class="cmp-ind-note">비중은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다(파란 숫자가 고친 값). 단지를 직접 보고 고르고 고친 값이 더 정확하고 믿을 만합니다.</p>
