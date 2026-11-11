@@ -9569,6 +9569,8 @@ const goBack = () => router.back();
                   </table>
                 </div>
               </div>
+              <!-- 순위 맞춰 보기 가이드 — 전세가는 사는 값(입지 + 개별성)이 그대로 담긴 값이라, 종합 순위와 전세 평당가 순위를 견줘 점수가 맞는지 본다(2026-11-11 사용자) -->
+              <p class="cmp-guide">전세가는 실제로 살기 좋은 정도(입지 + 개별성)가 그대로 반영된 값입니다. 종합점수 순위와 전용 평당가(전세) 순위가 비슷하면 점수가 잘 맞는 것이고, 크게 다르면 입지조건 · 개별성 비중이나 현장에서 고를 칸을 다시 확인하세요.</p>
               <!-- 선정물건에서 직접 고를 것 — 비어 있는 현장 · 수동 칸만. 누르면 그 점수 팝업(2026-11-11 시안) -->
               <div v-if="cmpTodo.length" class="cmp-todo"><b>선정물건에서 직접 고를 것 {{ cmpTodo.length }}개</b><span>{{ cmpTodo.map((t) => t.label).join(' · ') }}</span>
                 <button v-if="cmpTodo.some((t) => t.kind === 'zone')" type="button" @click="cmpPopOpen('zone', cmpMineRow, $event)">개별성에서고르기</button>
@@ -9642,7 +9644,7 @@ const goBack = () => router.back();
                     </template>
                     <template v-else>
                       <p class="cmp-formula">입지 {{ cmpScore(cmpPopRow.loc) }} × 60% + 구역 내 개별성 {{ cmpScore(cmpPopRow.zone) }} × 40%<br>종합 점수 <b>{{ cmpScore(cmpPopRow.tot) }}</b> / 100<template v-if="cmpRankOf.get(cmpKeyOf(cmpPopRow))"> · {{ cmpRankOf.get(cmpKeyOf(cmpPopRow)) }}위 / {{ cmpRankOf.size }}곳</template></p>
-                      <p class="cmp-ind-note">입지는 어디에 있나, 개별성은 단지 자체가 어떤가입니다. 둘을 합쳐 단지 순위를 매기고, 가격은 ③ 호실 예상가에서 정합니다.</p>
+                      <p class="cmp-ind-note">입지는 어디에 있나, 개별성은 단지 자체가 어떤가입니다. 둘을 합쳐 단지 순위를 매기고, 가격은 ③ 호실 예상가에서 정합니다. 전세가에는 입지와 개별성이 함께 담겨 있으니, 종합 순위가 전세 평당가 순위와 비슷한지 견줘 보세요.</p>
                     </template>
                   </div>
                 </div>
@@ -12443,6 +12445,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-sc { border: 0; background: none; padding: 2px 6px; border-radius: 5px; font: inherit; font-size: 13px; color: #111827; cursor: pointer; text-decoration: underline dotted #9ca3af; text-underline-offset: 3px; }
 .cmp-sc.big { font-weight: 800; }
 .cmp-sc:hover, .cmp-sc:focus-visible { background: #eef2ff; color: #2b6df3; outline: none; }
+.cmp-guide { margin: 10px 2px 0; padding: 9px 12px; border-radius: 8px; background: #f7f8fb; font-size: 12.5px; line-height: 1.6; color: #4b5563; }
 .cmp-todo { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: #f7f8fb; font-size: 13px; color: #374151; }
 .cmp-todo b { font-weight: 800; color: #111827; }
 .cmp-todo button { height: 26px; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; font: inherit; font-size: 13px; color: #2b6df3; cursor: pointer; }
