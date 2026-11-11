@@ -9570,7 +9570,7 @@ const goBack = () => router.back();
                   <div class="cmp-tile"><span class="k">{{ cmpKind }} 거래건수</span><span class="v">{{ cmpEst?.n ?? 0 }}건</span></div>
                   </template>
                   <template v-else>
-                  <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · 동 전체</span><span class="v">{{ cmpAll ? cmpEok(cmpAll.avg) : '-' }}</span></div>
+                  <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · {{ cmpRange === 'dong' ? (supRegion?.dong || '동 전체') : '반경 1km' }}</span><span class="v">{{ cmpAll ? cmpEok(cmpAll.avg) : '-' }}</span></div>
                   <div v-for="k in ['중간값', '최저가', '최고가']" :key="k" class="cmp-tile off"><span class="k">{{ k }}</span><span class="v sm">단지를 누르면 보입니다</span></div>
                   <div class="cmp-tile"><span class="k">평균 평당가</span><span class="v">{{ cmpAll ? cmpPy(cmpAll.perPy) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">단지 수</span><span class="v">{{ cmpAll?.complexes ?? cmpRows.length }}곳</span></div>
