@@ -844,6 +844,15 @@ const downloadCsv = () => {
 .dm-opinion b::before { content: '결론'; padding: 2px 8px; border-radius: 4px; background: #2b6df3; color: #fff; font-size: 12px; font-weight: 700; }
 .dm-opinion span { font-size: 14px; color: #111827; }   /* 의견 글은 검정(2026-11-10) */
 .dm-opinion .wait { color: #9ca3af; }
+/* 다크 모드 — 결론 상자가 하얗게 튀지 않게(2026-11-11 사용자) */
+:root[data-theme="dark"] .dm-opinion { background: rgba(43, 109, 243, .14); border-color: rgba(96, 140, 255, .45); }
+:root[data-theme="dark"] .dm-opinion b { color: #c7d7fe; }
+:root[data-theme="dark"] .dm-opinion span { color: #e5e7eb; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .dm-opinion { background: rgba(43, 109, 243, .14); border-color: rgba(96, 140, 255, .45); }
+  :root:not([data-theme="light"]) .dm-opinion b { color: #c7d7fe; }
+  :root:not([data-theme="light"]) .dm-opinion span { color: #e5e7eb; }
+}
 /* 합격선 글 — 등급 대신(2026-11-10). 작고 회색, 한 줄 */
 .dm-cell .pass { font-size: 12px; font-weight: 700; color: #6b7280; white-space: nowrap; }
 .adm-sum {

@@ -120,6 +120,8 @@ const supplyOfEx = (ex: number) => {
   return gs[0]?.supply ?? null;
 };
 const aptUnit = () => (webEmbed && !props.app ? areaUnit.value : 'm2');
+/** 표 면적 칸 두 줄 — '115.64㎡' 위, '(84.39)' 아래(칸을 좁혀 간격을 고르게, 2026-11-11 사용자) */
+const areaLines = (t: string) => { const i = t.indexOf(' ('); return i > 0 ? [t.slice(0, i), t.slice(i + 1)] : [t, '']; };
 const aptRowArea = (ex: number, same: boolean) => aptAreaText(same ? supplyOfEx(ex) : null, ex, aptUnit());
 const aptMyArea = computed(() => { const ex = Number(props.auction.buildingAreaM2) || me.value.areaM2; return aptAreaText(myAreas.value?.mine?.supply ?? supplyOfEx(ex), ex, aptUnit()); });   // 전용은 물건 자료 값(다른 탭과 같은 59.98)
 const myPub = computed(() => res.value?.price?.price ?? 0);
@@ -259,7 +261,8 @@ const kindCount = (k: Kind) => candidates.value.filter((r) => r.group === k).len
 // ===== 머리글 ▾ 값 거르기(지금 표들과 같은 창) · 머리글 글자 = 정렬 =====
 const gapText = (r: PriceRow) => (r.pub ? (r.price - r.pub * HUG_RATE < 0 ? '갭 마이너스' : '갭 있음') : '공시가 없음');
 const elevText = (r: PriceRow) => (r.elev === undefined ? '조회 중' : r.elev === null ? '-' : r.elev > 0 ? `${r.elev}대있음` : '없음');
-const addrOf = (r: PriceRow) => [r.umdNm, r.jibun, r.name, r.ho].filter(Boolean).join(' ');
+// 아파트 동(653동)도 — 같은 단지 안에서 어느 동 거래인지 보이게(2026-11-11 사용자). 국토부가 동을 안 준 거래는 비운다
+const addrOf = (r: PriceRow) => [r.umdNm, r.jibun, r.name, r.dong ? `${String(r.dong).replace(/동$/, '')}동` : '', r.ho].filter(Boolean).join(' ');
 const COLS: Array<ColumnDef<PriceRow>> = [
   { key: 'date', label: '계약일', text: (r) => r.contractDate, order: (r) => Number(r.contractDate.replace(/\D/g, '')) },
   { key: 'won', label: '실거래가', text: (r) => eok(r.price), order: (r) => r.price },
@@ -671,26 +674,35 @@ const askSlotRef = (el: unknown) => { if (sonAskReady) sonAskReady.value = !!el;
 const tableEl = ref<HTMLTableElement | null>(null);
 /* 웹 — 칸 폭은 창 폭 · 거래 종류 · 새 조회 때만 다시 잰다. 유사도 ↔ 직접범위 · 반경 · 제외처럼 줄만 바뀔 때마다 재면 칸이 좌우로 '딸깍' 움직였다 */
 let colsKey = '';
+/** 칸마다 지금까지 잰 가장 넓은 폭 — 같은 조회 안에서는 줄어들지 않는다 */
+let colsMax: number[] = [];
 const evenCols = () => {
   const t = tableEl.value;
   if (!t || !t.parentElement?.clientWidth) return;
   if (webEmbed) {
-    // 웹 — 칸 폭을 고정값으로(매매 · 전세 · 월세 · 조건을 바꿔도 칸 자리가 같다). 주소만 남는 폭을 다 쓴다
-    // 표 상자 폭이 바뀔 때만 다시 — 고정 폭을 상자 폭에 맞춰 같은 비율로 줄인다(시장분석처럼 상자가 좁아도 밖으로 튀어나가지 않게)
+    // 웹 — 칸마다 내용 폭을 잰 뒤 남는 폭을 모든 칸에 똑같이 더한다(칸 사이 간격이 고르게, 2026-11-11 사용자).
+    // 다시 재는 때는 상자 폭 · 거래 종류 · 새 조회 때만 — 조건을 바꿔 줄만 바뀔 때마다 재면 칸이 좌우로 '딸깍' 움직였다
     const cw = t.parentElement.clientWidth;
-    if (colsKey === `fixed|${cw}` && t.querySelector('colgroup')) return;
-    colsKey = `fixed|${cw}`;
+    // 상자 폭 · 거래 종류 · 새 조회가 같으면 칸은 넓어지기만 한다 — 줄이 바뀌어 더 긴 값(1,020,000,000)이 들어와도 옆 칸과 겹치지 않고, 줄어들며 '딸깍' 움직이지도 않게
+    const key = `even|${cw}|${kindF.value}|${fetchedAt.value}`;
+    if (colsKey !== key) { colsKey = key; colsMax = []; }
     t.querySelector('colgroup')?.remove();
-    // 주소 칸에 자리를 더 주려고 다른 칸은 조금씩 좁게
-    const W: Record<string, number> = { date: 86, won: 112, perPy: 92, pub: 116, gap: 116, area: isAptKind ? 150 : 80, elev: 56, year: 58, dist: 58, floor: 46 };   // 아파트 면적은 '115.64㎡ (84.39)' 한 줄이 다 들어가게(80 이면 잘렸다)
+    t.style.tableLayout = 'auto';
+    t.classList.remove('tight');
     const ths = [...t.querySelectorAll('thead th')] as HTMLElement[];
-    const base = (el: HTMLElement) => (el.classList.contains('ck-th') ? 40 : el.classList.contains('acts-th') ? 100 : el.dataset.k ? W[el.dataset.k] ?? 0 : 52);
-    const fixedSum = ths.reduce((a, el) => a + base(el), 0);
+    const measureW = () => { t.classList.add('measure'); const w = ths.map((th) => th.getBoundingClientRect().width); t.classList.remove('measure'); return w; };
+    let nat = measureW().map((w, i) => Math.max(w, colsMax[i] ?? 0));
+    colsMax = nat;
+    const ai = ths.findIndex((th) => th.dataset.k === 'name');
     const ADDR_MIN = 170;
-    const k = Math.min(1, Math.max(0.6, (cw - ADDR_MIN) / fixedSum));
-    t.classList.toggle('tight', k < 1);   // 줄였으면 칸 안 여백도 줄인다
+    const others = () => nat.reduce((a, w, i) => (i === ai ? a : a + w), 0);
+    if (cw - others() < ADDR_MIN) { t.classList.add('tight'); nat = measureW().map((w, i) => Math.max(w, colsMax[i] ?? 0)); }   // 좁으면 칸 안 여백을 줄여 다시 잰다
+    const addrNat = ai >= 0 ? Math.max(ADDR_MIN, nat[ai]) : 0;
+    let gap = (cw - others() - addrNat) / ths.length;
+    let addrW = addrNat;
+    if (gap < 0) { gap = 0; addrW = Math.max(ADDR_MIN, cw - others()); }   // 모자라면 주소 칸만 줄인다(…으로 잘리고 말풍선으로 전체)
     const cg = document.createElement('colgroup');
-    ths.forEach((el) => { const c = document.createElement('col'); const w = base(el); if (w) c.style.width = `${Math.floor(w * k)}px`; cg.appendChild(c); });
+    ths.forEach((_, i) => { const c = document.createElement('col'); c.style.width = `${Math.floor((i === ai ? addrW : nat[i]) + gap)}px`; cg.appendChild(c); });
     t.insertBefore(cg, t.firstChild);
     t.style.tableLayout = 'fixed';
     t.style.minWidth = '';
@@ -965,7 +977,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td v-if="!curPub || kindF === '월세'" class="r two">{{ curPub ? n0(hug) : '-' }}</td>
               <td v-else-if="kindF === '전세'" class="r pa-num two">{{ n0(hug) }}<small :class="{ neg: view && view.est > hug }">{{ !view ? '-' : view.est > hug ? `한도초과 ${n0(view.est - hug)}` : '한도 안' }}</small></td>
               <td v-else class="r pa-num two">{{ n0(hug) }}<small :class="{ neg: view && view.est - hug < 0 }">{{ view ? `갭 ${n0(view.est - hug)}` : '-' }}</small></td>
-              <td v-if="isAptKind" class="r pa-num">{{ aptMyArea }}</td>
+              <td v-if="isAptKind" class="r pa-num two">{{ areaLines(aptMyArea)[0] }}<small v-if="areaLines(aptMyArea)[1]">{{ areaLines(aptMyArea)[1] }}</small></td>
               <td v-else class="r pa-num two">{{ me.areaM2.toFixed(2) }}㎡<small>{{ myPy.toFixed(2) }}평</small></td>
               <td><span v-if="myElev === null" class="ev u">-</span><span v-else-if="myElev > 0" class="ev o two">{{ myElev }}대<br>있음</span><span v-else class="ev x">없음</span></td>
               <td class="pa-num">{{ me.year || '-' }}</td>
@@ -997,7 +1009,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
                 <td v-else-if="r.group === '전세'" class="r pa-num two">{{ n0(r.pub * HUG_RATE) }}<small :class="{ neg: r.price > r.pub * HUG_RATE }">{{ r.price > r.pub * HUG_RATE ? `한도초과 ${n0(r.price - r.pub * HUG_RATE)}` : '한도 안' }}</small></td>
                 <td v-else class="r pa-num two">{{ n0(r.pub * HUG_RATE) }}<small :class="{ neg: r.price - r.pub * HUG_RATE < 0 }">갭 {{ n0(r.price - r.pub * HUG_RATE) }}</small></td>
               </template>
-              <td v-if="isAptKind" class="r pa-num">{{ aptRowArea(r.areaM2, !!r.same) }}</td>
+              <td v-if="isAptKind" class="r pa-num two">{{ areaLines(aptRowArea(r.areaM2, !!r.same))[0] }}<small v-if="areaLines(aptRowArea(r.areaM2, !!r.same))[1]">{{ areaLines(aptRowArea(r.areaM2, !!r.same))[1] }}</small></td>
               <td v-else class="r pa-num two">{{ r.areaM2.toFixed(2) }}㎡<small>{{ (r.areaM2 / PY).toFixed(2) }}평</small></td>
               <td><span v-if="r.elev === undefined || r.elev === null" class="ev u" :title="r.elev === null ? '건축물대장을 찾지 못했습니다' : '조회 중'">-</span><span v-else-if="r.elev > 0" class="ev o two">{{ r.elev }}대<br>있음</span><span v-else class="ev x">없음</span></td>
               <td class="pa-num">{{ r.buildYear || '-' }}</td>
@@ -1373,6 +1385,13 @@ tr.off td:not(.ck-td) { opacity: .42; text-decoration: line-through; }
 .pa-list tbody tr { cursor: pointer; }
 .pa-list tbody tr:hover td { background: var(--soft); }
 .pa-list tbody tr.on td { background: var(--blue-tint); }
+/* 다크 모드 — 줄에 마우스를 대거나 고른 줄이 하얗게 튀었다(2026-11-11 사용자) */
+:root[data-theme="dark"] .pa-list tbody tr:hover td { background: rgba(255, 255, 255, .05); }
+:root[data-theme="dark"] .pa-list tbody tr.on td { background: rgba(43, 109, 243, .2); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .pa-list tbody tr:hover td { background: rgba(255, 255, 255, .05); }
+  :root:not([data-theme="light"]) .pa-list tbody tr.on td { background: rgba(43, 109, 243, .2); }
+}
 .pa-list tbody tr.mine { background: #fff5f5; box-shadow: inset 0 -2px 0 #f3c9c9; cursor: pointer; }   /* 누르면 지도 빨간 점 이름표 */
 .pa-list tbody tr.mine:hover td, .pa-list tbody tr.nohover:hover td { background: transparent; }
 td.two { line-height: 1.35; }

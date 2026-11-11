@@ -9704,7 +9704,7 @@ const goBack = () => router.back();
                 </table></div></div>
                 <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
                   <colgroup><col style="width: 20%" /><col /><col style="width: 19%" /><col style="width: 22%" /></colgroup>
-                  <thead><tr><th>단지 내 개별성</th><th>내용</th><th>비율</th><th>보정</th></tr></thead>
+                  <thead><tr><th>단지 내 개별성</th><th>내용 <span class="cmp-th-hint">(해당 물건과 유사 물건이 다를 경우에만 선택하세요)</span></th><th>비율</th><th>보정</th></tr></thead>
                   <tbody>
                     <template v-for="g in unitGroupsView" :key="g.title">
                     <tr v-for="item in g.items" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
@@ -12308,6 +12308,15 @@ tr.tone-take { background: #fff5f5; }
 .sup-opinion b::before { content: '결론'; padding: 2px 8px; border-radius: 4px; background: #2b6df3; color: #fff; font-size: 12px; font-weight: 700; }
 .sup-opinion span { font-size: 14px; color: #111827; }   /* 의견 글은 검정(2026-11-10) */
 .sup-opinion .wait { color: #9ca3af; }
+/* 다크 모드 — 결론 상자가 하얗게 튀지 않게(2026-11-11 사용자) */
+:root[data-theme="dark"] .sup-opinion { background: rgba(43, 109, 243, .14); border-color: rgba(96, 140, 255, .45); }
+:root[data-theme="dark"] .sup-opinion b { color: #c7d7fe; }
+:root[data-theme="dark"] .sup-opinion span { color: #e5e7eb; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .sup-opinion { background: rgba(43, 109, 243, .14); border-color: rgba(96, 140, 255, .45); }
+  :root:not([data-theme="light"]) .sup-opinion b { color: #c7d7fe; }
+  :root:not([data-theme="light"]) .sup-opinion span { color: #e5e7eb; }
+}
 /* 면적 · 룸수 · 세대구성 · 입지조건 줄 — 단지 입지비교 머리(예전 ① 실사용자 + 입지등수에서 옮김). 이름(회색) + 회색 상자 값(검정 굵게), 칸 사이 세로 칸막이 */
 .cmp-persona { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 12px; padding: 8px 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-size: 14px; }
 .cmp-persona .grp { display: inline-flex; align-items: center; gap: 8px; }
@@ -12504,8 +12513,12 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 #sonUnitSlot .unit-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 #sonUnitSlot .unit-h h3 { margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
 #sonUnitSlot .unit-tag { font-size: 13px; font-weight: 700; color: #2b4fd8; background: #eef2ff; border-radius: 5px; padding: 3px 8px; }   /* 시세분석 '결론 · 입력' 표와 같은 꼴 */
+.cmp-th-hint { font-weight: 400; font-size: 12px; color: #2563eb; }   /* 내용 머리 옆 파란 안내(2026-11-11 사용자) */
 .cmp-zone-off.warn { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
 .cmp-zone-off b { flex: 0 0 auto; font-size: 14px; font-weight: 800; color: #6b7280; }   /* 기준가 층 거르기 — 같은층 · ±1층 · 전체 */
+:root[data-theme="dark"] .cmp-zone-off { background: transparent; border-color: rgba(255, 255, 255, .18); color: #9ca3af; }
+:root[data-theme="dark"] .cmp-zone-off.warn { background: rgba(245, 158, 11, .12); border-color: rgba(245, 158, 11, .5); color: #fcd34d; }
+:root[data-theme="dark"] .cmp-th-hint { color: #93b4ff; }
 @media (max-width: 1100px) { .o-unit .cmp-two.pair { grid-template-columns: minmax(0, 1fr); } }
 .cmp-tbl tr.cmp-zone-note td { font-size: 12px; color: #9ca3af; text-align: left; }
 /* 개별성 입력을 쓰는 표 안에서 — 자동 칸은 이름 블루그레이 + '자동', 수동 칸은 고르기 단추(시세분석 단추 꼴 · 굵은 폭 미리 잡기, 2026-11-11) */
