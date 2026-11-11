@@ -5698,6 +5698,8 @@ const indivPick = (item: IndivItem, opt: string) => {
   else setIndivValue(item.id, indivValue(item.id) === opt ? '' : opt);
   persistSoon();
 };
+/** 비중 · 비율 칸 — 기본값은 흐리지 않은 회색 글(placeholder), 고친 값은 파랑. 비우면 기본값으로 돌아간다 */
+const indivRateInput = (id: string, v: string) => { setIndivValue(`${id}.rate`, v.replace(/[^\d.~\-]/g, '')); persistSoon(); };
 const indivPickText = (id: string, v: string) => { setIndivValue(id, v.replace(/[^\d.]/g, '')); persistSoon(); };
 /** 자동 칸(PDF · 건축물대장) 글 — 연식은 연월 · 연차, 주차는 세대당, 층은 '전체 중 해당' */
 const indivAutoText = (item: IndivItem) => {
@@ -9377,11 +9379,12 @@ const goBack = () => router.back();
                           <template v-else-if="INDIV_AUTO.has(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
                           <span v-else class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span>
                         </td>
-                    <td class="n">{{ indivRateOf(item) }}</td>
+                    <td class="n"><span class="cmp-rate-in"><input inputmode="decimal" :class="{ typed: !!indivValue(`${item.id}.rate`) }" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
                   </tr>
                   <tr class="cmp-sum"><td>선정물건 점수</td><td /><td class="n"><b>{{ cmpScore(cmpRows.find((r) => r.mine)?.zone ?? null) }}</b></td></tr>
                 </tbody>
               </table></div></div>
+              <p class="cmp-ind-note">비중은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다(파란 숫자가 고친 값). 단지를 직접 보고 고르고 고친 값이 더 정확하고 믿을 만합니다.</p>
               <template v-if="cmpPicked">
                 <p class="sup-head cmp-pick">고른 단지 <span class="area cmp-chip">{{ cmpPicked.name || cmpPicked.jibun }}</span> <small class="cmp-sub">지도 점이나 위 표 줄을 누르면 바뀝니다</small></p>
                 <div class="cmp-two">
@@ -9426,10 +9429,11 @@ const goBack = () => router.back();
                           <template v-if="item.id === 'ind.far'"><span class="cmp-ind-in"><input inputmode="decimal" :value="indivDisplay(item).replace(/[^\d.]/g, '')" placeholder="0" :aria-label="item.label" @input="indivPickText('ind.far', ($event.target as HTMLInputElement).value)" />%</span><small class="cmp-auto">자동 · 고칠 수 있음</small></template>
                           <template v-else-if="INDIV_AUTO.has(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
                           <span v-else class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span>
-                        </td><td class="n">{{ indivRateOf(item) }}</td><td :class="['n', 'adp-ind-adj', unitSign(item.id) > 0 ? 'up' : unitSign(item.id) < 0 ? 'down' : 'zero']">{{ unitSign(item.id) === 0 ? '0%' : pctText(unitAdj(item.id)) }}</td></tr>
+                        </td><td class="n"><span class="cmp-rate-in"><input inputmode="decimal" :class="{ typed: !!indivValue(`${item.id}.rate`) }" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td><td :class="['n', 'adp-ind-adj', unitSign(item.id) > 0 ? 'up' : unitSign(item.id) < 0 ? 'down' : 'zero']">{{ unitSign(item.id) === 0 ? '0%' : pctText(unitAdj(item.id)) }}</td></tr>
                     <tr class="cmp-sum"><td>합계</td><td /><td /><td :class="['n', 'adp-ind-adj', unitAdjSum[1] > 0 ? 'up' : unitAdjSum[0] < 0 ? 'down' : 'zero']"><b>{{ pctText(unitAdjSum) }}</b></td></tr>
                   </tbody>
                 </table></div></div>
+                <p class="cmp-ind-note">비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다(파란 숫자가 고친 값). 향 · 뷰 · 일조량 · 수리유무는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다.</p>
               </div>
               <div class="cmp-est">
                 <div class="cmp-tiles three">
@@ -12171,6 +12175,10 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-ind-seg button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
 .cmp-ind-in { display: inline-flex; align-items: center; gap: 4px; }
 .cmp-ind-in input { width: 84px; height: 28px; box-sizing: border-box; padding: 0 8px; border: 1px solid #d7dde8; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 700; text-align: right; color: #111827; background: #fff; }
+.cmp-rate-in { display: inline-flex; align-items: center; gap: 2px; }
+.cmp-rate-in input { width: 68px; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1px solid #e3e8f0; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 700; text-align: right; color: #2b6df3; background: #fff; }
+.cmp-rate-in input::placeholder { color: #374151; font-weight: 400; opacity: 1; }   /* 기본값 — 흐리지 않게(값이 비어 보이지 않게) */
+.cmp-ind-note { margin: 8px 2px 0; font-size: 12.5px; color: #6b7280; line-height: 1.6; }
 .cmp-ind-fold-note { font-size: 12.5px; font-weight: 400; color: #6b7280; }
 .adp-dm-sub > .adp-edit-btn + .adp-photo-fold { margin-left: 6px; }
 .cmp-nm-line { display: flex; align-items: center; min-width: 0; }
