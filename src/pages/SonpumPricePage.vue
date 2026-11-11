@@ -11,6 +11,8 @@ import {
   estStats, jeonseEstimate, distM, visitOrder, type PriceCond, type PriceRow,
 } from '../services/priceAnalysis';
 import { fetchApartUnits, type ApartUnit } from '../services/vworldApi';
+import { getComplexAreas, type ComplexAreas } from '../services/complexAreas';
+import { areaUnit, aptAreaText } from '../services/areaUnit';
 import { browserCacheGet, browserCachePut } from '../services/browserCache';
 import { geocodeAddress } from '../services/routeOptimizer';
 import { getBuildingFacts } from '../services/buildingFacts';
@@ -102,6 +104,20 @@ const me = computed(() => {
   return { areaM2, year, floor: floorOfHo(res.value?.parts.ho ?? '') };
 });
 const myPy = computed(() => me.value.areaM2 / PY);
+// 아파트 면적 — '공급㎡ (전용)' 한 줄(2026-11-11 규칙), 단위는 웹 고정카드 단추(앱은 ㎡). 공급은 이 단지 건축물대장(같은 전용의 가장 많은 공급) —
+// 다른 단지 거래는 공급을 몰라 '전용 59.99㎡'(추정하지 않는다)
+const isAptKind = props.kind === 'apt';
+const myAreas = shallowRef<ComplexAreas | null>(null);
+watch(() => props.auction.id, async () => { myAreas.value = null; if (!isAptKind) return; myAreas.value = await getComplexAreas(props.auction.address).catch(() => null); }, { immediate: true });
+const t2s = (n: number) => (Math.floor(n * 100 + 1e-6) / 100).toFixed(2);
+const supplyOfEx = (ex: number) => {
+  // 실거래 전용(73.93)과 건축물대장 전용(73.94)이 끝자리에서 다를 수 있어 ±0.015 안이면 같은 평형으로 본다
+  const gs = (myAreas.value?.groups ?? []).filter((g) => (t2s(g.exclusive) === t2s(ex) || Math.abs(g.exclusive - ex) < 0.015) && g.supply - g.exclusive > 0.5).sort((a, b) => b.count - a.count);
+  return gs[0]?.supply ?? null;
+};
+const aptUnit = () => (webEmbed && !props.app ? areaUnit.value : 'm2');
+const aptRowArea = (ex: number, same: boolean) => aptAreaText(same ? supplyOfEx(ex) : null, ex, aptUnit());
+const aptMyArea = computed(() => { const ex = Number(props.auction.buildingAreaM2) || me.value.areaM2; return aptAreaText(myAreas.value?.mine?.supply ?? supplyOfEx(ex), ex, aptUnit()); });   // 전용은 물건 자료 값(다른 탭과 같은 59.98)
 const myPub = computed(() => res.value?.price?.price ?? 0);
 const pubMissing = computed(() => !!res.value && !myPub.value);
 const curPub = computed(() => (pubMissing.value ? typedPub.value : myPub.value));
@@ -722,7 +738,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <div class="tile"><span class="k">최고가</span><span class="v pa-num">{{ view ? vfmt(view.max) : '-' }}</span></div>
           <div class="tile"><span class="k">{{ kindF === '월세' ? '평균 평당 월세' : '평균 평당가' }}</span><span class="v pa-num">{{ view ? vPy(view.avgPy) : '-' }}</span></div>
           <!-- 선정물건 정보 — 유사 거래를 찾는 가운데 기준(실제 범위는 아래 「계산 조건」 줄) -->
-          <div class="tile"><span class="k">전용 / 연식</span><span class="v pa-num sm">{{ myPy ? `${myPy.toFixed(2)}평` : '-' }} / {{ me.year ? `${me.year}년식` : '-' }}</span></div>
+          <div v-if="isAptKind" class="tile"><span class="k">면적 / 연식</span><span class="v pa-num sm">{{ aptMyArea }}</span><span class="s">{{ me.year ? `${me.year}년식` : '-' }}</span></div>
+          <div v-else class="tile"><span class="k">전용 / 연식</span><span class="v pa-num sm">{{ myPy ? `${myPy.toFixed(2)}평` : '-' }} / {{ me.year ? `${me.year}년식` : '-' }}</span></div>
           <div class="tile"><span class="k">유사 거래건수</span><span class="v pa-num">{{ view?.n ?? 0 }}건</span></div>
         </div>
       </div>
@@ -858,7 +875,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <th v-if="webEmbed" class="ck-th" title="체크하면 매도가 예상 · 평균 · 건수에서 빠집니다">제외</th>
             <th>구분</th>
             <th v-for="c in COLS" :key="c.key" :data-k="c.key" :aria-sort="sortK === c.key ? (webEmbed && sortDir === 'asc' ? 'ascending' : 'descending') : undefined" :class="{ hl: ['won', 'perPy', 'pub', 'gap'].includes(c.key) }">
-              <span class="hk" :title="c.key === 'gap' ? '전세 = 공시가 × 126%(보증보험 한도)' : undefined" @click="sortBy(c.key)">{{ c.key === 'pub' ? '공시가 / 매매가율' : c.key === 'gap' ? '전세 / 갭' : c.label }}</span>
+              <span class="hk" :title="c.key === 'gap' ? '전세 = 공시가 × 126%(보증보험 한도)' : undefined" @click="sortBy(c.key)">{{ c.key === 'pub' ? '공시가 / 매매가율' : c.key === 'gap' ? '전세 / 갭' : c.key === 'area' && isAptKind ? '면적' : c.label }}<small v-if="c.key === 'area' && isAptKind" class="hk-sub">공급(전용)</small></span>
               <i v-if="webEmbed" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true" @click="sortBy(c.key)">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i>
               <button v-else type="button" :class="['fv', { act: colFilter.isActive(c.key) }]" :aria-label="`${c.label} 값 거르기`" @click.stop="colFilter.open(c.key, $event)">▾</button>
             </th>
@@ -878,7 +895,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td v-if="!curPub || kindF === '월세'" class="r two">{{ curPub ? n0(hug) : '-' }}</td>
               <td v-else-if="kindF === '전세'" class="r pa-num two">{{ n0(hug) }}<small :class="{ neg: view && view.est > hug }">{{ !view ? '-' : view.est > hug ? `한도초과 ${n0(view.est - hug)}` : '한도 안' }}</small></td>
               <td v-else class="r pa-num two">{{ n0(hug) }}<small :class="{ neg: view && view.est - hug < 0 }">{{ view ? `갭 ${n0(view.est - hug)}` : '-' }}</small></td>
-              <td class="r pa-num two">{{ me.areaM2.toFixed(2) }}㎡<small>{{ myPy.toFixed(2) }}평</small></td>
+              <td v-if="isAptKind" class="r pa-num">{{ aptMyArea }}</td>
+              <td v-else class="r pa-num two">{{ me.areaM2.toFixed(2) }}㎡<small>{{ myPy.toFixed(2) }}평</small></td>
               <td><span v-if="myElev === null" class="ev u">-</span><span v-else-if="myElev > 0" class="ev o two">{{ myElev }}대<br>있음</span><span v-else class="ev x">없음</span></td>
               <td class="pa-num">{{ me.year || '-' }}</td>
               <td class="r pa-num">0m</td>
@@ -909,7 +927,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
                 <td v-else-if="r.group === '전세'" class="r pa-num two">{{ n0(r.pub * HUG_RATE) }}<small :class="{ neg: r.price > r.pub * HUG_RATE }">{{ r.price > r.pub * HUG_RATE ? `한도초과 ${n0(r.price - r.pub * HUG_RATE)}` : '한도 안' }}</small></td>
                 <td v-else class="r pa-num two">{{ n0(r.pub * HUG_RATE) }}<small :class="{ neg: r.price - r.pub * HUG_RATE < 0 }">갭 {{ n0(r.price - r.pub * HUG_RATE) }}</small></td>
               </template>
-              <td class="r pa-num two">{{ r.areaM2.toFixed(2) }}㎡<small>{{ (r.areaM2 / PY).toFixed(2) }}평</small></td>
+              <td v-if="isAptKind" class="r pa-num">{{ aptRowArea(r.areaM2, !!r.same) }}</td>
+              <td v-else class="r pa-num two">{{ r.areaM2.toFixed(2) }}㎡<small>{{ (r.areaM2 / PY).toFixed(2) }}평</small></td>
               <td><span v-if="r.elev === undefined || r.elev === null" class="ev u" :title="r.elev === null ? '건축물대장을 찾지 못했습니다' : '조회 중'">-</span><span v-else-if="r.elev > 0" class="ev o two">{{ r.elev }}대<br>있음</span><span v-else class="ev x">없음</span></td>
               <td class="pa-num">{{ r.buildYear || '-' }}</td>
               <td class="r pa-num">{{ r.dist ?? '-' }}m</td>
@@ -992,6 +1011,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .tile.key :deep(.itip-bubble) { left: 0; transform: none; z-index: 600; }   /* 왼쪽 끝 칸 — 오른쪽으로 펼친다 */
 .tile.key :deep(.itip-bubble)::before { left: 40px; transform: none; }
 .tile .s { font-size: 12px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hk-sub { display: block; font-size: 11px; font-weight: 400; color: var(--sub); }   /* 아파트 면적 머리 — '공급(전용)' */
 .tile .cap { justify-self: center; font-size: 11px; color: #fff; background: rgba(0, 0, 0, .18); border-radius: 999px; padding: 1px 8px; }
 
 /* 지도 */

@@ -6045,7 +6045,6 @@ const summaryFarText = computed(() => {
   const n = sumVal('sum.far') || (auction.value?.aptComplexInfo?.floorRatio ?? '').replace(/[^\d.]/g, '');
   return n ? `${n}%` : '-';
 });
-const summarySupplyArea = computed(() => areaText(mySupplyM2.value ? String(mySupplyM2.value) : sumVal('sum.supplyArea')));
 const summaryExclusiveArea = computed(() => areaText(sumVal('sum.exclusiveArea')));
 /** '주거용 전부 / 2021.05.25. ~ 2023.05.24.' — 옛 자료(슬래시 없음)도 같은 모양으로 맞춘다 */
 const tenantUsagePeriod = (raw: string) => {
@@ -6320,14 +6319,14 @@ const goBack = () => router.back();
                 <span class="adp-sum-hi">{{ summaryApprovalDate }}<template v-if="summaryApprovalAge"> / {{ summaryApprovalAge }}</template></span>
               </dd>
             </div>
-            <div class="adp-base-row">
+            <!-- 아파트는 '면적 공급(전용)' 한 줄 — '83.18㎡ (59.98)'(2026-11-11 규칙), 웹은 고정카드 단추로 평. 빌라는 전용면적 그대로 -->
+            <div v-if="isApartment" class="adp-base-row">
+              <dt>면적<small class="adp-dt-sub">공급(전용)</small></dt>
+              <dd><span class="adp-sum-hi">{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2 || Number(sumVal('sum.exclusiveArea').replace(/[^\d.]/g, '')) || 0) }}</span></dd>
+            </div>
+            <div v-else class="adp-base-row">
               <dt>전용면적(㎡/평)</dt>
               <dd><span class="adp-sum-hi">{{ summaryExclusiveArea }}</span></dd>
-            </div>
-            <!-- 공급면적은 아파트만 — 전용 아래 따로, 같은 꼴(2026-11-10) -->
-            <div v-if="isApartment" class="adp-base-row">
-              <dt>공급면적(㎡/평)</dt>
-              <dd>{{ summarySupplyArea }}</dd>
             </div>
             <!-- 용적률 — 아파트만, 표제부(없으면 PDF 단지정보) -->
             <div v-if="isApartment" class="adp-base-row">
@@ -8884,7 +8883,7 @@ const goBack = () => router.back();
               </colgroup>
               <thead>
               <tr>
-                <th>{{ isApartment ? '면적(전용/공급)' : '전용면적' }}</th>
+                <th>{{ isApartment ? '면적 공급(전용)' : '전용면적' }}</th>
                 <th v-if="webEmbed">룸수</th>
                 <th>세대구성</th>
                 <th>입지조건</th>
@@ -8896,9 +8895,10 @@ const goBack = () => router.back();
               <tr>
                 <td class="adp-ruser-cell vmid">
                 <!-- 아파트 — 고르지 않고 이 물건의 전용 · 공급면적을 위아래로 적는다(머리 '면적(전용/공급)', 2026-11-10). 입지조건은 전용 평수 구간으로 자동 -->
+                <!-- 아파트 면적 — '공급㎡ (전용)' 한 줄 + 아래 평(2026-11-11 규칙) -->
                 <div v-if="isApartment" class="adp-ruser-area">
-                  <span><em>전용</em>{{ aptExclusiveM2 ? `${trunc2(aptExclusiveM2)}㎡ / ${(aptExclusiveM2 / PYEONG_TO_M2).toFixed(1)}평` : '-' }}</span>
-                  <span><em>공급</em>{{ mySupplyM2 ? `${trunc2(mySupplyM2)}㎡ / ${(mySupplyM2 / PYEONG_TO_M2).toFixed(1)}평` : '-' }}</span>
+                  <span>{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2, 'm2') }}</span>
+                  <span>{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2, 'py') }}</span>
                 </div>
                 <div v-else class="adp-rcase-dd">
                   <button type="button" class="adp-rcase-select adp-ruser-select" @click="bandOpen = !bandOpen">
@@ -9316,7 +9316,7 @@ const goBack = () => router.back();
                     </tr></thead>
                     <tbody>
                       <tr v-for="r in cmpRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine, on: cmpIsOn(r) }]" tabindex="0" @click="cmpToggle(cmpKeyOf(r))" @keydown.enter="cmpToggle(cmpKeyOf(r))">
-                        <td class="nm"><span v-if="r.mine" class="cmp-tag">선정물건</span>{{ r.name || r.jibun }}<small class="sup-tbl-sub">{{ areaPair(r.supply, r.area) }}</small></td>
+                        <td class="nm"><span class="cmp-nm-line"><span v-if="r.mine" class="cmp-tag">선정물건</span><span class="cmp-nm" :title="r.name || r.jibun">{{ r.name || r.jibun }}</span></span><small class="sup-tbl-sub">{{ areaPair(r.supply, r.area) }}</small></td>
                         <td class="n">{{ r.buildYear ? `${r.buildYear}년` : '-' }}</td>
                         <!-- 선정물건 줄은 등수를 손으로 고친다(1 · 2 · 3, 비우면 자동값). 다른 단지는 자동 등수만 -->
                         <td v-for="(k, i) in r.ranks" :key="i" class="n" @click.stop><input v-if="r.mine" :class="['cmp-rk', 'in', { r1: k === 1, typed: !!rankOf(cmpConds[i]) }]" inputmode="numeric" maxlength="1" :value="k ?? ''" :title="autoRankNote(cmpConds[i]) || '1 · 2 · 3 중 하나 — 비우면 자동값'" :aria-label="`${cmpConds[i]} 입지등수`" @change="setRank(cmpConds[i], (($event.target as HTMLInputElement).value.match(/[1-3]/) ?? [''])[0])" /><span v-else-if="k" :class="['cmp-rk', { r1: k === 1 }]">{{ k }}</span><span v-else class="cmp-dim">{{ cmpKeyOf(r) in cmpNearby ? '-' : '…' }}</span></td>
@@ -10180,6 +10180,7 @@ const goBack = () => router.back();
 </template>
 
 <style scoped>
+.adp-dt-sub { margin-left: 4px; font-size: 11.5px; font-weight: 400; color: #6b7280; }   /* 정보요약 '면적 공급(전용)' */
 .adp-th-sub { display: block; font-size: 11.5px; font-weight: 400; color: #6b7280; }   /* 표 머리 아래 작은 글 — '면적종류' 밑 '공급(전용)' */
 .adp-loc2-fetch {
   display: inline-block; margin-left: 8px;
@@ -12013,7 +12014,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-q { margin-left: 8px; font-size: 12.5px; font-weight: 400; color: #6b7280; }   /* '누구한테 팔까?'와 같은 꼴의 물음 */
 .cmp-est-h h3 { display: inline-flex; align-items: center; margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
 .cmp-est-tag { font-size: 13px; font-weight: 700; color: #2b4fd8; background: #eef2ff; border-radius: 5px; padding: 3px 8px; }
-.cmp-est-desc { font-size: 12px; color: #6b7280; }
+.cmp-est-desc { margin-left: auto; padding-right: 14px; font-size: 12px; color: #6b7280; text-align: right; }   /* 오른쪽 — 아래 마지막 칸(거래건수) 오른쪽 선에 맞춘다(2026-11-11) */
 .cmp-est { background: #f7f8fb; border-radius: 10px; padding: 14px; }
 .cmp-tiles { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
 @media (max-width: 1000px) { .cmp-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
@@ -12105,6 +12106,9 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .adp-ind-adj.zero { color: #9ca3af; }
 .sup-tbl .adm-table tbody tr.cmp-sum td { background: #f7f9fc; font-weight: 700; }
 .o-unit .cmp-two { margin-bottom: 12px; }
+.cmp-nm-line { display: flex; align-items: center; min-width: 0; }
+.cmp-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }   /* 긴 단지 이름은 칸을 넘으면 …(마우스를 대면 전체 이름) */
+.cmp-tbl td.nm { max-width: 0; }
 .cmp-row { cursor: pointer; }
 .sup-tbl .adm-table tbody tr.cmp-row:hover td { background: #f7f9fc; }
 .sup-tbl .adm-table tbody tr.cmp-row.mine td { background: #fff5f5; box-shadow: inset 0 -2px 0 #efb7b7; }
