@@ -14,7 +14,7 @@ import { cacheKey, readCache, writeCache } from './marketCache';
 export const LOCATION_SOURCES: Record<string, Array<keyof NearbyEnvironment>> = {
   교통: ['subway', 'busStop'],
   // 인프라 = 큰 병원 · 큰 공원 · 상업지역(도시계획 용도지역). 마트 · 음식점 · 학원 같은 작은 가게는 뺐다(2026-11-10 사용자 기준)
-  인프라: ['hospital', 'bigPark', 'commercialZone'],
+  인프라: ['hospital', 'bigPark', 'commercialZone', 'market'],   // 전통시장 — 중장년 · 노년층(2026-11-11)
   공원: ['park'],
   유치원: ['daycare'],
   초등학교: ['school'],
@@ -46,6 +46,7 @@ export const PLACE_ICON: Partial<Record<keyof NearbyEnvironment, { ic: string; c
   park: { ic: '🌳', color: '#15803d', label: '공원' },
   bigPark: { ic: '🌳', color: '#15803d', label: '공원' },
   commercialZone: { ic: '🏬', color: '#ea580c', label: '상업지역' },
+  market: { ic: '🧺', color: '#c2410c', label: '전통시장' },
 };
 
 export type ComplexNearby = { lat: number; lng: number; env: NearbyEnvironment };
@@ -70,7 +71,7 @@ export const metersBetween = (a: { lat: number; lng: number }, b: { lat: number;
 };
 /** 주소 하나의 좌표 + 주변시설 — 이 브라우저 → DB → 카카오 순. 못 찾으면 null */
 export const complexNearbyOf = async (address: string): Promise<ComplexNearby | null> => {
-  const key = cacheKey('nb3', address);   // nb3 — 인프라(큰 공원 · 상업지역) · 학원가(밀집)를 더한 뒤
+  const key = cacheKey('nb4', address);   // nb4 — 인프라에 전통시장을 더한 뒤(2026-11-11)   // nb3 — 인프라(큰 공원 · 상업지역) · 학원가(밀집)를 더한 뒤
   const local = await browserCacheGet<ComplexNearby>(key, NEARBY_TTL);
   if (local) return local;
   const shared = await readCache<ComplexNearby>('cacheNearby', key, NEARBY_TTL);

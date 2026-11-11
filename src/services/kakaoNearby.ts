@@ -149,6 +149,8 @@ export interface NearbyEnvironment {
   commercialZone?: NearbyPlace[];
   /** 학원가 — 200m 안 학원 10곳 이상 모인 곳의 가운데(하나). 없으면 빈 배열 */
   academyCluster?: NearbyPlace[];
+  /** 전통시장 — 중장년 · 노년층 인프라(2026-11-11 사용자). 예전에 저장한 값엔 없다 */
+  market?: NearbyPlace[];
 }
 
 /** 학원가 — 반경 200m 안에 학원이 10곳 이상 모인 곳(2026-11-10 사용자 기준). 학원 하나로는 학원가로 보지 않는다.
@@ -219,11 +221,12 @@ export const fetchNearbyEnvironment = async (
   ]);
   // 인프라 — 큰 병원 · 큰 공원 · 상업지역(2026-11-10). 병원 업종 15곳은 의원이 먼저 차서 종합병원이 밀린다 — '종합병원'으로 한 번 더 찾는다
   // 학원가 — 학원을 세 쪽(45곳)까지 받아 200m 안 10곳 이상 모인 곳을 찾는다
-  const [bigHospital, commercialZone, academy2, academy3] = await Promise.all([
+  const [bigHospital, commercialZone, academy2, academy3, market] = await Promise.all([
     searchByKeyword(lng, lat, '종합병원', radius, 15).then((items) => items.filter((p) => /종합병원|대학병원/.test(p.category))),
     fetchCommercialZone(lat, lng),
     academy.length >= 15 ? searchByCategory(lng, lat, 'AC5', radius, 15, 2) : Promise.resolve([] as NearbyPlace[]),
     academy.length >= 15 ? searchByCategory(lng, lat, 'AC5', radius, 15, 3) : Promise.resolve([] as NearbyPlace[]),
+    searchByKeyword(lng, lat, '전통시장', radius, 10).then((items) => items.filter((p) => /시장/.test(p.name))),
   ]);
   const allAcademy = dedupe([...academy, ...academy2, ...academy3]);
   const bigPark = park.filter((p) => /공원$|공원\s|수목원|숲$/.test(p.name) && !/어린이|소공원|쌈지|놀이터|주차장|화장실|입구|정류장/.test(p.name));
@@ -245,5 +248,6 @@ export const fetchNearbyEnvironment = async (
     bigPark: dedupe(bigPark),
     commercialZone,
     academyCluster: academyClusterOf(lat, lng, allAcademy),
+    market: dedupe(market),
   };
 };

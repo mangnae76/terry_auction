@@ -5513,12 +5513,12 @@ const rankConditions = computed(
 const ROOM_TYPES = [
   {
     id: '1', label: '1룸',
-    details: [{ who: '1인가구', kinds: [] }],
+    details: [{ who: '1인가구', kinds: ['청년', '중장년'] }],
     conditions: ['교통', '인프라', '공원'],
   },
   {
     id: '2', label: '2룸',
-    details: [{ who: '1인가구', kinds: [] }, { who: '2인가구', kinds: ['신혼', '중장년'] }],
+    details: [{ who: '1인가구', kinds: ['청년', '중장년'] }, { who: '2인가구', kinds: ['신혼', '중장년'] }],
     conditions: ['교통', '인프라', '공원'],
   },
   {
@@ -5534,7 +5534,9 @@ const ROOM_TYPES = [
 ];
 const roomOpen = ref(false);
 /** 매매수요 조사 맨 위 줄 — 세대구성 · 입지조건에 나올 수 있는 글 전부(상자 폭을 가장 긴 글에 맞춰 둔다) */
-const CMP_WHO_ALL = [...new Set([...ROOM_TYPES.map((r) => r.details.map((d) => d.who).join(' · ')), '룸수를 고르세요'])];
+/** 세대구성 글 — 누가 살지 고르게 하지 않고 다 같이 띄운다(1인가구(청년 · 중장년) · 2인가구(신혼 · 중장년), 2026-11-11 사용자) */
+const whoTextOf = (details: Array<{ who: string; kinds: string[] }>) => details.map((d) => (d.kinds.length ? `${d.who}(${d.kinds.join(' · ')})` : d.who)).join(' · ');
+const CMP_WHO_ALL = [...new Set([...ROOM_TYPES.map((r) => whoTextOf(r.details)), '룸수를 고르세요'])];
 const CMP_COND_ALL = [...new Set([...ROOM_TYPES.map((r) => r.conditions.join(' · ')), '룸수를 고르세요'])];
 /** 1.5룸 · 4룸은 뺐다(2026-11-11 사용자) — 예전에 고른 물건은 2룸 · 3룸으로 본다 */
 const ROOM_ALIAS: Record<string, string> = { '1.5': '2', '4': '3' };
@@ -5584,7 +5586,7 @@ const cmpOn = computed(() => webEmbed && isApartment.value && sonpumMode);
  *  웹 · 아파트 손품조사만. 앱 · 빌라의 실사용자 표는 예전처럼 평수 구간으로 채운다 */
 const cmpConds = computed(() => (cmpOn.value && !selectedRoomType.value ? [] : rankConditions.value));
 /** 세대구성 — 고른 룸수(없으면 평형대)의 가족 */
-const cmpWho = computed(() => ((selectedRoomType.value?.details ?? []) as Array<{ who: string }>).map((d) => d.who).join(' · '));
+const cmpWho = computed(() => whoTextOf((selectedRoomType.value?.details ?? []) as Array<{ who: string; kinds: string[] }>));
 // 거르기(2026-11-11) — 범위(같은 동 · 500m · 1km) · 기간(1년 · 2년) · 평형 폭(±3 · ±5 · ±10㎡) · 거래(매매 · 전세). 고른 값은 새로고침 · 다른 물건에서도 그대로
 type CmpRange = 'dong' | 500 | 1000;
 const CMP_FILTER_KEY = 'son.cmp.filter';
@@ -5667,6 +5669,14 @@ const cmpSortAria = (k: CmpSortKey) => (cmpSortK.value === k ? (cmpSortDir.value
 // ===== 단지 점수(2026-11-11 시안 3) — ① 입지점수(걸어서 몇 분 → 0~100) + 구역 내 개별성 점수 → 종합 · 순위, ② 선정물건 호실 예상가 =====
 /** 입지조건 비중 — 세대구성에 따라(3 · 4인 가족: 초등 30 · 학원가 30 · 인프라 20 · 교통 20). 표에 없는 조건은 20 */
 const CMP_LOC_W: Record<string, number> = { 초등학교: 30, 학원가: 30, 유치원: 30, 인프라: 20, 교통: 20, 공원: 20 };
+/** 룸수(세대구성)마다 입지조건 비중 — 가족은 학교, 1 ~ 2인은 교통(중장년도 섞여 인프라 · 공원도 받친다), 강의 '공원은 가격 영향 작음'(2026-11-11 사용자 확정) */
+const CMP_LOC_W_BY_ROOM: Record<string, Record<string, number>> = {
+  '1': { 교통: 40, 인프라: 35, 공원: 25 },
+  '2': { 교통: 40, 인프라: 35, 공원: 25 },
+  '2b': { 교통: 30, 유치원: 30, 인프라: 25, 공원: 15 },
+  '3': { 초등학교: 35, 학원가: 35, 인프라: 15, 교통: 15 },
+};
+const cmpLocW = (cond: string) => CMP_LOC_W_BY_ROOM[selectedRoomType.value?.id ?? '']?.[cond] ?? CMP_LOC_W[cond] ?? 20;
 /** 거리 → 점수 — 걸어서 5분(400m) 이내 100점, 10분(800m) 80점, 15분(1,200m) 40점, 20분(1,600m) 넘으면 0점. 사이는 직선(도보 1분 80m, 직선거리).
  *  0분 100점이면 바로 앞 학교도 80점대라 만점이 없었다 — 10분이면 괜찮은 입지(2026-11-11 사용자) */
 const cmpDistScore = (m: number) => {
@@ -5798,7 +5808,7 @@ const cmpRows = computed<CmpRow[]>(() => {
     const point = c.mine ? (supRegion.value?.lat ? { lat: supRegion.value.lat, lng: supRegion.value.lng } : null) : nb ? { lat: nb.lat, lng: nb.lng } : null;
     const supply = c.mine ? (mySupplyM2.value ? { lo: mySupplyM2.value, hi: mySupplyM2.value } : null) : cmpSupply.value[cmpKeyOf(c)] ?? null;
     // 입지점수 — 조건마다 거리 점수(1km 안에 없으면 0점)를 세대구성 비중으로. 주변시설을 아직 못 받았으면 null
-    const lw = conds.map((cond) => CMP_LOC_W[cond] ?? 20);
+    const lw = conds.map((cond) => cmpLocW(cond));
     const cut = (cond: string) => (c.mine && cond === '초등학교' && schoolCross.value ? SCHOOL_ROAD_CUT : 1);   // 선정물건이 큰길을 건너 초등학교에 가면 절반
     const loc = env && conds.length ? conds.reduce((a2, cond, i) => a2 + lw[i] * (places[i] ? cmpDistScore(places[i]!.m) * cut(cond) : 0), 0) / lw.reduce((x, y) => x + y, 0) : null;
     const zone = cmpZoneScore(c);
@@ -5986,7 +5996,7 @@ if (typeof window !== 'undefined') { window.addEventListener('keydown', cmpPopEs
 const cmpLocParts = (r: CmpRow) => cmpConds.value.map((cond, i) => {
   const pl = r.places[i];
   const cutBy = r.mine && cond === '초등학교' && schoolCross.value ? SCHOOL_ROAD_CUT : 1;
-  return { cond, pl, score: pl ? cmpDistScore(pl.m) * cutBy : 0, w: CMP_LOC_W[cond] ?? 20, cut: cutBy < 1 };
+  return { cond, pl, score: pl ? cmpDistScore(pl.m) * cutBy : 0, w: cmpLocW(cond), cut: cutBy < 1 };
 });
 const ZONE_ITEMS = computed(() => indivGroups.value[0].items.filter((it) => ZONE_IDS.includes(it.id)));
 /** 평가표 아래 '선정물건에서 직접 고를 것' — 아직 비어 있는 현장 · 수동 칸 */
