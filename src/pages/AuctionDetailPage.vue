@@ -9034,13 +9034,14 @@ const goBack = () => router.back();
           <div class="adp-ind-body">
             <!-- 빌라 개별성 · 호실 개별성 — 넓으면 나란히, 좁으면 위아래 -->
             <div class="adp-ind-pair">
-            <table v-for="g in indivGroups" :key="g.title" class="adp-table adp-ind-table">
+            <table v-for="(g, gi) in indivGroups" :key="g.title" class="adp-table adp-ind-table">
               <colgroup>
                 <col style="width: 96px" /><col /><col style="width: 68px" />
               </colgroup>
               <!-- 칸 이름 줄 — '빌라 개별성 · 호실 개별성' 제목 줄은 없애고 구분 · 내용 · 비율로 (앱·웹).
                    thead 라 표 공통 규칙으로 위 모서리가 둥글다 -->
-              <thead><tr class="adp-ind-head"><th>구분</th><th>내용</th><th>비율</th></tr></thead>
+              <!-- 아파트 구역 내 개별성의 % 는 단지 점수 비중(가격을 바꾸지 않는다) — '비중', 단지 내 개별성은 가격 보정 '비율'(2026-11-11) -->
+              <thead><tr class="adp-ind-head"><th>구분</th><th>내용</th><th>{{ isApartment && gi === 0 ? '비중' : '비율' }}</th></tr></thead>
               <tbody>
                 <tr v-for="item in g.items" :key="item.id">
                   <th :class="['adp-ind-label', { survey: item.survey, auto: INDIV_AUTO.has(item.id) }]" :title="INDIV_AUTO.has(item.id) ? 'PDF · 건축물대장에서 자동으로 채우는 항목' : undefined">{{ item.label }}</th>
@@ -9363,15 +9364,11 @@ const goBack = () => router.back();
               </template>
             </section>
 
-            <!-- ② 선정물건 호실 예상가 — 단지 평균 실거래가 × (1 + 단지 내 개별성 보정 합). 구역 내 개별성은 위 단지 순위에 들어간 값(2026-11-11 시안 3) -->
+            <!-- ② 선정물건 호실 예상가 — 단지 평균 실거래가 × (1 + 단지 내 개별성 보정 합). 구역 내 개별성은 가격을 바꾸지 않아 여기 두지 않는다(같은 %로 보여 헷갈렸다, 2026-11-11) -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box o-unit">
               <div class="cmp-est-h"><h3>선정물건 호실 예상가</h3><small class="cmp-q">같은 단지 안에서 내 호실은?</small>
                 <span class="cmp-est-desc">단지 평균 {{ cmpKind }}가 × (1 + 단지 내 개별성 보정) · 최근 {{ cmpMonths }}개월 · 거래 단추를 따른다</span></div>
               <div class="cmp-two">
-                <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
-                  <thead><tr><th>구역 내 개별성</th><th>내용</th><th>비율</th></tr></thead>
-                  <tbody><tr v-for="item in indivGroups[0].items" :key="item.id"><td>{{ item.label }}</td><td>{{ item.id === 'ind.age' ? (indivValue('ind.age') || '-') : item.id === 'ind.parking' ? indivParkingText : indivDisplay(item) }}</td><td class="n">{{ indivRateOf(item) }}</td></tr></tbody>
-                </table></div></div>
                 <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
                   <thead><tr><th>단지 내 개별성</th><th>내용</th><th>비율</th><th>보정</th></tr></thead>
                   <tbody>
@@ -12105,7 +12102,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .adp-ind-adj.down { color: #1d4ed8; font-weight: 700; }
 .adp-ind-adj.zero { color: #9ca3af; }
 .sup-tbl .adm-table tbody tr.cmp-sum td { background: #f7f9fc; font-weight: 700; }
-.o-unit .cmp-two { margin-bottom: 12px; }
+.o-unit .cmp-two { margin-bottom: 12px; grid-template-columns: minmax(0, 1fr); }
 .cmp-nm-line { display: flex; align-items: center; min-width: 0; }
 .cmp-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }   /* 긴 단지 이름은 칸을 넘으면 …(마우스를 대면 전체 이름) */
 .cmp-tbl td.nm { max-width: 0; }
