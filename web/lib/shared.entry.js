@@ -92,6 +92,8 @@ export { fetchNearbyEnvironment } from '../../src/services/kakaoNearby';
 export { geocodeAddress } from '../../src/services/routeOptimizer';
 /* 경매사례 지도 — 손품조사 시세분석과 같은 지도 · 거리 · 엘베(건축물대장) */
 export { createMapView } from '../../src/services/mapView';
+/* 지도 공통 — 고른 건물(필지) 테두리 · 읍면동 점선 경계(손품조사 지도들과 같게, 2026-11-11) */
+export { parcelShapeOf, dongShapeOf } from '../../src/services/zoning';
 export { distM, simCond, simDefText, SIM_STEPS } from '../../src/services/priceAnalysis';
 export { getBuildingFacts } from '../../src/services/buildingFacts';
 /* 경매사례 지도 오른쪽 도구 막대 — 손품조사 시세분석과 같은 KakaoMapTools(로드뷰 · 지적도 · 재기 · 주변 생활시설 …)를 웹 칸에 띄운다 */

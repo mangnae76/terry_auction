@@ -5895,8 +5895,9 @@ const cmpDraw = () => {
   const rows = cmpRows.value.filter((r) => r.point); const pick = cmpPicked.value;
   // 범위가 지도에서 어디까지인지 — 읍면동이면 법정동 경계, 1km 면 선정물건에서 1km 원(2026-11-11 사용자)
   const me = cmpMePt.value;
-  if (me && cmpRange.value !== 'dong') mv.circle(me, cmpRange.value, { color: '#475569', weight: 1.6, dash: true, fillOpacity: 0 });
-  if (me && cmpRange.value === 'dong') {
+  if (me && cmpRange.value !== 'dong') mv.circle(me, cmpRange.value, { color: '#2b4fd8', weight: 1.6, dash: true, fillOpacity: 0 });
+  // 읍면동 점선 경계는 범위와 상관없이 늘 — 반경 원과 같이 보면 동 경계를 넘는지 보인다(2026-11-11 사용자, 지도 공통)
+  if (me) {
     if (cmpDongShape.value) mv.polygon(cmpDongShape.value, { color: '#475569', weight: 2, dash: true, fillOpacity: 0.02 });
     else if (!cmpDongAsked) { cmpDongAsked = true; void dongShapeOf(me.lat, me.lng).then((v) => { cmpDongShape.value = v; if (v) cmpDraw(); }); }
   }
@@ -9550,7 +9551,7 @@ const goBack = () => router.back();
                   <KakaoMapTools v-if="cmpTools" :k="cmpTools.k" :map="cmpTools.map" :near="cmpMePoint" />
                   <button v-if="!cmpFs" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="cmpFs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
                   <!-- 범례 — 시세분석 지도처럼 왼쪽 아래(2026-11-11) -->
-                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span><span><i class="ring dash" />{{ cmpRange === 'dong' ? '읍면동 경계' : `반경 ${cmpRange / 1000}km` }}</span></div>
+                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span><span><i class="ring dash" />읍면동 경계</span><span v-if="cmpRange !== 'dong'"><i class="ring dash blue" />반경 {{ (cmpRange as number) / 1000 }}km</span></div>
                   <p v-if="!cmpRows.some((r) => r.point)" class="cmp-wait">{{ supLoaded ? '단지 위치를 찾는 중입니다…' : '실거래를 받는 중입니다…' }}</p>
                 </div>
                 <aside v-if="cmpFs" class="cmp-fs-list">
@@ -9660,7 +9661,7 @@ const goBack = () => router.back();
             <!-- 선정물건 호실 예상가 — 시세분석 탭(#sonUnitSlot)으로 옮겨 그린다(2026-11-11 사용자 시안). 기준가 = 시세분석 예상가, × (1 + 개별성 보정) + 수리 금액 -->
             <Teleport v-if="webEmbed && isApartment && sonpumMode" defer to="#sonUnitSlot">
             <section class="adp-dm-block boxed cmp-box o-unit">
-              <div class="cmp-est-h"><h3>선정물건 호실 예상가<span v-if="cmpMineRow" class="cmp-scope-chip">{{ areaPair(cmpMineRow.supply, cmpMineRow.area) }}</span></h3><small class="cmp-q">같은 단지 안에서 내 호실의 가치는?</small>
+              <div class="cmp-est-h unit-h"><span class="unit-tag">보정</span><h3>선정물건 호실 예상가<span v-if="cmpMineRow" class="cmp-scope-chip">{{ areaPair(cmpMineRow.supply, cmpMineRow.area) }}</span></h3><small class="cmp-q">같은 단지 안에서 내 호실의 가치는?</small>
                 <span class="cmp-est-desc"><span class="cmp-desc-hi">기준가 = 위 표 예상 실거래가 · 기준가 × (1 + 개별성 보정) + 수리 금액</span></span></div>
               <div class="cmp-bases one"><div class="cmp-base on"><span class="k">{{ cmpBase.label }}</span><span class="v">{{ cmpEok(cmpBase.value) }}</span><small>{{ cmpBase.note }}</small></div></div>
               <!-- 구역 내 · 단지 내 개별성 — 가로로 나란히(좁으면 위아래, 2026-11-11 사용자) -->
@@ -12377,6 +12378,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-map-legend .dot.me { background: #f05a28; }
 .cmp-map-legend .ring { width: 14px; height: 0; border-top: 2px solid #475569; }
 .cmp-map-legend .ring.dash { border-top-style: dashed; }
+.cmp-map-legend .ring.blue { border-top-color: #2b4fd8; }   /* 반경 원 — 파랑, 읍면동 경계 — 회색 */
 .cmp-map.fs .cmp-map-legend { left: 12px; bottom: 12px; font-size: 13px; }   /* 전체화면 — 왼쪽 끝 아래(목록 밑, 2026-11-11 사용자) */   /* 전체화면 — 떠 있는 왼쪽 목록 옆으로 */
 .cmp-wait { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 13px; color: #6b7280; pointer-events: none; }
 .cmp-map :deep(.cmp-bub) { position: relative; cursor: pointer; }
@@ -12479,6 +12481,12 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .o-unit .cmp-two.pair > .cmp-ind-note { grid-column: 1 / -1; }
 .o-unit .cmp-two.solo > .cmp-ind-note { grid-column: 1 / -1; }   /* 이 단지 거래가 있으면 단지 내 개별성만 */
 .cmp-zone-off { display: flex; gap: 10px; align-items: baseline; margin-bottom: 12px; padding: 10px 14px; border: 1px dashed #cbd5e1; border-radius: 8px; background: #fafbfc; font-size: 12px; color: #6b7280; }   /* 구역 내 개별성 접힘 — 이 단지 거래만 쓸 때 */
+/* 시세분석 탭에 옮겨 그린 호실 예상가 — 위 시세분석 흰 상자(.pa)와 같은 테두리 · 둥글기 · 여백 · 제목 꼴(2026-11-11 사용자 '박스 라인 맞추고') */
+#sonUnitSlot .o-unit { margin: 10px 0 0 !important; padding: 18px 22px 24px !important; background: #fff !important; border: 1px solid #e8ecf3 !important; border-radius: 12px !important; box-shadow: none !important; display: grid; gap: 14px; }
+#sonUnitSlot .o-unit > * { margin-top: 0 !important; margin-bottom: 0 !important; }
+#sonUnitSlot .unit-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#sonUnitSlot .unit-h h3 { margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
+#sonUnitSlot .unit-tag { font-size: 13px; font-weight: 700; color: #2b4fd8; background: #eef2ff; border-radius: 5px; padding: 3px 8px; }   /* 시세분석 '결론 · 입력' 표와 같은 꼴 */
 .cmp-zone-off.warn { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
 .cmp-zone-off b { flex: 0 0 auto; font-size: 14px; font-weight: 800; color: #6b7280; }   /* 기준가 층 거르기 — 같은층 · ±1층 · 전체 */
 @media (max-width: 1100px) { .o-unit .cmp-two.pair { grid-template-columns: minmax(0, 1fr); } }

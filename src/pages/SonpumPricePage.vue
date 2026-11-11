@@ -12,6 +12,7 @@ import {
   type SonPriceOut,
 } from '../services/priceAnalysis';
 import { fetchApartUnits, type ApartUnit } from '../services/vworldApi';
+import { dongShapeOf, parcelShapeOf } from '../services/zoning';
 import { getComplexAreas, type ComplexAreas } from '../services/complexAreas';
 import { areaUnit, aptAreaText } from '../services/areaUnit';
 import { browserCacheGet, browserCachePut } from '../services/browserCache';
@@ -475,6 +476,8 @@ const focus = ref('');
 /** 지도 빨간 점(내 물건) 이름표를 펼쳤나 — 누를 때만 */
 const meOpen = ref(false);
 let mv: MapView | null = null;
+/** 지도 테두리 — 'd:좌표' 읍면동 경계, 'p:좌표' 필지(null = 받는 중 · 없음) */
+const shapes = shallowRef<Record<string, Array<{ lat: number; lng: number }> | null>>({});
 let mvP: Promise<void> | null = null;
 // 카카오맵이면 오른쪽 지도 도구 막대(로드뷰 · 지적도 · 재기 · 검색 …)를 붙인다 — 카카오 물건은 Vue 가 감싸지 않게 markRaw
 const kTools = shallowRef<{ k: unknown; map: unknown } | null>(null);
@@ -556,6 +559,17 @@ const drawMap = () => {
   const m = mySpot.value;
   if (!m) return;
   mv.circle(m, radius.value, { color: '#2b4fd8', weight: 1.6, dash: true, fillOpacity: 0.06 });
+  // 웹 — 읍면동 점선 경계 + 고른 건물(필지) 테두리. 처음엔 선정물건, 점을 누르면 그 건물(매매수요 지도와 같게, 2026-11-11 사용자)
+  if (webEmbed) {
+    const dk = `${m.lat.toFixed(5)},${m.lng.toFixed(5)}`;
+    if (shapes.value[`d:${dk}`]) mv.polygon(shapes.value[`d:${dk}`]!, { color: '#475569', weight: 2, dash: true, fillOpacity: 0.02 });
+    else if (!(`d:${dk}` in shapes.value)) { shapes.value = { ...shapes.value, [`d:${dk}`]: null }; void dongShapeOf(m.lat, m.lng).then((v) => { shapes.value = { ...shapes.value, [`d:${dk}`]: v }; if (v) drawMap(); }); }
+    const g = focus.value ? mapGroups.value.find((x) => x.jibun === focus.value) : null;
+    const p = g ? g.spot : m;
+    const pk = `p:${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
+    if (shapes.value[pk]) mv.polygon(shapes.value[pk]!, { color: g ? '#2b4fd8' : '#e03e3e', weight: 2.4, fillOpacity: 0.08 });
+    else if (!(pk in shapes.value)) { shapes.value = { ...shapes.value, [pk]: null }; void parcelShapeOf(p.lat, p.lng).then((v) => { shapes.value = { ...shapes.value, [pk]: v }; if (v) drawMap(); }); }
+  }
   // 점과 이름표를 한 표식으로 — 줌할 때 이름표가 따로 미끄러져 날아오지 않고 점과 함께 움직인다
   // 웹 — 작은 점 + '주변' 시설 같은 흰 상자(맨 앞 번호). 꼴은 웹 공통(pin-dot · pin-box)으로 경매사례 지도와 같다
   const html = (label: string, no = '') => (webEmbed
@@ -571,6 +585,17 @@ const drawMap = () => {
     const live = webEmbed && !off ? g.list.filter((r) => !isOff(r)) : g.list;
     const lp = live.map((r) => r.price); const lo = Math.min(...lp); const hi = Math.max(...lp);
     const range = lo === hi ? eok(lo) : `${(lo / 1e8).toFixed(2)}~${eok(hi)}`;
+    if (webEmbed) {
+      // 웹 — 매매수요 지도와 같은 말풍선, 이름 · 평균 금액만(등수는 시세분석엔 필요 없다, 2026-11-11 사용자). 누르면 건수 · 거리까지
+      const avg = lp.reduce((a, b) => a + b, 0) / (lp.length || 1);
+      mv!.pin(g.spot, {
+        className: `cmp-bub${on ? ' on' : ''}${off ? ' off' : ''}`,
+        html: `<div class="cb"><b><span class="nm" title="${esc(g.name)}">${esc(g.name)}</span></b><span>${kindF.value} ${eok(avg)}${on ? `<i></i>${live.length}건 · ${g.dist}m` : ''}</span></div>`,
+        onClick: () => { meOpen.value = false; focus.value = on ? '' : g.jibun; },
+        z: on ? 50 : 1,
+      });
+      return;
+    }
     mv!.pin(g.spot, {
       className: `pa-pin${on ? ' on' : ''}${off ? ' off' : ''}`,
       html: on ? html(`<b>${esc(g.name)} ${live.length}건</b><br>${range} · ${g.dist}m`, String(orderOf.value[g.jibun] ?? '')) : dotOnly(String(orderOf.value[g.jibun] ?? '')),
@@ -579,6 +604,17 @@ const drawMap = () => {
     });
   });
   // 내 물건(빨간 점)도 눌렀을 때만 이름표
+  if (webEmbed) {
+    const mp = shownRows.value.filter((r) => r.same && !isOff(r)).map((r) => r.price);
+    const mAvg = mp.length ? mp.reduce((a, b) => a + b, 0) / mp.length : 0;
+    mv.pin(m, {
+      className: 'cmp-bub me',
+      html: `<div class="cb"><b><span class="nm" title="${esc(meName.value)}">${esc(meName.value)}</span></b><span>${mAvg ? `${kindF.value} ${eok(mAvg)}` : '선정물건'}</span></div>`,
+      onClick: () => { focus.value = ''; meOpen.value = !meOpen.value; },
+      z: 1000,
+    });
+    return;
+  }
   mv.pin(m, {
     className: `pa-pin me${meOpen.value ? ' on' : ''}`,
     html: meOpen.value ? html(`<b>${meName.value}</b>${sameCount.value ? `<br>${webEmbed ? `<b>같은건물 ${sameCount.value}건</b>` : `같은 건물 ${sameCount.value}건`}` : ''}`) : dotOnly(),   /* 웹 — '같은건물' 붙여 쓰고 굵게 */
@@ -1054,6 +1090,21 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .map .legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .map-msg { position: absolute; inset: 0; z-index: 500; margin: 0; display: grid; place-items: center; color: var(--sub); font-size: 13px; background: rgba(255, 255, 255, .6); }
 .map :deep(.pa-pin) { position: relative; }
+/* 웹 말풍선 — 매매수요 단지 입지비교 지도와 같은 꼴(이름 위 · 금액 아래 파란 띠) */
+.map :deep(.cmp-bub) { position: relative; cursor: pointer; }
+.map :deep(.cmp-bub .cb) { position: absolute; left: -10px; bottom: 9px; display: grid; min-width: 78px; border: 1.5px solid #2b4fd8; border-radius: 4px; background: #fff; box-shadow: 0 2px 6px rgba(17, 24, 39, .22); text-align: center; white-space: nowrap; }
+.map :deep(.cmp-bub .cb b) { display: flex; align-items: center; justify-content: center; padding: 3px 8px 2px; font-size: 12px; font-weight: 400; color: #18213a; }
+.map :deep(.cmp-bub .cb b .nm) { max-width: 7em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.map :deep(.cmp-bub .cb > span) { display: flex; align-items: center; justify-content: center; padding: 2px 8px 3px; background: #2b4fd8; color: #fff; font-size: 12px; font-weight: 400; }
+.map :deep(.cmp-bub .cb > span i) { width: 1px; height: 10px; margin: 0 6px; background: rgba(255, 255, 255, .55); }
+.map :deep(.cmp-bub .cb::after) { content: ''; position: absolute; left: 4px; bottom: -9px; border: 5px solid transparent; border-top: 5px solid #2b4fd8; border-left: 5px solid #2b4fd8; }
+.map :deep(.cmp-bub.on .cb) { border-width: 2.5px; z-index: 2; }
+.map :deep(.cmp-bub.off .cb) { border-color: #b8bfcc; }
+.map :deep(.cmp-bub.off .cb > span) { background: #b8bfcc; }
+.map :deep(.cmp-bub.off .cb::after) { border-top-color: #b8bfcc; border-left-color: #b8bfcc; }
+.map :deep(.cmp-bub.me .cb) { border-color: #e03e3e; }
+.map :deep(.cmp-bub.me .cb > span) { background: #e03e3e; }
+.map :deep(.cmp-bub.me .cb::after) { border-top-color: #e03e3e; border-left-color: #e03e3e; }
 .map :deep(.pa-pin .dot) { position: absolute; left: -12px; top: -12px; width: 24px; height: 24px; border-radius: 50%; background: #2b4fd8; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(17, 24, 39, .3); cursor: pointer; display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 800; font-style: normal; line-height: 1; }   /* 안에 임장 순서 번호 */
 .map :deep(.pa-pin.on .dot) { left: -22px; top: -22px; width: 44px; height: 44px; font-size: 18px; border-width: 3px; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }   /* 누른 점(지도 · 목록) — 두 배 가까이(2026-11-10) */
 .map :deep(.pa-pin.off .dot) { background: #b8bfcc; }   /* 그 건물 거래를 다 제외 — 회색 */

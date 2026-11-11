@@ -587,6 +587,7 @@ button { cursor: pointer; }
    제목은 아이콘 + 16px, 카드 위 끝 → 첫 제목 15, 제목 → 상자 16, 상자 → 다음 제목 16, 상자 176~1424 */
 /* 시세조사 카드 ↔ 아래 카드 사이 — 수요분석 탭 카드 사이와 같은 8 (시세조사 화면 아래 여백을 걷고, .son 줄 간격 10 에서 2 를 당긴다) */
 .app-market[data-s="son"] .son-price :is(.adm-shell, .adm-body) { padding-bottom: 0 !important; margin-bottom: 0 !important; }
+.app-market[data-s="son"] #sonUnitSlot { margin-top: 0 !important; padding-top: 0 !important; }   /* 호실 예상가 — 위 시세분석 상자와 10px(시세분석 상자 사이 간격과 같게) */
 #sonNaverSlot { margin-top: -2px; }
 :is(#sonNaverSlot, #sonConcSlot, #sonAskSlot) .adp-card { margin-top: 0 !important; }
 /* 위 시세조사 카드와 같은 둥글기 · 테두리(카드 14, 안 상자 10, 표 8), 표 끝선은 실거래 리스트 표와 같은 191~1409(상자 안쪽 14) */
@@ -1315,6 +1316,21 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 /* 지도 핀 — 작은 점 + 그 오른쪽에 '주변' 시설과 같은 흰 상자, 맨 앞에 번호(손품조사 시세분석 · 경매사례 같은 꼴, 2026-11-07) */
 :is(.sx-map, .pa .map, .cmp-map) .pa-pin { position: relative; }
 :is(.sx-map, .pa .map, .cmp-map) .pa-pin .pin-dot { position: absolute; left: -6px; top: -6px; width: 12px; height: 12px; border-radius: 50%; background: #2b4fd8; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(17, 24, 39, .35); }
+/* 매각분석 지도 말풍선 — 매매수요 · 시세분석 지도와 같은 꼴(이름 위 · 금액 아래 파란 띠, 2026-11-11) */
+.sx-map .cmp-bub { position: relative; cursor: pointer; }
+.sx-map .cmp-bub .cb { position: absolute; left: -10px; bottom: 9px; display: grid; min-width: 78px; border: 1.5px solid #2b4fd8; border-radius: 4px; background: #fff; box-shadow: 0 2px 6px rgba(17, 24, 39, .22); text-align: center; white-space: nowrap; }
+.sx-map .cmp-bub .cb b { display: flex; align-items: center; justify-content: center; padding: 3px 8px 2px; font-size: 12px; font-weight: 400; color: #18213a; }
+.sx-map .cmp-bub .cb b .nm { max-width: 7em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sx-map .cmp-bub .cb > span { display: flex; align-items: center; justify-content: center; padding: 2px 8px 3px; background: #2b4fd8; color: #fff; font-size: 12px; font-weight: 400; }
+.sx-map .cmp-bub .cb > span i { width: 1px; height: 10px; margin: 0 6px; background: rgba(255, 255, 255, .55); }
+.sx-map .cmp-bub .cb::after { content: ''; position: absolute; left: 4px; bottom: -9px; border: 5px solid transparent; border-top: 5px solid #2b4fd8; border-left: 5px solid #2b4fd8; }
+.sx-map .cmp-bub.on .cb { border-width: 2.5px; z-index: 2; }
+.sx-map .cmp-bub.off .cb { border-color: #b8bfcc; }
+.sx-map .cmp-bub.off .cb > span { background: #b8bfcc; }
+.sx-map .cmp-bub.off .cb::after { border-top-color: #b8bfcc; border-left-color: #b8bfcc; }
+.sx-map .cmp-bub.me .cb { border-color: #e03e3e; }
+.sx-map .cmp-bub.me .cb > span { background: #e03e3e; }
+.sx-map .cmp-bub.me .cb::after { border-top-color: #e03e3e; border-left-color: #e03e3e; }
 :is(.sx-map, .pa .map, .cmp-map) .pa-pin.on .pin-box { left: 18px; }   /* 커진 점에 이름표가 겹치지 않게 */
 :is(.sx-map, .pa .map, .cmp-map) .pa-pin .pin-box { position: absolute; left: 10px; top: 0; transform: translateY(-50%); display: flex; align-items: center; gap: 6px; padding: 3px 8px 3px 3px; background: #fff; border: 1.5px solid #2b4fd8; border-radius: 6px; box-shadow: 0 1px 4px rgba(17, 24, 39, .18); white-space: nowrap; font-size: 12px; line-height: 1.3; color: #18213a; text-align: left; cursor: pointer; }
 :is(.sx-map, .pa .map, .cmp-map) .pa-pin .pin-box .no { flex: none; display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 4px; box-sizing: border-box; border-radius: 10px; background: #2b4fd8; color: #fff; font-style: normal; font-size: 12px; font-weight: 800; }
@@ -7406,6 +7422,13 @@ span.cal-day.has { cursor: help; }
     }).sort((x, y) => (x.dist ?? 1e12) - (y.dist ?? 1e12)).map((g, i) => ({ ...g, no: i + 1 }));
     SXG.groups = groups;
     if (meSpot) mv.circle(meSpot, SXM.radius, { color: '#2b4fd8', weight: 1.6, dash: true, fillOpacity: 0.06 });
+    /* 읍면동 점선 경계 + 고른 건물(필지) 테두리 — 처음엔 경매물건, 점을 누르면 그 건물(손품조사 지도들과 같게, 2026-11-11 사용자) */
+    SXG.shapes = SXG.shapes || {};
+    const shapeOf = (key, fn) => { if (SXG.shapes[key]) return SXG.shapes[key]; if (!(key in SXG.shapes) && fn) { SXG.shapes[key] = null; fn().then((v) => { SXG.shapes[key] = v; if (v) sxDrawMap(); }).catch(() => {}); } return null; };
+    const T = CLOUD.T;
+    if (meSpot && T && T.dongShapeOf) { const d = shapeOf(`d:${meSpot.lat.toFixed(5)},${meSpot.lng.toFixed(5)}`, () => T.dongShapeOf(meSpot.lat, meSpot.lng)); if (d) mv.polygon(d, { color: '#475569', weight: 2, dash: true, fillOpacity: 0.02 }); }
+    { const fg = SXG.focus ? groups.find((g) => g.k === SXG.focus) : null; const pp = fg ? fg.p : meSpot;
+      if (pp && T && T.parcelShapeOf) { const sh = shapeOf(`p:${pp.lat.toFixed(6)},${pp.lng.toFixed(6)}`, () => T.parcelShapeOf(pp.lat, pp.lng)); if (sh) mv.polygon(sh, { color: fg ? '#2b4fd8' : '#e03e3e', weight: 2.4, fillOpacity: 0.08 }); } }
     /* 점과 이름표를 한 표식으로 — 줌할 때 이름표가 점과 함께 움직인다(시세분석과 같게) */
     const html = (label, no = '') => `<i class="pin-dot"></i><span class="pin-box">${no ? `<em class="no">${no}</em>` : ''}<span class="tx">${label}</span></span>`;   /* 손품조사 시세분석 지도와 같은 상자 꼴 */
     /* 평소엔 점만 — 이름표(주소 · 금액)는 누른 점 하나에만(지도가 무거워지지 않게, 시세분석과 같다 2026-11-10) */
@@ -7414,14 +7437,18 @@ span.cal-day.has { cursor: help; }
       const on = SXG.focus === g.k;
       const sub = [g.range, g.dist != null ? `${g.dist.toLocaleString('ko-KR')}m` : ''].filter(Boolean).join(' · ');
       const off = g.list.every((r) => sxIsOff(r));   /* 그 건물 매각을 다 '제외'하면 핀도 회색(시세분석과 같게) */
-      mv.pin(g.p, { className: `pa-pin${on ? ' on' : ''}${off ? ' off' : ''}`, html: on ? html(`<b>${esc(g.name)} ${g.list.length}건</b>${sub ? `<br>${sub}` : ''}`, String(g.no)) : dotOnly, onClick: () => {
+      /* 말풍선 — 매매수요 지도와 같은 꼴, 이름 · 평균 매각가만(순위 없음). 누르면 건수 · 거리까지(2026-11-11 사용자) */
+      const pr = g.list.map((r) => Number(r['매각가'])).filter((v) => v > 0); const avg = pr.length ? pr.reduce((x, y) => x + y, 0) / pr.length : 0;
+      const bub = `<div class="cb"><b><span class="nm" title="${esc(g.name)}">${esc(g.name)}</span></b><span>${avg ? `매각 ${(avg / 1e8).toFixed(2)}억` : '매각'}${on ? `<i></i>${g.list.length}건${g.dist != null ? ` · ${g.dist.toLocaleString('ko-KR')}m` : ''}` : ''}</span></div>`;
+      mv.pin(g.p, { className: `cmp-bub${on ? ' on' : ''}${off ? ' off' : ''}`, html: bub, onClick: () => {
         /* 지역으로이고 기준이 없으면 — 그 지번의 가장 최근 매각을 기준으로 */
         if (S.route === 'market' && saleMode === 'region' && !sxRef) { const r = [...g.list].sort((a, b) => String(b['매각일'] || '').localeCompare(String(a['매각일'] || '')))[0]; if (r) { sxSetRef(r); return; } }
         SXG.meOpen = false; SXG.focus = on ? '' : g.k; sxDrawMap(); sxPaintList();   /* 이름표는 누른 점 하나만 */
       }, z: on ? 50 : 1 });
     });
     /* 빨간 점(경매물건 · 기준물건)도 눌렀을 때만 이름표 */
-    if (meSpot) mv.pin(meSpot, { className: `pa-pin me${SXG.meOpen ? ' on' : ''}`, html: SXG.meOpen ? html(`<b>${esc(me && me.__ref ? `기준물건 ${me.caseNo}` : ((me && me.bld) || '경매물건'))}</b>${same ? `<br><b>같은건물 ${same}건</b>` : ''}`) : dotOnly, onClick: () => { const was = SXG.focus; SXG.focus = ''; SXG.meOpen = !SXG.meOpen; sxDrawMap(); if (was) sxPaintList(); }, z: 1000 });
+    /* 빨간 말풍선(경매물건 · 기준물건) — 이름만, 아래 띠에 같은 건물 매각 건수 */
+    if (meSpot) mv.pin(meSpot, { className: 'cmp-bub me', html: `<div class="cb"><b><span class="nm">${esc(me && me.__ref ? `기준물건 ${me.caseNo}` : ((me && me.bld) || '경매물건'))}</span></b><span>${me && me.__ref ? '기준물건' : '경매물건'}${same ? `<i></i>같은건물 ${same}건` : ''}</span></div>`, onClick: () => { const was = SXG.focus; SXG.focus = ''; SXG.meOpen = !SXG.meOpen; sxDrawMap(); if (was) sxPaintList(); }, z: 1000 });
     if (SXG.tools) SXG.tools.setNear(meSpot || null);
     /* 내 물건 · 반경이 바뀔 때만 다시 맞춘다(지도를 옮겨 둔 것을 함부로 되돌리지 않게) */
     const fk = `${saleItemId}|${sxRef ? sxRowKey(sxRef) : ''}|${SXM.radius}|${meSpot ? `${meSpot.lat},${meSpot.lng}` : groups.length ? 'pts' : ''}`;
