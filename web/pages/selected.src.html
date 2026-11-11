@@ -6696,7 +6696,9 @@ span.cal-day.has { cursor: help; }
     const yearOnly = T ? T.headMetaLineOf({ ...a, buildingAreaM2: 0 }, new Date().getFullYear()) : '';
     const areaOnly = T ? T.headMetaLineOf({ ...a, approvalDate: '', buildingHeader: { ...(a.buildingHeader || {}), approvalDate: '' } }, new Date().getFullYear()) : '';
     const apt = isAptItem(a);
-    const areaText = apt ? aptAreaOf(it, a) : (areaOnly ? `전용 ${areaOnly}` : '');
+    /* 아파트는 무엇의 면적인지 앞에 '공급(전용)'을 적는다(2026-11-11 사용자). 공급을 몰라 '전용 …'으로 나오면 그대로 */
+    const aptArea = apt ? aptAreaOf(it, a) : '';
+    const areaText = apt ? (aptArea && !/^전용/.test(aptArea) ? `공급(전용) ${aptArea}` : aptArea) : (areaOnly ? `전용 ${areaOnly}` : '');
     const metaText = [yearOnly, areaText].filter(Boolean).join(' · ');
     const stage = T && CLOUD.raw.has(it.id) ? T.stageLabelOf(a) : stageLabel(it);
     const hot = stage === '입찰진행'; const done = stage === '낙찰' || stage === '매도'; const off = stage === '유찰' || /취소/.test(stage);
