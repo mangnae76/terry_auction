@@ -5622,6 +5622,8 @@ const cmpKeyOf = (c: { mine: boolean; umdNm: string; jibun: string }) => (c.mine
 // 면적 글 — 아파트는 공급면적 먼저, 괄호 안 전용은 숫자만('83.17㎡ (59.98)' · '25.2평 (18.1)'). 단위는 손품조사 탭 줄 단추(sonAreaUnit)
 // 단위는 고정카드 '↻ 평 / ↻ ㎡' 단추 하나(services/areaUnit) — 모든 탭이 같이 바뀐다
 const sonAreaUnit = areaUnit;
+/** 이름표 앞 평형 — 공급 평 반올림 + 괄호 전용 평('35평 (25.5)', 2026-11-11 사용자). 공급을 모르면 면적 글 그대로 */
+const pyPair = (supply: { lo: number; hi: number } | null, exclusive: number) => (supply?.lo ? `${Math.round(supply.lo / 3.305785)}평 (${(exclusive / 3.305785).toFixed(1)})` : aptAreaText(supply, exclusive, 'py'));
 const areaPair = (supply: { lo: number; hi: number } | null, exclusive: number, unit?: 'm2' | 'py') => aptAreaText(supply, exclusive, unit ?? areaUnit.value);
 /** 단지마다 공급면적 — 건축물대장 전유공용(단지 문서 aptComplexes 에 두고 같이 쓴다). 전용이 같은 호실들의 공급 범위 */
 const cmpSupply = ref<Record<string, { lo: number; hi: number } | null>>({});
@@ -6108,10 +6110,10 @@ const cmpUnitStd = computed(() => {
 const cmpBase = computed(() => {
   const st = cmpUnitStd.value;
   const me = cmpRows.value.find((r) => r.mine);
-  const py = me?.supply ? `${Math.round(me.supply.lo / 3.305785)}평 ` : '';
+  const py = me ? `${pyPair(me.supply, me.area)} ` : '';
   if (st) {
     const where = st.std ? `기준층(4층 ~ ${st.top ? `${st.top - 1}층` : '탑층 아래'})` : '전체 층';
-    return { label: `${py}해당평형 ${st.std ? '기준층 ' : ''}${cmpKind.value}가`, value: st.value, note: `${me ? areaPair(me.supply, me.area) : ''} · 최근 ${cmpMonths.value}개월 ${where} ${st.n}건 중간값` };
+    return { label: `${py}해당평형 ${st.std ? '기준층 ' : ''}${cmpKind.value}가`, value: st.value, note: `최근 ${cmpMonths.value}개월 ${where} ${st.n}건 중간값` };
   }
   const ra = cmpRateEst.value;
   if (cmpKind.value === '매매' && ra) return { label: '전세가율로 본 매매가', value: ra.sale, note: `해당평형 매매 거래가 없어 — 전세 평균 ÷ ${ra.similar ? '연식 ±5년' : ''} 이웃 ${ra.n}곳 전세가율 ${Math.round(ra.rate)}%` };
@@ -9587,7 +9589,7 @@ const goBack = () => router.back();
                   <!-- 단지를 고르기 전엔 동 전체(평균 · 평당가 · 건수 · 단지 수), 고르면 그 단지(중간값 · 최저 · 최고 · 면적까지). 칸 자리는 그대로 — 흔들리지 않게 -->
                   <template v-if="cmpPick">
                   <!-- 단지를 고르면 그 단지 '같은 평형(전용면적이 같은 거래)'만의 평균 — 단지 전체로 읽히지 않게 면적을 적는다(2026-11-11 사용자) -->
-                  <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · 해당평형</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.avg) : '-' }}</span><span class="s">{{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '' }}</span></div>
+                  <div class="cmp-tile key"><span class="k">{{ cmpPicked ? `${pyPair(cmpPicked.supply, cmpPicked.area)} ` : '' }}해당평형 평균 {{ cmpKind }}가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.avg) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">중간값</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.med) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">최저가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.min) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">최고가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.max) : '-' }}</span></div>
