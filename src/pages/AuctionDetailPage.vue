@@ -12454,7 +12454,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-fs-places > span.z { grid-template-columns: 6.4em minmax(0, 1fr) auto; }   /* 개별성 — 아이콘 없이 이름 · 값 · 점수 */
 .cmp-fs-places .sc { font-style: normal; font-size: 13px; color: #111827; }
 .cmp-fs-pt { display: flex; align-items: center; gap: 0; margin: 0 0 4px; padding-bottom: 8px; border-bottom: 1px solid #eef1f6; }
-.cmp-fs-pt > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 800; color: #111827; }
+.cmp-fs-places .cmp-fs-pt > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 800; color: #111827; }
 .cmp-fs-pt em { margin-left: auto; padding-left: 8px; font-style: normal; font-size: 12.5px; color: #6b7280; white-space: nowrap; }
 .cmp-fs-pt em b { font-size: 15px; font-weight: 800; color: #111827; }
 .cmp-fs-sep { display: block; height: 1px; margin: 4px 0; background: #eef1f6; }
