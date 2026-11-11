@@ -9515,18 +9515,19 @@ const goBack = () => router.back();
                   <table class="adm-table cmp-tbl">
                     <colgroup><col style="width: 200px" /></colgroup>
                     <thead><tr>
-                      <th>단지<small>(공급(전용))</small></th><th :aria-sort="cmpSortAria('year')" @click="cmpSortBy('year')">연식<i :class="['sdir', { on: cmpSortK === 'year' }]" aria-hidden="true">{{ cmpSortK === 'year' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(건축년도)</small></th>
-                      <th>입지<small>거리</small></th><th>개별성<small>구역 내</small></th><th :aria-sort="cmpSortAria('tot')" @click="cmpSortBy('tot')">종합<i :class="['sdir', { on: cmpSortK === 'tot' }]" aria-hidden="true">{{ cmpSortK === 'tot' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>입지 60 · 개별성 40</small></th><th>순위</th><th :aria-sort="cmpSortAria('sale')" @click="cmpSortBy('sale')">평균 매매가<i :class="['sdir', { on: cmpSortK === 'sale' }]" aria-hidden="true">{{ cmpSortK === 'sale' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th :aria-sort="cmpSortAria('jeonse')" @click="cmpSortBy('jeonse')">평균 전세가<i :class="['sdir', { on: cmpSortK === 'jeonse' }]" aria-hidden="true">{{ cmpSortK === 'jeonse' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th>전용 평당가<small>({{ cmpKind }})</small></th><th>전세가율</th>
+                      <th>단지<small>(공급(전용))</small></th>
+                      <th>입지<small>100점 · 거리</small></th><th>개별성<small>100점 · 구역 내</small></th><th :aria-sort="cmpSortAria('tot')" @click="cmpSortBy('tot')">종합<i :class="['sdir', { on: cmpSortK === 'tot' }]" aria-hidden="true">{{ cmpSortK === 'tot' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>100점 · 입지 60 · 개별성 40</small></th><th>순위</th><th :aria-sort="cmpSortAria('year')" @click="cmpSortBy('year')">연식<i :class="['sdir', { on: cmpSortK === 'year' }]" aria-hidden="true">{{ cmpSortK === 'year' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(건축년도)</small></th><th :aria-sort="cmpSortAria('sale')" @click="cmpSortBy('sale')">평균 매매가<i :class="['sdir', { on: cmpSortK === 'sale' }]" aria-hidden="true">{{ cmpSortK === 'sale' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th :aria-sort="cmpSortAria('jeonse')" @click="cmpSortBy('jeonse')">평균 전세가<i :class="['sdir', { on: cmpSortK === 'jeonse' }]" aria-hidden="true">{{ cmpSortK === 'jeonse' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th>전용 평당가<small>({{ cmpKind }})</small></th><th>전세가율</th>
                     </tr></thead>
                     <tbody>
                       <tr v-for="r in cmpRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine, on: cmpIsOn(r) }]" tabindex="0" @click="cmpToggle(cmpKeyOf(r))" @keydown.enter="cmpToggle(cmpKeyOf(r))">
                         <td class="nm"><span class="cmp-nm-line"><span v-if="r.mine" class="cmp-tag">선정물건</span><span class="cmp-nm" :title="r.name || r.jibun">{{ r.name || r.jibun }}</span></span><small class="sup-tbl-sub">{{ areaPair(r.supply, r.area) }}</small></td>
-                        <td class="n">{{ r.buildYear ? `${r.buildYear}년` : '-' }}</td>
                         <!-- 점수를 누르면 계산 내역 팝업(조건별 등수 칸은 팝업으로, 2026-11-11 시안) -->
                         <td class="n"><button type="button" class="cmp-sc" :aria-label="`${r.name || r.jibun} 입지 점수 계산 보기`" @click.stop="cmpPopOpen('loc', r, $event)">{{ cmpScore(r.loc) }}</button></td>
                         <td class="n"><button type="button" class="cmp-sc" :aria-label="`${r.name || r.jibun} 개별성 점수 계산 보기`" @click.stop="cmpPopOpen('zone', r, $event)">{{ cmpScore(r.zone) }}</button></td>
                         <td class="n"><button type="button" class="cmp-sc big" :aria-label="`${r.name || r.jibun} 종합 점수 계산 보기`" @click.stop="cmpPopOpen('tot', r, $event)">{{ cmpScore(r.tot) }}</button></td>
                         <td class="n"><span v-if="cmpRankOf.get(cmpKeyOf(r))" :class="['cmp-rk', { r1: cmpRankOf.get(cmpKeyOf(r)) === 1 }]">{{ cmpRankOf.get(cmpKeyOf(r)) }}</span><template v-else>-</template></td>
+                        <!-- 연식은 시세 묶음 앞(순위 묶음 · 시세 묶음으로 나눈다, 2026-11-11) -->
+                        <td class="n">{{ r.buildYear ? `${r.buildYear}년` : '-' }}</td>
                         <!-- 고른 거래 쪽 평균을 굵게. 중간값은 고른 거래(매매 · 전세)의 가운데 값 -->
                         <td class="n amt"><b v-if="cmpKind === '매매'">{{ cmpMoney(r.saleAvg) }}</b><template v-else>{{ cmpMoney(r.saleAvg) }}</template></td>
                         <td class="n amt"><b v-if="cmpKind === '전세'">{{ cmpMoney(r.jeonseAvg) }}</b><template v-else>{{ cmpMoney(r.jeonseAvg) }}</template></td>
@@ -9580,7 +9581,7 @@ const goBack = () => router.back();
                           </tr>
                         </tbody>
                       </table></div></div>
-                      <p class="cmp-formula">걸어서 0분 100점 → 15분 0점(분당 {{ WALK_M_PER_MIN }}m 직선거리). 조건 점수 × 비중 ÷ 비중 합<template v-if="cmpPopRow.mine"> · 큰길을 건너면 초등학교 점수 절반</template><br>입지 점수 <b>{{ cmpScore(cmpPopRow.loc) }}</b></p>
+                      <p class="cmp-formula">걸어서 0분 100점 → 15분 0점(분당 {{ WALK_M_PER_MIN }}m 직선거리). 조건 점수 × 비중 ÷ 비중 합<template v-if="cmpPopRow.mine"> · 큰길을 건너면 초등학교 점수 절반</template><br>입지 점수 <b>{{ cmpScore(cmpPopRow.loc) }}</b> / 100</p>
                     </template>
                     <template v-else-if="cmpPop.kind === 'zone'">
                       <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
@@ -9603,10 +9604,10 @@ const goBack = () => router.back();
                           <tr><td class="cmp-ind-nm auto">연식</td><td class="lft cmp-ind-ct"><b>{{ cmpPopRow.buildYear ? `${cmpPopRow.buildYear}년` : '-' }}</b><small class="cmp-auto">국토부 실거래</small></td><td class="n">{{ cmpZoneParts(cmpPopRow).has('ind.age') ? Math.round(cmpZoneParts(cmpPopRow).get('ind.age')!.v) : '-' }}</td><td class="n">{{ Math.round(Math.abs((rateOf('ind.age')[0] + rateOf('ind.age')[1]) / 2)) || 25 }}%</td></tr>
                         </tbody>
                       </table></div></div>
-                      <p class="cmp-formula"><template v-if="cmpPopRow.mine">칸 점수 × 비중 ÷ 비중 합. 비중은 점수 무게이고 가격에는 들어가지 않습니다. 비중은 눌러서 바꿀 수 있습니다(파란 숫자가 고친 값)</template><template v-else>다른 단지는 건축물대장 값이 없어 연식만으로 계산합니다</template><br>개별성 점수 <b>{{ cmpScore(cmpPopRow.zone) }}</b></p>
+                      <p class="cmp-formula"><template v-if="cmpPopRow.mine">칸 점수 × 비중 ÷ 비중 합. 비중은 점수 무게이고 가격에는 들어가지 않습니다. 비중은 눌러서 바꿀 수 있습니다(파란 숫자가 고친 값)</template><template v-else>다른 단지는 건축물대장 값이 없어 연식만으로 계산합니다</template><br>개별성 점수 <b>{{ cmpScore(cmpPopRow.zone) }}</b> / 100</p>
                     </template>
                     <template v-else>
-                      <p class="cmp-formula">입지 {{ cmpScore(cmpPopRow.loc) }} × 60% + 개별성 {{ cmpScore(cmpPopRow.zone) }} × 40%<br>종합 점수 <b>{{ cmpScore(cmpPopRow.tot) }}</b><template v-if="cmpRankOf.get(cmpKeyOf(cmpPopRow))"> · {{ cmpRankOf.get(cmpKeyOf(cmpPopRow)) }}위 / {{ cmpRankOf.size }}곳</template></p>
+                      <p class="cmp-formula">입지 {{ cmpScore(cmpPopRow.loc) }} × 60% + 개별성 {{ cmpScore(cmpPopRow.zone) }} × 40%<br>종합 점수 <b>{{ cmpScore(cmpPopRow.tot) }}</b> / 100<template v-if="cmpRankOf.get(cmpKeyOf(cmpPopRow))"> · {{ cmpRankOf.get(cmpKeyOf(cmpPopRow)) }}위 / {{ cmpRankOf.size }}곳</template></p>
                       <p class="cmp-ind-note">입지는 어디에 있나, 개별성은 단지 자체가 어떤가입니다. 둘을 합쳐 단지 순위를 매기고, 가격은 ③ 호실 예상가에서 정합니다.</p>
                     </template>
                   </div>
