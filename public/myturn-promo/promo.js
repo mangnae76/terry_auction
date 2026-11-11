@@ -15,7 +15,7 @@ const backOut = (x, s = 1.7) => 1 + (s + 1) * Math.pow(x - 1, 3) + s * Math.pow(
 const IMG = {}; const SHOT = { list: '53eb5d72dbedcf14716dc675474e1f72', info: 'f538ce26245556b86f18e8e3bec69984', check: '74c80b031850a5a3008625a222d77b0e', bid: 'bid_stage', route: 'route_multi', alarm: 'd38a0c761a697d916f83f5b34bb5434f', fund: 'fund_filled', field: 'field_detail_done', tamun: 'field_tamun_done' };
 // ---------- logo
 const LG = LOGO; const PP = { sil: new Path2D(LG.sil), top: new Path2D(LG.top), left: new Path2D(LG.left), right: new Path2D(LG.right), tri: new Path2D(LG.tri) };
-const LET = LG.letters.map(l => ({ g: l.g, p: new Path2D(l.d) })); const [LCX, LCY, LR] = LG.circle;
+const LET = LG.letters.filter(l => l.g === 'my' || l.g === 'turn').map(l => ({ g: l.g, p: new Path2D(l.d) })); /* CI 2026-11-12 — AUCTION 글자 뺌(MYTURN 만) */ const [LCX, LCY, LR] = LG.circle;
 function drawMark() { ctx.fillStyle = BL; ctx.beginPath(); ctx.arc(LCX, LCY, LR, 0, 7); ctx.fill(); drawDice(); }
 function drawDice(ts = 1) {   // the dice alone (design units); ts = play-triangle press scale
   const g1 = ctx.createLinearGradient(622, 0, 1532, 0); g1.addColorStop(0, '#EB7501'); g1.addColorStop(.56, '#F49220'); g1.addColorStop(1, '#F18A19');
