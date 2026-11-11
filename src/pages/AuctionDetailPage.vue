@@ -6036,21 +6036,6 @@ const cmpPerPy = (r: { area: number; saleAvg: number; jeonseAvg: number }, kind 
 };
 /** 전세가율(%) — 평균 전세가 ÷ 평균 매매가 */
 const cmpJeonseRate = (r: { saleAvg: number; jeonseAvg: number }) => (r.saleAvg > 0 && r.jeonseAvg > 0 ? (r.jeonseAvg / r.saleAvg) * 100 : 0);
-/** 실거래가 적을 때 적정 시세(강의 2026-11-11) — ① 순위로: 종합 순위 바로 위 · 아래 단지의 전용 평당가 사이(종합 점수 비율로 자리 잡기) × 선정물건 전용 평
- *  ② 전세가율로(매매만): 연식 ±5년 이웃 단지 전세가율 평균으로 선정물건 평균 전세가 ÷ 전세가율 */
-const cmpRankEst = computed(() => {
-  const me = cmpRows.value.find((r) => r.mine); if (!me || me.tot === null || !(me.area > 0)) return null;
-  const others = cmpRows.value.filter((r) => !r.mine && r.tot !== null && cmpPerPy(r) > 0);
-  const up = others.filter((r) => (r.tot ?? 0) >= (me.tot ?? 0)).sort((a, b) => (a.tot ?? 0) - (b.tot ?? 0))[0];
-  const dn = others.filter((r) => (r.tot ?? 0) < (me.tot ?? 0)).sort((a, b) => (b.tot ?? 0) - (a.tot ?? 0))[0];
-  if (!up && !dn) return null;
-  const py = me.area / 3.305785;
-  const upPy = up ? cmpPerPy(up) : 0; const dnPy = dn ? cmpPerPy(dn) : 0;
-  let mid = upPy || dnPy;
-  if (up && dn && (up.tot ?? 0) > (dn.tot ?? 0)) mid = dnPy + (((me.tot ?? 0) - (dn.tot ?? 0)) / ((up.tot ?? 0) - (dn.tot ?? 0))) * (upPy - dnPy);
-  // 한쪽만 있으면(선정물건이 1위 · 꼴찌) 사이 값이 아니라 '이상 · 이하' 한계값만 — 기준가로는 쓰지 않는다
-  return { up, dn, upPy, dnPy, mid: mid * py, side: up && dn ? 'between' as const : dn ? 'above' as const : 'below' as const };
-});
 const cmpRateEst = computed(() => {
   const me = cmpRows.value.find((r) => r.mine); if (!me || !(me.jeonseAvg > 0)) return null;
   const all = cmpRows.value.filter((r) => !r.mine && cmpJeonseRate(r) > 0);
@@ -6062,18 +6047,15 @@ const cmpRateEst = computed(() => {
 });
 const cmpUnitActual = computed(() => { const r = cmpRows.value.find((x) => x.mine); return r ? (cmpKind.value === '매매' ? r.saleAvg : r.jeonseAvg) : 0; });
 /** 기준가 세 가지 — 카드로 나란히 놓고 고른다(2026-11-11 시안). 고른 것은 다른 물건에서도 그대로(값이 없으면 있는 것으로) */
-type CmpBaseId = 'avg' | 'rank' | 'rate';
-const cmpBasePick = ref<CmpBaseId | ''>((() => { try { return (localStorage.getItem('son.cmpBase') as CmpBaseId | null) ?? ''; } catch { return ''; } })());
+type CmpBaseId = 'avg' | 'rate';   // '순위로 본 가격'은 뺐다 — 연식이 다른 이웃 평당가로 값을 내 말이 안 됐다(2026-11-11 사용자)
+const cmpBasePick = ref<CmpBaseId | ''>((() => { try { const v = localStorage.getItem('son.cmpBase'); return v === 'avg' || v === 'rate' ? v : ''; } catch { return ''; } })());
 watch(cmpBasePick, (v) => { try { localStorage.setItem('son.cmpBase', v); } catch { /* 저장 못 해도 화면은 그대로 */ } });
 const cmpBases = computed(() => {
   const me = cmpRows.value.find((r) => r.mine);
   const n = me ? me.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세')).length : 0;
-  const re = cmpRankEst.value; const ra = cmpRateEst.value;
-  const nb = re ? [re.up ? `위 ${cmpRankOf.value.get(cmpKeyOf(re.up))}위 ${re.up.name || re.up.jibun} ${cmpPy(re.upPy)}` : '', re.dn ? `아래 ${cmpRankOf.value.get(cmpKeyOf(re.dn))}위 ${re.dn.name || re.dn.jibun} ${cmpPy(re.dnPy)}` : ''].filter(Boolean).join(' · ') : '';
+  const ra = cmpRateEst.value;
   return [
     { id: 'avg' as const, label: `단지 평균 ${cmpKind.value}가`, value: cmpUnitActual.value, text: cmpEok(cmpUnitActual.value), note: n ? `최근 ${cmpMonths.value}개월 같은 평형 ${n}건` : `최근 ${cmpMonths.value}개월 같은 평형 거래가 없습니다` },
-    { id: 'rank' as const, label: `순위로 본 ${cmpKind.value}가`, value: re?.side === 'between' ? re.mid : 0,
-      text: re ? `${cmpEok(re.mid)}${re.side === 'above' ? ' 이상' : re.side === 'below' ? ' 이하' : ''}` : '-', note: re ? (re.side === 'between' ? nb : `${nb} — 끝 순위라 한계값`) : '위아래 순위 단지에 거래가 없습니다' },
     { id: 'rate' as const, label: '전세가율로 본 매매가', value: cmpKind.value === '매매' && ra ? ra.sale : 0,
       // 값은 거래 단추와 상관없이 늘 보인다(전세 평균 ÷ 이웃 전세가율). 기준가로 고르는 것만 매매일 때(2026-11-11 사용자)
       text: ra ? cmpEok(ra.sale) : '-', note: ra ? `${ra.similar ? '연식 ±5년' : '연식 비슷한 단지가 없어 전체'} 이웃 ${ra.n}곳 전세가율 ${Math.round(ra.rate)}%${cmpKind.value === '매매' ? '' : ' · 매매일 때 기준가로'}` : '선정물건 전세 거래나 이웃 전세가율이 없습니다' },
@@ -6083,7 +6065,7 @@ const cmpBases = computed(() => {
 const cmpUnitBaseFrom = computed<CmpBaseId | ''>(() => {
   const ok = (id: CmpBaseId) => (cmpBases.value.find((b) => b.id === id)?.value ?? 0) > 0;
   if (cmpBasePick.value && ok(cmpBasePick.value)) return cmpBasePick.value;
-  return (['avg', 'rank', 'rate'] as const).find(ok) ?? '';
+  return (['avg', 'rate'] as const).find(ok) ?? '';
 });
 const cmpUnitBase = computed(() => cmpBases.value.find((b) => b.id === cmpUnitBaseFrom.value)?.value ?? 0);
 /** 구역 내 개별성 ± — 단지 자체의 장단점을 가격 %로(단지 내 개별성과 같은 방식, 2026-11-11 사용자). 1 가산 · 0 보통 · -1 감산 */
@@ -6102,7 +6084,7 @@ const zoneAdj = (id: string): [number, number] => {
   return sg > 0 ? [Math.min(a, b), Math.max(a, b)] : sg < 0 ? [-Math.max(a, b), -Math.min(a, b)] : [0, 0];
 };
 const ZONE_UNIT_ITEMS = computed(() => indivGroups.value[0].items.filter((it) => ZONE_IDS.includes(it.id)));
-/** 기준가가 내 단지 실거래 평균이면 구역 내 개별성은 그 값에 이미 담겨 있어 다시 붙이지 않는다(두 번 세지 않게) — 이웃 단지 값(순위로 · 전세가율로)일 때만 */
+/** 기준가가 내 단지 실거래 평균이면 구역 내 개별성은 그 값에 이미 담겨 있어 다시 붙이지 않는다(두 번 세지 않게) — 이웃 단지 값(전세가율로)일 때만 */
 const zoneApplied = computed(() => cmpUnitBaseFrom.value !== 'avg');
 const zoneAdjSum = computed<[number, number]>(() => (zoneApplied.value ? ZONE_IDS.reduce<[number, number]>((acc, id) => { const [a, b] = zoneAdj(id); return [acc[0] + a, acc[1] + b]; }, [0, 0]) : [0, 0]));
 const totalAdj = computed<[number, number]>(() => [unitAdjSum.value[0] + zoneAdjSum.value[0], unitAdjSum.value[1] + zoneAdjSum.value[1]]);
@@ -9684,7 +9666,7 @@ const goBack = () => router.back();
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box o-unit">
               <div class="cmp-est-h"><h3><span class="cmp-no">③</span>선정물건 호실 예상가</h3><small class="cmp-q">같은 단지 안에서 내 호실의 가치는?</small>
                 <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>최근 {{ cmpMonths }}개월 · {{ cmpKind }} · 기준가 × (1 + 단지 내 개별성 보정) + 수리 금액</span></div>
-              <!-- 기준가 세 가지 — 실거래가 적으면 순위로 · 전세가율로(강의 2026-11-11). 고른 카드가 기준 -->
+              <!-- 기준가 두 가지 — 단지 평균 · 전세가율로(순위로 본 가격은 뺐다). 고른 카드가 기준 -->
               <div class="cmp-bases" role="radiogroup" aria-label="기준가">
                 <button v-for="b in cmpBases" :key="b.id" type="button" role="radio" :class="['cmp-base', { on: cmpUnitBaseFrom === b.id }]" :aria-checked="cmpUnitBaseFrom === b.id" :disabled="!(b.value > 0)" @click="cmpBasePick = b.id"><span class="k">{{ b.label }}</span><span class="v">{{ b.text }}</span><small>{{ b.note }}</small></button>
               </div>
@@ -12545,7 +12527,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-formula b { font-size: 15px; font-weight: 800; color: #111827; }
 @media (max-width: 640px) { .cmp-pop { left: 0 !important; right: 0; top: auto !important; bottom: 0; width: 100%; border-radius: 12px 12px 0 0; } }
 /* 기준가 카드 · 표 묶음 줄 */
-.cmp-bases { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.cmp-bases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
 .cmp-base { display: grid; gap: 3px; padding: 10px 12px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font: inherit; text-align: left; color: #111827; cursor: pointer; }
 .cmp-base .k { font-size: 12.5px; color: #6b7280; }
 .cmp-base .v { font-size: 16px; font-weight: 800; }
