@@ -5607,10 +5607,12 @@ const cmpConds = computed(() => (cmpOn.value && !selectedRoomType.value ? [] : r
 /** 세대구성 — 고른 룸수(없으면 평형대)의 가족 */
 const cmpWho = computed(() => whoTextOf((selectedRoomType.value?.details ?? []) as Array<{ who: string; kinds: string[] }>));
 // 거르기(2026-11-11) — 범위(같은 동 · 500m · 1km) · 기간(1년 · 2년) · 평형 폭(±3 · ±5 · ±10㎡) · 거래(매매 · 전세). 고른 값은 새로고침 · 다른 물건에서도 그대로
-type CmpRange = 'dong' | 500 | 1000;
+type CmpRange = 'dong' | 500 | 1000 | 2000;
 const CMP_FILTER_KEY = 'son.cmp.filter';
 const cmpSaved = (() => { try { return JSON.parse(localStorage.getItem(CMP_FILTER_KEY) ?? '{}') as { range?: CmpRange; months?: 6 | 12 | 24; years?: 1 | 2; tol?: 3 | 5 | 10; kind?: '매매' | '전세' }; } catch { return {}; } })();
-const cmpRange = ref<CmpRange>('dong');   // 500m · 1km 는 뺐다 — 다른 동네가 섞이면 학군 · 생활권이 갈려 변수가 커진다(2026-11-11 사용자). 늘 읍면동
+// 읍면동 · 1km · 2km — 동 전체가 아니라 선정물건 둘레만 보고 싶을 때(2026-11-11 사용자 다시). 위 청라동 평균 칸은 범위와 상관없이 늘 읍면동
+const cmpRange = ref<CmpRange>(cmpSaved.range === 1000 || cmpSaved.range === 2000 ? cmpSaved.range : 'dong');
+const CMP_RANGES: Array<[CmpRange, string]> = [['dong', '읍면동'], [1000, '1km'], [2000, '2km']];
 /** 기간(개월) — 시세분석처럼 6개월 · 1년 · 2년(2026-11-11). 예전에 저장한 years(1 · 2)는 12 · 24 로 */
 const cmpMonths = ref<6 | 12 | 24>(cmpSaved.months ?? (cmpSaved.years === 2 ? 24 : 12));
 const CMP_PERIODS: Array<[6 | 12 | 24, string]> = [[6, '6개월'], [12, '1년'], [24, '2년']];
@@ -5918,7 +5920,7 @@ const cmpDraw = () => {
   const rows = cmpRows.value.filter((r) => r.point); const pick = cmpPicked.value;
   // 범위가 지도에서 어디까지인지 — 읍면동이면 법정동 경계, 1km 면 선정물건에서 1km 원(2026-11-11 사용자)
   const me = cmpMePt.value;
-  if (me && cmpRange.value === 1000) mv.circle(me, 1000, { color: '#475569', weight: 1.6, dash: true, fillOpacity: 0 });
+  if (me && cmpRange.value !== 'dong') mv.circle(me, cmpRange.value, { color: '#475569', weight: 1.6, dash: true, fillOpacity: 0 });
   if (me && cmpRange.value === 'dong') {
     if (cmpDongShape.value) mv.polygon(cmpDongShape.value, { color: '#475569', weight: 2, dash: true, fillOpacity: 0.02 });
     else if (!cmpDongAsked) { cmpDongAsked = true; void dongShapeOf(me.lat, me.lng).then((v) => { cmpDongShape.value = v; if (v) cmpDraw(); }); }
@@ -9605,7 +9607,7 @@ const goBack = () => router.back();
                   <KakaoMapTools v-if="cmpTools" :k="cmpTools.k" :map="cmpTools.map" :near="cmpMePoint" />
                   <button v-if="!cmpFs" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="cmpFs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
                   <!-- 범례 — 시세분석 지도처럼 왼쪽 아래(2026-11-11) -->
-                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span><span><i class="ring dash" />{{ cmpRange === 'dong' ? '읍면동 경계' : '반경 1km' }}</span></div>
+                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span><span><i class="ring dash" />{{ cmpRange === 'dong' ? '읍면동 경계' : `반경 ${cmpRange / 1000}km` }}</span></div>
                   <p v-if="!cmpRows.some((r) => r.point)" class="cmp-wait">{{ supLoaded ? '단지 위치를 찾는 중입니다…' : '실거래를 받는 중입니다…' }}</p>
                 </div>
                 <aside v-if="cmpFs" class="cmp-fs-list">
@@ -9613,7 +9615,8 @@ const goBack = () => router.back();
                   <div class="cmp-fs-lh"><b>단지 {{ cmpRows.length }}곳<small>단지를 누르면 아래에 순위 이유가 나옵니다.</small></b><button type="button" class="cmp-fs-fold" :aria-label="cmpFsFold ? '목록 펼치기' : '목록 접기'" :aria-expanded="!cmpFsFold" @click="cmpFsFold = !cmpFsFold"><img :src="chevronDownIcon" :class="['adp-chev', { up: !cmpFsFold }]" alt="" /></button></div>
                   <!-- 전체화면 거르기 — 왼쪽 창 머리 아래(목록 바로 위, 접어도 남는다). 아래 화면 거르기와 같은 값(2026-11-11 사용자) -->
                   <div class="cmp-fs-conds">
-                    <div class="row2"><span class="lab">거래<span class="fseg" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" :data-t="k" @click="cmpKind = k">{{ k }}</button></span></span></div>
+                    <div class="row2"><span class="lab">범위<span class="fseg" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRange === v }" :aria-checked="cmpRange === v" :data-t="t" @click="cmpRange = v">{{ t }}</button></span></span>
+                    <span class="lab">거래<span class="fseg" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" :data-t="k" @click="cmpKind = k">{{ k }}</button></span></span></div>
                     <span class="lab">기간<span class="fseg" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonths === m }" :aria-checked="cmpMonths === m" :data-t="t" @click="cmpMonths = m">{{ t }}</button></span></span>
                   </div>
                   <template v-if="!cmpFsFold">
@@ -9642,10 +9645,11 @@ const goBack = () => router.back();
               </div>
               <!-- 거르기 — 지도 밑 · 표 바로 위(표를 보면서 바꾸게, 2026-11-11). 시세분석 조건 줄과 같은 단추 · 순서(범위 → 거래 → 기간 → 평형). 표 · 지도 · 위 칸 줄이 같이 바뀐다 -->
               <div class="cmp-conds">
+                <span class="pa-lab">범위<span class="pa-seg pa-out" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRange === v }" :aria-checked="cmpRange === v" :data-t="t" @click="cmpRange = v">{{ t }}</button></span></span>
                 <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :data-k="k" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" @click="cmpKind = k">{{ k }}</button></span></span>
                 <span class="pa-lab">기간<span class="pa-seg pa-out" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonths === m }" :aria-checked="cmpMonths === m" :data-t="t" @click="cmpMonths = m">{{ t }}</button></span></span>
                 <!-- 고정 기준 — 고르는 단추 말고 늘 걸려 있는 조건(2026-11-11 사용자) -->
-                <span class="cmp-fixed"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">고정 기준 · 읍면동({{ supRegion?.dong || '-' }}) · 유사평형(전용 ±3㎡) · 최근 {{ cmpMonths }}개월 실거래 1건 이상인 단지 · 국토부 실거래</span></span>
+                <span class="cmp-fixed"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">고정 기준 · 유사평형(전용 ±3㎡) · 최근 {{ cmpMonths }}개월 실거래 1건 이상인 단지 · 국토부 실거래</span></span>
               </div>
               <p v-if="!cmpConds.length" class="cmp-noroom">매매수요 조사 맨 위에서 <b>룸수</b>를 고르면 세대구성에 맞는 입지조건과 단지별 입지등수가 나옵니다.</p>
               <div class="son-demand sup-tbl">
