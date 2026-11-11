@@ -9541,8 +9541,20 @@ const goBack = () => router.back();
                     <span class="pr">{{ cmpMoney(cmpKind === '매매' ? r.saleAvg : r.jeonseAvg) }}</span>
                   </button>
                   </div>
+                  <!-- 보고 있는 단지의 입지 · 구역 내 개별성 — 탭 없이 위아래로 한눈에(단지 4~5곳이라 높이가 된다, 2026-11-11 사용자) -->
                   <div v-if="cmpPicked" class="cmp-fs-places">
-                    <span v-for="(p, i) in cmpPicked.places" :key="i"><i>{{ p?.ic ?? '·' }}</i><span class="c">{{ cmpConds[i] }}</span><b>{{ p ? `${cmpPlaceName(p.name)} ${p.m.toLocaleString('ko-KR')}m` : '-' }}</b><em v-if="cmpPicked.ranks[i]" :class="['cmp-rk', { r1: cmpPicked.ranks[i] === 1 }]">{{ cmpPicked.ranks[i] }}</em></span>
+                    <p class="cmp-fs-ph"><b>입지</b><small>{{ cmpPicked.name || cmpPicked.jibun }}</small><em>입지점수 <b>{{ cmpScore(cmpPicked.loc) }}</b> / 100</em></p>
+                    <span v-for="x in cmpLocParts(cmpPicked)" :key="x.cond"><i>{{ x.pl?.ic ?? '·' }}</i><span class="c">{{ x.cond }}</span><b>{{ x.pl ? `${cmpPlaceName(x.pl.name)} ${x.pl.m.toLocaleString('ko-KR')}m` : '1km 안에 없음' }}</b><em class="sc">{{ Math.round(x.score) }}점</em></span>
+                  </div>
+                  <div v-if="cmpPicked" class="cmp-fs-places">
+                    <p class="cmp-fs-ph"><b>구역 내 개별성</b><small>{{ cmpPicked.name || cmpPicked.jibun }}</small><em>개별성점수 <b>{{ cmpScore(cmpPicked.zone) }}</b> / 100</em></p>
+                    <template v-if="cmpPicked.mine">
+                      <span v-for="item in ZONE_ITEMS" :key="item.id" class="z"><span class="c">{{ item.label }}</span><b>{{ INDIV_AUTO.has(item.id) ? indivAutoText(item) : (indivValue(item.id) || '고르세요') }}</b><em class="sc">{{ cmpZoneParts(cmpPicked).has(item.id) ? `${Math.round(cmpZoneParts(cmpPicked).get(item.id)!.v)}점` : '-' }}</em></span>
+                    </template>
+                    <template v-else>
+                      <span class="z"><span class="c">연식</span><b>{{ cmpPicked.buildYear ? `${cmpPicked.buildYear}년` : '-' }}</b><em class="sc">{{ cmpZoneParts(cmpPicked).has('ind.age') ? `${Math.round(cmpZoneParts(cmpPicked).get('ind.age')!.v)}점` : '-' }}</em></span>
+                      <small class="cmp-fs-pn">다른 단지는 건축물대장 값이 없어 연식만으로 계산합니다</small>
+                    </template>
                   </div>
                   </template>
                 </aside>
@@ -12427,7 +12439,15 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-fs-row.mine { background: #fff5f5; box-shadow: inset 0 -2px 0 #f3c9c9; }
 .cmp-fs-row.on { border-color: #2b4fd8; background: #eef2ff; box-shadow: none; }   /* 시세분석 전체화면 .fs-it.on 과 같게 */
 .cmp-fs-places { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 9px; background: #fff; font-size: 13px; color: #6b7280; }
-.cmp-fs-places > span { display: grid; grid-template-columns: 20px 4.6em minmax(0, 1fr) auto; align-items: center; gap: 6px; }   /* 아이콘 · 조건 · 시설 이름 시작점을 세로로 맞춘다(2026-11-11 사용자) */
+.cmp-fs-places > span { display: grid; grid-template-columns: 20px 4.6em minmax(0, 1fr) auto; align-items: center; gap: 6px; }
+.cmp-fs-places > span.z { grid-template-columns: 6.4em minmax(0, 1fr) auto; }   /* 개별성 — 아이콘 없이 이름 · 값 · 점수 */
+.cmp-fs-places .sc { font-style: normal; font-size: 13px; color: #111827; }
+.cmp-fs-ph { display: flex; align-items: baseline; gap: 6px; margin: 0 0 2px; }
+.cmp-fs-ph > b { font-size: 14px; font-weight: 800; color: #111827; }
+.cmp-fs-ph small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #9ca3af; }
+.cmp-fs-ph em { margin-left: auto; font-style: normal; font-size: 12.5px; color: #6b7280; white-space: nowrap; }
+.cmp-fs-ph em b { font-size: 15px; font-weight: 800; color: #111827; }
+.cmp-fs-pn { font-size: 12px; color: #9ca3af; }   /* 아이콘 · 조건 · 시설 이름 시작점을 세로로 맞춘다(2026-11-11 사용자) */
 .cmp-fs-places b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmp-fs-places b { font-weight: 400; color: #111827; }
 .cmp-fs-places i { font-style: normal; }
