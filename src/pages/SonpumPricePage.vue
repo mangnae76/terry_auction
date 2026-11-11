@@ -778,7 +778,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <span class="fs-r">
         <template v-if="!props.months">
         <span class="pa-seg pa-out" role="radiogroup" aria-label="조회기간">
-          <button v-for="m in PERIODS" :key="m" type="button" role="radio" :class="{ on: months === m }" :aria-checked="months === m" @click="months = m">{{ periodText(m) }}</button>
+          <button v-for="m in PERIODS" :key="m" type="button" role="radio" :class="{ on: months === m }" :aria-checked="months === m" @click="months = m" :data-t="periodText(m)">{{ periodText(m) }}</button>
         </span>
         <button type="button" :class="['pa-load', { dirty }]" :disabled="loading" @click="run">{{ loading ? '조회 중…' : '조회' }}</button>
         </template>
@@ -792,7 +792,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <span v-if="progress.total && progress.done < progress.total" class="prog">위치 찾는 중 {{ progress.done }} / {{ progress.total }}</span>
           <template v-if="!props.months">
           <span class="pa-seg pa-out" role="radiogroup" aria-label="조회기간">
-            <button v-for="m in PERIODS" :key="m" type="button" role="radio" :class="{ on: months === m }" :aria-checked="months === m" @click="months = m">{{ periodText(m) }}</button>
+            <button v-for="m in PERIODS" :key="m" type="button" role="radio" :class="{ on: months === m }" :aria-checked="months === m" @click="months = m" :data-t="periodText(m)">{{ periodText(m) }}</button>
           </span>
           <button type="button" :class="['pa-load', { dirty }]" :disabled="loading" @click="run">{{ loading ? '조회 중…' : '조회' }}</button>
           </template>
@@ -854,25 +854,25 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       </div>
       <div :class="['conds', { web: webEmbed }]">
         <span class="pa-lab">반경<span class="pa-seg pa-out" role="radiogroup" aria-label="반경">
-          <button v-for="r in RADII" :key="r" type="button" role="radio" :class="{ on: radius === r }" :aria-checked="radius === r" @click="radius = r">{{ radText(r) }}</button>
+          <button v-for="r in RADII" :key="r" type="button" role="radio" :class="{ on: radius === r }" :aria-checked="radius === r" @click="radius = r" :data-t="radText(r)">{{ radText(r) }}</button>
         </span></span>
         <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류">
           <button v-for="k in KINDS" :key="k" type="button" role="radio" :data-k="k" :class="{ on: kindF === k }" :aria-checked="kindF === k" @click="kindF = k">{{ k }} {{ kindCount(k) }}</button>
         </span></span>
         <span class="pa-lab mode-pick"><InfoTip v-if="webEmbed" :rows="modeTip" under="box">기준</InfoTip><template v-else>기준</template><span class="pa-seg pa-out" role="radiogroup" aria-label="유사 조건 방식">
-          <button type="button" role="radio" :class="{ on: simMode === 'sim' }" :aria-checked="simMode === 'sim'" @click="setSimMode('sim')">유사도</button>
-          <button type="button" role="radio" :class="{ on: simMode === 'range' }" :aria-checked="simMode === 'range'" @click="setSimMode('range')">직접범위</button>
+          <button type="button" role="radio" :class="{ on: simMode === 'sim' }" :aria-checked="simMode === 'sim'" @click="setSimMode('sim')" data-t="유사도">유사도</button>
+          <button type="button" role="radio" :class="{ on: simMode === 'range' }" :aria-checked="simMode === 'range'" @click="setSimMode('range')" data-t="직접범위">직접범위</button>
         </span></span>
         <!-- 웹 기본 화면 — 엘베는 기준 옆(전체화면에선 아래 거르기 상자 안 층 밑) -->
         <span v-if="webEmbed && !fs" class="pa-lab elev-pick">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베">
-          <button type="button" role="radio" :class="{ on: !elevPick }" :aria-checked="!elevPick" @click="elevPick = null">전체</button>
-          <button type="button" role="radio" :class="{ on: elevPick === 'yes' }" :aria-checked="elevPick === 'yes'" @click="elevPick = 'yes'">있음</button>
-          <button type="button" role="radio" :class="{ on: elevPick === 'no' }" :aria-checked="elevPick === 'no'" @click="elevPick = 'no'">없음</button>
+          <button type="button" role="radio" :class="{ on: !elevPick }" :aria-checked="!elevPick" @click="elevPick = null" data-t="전체">전체</button>
+          <button type="button" role="radio" :class="{ on: elevPick === 'yes' }" :aria-checked="elevPick === 'yes'" @click="elevPick = 'yes'" data-t="있음">있음</button>
+          <button type="button" role="radio" :class="{ on: elevPick === 'no' }" :aria-checked="elevPick === 'no'" @click="elevPick = 'no'" data-t="없음">없음</button>
         </span></span>
         <!-- 웹 기본 화면 — 층은 엘베 옆(유사도에서도 '같은 층'이면 같은 층만) -->
         <span v-if="webEmbed && !fs" class="pa-lab floor-pick">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층">
-          <button type="button" role="radio" :class="{ on: rangeCond.floor !== 0 }" :aria-checked="rangeCond.floor !== 0" @click="rangeCond = { ...rangeCond, floor: null }">전체</button>
-          <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }">같은 층</button>
+          <button type="button" role="radio" :class="{ on: rangeCond.floor !== 0 }" :aria-checked="rangeCond.floor !== 0" @click="rangeCond = { ...rangeCond, floor: null }" data-t="전체">전체</button>
+          <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }" data-t="같은 층">같은 층</button>
         </span></span>
         <span class="acts-r">
           <button type="button" :class="['reset-btn', { undo: undoSnap }]" :aria-label="undoSnap ? '되돌리기' : '초기화'" :title="undoSnap ? '되돌리기 — 5초 안에 누르면 바로 전으로' : '반경 · 거래 · 유사도 · 값 거르기를 처음 값으로'" @click="reset">
@@ -907,19 +907,19 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <b v-if="!(webEmbed && !fs)">{{ rangeCond.yMin }}~{{ rangeCond.yMax }}년<small>{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</small></b>
             </div>
             <span v-if="!webEmbed" class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층">
-              <button type="button" role="radio" :class="{ on: rangeCond.floor !== 0 }" :aria-checked="rangeCond.floor !== 0" @click="rangeCond = { ...rangeCond, floor: null }">전체</button>
-              <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }">같은 층</button>
+              <button type="button" role="radio" :class="{ on: rangeCond.floor !== 0 }" :aria-checked="rangeCond.floor !== 0" @click="rangeCond = { ...rangeCond, floor: null }" data-t="전체">전체</button>
+              <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }" data-t="같은 층">같은 층</button>
             </span></span>
           </div>
           <!-- 전체화면 — 거르기 상자 안, 유사도 · 직접범위 어느 쪽이든 층 → 엘베 순서(면적 · 건축과 같은 틀) -->
           <span v-if="webEmbed && fs" class="pa-lab floor-pick">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층">
-            <button type="button" role="radio" :class="{ on: rangeCond.floor !== 0 }" :aria-checked="rangeCond.floor !== 0" @click="rangeCond = { ...rangeCond, floor: null }">전체</button>
-            <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }">같은 층</button>
+            <button type="button" role="radio" :class="{ on: rangeCond.floor !== 0 }" :aria-checked="rangeCond.floor !== 0" @click="rangeCond = { ...rangeCond, floor: null }" data-t="전체">전체</button>
+            <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }" data-t="같은 층">같은 층</button>
           </span></span>
           <span v-if="webEmbed && fs" class="pa-lab elev-pick">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베">
-            <button type="button" role="radio" :class="{ on: !elevPick }" :aria-checked="!elevPick" @click="elevPick = null">전체</button>
-            <button type="button" role="radio" :class="{ on: elevPick === 'yes' }" :aria-checked="elevPick === 'yes'" @click="elevPick = 'yes'">있음</button>
-            <button type="button" role="radio" :class="{ on: elevPick === 'no' }" :aria-checked="elevPick === 'no'" @click="elevPick = 'no'">없음</button>
+            <button type="button" role="radio" :class="{ on: !elevPick }" :aria-checked="!elevPick" @click="elevPick = null" data-t="전체">전체</button>
+            <button type="button" role="radio" :class="{ on: elevPick === 'yes' }" :aria-checked="elevPick === 'yes'" @click="elevPick = 'yes'" data-t="있음">있음</button>
+            <button type="button" role="radio" :class="{ on: elevPick === 'no' }" :aria-checked="elevPick === 'no'" @click="elevPick = 'no'" data-t="없음">없음</button>
           </span></span>
         </div>
       </div>
@@ -1056,6 +1056,9 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa-seg button { border: none; background: transparent; border-radius: 5px; height: 26px; padding: 0 13px; font-size: 14px; font-weight: 400; color: #6b7280; cursor: pointer; white-space: nowrap; }
 /* 고른 칸 = 앱 파랑 가는 테두리 + 굵은 파란 글자 — 거래(매매 · 전세 · 월세)만 칩 색 채움 */
 .pa-seg.pa-out button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
+/* 고른 칸만 굵어져도 폭이 그대로 — 굵은 글 폭을 data-t 로 미리 잡는다(조회기간 상자가 누를 때마다 커졌다 작아졌다, 2026-11-11 사용자 · 흔들림 금지) */
+.pa-seg button[data-t] { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; }
+.pa-seg button[data-t]::after { content: attr(data-t); height: 0; overflow: hidden; visibility: hidden; font-weight: 700; pointer-events: none; user-select: none; }
 .pa-load { height: 32px; min-width: 136px; padding: 0 18px; border: none; border-radius: 6px; background: #1f3a72; color: #fff; font-size: 14px; font-weight: 800; cursor: pointer; white-space: nowrap; }
 .pa-load:hover { background: #16305f; }
 .pa-load.dirty { box-shadow: 0 0 0 3px #dbe5ff; }
