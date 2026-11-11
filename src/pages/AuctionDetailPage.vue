@@ -3078,7 +3078,15 @@ watch([() => auction.value?.id, isApartment] as const, async ([id, apt]) => {   
 const myAreaUnits = computed(() => areaUnitsOf(complexAreas.value, sumVal('sum.areaUnits'), sumVal('sum.areaUnitsAuto')));
 /** 공급면적 — 이 호실 건축물대장(전용 + 주건축물 공용)만. 같은 전용의 다른 호실 값으로 메우지 않는다(추정값 금지).
  *  PDF 공용면적엔 지하주차장까지 들어 있어 쓰지 않는다 */
-const mySupplyM2 = computed(() => complexAreas.value?.mine?.supply || 0);
+const mySupplyM2 = computed(() => {
+  if (complexAreas.value?.mine?.supply) return complexAreas.value.mine.supply;
+  // 대장을 아직 못 받았거나 이 화면에서 못 받으면 — 정보요약에 저장해 둔 이 호실 대장 값(옛 PDF 전용+공용 합은 빼고)
+  const a = auction.value;
+  const ex = Number(String(a?.buildingHeader?.unitExclusiveArea ?? '').replace(/[^\d.]/g, '')) || Number(a?.buildingAreaM2) || 0;
+  const common = Number(String(a?.buildingHeader?.unitCommonArea ?? '').replace(/[^\d.]/g, '')) || 0;
+  const saved = Number(String(a?.basicSummary?.['sum.supplyArea'] ?? '').replace(/[^\d.]/g, '')) || 0;
+  return saved > 0 && !(ex > 0 && common > 0 && saved.toFixed(2) === (ex + common).toFixed(2)) ? saved : 0;
+});
 /** 단지정보 면적종류 — 건축물대장 공급면적마다 세대수 · 내 호실(타입 · 평형으로 묶지 않는다). 받기 전이면 PDF 평형 이름만 */
 const aptAreaRows = computed(() => {
   if (complexAreas.value?.groups.length) return supplyRowsOf(complexAreas.value, webEmbed ? areaUnit.value : 'm2');
@@ -5619,6 +5627,13 @@ const sonAreaUnit = areaUnit;
 const areaPair = (supply: { lo: number; hi: number } | null, exclusive: number, unit?: 'm2' | 'py') => aptAreaText(supply, exclusive, unit ?? areaUnit.value);
 /** 단지마다 공급면적 — 건축물대장 전유공용(단지 문서 aptComplexes 에 두고 같이 쓴다). 전용이 같은 호실들의 공급 범위 */
 const cmpSupply = ref<Record<string, { lo: number; hi: number } | null>>({});
+// 같은 전용의 호실들 중 가장 많은 공급면적 하나(네이버 평형처럼 한 값). 공용이 안 적혀 공급 = 전용인 호실은 뺀다(옛 단지 대장에 섞여 범위가 엉뚱했다)
+const cmpSupplyOf = (groups: Array<{ exclusive: number; supply: number; count: number }>, area: number) => {
+  const t2 = (n: number) => Math.floor(n * 100 + 1e-6) / 100;
+  const gs = groups.filter((g) => (t2(g.exclusive) === t2(area) || Math.abs(g.exclusive - area) < 0.015) && g.supply - g.exclusive > 0.5);
+  const top = [...gs].sort((a, b) => b.count - a.count || a.supply - b.supply)[0];
+  return top ? { lo: top.supply, hi: top.supply } : null;
+};
 const cmpNearby = ref<Record<string, ComplexNearby | null>>({});   // 단지 열쇠 → 좌표 · 주변시설(null = 못 찾음)
 const cmpPoints = ref<Record<string, { lat: number; lng: number } | null>>({});   // 반경 범위 — 좌표만 먼저
 const cmpPick = ref('');
@@ -5646,12 +5661,12 @@ const cmpCandidates = computed<CompareComplex[]>(() => {
   if (out.length) cmpLastCandidates = out;
   return out;
 });
-const cmpCandidatesNow = (): CompareComplex[] => {
+const cmpCandidatesNow = (range: CmpRange = cmpRange.value): CompareComplex[] => {
   const myArea = supMyArea.value; const myJibun = supRegion.value?.jibun || supRows.value[0]?.jibun || '';
   if (!myArea || !myJibun) return [];
   const all = cmpMonths.value === 24 ? (cmpRows2y.value ?? []) : supAllRows.value;   // 6개월 · 1년은 1년치에서 기간으로 거른다
   const dong = cmpSquash(supRegion.value?.dong ?? '');
-  const src = cmpRange.value === 'dong' ? (dong ? all.filter((r) => cmpSquash(r.umdNm) === dong) : supDongRows.value) : all;
+  const src = range === 'dong' ? (dong ? all.filter((r) => cmpSquash(r.umdNm) === dong) : supDongRows.value) : all;
   const list = complexesOf(src, myArea, myJibun, cmpFrom.value, cmpTol.value, supRegion.value?.dong ?? '');
   if (!list.some((c) => c.mine)) list.push({ jibun: myJibun, name: supName.value, umdNm: supRegion.value?.dong ?? '', area: myArea, jeonseAvg: 0, saleAvg: 0, deals: [], mine: true, buildYear: 0 });
   return list.map((c) => (c.mine ? { ...c, name: supName.value || c.name } : c));
@@ -5816,7 +5831,8 @@ const cmpRows = computed<CmpRow[]>(() => {
     const avg = ready ? ranks.reduce<number>((a, b) => a + (b ?? 0), 0) / ranks.length : null;
     const sum = places.reduce((a, p) => a + (p?.m ?? 9999), 0);
     const point = c.mine ? (supRegion.value?.lat ? { lat: supRegion.value.lat, lng: supRegion.value.lng } : null) : nb ? { lat: nb.lat, lng: nb.lng } : null;
-    const supply = c.mine ? (mySupplyM2.value ? { lo: mySupplyM2.value, hi: mySupplyM2.value } : null) : cmpSupply.value[cmpKeyOf(c)] ?? null;
+    // 선정물건 — 이 호실 대장 공급면적, 없으면 다른 단지와 같게 같은 전용 호실의 공급면적(전용만 적지 않는다)
+    const supply = c.mine ? (mySupplyM2.value ? { lo: mySupplyM2.value, hi: mySupplyM2.value } : cmpSupplyOf(complexAreas.value?.groups ?? [], c.area)) : cmpSupply.value[cmpKeyOf(c)] ?? null;
     // 입지점수 — 조건마다 거리 점수(1km 안에 없으면 0점)를 세대구성 비중으로. 주변시설을 아직 못 받았으면 null
     const lw = conds.map((cond) => cmpLocW(cond));
     const cut = (cond: string) => (c.mine && cond === '초등학교' && schoolCross.value ? SCHOOL_ROAD_CUT : 1);   // 선정물건이 큰길을 건너 초등학교에 가면 절반
@@ -5884,15 +5900,11 @@ watch(() => `${cmpRange.value}|${cmpCandidates.value.filter((c) => !c.mine).map(
   const sup = cmpList.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpSupply.value));
   await cmpPool(sup, 1, run, async (c) => {
     const ar = await getComplexAreas(cmpAddr(c)).catch(() => null);
-    const t2 = (n: number) => Math.floor(n * 100 + 1e-6) / 100;
-    // 같은 전용의 호실들 중 가장 많은 공급면적 하나(네이버 평형처럼 한 값). 공용이 안 적혀 공급 = 전용인 호실은 뺀다(옛 단지 대장에 섞여 범위가 엉뚱했다)
-    const gs = (ar?.groups ?? []).filter((g) => (t2(g.exclusive) === t2(c.area) || Math.abs(g.exclusive - c.area) < 0.015) && g.supply - g.exclusive > 0.5);
-    const top = gs.sort((a, b) => b.count - a.count || a.supply - b.supply)[0];
-    const v = top ? { lo: top.supply, hi: top.supply } : null;
+    const v = cmpSupplyOf(ar?.groups ?? [], c.area);
     if (run === cmpRun) cmpSupply.value = { ...cmpSupply.value, [cmpKeyOf(c)]: v };
   });
 });
-watch(() => auction.value?.id, () => { cmpNearby.value = {}; cmpPoints.value = {}; cmpSupply.value = {}; cmpPick.value = ''; cmpLastCandidates = []; });
+watch(() => auction.value?.id, () => { cmpNearby.value = {}; cmpPoints.value = {}; cmpSupply.value = {}; cmpPick.value = ''; cmpLastCandidates = []; cmpDongLast = []; });
 // 지도 — 시세분석 지도와 같은 점(웹 pa-pin). 평소엔 점만, 고른 단지는 크게 + 이름표 · 도보 5분 / 10분 원 · 조건별 가장 가까운 시설
 const cmpMapEl = ref<HTMLElement | null>(null);
 let cmpMv: MapView | null = null; let cmpMvP: Promise<void> | null = null; let cmpFitted = '';
@@ -5981,11 +5993,19 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', onCmpFsKey); if (c
 /** 단지 입지비교 위 칸 줄 — 표에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 실거래(최근 12개월)로 계산한다(2026-11-11).
  *  평균 전세가 · 중간값 · 최저 · 최고 · 평균 평당가 · 전용 / 연식 · 거래건수. 표에 없는 값도 고른 단지의 거래로 계산해 넣는다 */
 /** 단지를 고르기 전(동 전체) — 리스트 단지들의 유사평형 고른 거래를 다 모아 평균 · 평당가 · 건수 · 단지 수만(중간값 · 최저 · 최고는 단지가 섞여 뜻이 없어 단지를 누를 때만, 2026-11-11 사용자) */
+/** 동 전체 평균은 범위(1km) · 지도와 상관없이 늘 읍면동 단지로 — 반경으로 바꾸면 변수가 너무 커진다(2026-11-11 사용자) */
+let cmpDongLast: CompareComplex[] = [];
+const cmpDongList = computed<CompareComplex[]>(() => {
+  if (cmpMonths.value === 24 && !cmpRows2y.value && cmpDongLast.length) return cmpDongLast;
+  const out = cmpCandidatesNow('dong');
+  if (out.length) cmpDongLast = out;
+  return out;
+});
 const cmpAll = computed(() => {
-  const ds = cmpRows.value.flatMap((r) => r.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).map((d) => ({ p: d.price, py: d.areaM2 > 0 ? d.price / (d.areaM2 / 3.305785) : 0 })));
+  const ds = cmpDongList.value.flatMap((r) => r.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).map((d) => ({ p: d.price, py: d.areaM2 > 0 ? d.price / (d.areaM2 / 3.305785) : 0 })));
   if (!ds.length) return null;
   const pys = ds.filter((d) => d.py > 0);
-  return { n: ds.length, avg: ds.reduce((a, d) => a + d.p, 0) / ds.length, perPy: pys.length ? pys.reduce((a, d) => a + d.py, 0) / pys.length : 0, complexes: cmpRows.value.length };
+  return { n: ds.length, avg: ds.reduce((a, d) => a + d.p, 0) / ds.length, perPy: pys.length ? pys.reduce((a, d) => a + d.py, 0) / pys.length : 0, complexes: cmpDongList.value.length };
 });
 const cmpEst = computed(() => {
   const r = cmpPicked.value; if (!r) return null;
@@ -9554,7 +9574,7 @@ const goBack = () => router.back();
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
               <div class="cmp-est-h"><h3><span class="cmp-no">②</span>단지 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}<template v-if="cmpPick && cmpPicked"> · {{ cmpPicked.name || cmpPicked.jibun }}</template></span><span class="cmp-q">내가 선정한 아파트 단지는 몇 등일까?</span></h3>
-                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><template v-if="cmpPick">최근 {{ cmpMonths }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 같은 평형 {{ cmpKind }} 실거래 · 다시 누르면 동 전체로 돌아갑니다</template><template v-else>최근 {{ cmpMonths }}개월 · 유사평형 {{ cmpKind }} 실거래 · 단지 {{ cmpRows.length }}곳 전체 · 단지를 누르면 그 단지로 바뀝니다</template></span>
+                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><template v-if="cmpPick"><span class="cmp-desc-hi">최근 {{ cmpMonths }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 같은 평형 {{ cmpKind }} 실거래</span> · 다시 누르면 동 전체로 돌아갑니다</template><template v-else><span class="cmp-desc-hi">최근 {{ cmpMonths }}개월 · 유사평형 {{ cmpKind }} 실거래</span> · 단지 {{ cmpRows.length }}곳 전체 · 단지를 누르면 그 단지로 바뀝니다</template></span>
               </div>
               <div class="cmp-est">
                 <div class="cmp-tiles">
@@ -9570,10 +9590,10 @@ const goBack = () => router.back();
                   <div class="cmp-tile"><span class="k">{{ cmpKind }} 거래건수</span><span class="v">{{ cmpEst?.n ?? 0 }}건</span></div>
                   </template>
                   <template v-else>
-                  <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · {{ cmpRange === 'dong' ? (supRegion?.dong || '동 전체') : '반경 1km' }}</span><span class="v">{{ cmpAll ? cmpEok(cmpAll.avg) : '-' }}</span></div>
+                  <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · {{ supRegion?.dong || '동 전체' }}</span><span class="v">{{ cmpAll ? cmpEok(cmpAll.avg) : '-' }}</span></div>
                   <div v-for="k in ['중간값', '최저가', '최고가']" :key="k" class="cmp-tile off"><span class="k">{{ k }}</span><span class="v sm">단지를 누르면 보입니다</span></div>
                   <div class="cmp-tile"><span class="k">평균 평당가</span><span class="v">{{ cmpAll ? cmpPy(cmpAll.perPy) : '-' }}</span></div>
-                  <div class="cmp-tile"><span class="k">단지 수</span><span class="v">{{ cmpAll?.complexes ?? cmpRows.length }}곳</span></div>
+                  <div class="cmp-tile"><span class="k">단지 수</span><span class="v">{{ cmpAll?.complexes ?? 0 }}곳</span></div>
                   <div class="cmp-tile"><span class="k">{{ cmpKind }} 거래건수</span><span class="v">{{ cmpAll?.n ?? 0 }}건</span></div>
                   </template>
                 </div>
@@ -12410,6 +12430,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
    font-weight: 400; color: #6b7280; }   /* '누구한테 팔까?'와 같은 꼴의 물음 */
 .cmp-est-h h3 { display: inline-flex; align-items: center; margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
 .cmp-est-tag { font-size: 13px; font-weight: 700; color: #2b4fd8; background: #eef2ff; border-radius: 5px; padding: 3px 8px; }
+.cmp-desc-hi { color: #2563eb; }   /* 필터 설명 중 기간 · 평형 · 매매/전세 — 파란 글(2026-11-11 사용자) */
 .cmp-est-desc { margin-left: auto; padding-right: 14px; font-size: 12px; color: #6b7280; text-align: right; }   /* 오른쪽 — 아래 마지막 칸(거래건수) 오른쪽 선에 맞춘다(2026-11-11) */
 .cmp-est { background: #f7f8fb; border-radius: 10px; padding: 14px; }
 .cmp-tiles { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
