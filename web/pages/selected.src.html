@@ -7305,10 +7305,12 @@ span.cal-day.has { cursor: help; }
   /* 막대 범위를 경매물건(빨간 줄)을 품게 · 최소 ≤ 최대로 */
   function sxRcFix(c, subj) {
     const r = { mMin: Number(c.mMin), mMax: Number(c.mMax), yMin: Number(c.yMin), yMax: Number(c.yMax) };
+    /* 끝까지 밀면 정확히 경매물건 전용(84.39 ~ 84.39)에서 멈춘다 — 84 · 85 에서 멈춰 같은 면적만 고를 수 없었다(시세분석과 같게, 2026-11-11).
+       경매물건 자리로 먼저 막고 그다음 최소 ≤ 최대 — 거꾸로 하면 최대를 왼쪽으로 끌 때 최소까지 같이 밀려 내려갔다 */
+    if (subj && subj.areaM2 > 0) { const a2 = Math.floor(subj.areaM2 * 100 + 1e-6) / 100; r.mMin = Math.min(r.mMin, a2); r.mMax = Math.max(r.mMax, a2); }
+    if (subj && subj.year > 0) { r.yMin = Math.min(r.yMin, subj.year); r.yMax = Math.max(r.yMax, subj.year); }
     if (r.mMin > r.mMax) r.mMin = r.mMax;
     if (r.yMin > r.yMax) r.yMin = r.yMax;
-    if (subj && subj.areaM2 > 0) { r.mMin = Math.min(r.mMin, Math.floor(subj.areaM2)); r.mMax = Math.max(r.mMax, Math.ceil(subj.areaM2)); }
-    if (subj && subj.year > 0) { r.yMin = Math.min(r.yMin, subj.year); r.yMax = Math.max(r.yMax, subj.year); }
     return r;
   }
   /* 직접범위로 들어갈 때 — 지금 유사도 범위에서 시작(손품조사와 같다). 경매물건이 없으면 지금 막대 그대로 */
@@ -7526,9 +7528,10 @@ span.cal-day.has { cursor: help; }
     const subj = sxBasis() === 'sim' ? sxMeSubject(me) : null;
     const sc = subj && subj.areaM2 > 0 && CLOUD.T && CLOUD.T.simCond ? CLOUD.T.simCond(Number(SXM.sim), subj) : null;
     SX.rows = base.filter((r) => {
-      const a = Number(r['전용면적']) || 0; const y = agBuiltYear(r);
-      /* 같은 건물(같은 지번)은 반경 · 면적 · 건축과 상관없이 넣되, 층은 건다 — 같은층을 골라도 같은 건물 다른 층이 남아 층 옵션이 안 먹는 것처럼 보였다(2026-11-08) */
-      if (meLot && agLotOf(r['소재지']) === meLot) return !(SXM.floor === '0' && myFloor && Number(r['층']) && Number(r['층']) !== myFloor);
+      const a = Math.floor((Number(r['전용면적']) || 0) * 100 + 1e-6) / 100; const y = agBuiltYear(r);   /* 면적은 화면처럼 둘째 자리 버림으로 견준다 */
+      /* 같은 건물(같은 지번)은 반경과 상관없이 넣되, 면적 · 건축 · 층은 건다 — 아파트는 한 지번에 여러 평형이라 면적을 좁혀도 다른 평형이 남았다(시세분석과 같게, 2026-11-11) */
+      const sameLot = meLot && agLotOf(r['소재지']) === meLot;
+      if (sameLot && SXM.floor === '0' && myFloor && Number(r['층']) && Number(r['층']) !== myFloor) return false;
       if (sc) {
         if (!(a >= sc.mMin && a <= sc.mMax)) return false;
         if (subj.year && y && !(y >= sc.yMin && y <= sc.yMax)) return false;
@@ -7539,6 +7542,7 @@ span.cal-day.has { cursor: help; }
         if (y > 0 && ((rc.yMin > SX_YEAR[0] && y < rc.yMin) || (rc.yMax < SX_YEAR[1] && y > rc.yMax))) return false;
         if ((amin && !(a >= amin)) || (amax && !(a > 0 && a <= amax)) || (ymin && !(y >= ymin)) || (ymax && !(y > 0 && y <= ymax))) return false;   /* 왼쪽 검색조건 칸도 그대로 건다 */
       }
+      if (sameLot) return true;   /* 같은 건물 — 반경 · 엘베는 보지 않는다 */
       const k = sxLotKey(r['소재지']);
       if (meSpot && k in SXG.spots) { const p = SXG.spots[k]; if (!p || CLOUD.T.distM(meSpot, p) > SXM.radius) return false; }
       if (SXM.floor === '0' && myFloor && Number(r['층']) && Number(r['층']) !== myFloor) return false;
@@ -7796,13 +7800,15 @@ span.cal-day.has { cursor: help; }
       + `<input id="sxSim" type="range" min="60" max="95" step="5" value="${SXM.sim}"><div class="sx-ticks" aria-hidden="true">${[60, 65, 70, 75, 80, 85, 90, 95].map((v) => `<span>${v}%</span>`).join('')}</div></div>`;
   }
   /* 직접범위 막대 둘(면적 · 건축) — 손품조사 시세분석 웹과 같은 꼴: 왼쪽 이름(아래 평 · 연차), 막대 위 숫자 셋(최소 · 빨간 경매물건 · 최대)은 빨간 줄 자리에 고정 */
+  /* 면적 글 — 정수는 그대로(84), 소수는 둘째 자리 버림(84.39) */
+  const sxATx = (v) => (Number.isInteger(Number(v)) ? String(v) : (Math.floor(Number(v) * 100 + 1e-6) / 100).toFixed(2));
   const sxPos = (v, [lo, hi]) => `${Math.min(100, Math.max(0, ((v - lo) / (hi - lo)) * 100))}%`;
   function sxRangeBits() {
     const subj = sxMeSubject(sxMe()); const rc = SXM.rc; const yNow = SX_YEAR[1];
     const ma = subj && subj.areaM2 > 0 ? subj.areaM2 : 0; const my = subj && subj.year > 0 ? subj.year : 0;
     return {
-      m: { lo: rc.mMin, hi: rc.mMax, b: SX_AREA, me: ma, meTx: ma ? ma.toFixed(2) : '', sub: `${(rc.mMin / 3.3058).toFixed(1)}~${(rc.mMax / 3.3058).toFixed(1)}평` },
-      y: { lo: rc.yMin, hi: rc.yMax, b: SX_YEAR, me: my, meTx: my ? String(my) : '', sub: `${yNow - rc.yMax + 1}~${yNow - rc.yMin + 1}년차` },
+      m: { lo: rc.mMin, hi: rc.mMax, loTx: sxATx(rc.mMin), hiTx: sxATx(rc.mMax), b: SX_AREA, me: ma, meTx: ma ? sxATx(ma) : '', sub: `${(rc.mMin / 3.3058).toFixed(1)}~${(rc.mMax / 3.3058).toFixed(1)}평` },
+      y: { lo: rc.yMin, hi: rc.yMax, loTx: String(rc.yMin), hiTx: String(rc.yMax), b: SX_YEAR, me: my, meTx: my ? String(my) : '', sub: `${yNow - rc.yMax + 1}~${yNow - rc.yMin + 1}년차` },
     };
   }
   function sxRangeHtml() {
@@ -7811,7 +7817,7 @@ span.cal-day.has { cursor: help; }
       const o = B[k]; const at = o.me ? sxPos(o.me, o.b) : sxPos((o.lo + o.hi) / 2, o.b);
       return `<div class="sx-dl"><span class="dn">${name}<small id="sxRgSub-${k}" class="num">${o.sub}</small></span><div class="sx-dual">`
         + `<div class="track"><i class="fill" id="sxRgFill-${k}" style="left:${sxPos(o.lo, o.b)};right:calc(100% - ${sxPos(o.hi, o.b)})"></i>${o.me ? `<i class="base" style="left:${at}"></i>` : ''}`
-        + `<span class="tvg num ${k}" style="left:${at}"><i id="sxRgLo-${k}">${o.lo}</i><i class="me">${o.meTx}</i><i id="sxRgHi-${k}">${o.hi}</i></span></div>`
+        + `<span class="tvg num ${k}" style="left:${at}"><i id="sxRgLo-${k}">${o.loTx}</i><i class="me">${o.meTx}</i><i id="sxRgHi-${k}">${o.hiTx}</i></span></div>`
         + `<input type="range" data-rk="${minK}" min="${o.b[0]}" max="${o.b[1]}" step="1" value="${o.lo}" aria-label="${name} 최소(${unit})">`
         + `<input type="range" data-rk="${maxK}" min="${o.b[0]}" max="${o.b[1]}" step="1" value="${o.hi}" aria-label="${name} 최대(${unit})"></div></div>`;
     };
@@ -7820,12 +7826,15 @@ span.cal-day.has { cursor: help; }
   /* 막대를 끄는 동안 — 다시 그리지 않고 숫자 · 파란 칸만 고친다(놓으면 표 · 지도를 다시 계산) */
   function sxRangeInput(el) {
     const k = el.dataset.rk; const subj = sxMeSubject(sxMe());
-    SXM.rc = sxRcFix({ ...SXM.rc, [k]: Number(el.value) }, subj);
+    let v = Number(el.value);
+    /* 막대는 1㎡ 칸이라 놓는 순간(change) 84.39 가 84 로 읽혔다 — 경매물건 면적 칸(84 · 85)에 닿으면 정확히 84.39 로 */
+    if (subj && subj.areaM2 > 0) { const a2 = Math.floor(subj.areaM2 * 100 + 1e-6) / 100; if (k === 'mMin' && v >= Math.floor(a2)) v = a2; if (k === 'mMax' && v <= Math.ceil(a2)) v = a2; }
+    SXM.rc = sxRcFix({ ...SXM.rc, [k]: v }, subj);
     if (String(SXM.rc[k]) !== el.value) el.value = String(SXM.rc[k]);
     const B = sxRangeBits();
     ['m', 'y'].forEach((g) => {
       const o = B[g]; const f = $(`sxRgFill-${g}`); if (f) { f.style.left = sxPos(o.lo, o.b); f.style.right = `calc(100% - ${sxPos(o.hi, o.b)})`; }
-      const lo = $(`sxRgLo-${g}`); if (lo) lo.textContent = o.lo; const hi = $(`sxRgHi-${g}`); if (hi) hi.textContent = o.hi;
+      const lo = $(`sxRgLo-${g}`); if (lo) lo.textContent = o.loTx; const hi = $(`sxRgHi-${g}`); if (hi) hi.textContent = o.hiTx;
       const sb = $(`sxRgSub-${g}`); if (sb) sb.textContent = o.sub;
     });
   }
