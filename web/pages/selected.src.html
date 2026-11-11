@@ -7669,7 +7669,7 @@ span.cal-day.has { cursor: help; }
     /* 줄을 누르면 지도의 그 지번 점을 고른다(다시 누르면 풀림) — 지도에서 점을 눌러도 이 줄들이 같이 골라진다 */
     return `<tr class="${[same ? 'lot' : '', off ? 'off' : '', (same ? SXG.meOpen : lk && SXG.focus === lk) ? 'focus' : ''].filter(Boolean).join(' ')}" data-act="sx-row" data-v="${esc(lk)}" data-r="${esc(rk)}"><td class="ck-td"><input type="checkbox" data-act="sx-drop" data-v="${esc(rk)}" ${off ? 'checked' : ''} aria-label="${esc(String(r['사건번호'] || ''))} 제외"></td><td class="num">${esc(String(r['사건번호'] || '-'))}</td><td class="num">${agDate(r['매각일'])}</td>${won(r['감정가'])}${won(r['최저가'])}${won(r['매각가'])}${won(sxPerPy(r))}`
       + `<td>${rate}</td><td class="num">${int(r['유찰회수'], '회')}</td><td class="num">${int(r['응찰자수'], '명')}</td>`
-      + `${sxAreaCell(m2)}${sxElevCell(full)}<td class="num">${built}</td><td class="num">${age}</td>${sxDistCell(full)}<td class="num">${fl}</td><td class="l" data-tip="${esc(full)}" data-tip-pos="right"><div class="sx-addr"><span class="addr">${addr || '-'}</span>${same ? '<span class="chips"><span class="same">경매지번</span></span>' : ''}</div></td></tr>`;
+      + `${sxAreaCell(m2, full, /아파트/.test(String(r['종류'] || '')))}${sxElevCell(full)}<td class="num">${built}</td><td class="num">${age}</td>${sxDistCell(full)}<td class="num">${fl}</td><td class="l" data-tip="${esc(full)}" data-tip-pos="right"><div class="sx-addr"><span class="addr">${addr || '-'}</span>${same ? '<span class="chips"><span class="same">경매지번</span></span>' : ''}</div></td></tr>`;
   }
   /* 표 주소 — 시도 · 시군구는 빼고 동(읍면)부터. 동을 못 찾으면 앞의 시도 · 시군구 낱말만 덜어 낸다 */
   const sxShortAddr = (addr) => {
@@ -7696,7 +7696,25 @@ span.cal-day.has { cursor: help; }
     return e > 0 ? `<td><span class="ev o two">${e}대<br>있음</span></td>` : '<td><span class="ev x">없음</span></td>';
   };
   /* 전용 — 두 줄(㎡ 위, 평 아래) */
-  const sxAreaCell = (m2) => (m2 > 0 ? `<td class="num area">${m2.toFixed(2)}㎡<small>${(m2 / 3.305785).toFixed(1)}평</small></td>` : '<td>-</td>');
+  /* 아파트 면적 — '공급㎡ (전용)'(손품조사 규칙, 2026-11-11 사용자). 공급은 그 단지 건축물대장에서 같은 전용 호실 중 가장 많은 값, 단지마다 한 번 받아 둔다.
+     받기 전 · 못 찾으면 '전용 84.39㎡'. 아파트가 아니면 예전대로 ㎡ · 평 */
+  const sxAptKind = () => /아파트/.test(String((saleApplied && saleApplied.kind) || ''));   /* 아파트로 보는 중 — 면적 칸 이름 · 폭 */
+  const sxT2 = (n) => Math.floor(Number(n) * 100 + 1e-6) / 100;
+  function sxSupplyOf(full, m2) {
+    const T = CLOUD.T; if (!T || !T.getComplexAreas || !full) return null;
+    SXG.areas = SXG.areas || {};
+    const k = sxLotKey(full); const v = SXG.areas[k];
+    if (v === undefined) { SXG.areas[k] = 'busy'; T.getComplexAreas(full).then((a) => { SXG.areas[k] = a ? a.groups : null; agPaintTable(); }).catch(() => { SXG.areas[k] = null; }); return null; }
+    if (!Array.isArray(v)) return null;
+    const gs = v.filter((g) => (sxT2(g.exclusive) === sxT2(m2) || Math.abs(g.exclusive - m2) < 0.015) && g.supply - g.exclusive > 0.5).sort((a, b) => b.count - a.count);
+    return gs[0] ? gs[0].supply : null;
+  }
+  const sxAreaCell = (m2, full = '', apt = false) => {
+    if (!(m2 > 0)) return '<td>-</td>';
+    if (!apt) return `<td class="num area">${m2.toFixed(2)}㎡<small>${(m2 / 3.305785).toFixed(1)}평</small></td>`;
+    const sp = sxSupplyOf(full, m2);
+    return sp ? `<td class="num area">${sxT2(sp).toFixed(2)}㎡<small>(${sxT2(m2).toFixed(2)})</small></td>` : `<td class="num area">전용 ${sxT2(m2).toFixed(2)}㎡</td>`;
+  };
   /* 검색리스트 맨 위 '내 물건' — 사건 고정카드의 물건(매각 전이라 매각가 · 매각가율 · 응찰은 비움) */
   function sxMeRowHtml(it) {
     if (it.__ref) return sxRowHtml(it.__ref).replace(/<tr class="[^"]*"/, '<tr class="me"');   /* 같은 지번 · 고른 지번 표시는 빼고 기준물건 빨간 줄만 */   /* 지역으로에서 고른 기준 매각물건 — 맨 윗줄 */
@@ -7708,13 +7726,13 @@ span.cal-day.has { cursor: help; }
     const full = [it.addr, it.bld, it.unit].filter(Boolean).join(' '); const addr = esc(sxShortAddr(full));
     const won = (v) => (Number(v) > 0 ? `<td class="r num">${agWon(v)}</td>` : '<td>-</td>');
     return `<tr class="me"><td class="ck-td"></td><td class="num me-case"><span class="kind-me">경매물건</span><span class="cno">${esc(it.caseNo)}</span></td><td class="num">${it.date ? dotDate(it.date) : '-'}</td>${won(it.apr)}${won(it.min)}<td>-</td><td>-</td><td>-</td><td class="num">${esc(it.round || '-')}</td><td>-</td>`
-      + `${sxAreaCell(m2)}${sxElevCell(it.addr)}<td class="num">${built}</td><td class="num">${age}</td><td class="num">-</td><td class="num">${fl}</td><td class="l" data-tip="${esc(full)}" data-tip-pos="right"><div class="sx-addr"><span class="addr">${addr || '-'}</span><span class="chips"><span class="same">경매지번</span></span></div></td></tr>`;
+      + `${sxAreaCell(m2, it.addr, /아파트/.test(String(a.propertyType || it.type || it.kind || '')))}${sxElevCell(it.addr)}<td class="num">${built}</td><td class="num">${age}</td><td class="num">-</td><td class="num">${fl}</td><td class="l" data-tip="${esc(full)}" data-tip-pos="right"><div class="sx-addr"><span class="addr">${addr || '-'}</span><span class="chips"><span class="same">경매지번</span></span></div></td></tr>`;
   }
   function sxListHtml(rows) {
     const q = String(SX.q || '').replace(/\s+/g, '');
     const view = (q ? rows.filter((r) => `${r['소재지'] || ''}${r['사건번호'] || ''}`.replace(/\s+/g, '').includes(q)) : rows.slice())
       .sort((a, b) => { const x = sxVal(a, SX.sort); const y = sxVal(b, SX.sort); const c = typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'ko'); return SX.desc ? -c : c; });
-    const head = '<th scope="col" class="ck-th" title="체크하면 예상 입찰가 · 평균 · 건수에서 빠집니다">제외</th>' + SX_COLS.map(([h, k]) => `<th scope="col" data-act="sx-sort" data-v="${k}"${k === SX.sort ? ` aria-sort="${SX.desc ? 'descending' : 'ascending'}"` : ''}>${h}<i class="sdir${k === SX.sort ? ' on' : ''}" aria-hidden="true">${k === SX.sort && !SX.desc ? '▲' : '▼'}</i></th>`).join('');
+    const head = '<th scope="col" class="ck-th" title="체크하면 예상 입찰가 · 평균 · 건수에서 빠집니다">제외</th>' + SX_COLS.map(([h, k]) => `<th scope="col" data-act="sx-sort" data-v="${k}"${k === SX.sort ? ` aria-sort="${SX.desc ? 'descending' : 'ascending'}"` : ''}>${k === '전용면적' && sxAptKind() ? '면적<small class="it-th-sub">공급(전용)</small>' : h}<i class="sdir${k === SX.sort ? ' on' : ''}" aria-hidden="true">${k === SX.sort && !SX.desc ? '▲' : '▼'}</i></th>`).join('');
     const me = sxMe();
     const lot = me ? agLotOf(me.addr) : '';
     /* 지역으로에서 고른 기준물건은 맨 윗줄 빨간 줄로만 — 아래 목록에서는 뺀다(2026-11-08) */
@@ -7732,7 +7750,7 @@ span.cal-day.has { cursor: help; }
       /* 지역으로 · 기준 고르기 전 — 건수 옆에 세로 막대와 안내(2026-11-08) */
       + (S.route === 'market' && saleMode === 'region' && !sxRef ? '<i class="sx-lsep" aria-hidden="true"></i><span class="sx-pickhint">기준을 선택하세요 — 표의 줄이나 지도 핀을 누르면 그 물건을 기준으로 비슷한 사례를 찾습니다</span>' : '')
       + `<span class="sx-grow"></span><label class="sx-qbox"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" class="sx-q" id="sxQ" placeholder="주소 · 사건번호 검색" autocomplete="off" aria-label="인근 유사 매각사례에서 찾기" value="${esc(SX.q || '')}"></label></div>`
-      + `<div class="sx-tbl"><table><colgroup>${SX_COL_W.map((w) => (w ? `<col style="width:${w}px">` : '<col>')).join('')}</colgroup><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div></div>`;
+      + `<div class="sx-tbl"><table><colgroup>${SX_COL_W.map((w, i) => (w ? `<col style="width:${i === 10 && sxAptKind() ? 96 : w}px">` : '<col>')).join('')}</colgroup><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div></div>`;
   }
   function sxPaintList() {
     const rows = sxRows(); const el = $('sxList'); if (!rows || !el) return;

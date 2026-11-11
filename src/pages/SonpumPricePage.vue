@@ -122,7 +122,14 @@ const supplyOfEx = (ex: number) => {
 const aptUnit = () => (webEmbed && !props.app ? areaUnit.value : 'm2');
 /** 표 면적 칸 두 줄 — '115.64㎡' 위, '(84.39)' 아래(칸을 좁혀 간격을 고르게, 2026-11-11 사용자) */
 const areaLines = (t: string) => { const i = t.indexOf(' ('); return i > 0 ? [t.slice(0, i), t.slice(i + 1)] : [t, '']; };
-const aptRowArea = (ex: number, same: boolean) => aptAreaText(same ? supplyOfEx(ex) : null, ex, aptUnit());
+// 다른 단지 거래도 그 단지 건축물대장의 공급면적(같은 전용 호실 중 가장 많은 값) — '전용 84.99㎡'만 나오던 것(2026-11-11 사용자). 단지마다 한 번씩만 받는다
+const otherAreas = shallowRef<Record<string, ComplexAreas | null>>({});
+const areasAsked = new Set<string>();
+const supplyIn = (groups: ComplexAreas['groups'] | undefined, ex: number) => {
+  const gs = (groups ?? []).filter((g) => (t2s(g.exclusive) === t2s(ex) || Math.abs(g.exclusive - ex) < 0.015) && g.supply - g.exclusive > 0.5).sort((a, b) => b.count - a.count);
+  return gs[0]?.supply ?? null;
+};
+const aptRowArea = (ex: number, same: boolean, r?: { umdNm: string; jibun: string }) => aptAreaText(same ? supplyOfEx(ex) : r ? supplyIn(otherAreas.value[`${r.umdNm}|${r.jibun}`]?.groups, ex) : null, ex, aptUnit());
 const aptMyArea = computed(() => { const ex = Number(props.auction.buildingAreaM2) || me.value.areaM2; return aptAreaText(myAreas.value?.mine?.supply ?? supplyOfEx(ex), ex, aptUnit()); });   // 전용은 물건 자료 값(다른 탭과 같은 59.98)
 const myPub = computed(() => res.value?.price?.price ?? 0);
 const pubMissing = computed(() => !!res.value && !myPub.value);
@@ -322,6 +329,15 @@ const shownRows = computed(() => {
 const MORE_AT = 10;
 const showAll = ref(false);
 const listRows = computed(() => (showAll.value ? shownRows.value : shownRows.value.slice(0, MORE_AT)));
+watch(() => (isAptKind ? [...new Set(listRows.value.filter((r) => !r.same && r.jibun).map((r) => `${r.umdNm}|${r.jibun}`))].join(',') : ''), async (k) => {
+  for (const key of k ? k.split(',') : []) {
+    if (areasAsked.has(key)) continue;
+    areasAsked.add(key);
+    const [umd, j] = key.split('|');
+    const v = await getComplexAreas(lotAddr(umd, j)).catch(() => null);
+    otherAreas.value = { ...otherAreas.value, [key]: v };
+  }
+}, { immediate: true });
 
 // ===== 결론 — 매매 · 전세(값 거르기까지 건 줄) =====
 const saleRows = computed(() => candidates.value.filter((r) => r.group === '매매' && passKeep(r)));
@@ -1026,7 +1042,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
                 <td v-else-if="r.group === '전세'" class="r pa-num two">{{ n0(r.pub * HUG_RATE) }}<small :class="{ neg: r.price > r.pub * HUG_RATE }">{{ r.price > r.pub * HUG_RATE ? `한도초과 ${n0(r.price - r.pub * HUG_RATE)}` : '한도 안' }}</small></td>
                 <td v-else class="r pa-num two">{{ n0(r.pub * HUG_RATE) }}<small :class="{ neg: r.price - r.pub * HUG_RATE < 0 }">갭 {{ n0(r.price - r.pub * HUG_RATE) }}</small></td>
               </template>
-              <td v-if="isAptKind" class="r pa-num two">{{ areaLines(aptRowArea(r.areaM2, !!r.same))[0] }}<small v-if="areaLines(aptRowArea(r.areaM2, !!r.same))[1]">{{ areaLines(aptRowArea(r.areaM2, !!r.same))[1] }}</small></td>
+              <td v-if="isAptKind" class="r pa-num two">{{ areaLines(aptRowArea(r.areaM2, !!r.same, r))[0] }}<small v-if="areaLines(aptRowArea(r.areaM2, !!r.same, r))[1]">{{ areaLines(aptRowArea(r.areaM2, !!r.same, r))[1] }}</small></td>
               <td v-else class="r pa-num two">{{ r.areaM2.toFixed(2) }}㎡<small>{{ (r.areaM2 / PY).toFixed(2) }}평</small></td>
               <td><span v-if="r.elev === undefined || r.elev === null" class="ev u" :title="r.elev === null ? '건축물대장을 찾지 못했습니다' : '조회 중'">-</span><span v-else-if="r.elev > 0" class="ev o two">{{ r.elev }}대<br>있음</span><span v-else class="ev x">없음</span></td>
               <td class="pa-num">{{ r.buildYear || '-' }}</td>
