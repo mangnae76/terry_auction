@@ -9622,7 +9622,7 @@ const goBack = () => router.back();
                     </tr></thead>
                     <tbody>
                       <tr v-for="r in cmpRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine, on: cmpIsOn(r) }]" tabindex="0" @click="cmpToggle(cmpKeyOf(r))" @keydown.enter="cmpToggle(cmpKeyOf(r))">
-                        <td class="nm"><span class="cmp-nm-line"><span class="cmp-nm" :title="r.name || r.jibun">{{ r.name || r.jibun }}</span><span v-if="r.mine" class="cmp-tag">선정물건</span></span><small class="sup-tbl-sub">{{ areaPair(r.supply, r.area) }}</small></td>
+                        <td class="nm" :data-tip="r.name || r.jibun" data-tip-pos="left"><span class="cmp-nm-line"><span class="cmp-nm">{{ r.name || r.jibun }}</span><span v-if="r.mine" class="cmp-tag">선정물건</span></span><small class="sup-tbl-sub">{{ areaPair(r.supply, r.area) }}</small></td>
                         <!-- 점수를 누르면 계산 내역 팝업(조건별 등수 칸은 팝업으로, 2026-11-11 시안) -->
                         <td class="n"><button type="button" class="cmp-sc" :aria-label="`${r.name || r.jibun} 입지 점수 계산 보기`" @click.stop="cmpPopOpen('loc', r, $event)">{{ cmpScore(r.loc) }}</button></td>
                         <td class="n"><span v-if="cmpRankOf.get(cmpKeyOf(r))" :class="['cmp-rk', { r1: cmpRankOf.get(cmpKeyOf(r)) === 1 }]">{{ cmpRankOf.get(cmpKeyOf(r)) }}</span><template v-else>-</template></td>

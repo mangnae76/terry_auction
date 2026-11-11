@@ -3,7 +3,7 @@ import { userMessage } from '../services/userMessage';
 // 손품조사 › 시세분석 — 선정물건 둘레(반경) · 비슷한 조건(유사도)의 실거래로 「실거래가 예상」을 낸다.
 // 위→아래: ⓪ 조회 줄 → Ⓐ 실거래가 예상 띠 → Ⓑ 지도 · 조건 줄 · 유사물건 표 → Ⓒ 시세종합 → Ⓓ 호가 입력.
 // 셈은 services/priceAnalysis.ts, 이 화면은 자료를 모으고 그린다. 고른 조건 · 결과는 물건(marketPicks)에 남아 손품결론이 읽는다.
-import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref, shallowRef, markRaw } from 'vue';
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, onUpdated, ref, watch, type Ref, shallowRef, markRaw } from 'vue';
 import type { AuctionDetail, MarketPickRow, MarketPicks, PriceView } from '../types/auction';
 import { analyzeAddress, floorOfHo, pickCaseTrade, type CasePropertyType, type CaseTradeResult, type CaseTradeRow } from '../services/caseTradeAnalysis';
 import {
@@ -246,7 +246,9 @@ const candidates = computed(() => {
   const raw = inRange(allRows.value, radius.value, cond.value, me.value.floor);
   // 웹 — 같은 건물(같은 지번) 거래에도 면적 · 건축 조건을 건다. 아파트는 한 지번에 여러 평형이 있어, 면적을 좁혀도 같은 단지 다른 평형이 그대로 남았다(2026-11-11 사용자)
   const c = cond.value;
-  const list = webEmbed ? raw.filter((r) => !r.same || (areaIn(r.areaM2, c) && (!(r.buildYear ?? 0) || ((r.buildYear ?? 0) >= c.yMin && (r.buildYear ?? 0) <= c.yMax)))) : raw;
+  // 엘베도 같은 건물에 건다(엘베 '없음'인데 같은 단지 거래가 남았다) — 엘베를 아직 모르는 건물은 거르지 않는다
+  const elevOk = (r: PriceRow) => !c.elev || r.elev == null || (c.elev === 'yes' ? r.elev > 0 : r.elev === 0);
+  const list = webEmbed ? raw.filter((r) => !r.same || (elevOk(r) && areaIn(r.areaM2, c) && (!(r.buildYear ?? 0) || ((r.buildYear ?? 0) >= c.yMin && (r.buildYear ?? 0) <= c.yMax)))) : raw;
   // 웹 — '같은 층'이면 같은 건물 거래에도 층을 건다. 같은 건물은 늘 넣는 규칙이 앞서 5층 · 3층이 섞여 층이 안 먹는 것처럼 보였다(2026-11-08)
   if (!webEmbed || rangeCond.value.floor !== 0 || !me.value.floor) return list;
   return list.filter((r) => !r.same || !r.floorNo || r.floorNo === me.value.floor);
@@ -680,7 +682,7 @@ const evenCols = () => {
     colsKey = `fixed|${cw}`;
     t.querySelector('colgroup')?.remove();
     // 주소 칸에 자리를 더 주려고 다른 칸은 조금씩 좁게
-    const W: Record<string, number> = { date: 86, won: 112, perPy: 92, pub: 116, gap: 116, area: 80, elev: 56, year: 58, dist: 58, floor: 46 };
+    const W: Record<string, number> = { date: 86, won: 112, perPy: 92, pub: 116, gap: 116, area: isAptKind ? 150 : 80, elev: 56, year: 58, dist: 58, floor: 46 };   // 아파트 면적은 '115.64㎡ (84.39)' 한 줄이 다 들어가게(80 이면 잘렸다)
     const ths = [...t.querySelectorAll('thead th')] as HTMLElement[];
     const base = (el: HTMLElement) => (el.classList.contains('ck-th') ? 40 : el.classList.contains('acts-th') ? 100 : el.dataset.k ? W[el.dataset.k] ?? 0 : 52);
     const fixedSum = ths.reduce((a, el) => a + base(el), 0);
@@ -716,6 +718,8 @@ watch([listRows, stats, curPub, enriching], () => { if (enriching.value) return;
 if (sonTab) watch(sonTab, (t) => { if (t === 'price') void nextTick(evenCols); });
 
 const onResize = () => { evenCols(); };
+// 웹 — 저장 등으로 표를 새로 그리면 칸 폭(colgroup)이 사라져 표가 오른쪽으로 삐져나왔다 — 다시 그려질 때 칸 폭이 없으면 바로 다시 잰다(2026-11-11 사용자)
+onUpdated(() => { const t = tableEl.value; if (webEmbed && t && !t.querySelector('colgroup')) { colsKey = ''; evenCols(); } });
 onMounted(() => { window.addEventListener('resize', onResize); void run(); });
 // ===== 웹 — 지도 전체화면(C안, 2026-11-05): 왼쪽 지도 · 오른쪽 고정 칸(결론 · 조건 · 유사물건 목록). 이 상자를 body 로 옮겨 화면을 채운다 =====
 /* 전체화면은 새로고침 · 다른 물건에서도 그대로(고른 보기는 남긴다) — 닫기를 눌러야 풀린다 */
@@ -967,7 +971,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td class="pa-num">{{ me.year || '-' }}</td>
               <td class="r pa-num">0m</td>
               <td class="pa-num">{{ me.floor || '-' }}</td>
-              <td class="l"><div class="pa-addr"><span class="addr" :title="myAddr">{{ myAddr }}</span><span class="chips"><span class="same">경매지번</span></span></div></td>
+              <td class="l" :data-tip="webEmbed ? myAddr : undefined" data-tip-pos="right"><div class="pa-addr"><span class="addr">{{ myAddr }}</span><span class="chips"><span class="same">경매지번</span></span></div></td>
               <td class="acts-td"><span class="acts">
                 <button type="button" class="ab n" title="네이버 부동산에서 이 빌라 보기" aria-label="네이버 부동산에서 보기" @click="goNaver(props.auction.address)">N</button>
                 <button type="button" :class="['ab p', { ok: okKey === 'mineP' }]" :title="`부동산플래닛에서 보기 — 「${region?.dong} ${lot}」를 복사해 두고 지도를 엽니다`" aria-label="부동산플래닛에서 보기" @click="goPlanet(`${region?.dong ?? ''} ${lot}`, 'mineP')">P</button>
@@ -999,7 +1003,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td class="pa-num">{{ r.buildYear || '-' }}</td>
               <td class="r pa-num">{{ r.dist ?? '-' }}m</td>
               <td class="pa-num">{{ r.floorNo || '-' }}</td>
-              <td class="l"><div class="pa-addr"><span class="addr" :title="addrOf(r)"><i v-if="orderOf[r.jibun]" class="no" :title="`임장 순서 ${orderOf[r.jibun]}번 — 지도 번호와 같다`">{{ orderOf[r.jibun] }}</i>{{ addrOf(r) }}</span><span v-if="r.same" class="chips"><span class="same">경매지번</span><span v-if="Math.abs(r.areaM2 - me.areaM2) <= 0.05" class="same eq">같은면적</span></span><span v-else-if="fieldChips(r.jibun).length" class="chips"><span v-for="c in fieldChips(r.jibun)" :key="c.t" :class="['pa-fc', c.k]">{{ c.t }}</span></span></div></td>
+              <td class="l" :data-tip="webEmbed ? addrOf(r) : undefined" data-tip-pos="right"><div class="pa-addr"><span class="addr"><i v-if="orderOf[r.jibun]" class="no" :title="`임장 순서 ${orderOf[r.jibun]}번 — 지도 번호와 같다`">{{ orderOf[r.jibun] }}</i>{{ addrOf(r) }}</span><span v-if="r.same" class="chips"><span class="same">경매지번</span><span v-if="Math.abs(r.areaM2 - me.areaM2) <= 0.05" class="same eq">같은면적</span></span><span v-else-if="fieldChips(r.jibun).length" class="chips"><span v-for="c in fieldChips(r.jibun)" :key="c.t" :class="['pa-fc', c.k]">{{ c.t }}</span></span></div></td>
               <td class="acts-td" @click.stop><span class="acts">
                 <button type="button" class="ab n" title="네이버 부동산에서 이 빌라 보기 — 그 건물을 가운데 두고 지도를 바로 엽니다" aria-label="네이버 부동산에서 보기" @click="goNaver(fullAddr(r))">N</button>
                 <button type="button" :class="['ab p', { ok: okKey === `${r.id}P` }]" :title="`부동산플래닛에서 보기 — 「${r.umdNm} ${r.jibun}」를 복사해 두고 지도를 엽니다`" aria-label="부동산플래닛에서 보기" @click="goPlanet(`${r.umdNm} ${r.jibun}`, `${r.id}P`)">P</button>
