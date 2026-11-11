@@ -9486,7 +9486,7 @@ const goBack = () => router.back();
                   <KakaoMapTools v-if="cmpTools" :k="cmpTools.k" :map="cmpTools.map" :near="cmpMePoint" />
                   <button v-if="!cmpFs" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="cmpFs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
                   <!-- 범례 — 시세분석 지도처럼 왼쪽 아래(2026-11-11) -->
-                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span><span><i class="ring" />5분</span><span><i class="ring dash" />10분</span></div>
+                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span><span><i class="ring" />도보 5분(400m)</span><span><i class="ring dash" />도보 10분(800m)</span></div>
                   <p v-if="!cmpRows.some((r) => r.point)" class="cmp-wait">{{ supLoaded ? '단지 위치를 찾는 중입니다…' : '실거래를 받는 중입니다…' }}</p>
                 </div>
                 <aside v-if="cmpFs" class="cmp-fs-list">
