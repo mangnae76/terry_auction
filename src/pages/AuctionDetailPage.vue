@@ -9786,7 +9786,7 @@ const goBack = () => router.back();
                     <tr class="cmp-sum"><td>합계</td><td /><td /><td :class="['n', 'adp-ind-adj', totalAdj[1] > 0 || repairMan() > 0 ? 'up' : totalAdj[0] < 0 ? 'down' : 'zero']"><b>{{ unitAdjText }}</b></td></tr>
                   </tbody>
                 </table></div></div>
-                <p class="cmp-ind-note"><template v-if="isApartment">비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 향/일조량 · 뷰 · 수리유무 · 동 위치는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다. 층은 4층부터 탑층 아래까지가 기준층이라 0%, 수리는 20평대 기준 금액입니다.</template><template v-else>비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 향 · 일조량 · 뷰 · 수리유무 · 건물외부 · 건물내부는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다. 층은 4층부터 탑층 아래까지가 기준층이라 0%입니다.</template></p>
+                <p class="cmp-ind-note"><template v-if="isApartment">비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 향/일조량 · 뷰 · 수리유무 · 동 위치는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다. 층은 4층부터 탑층 아래까지가 기준층이라 0%, 수리는 20평대 기준 금액입니다.</template><template v-else>비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 향 · 일조량 · 뷰 · 수리유무 · 건물외부 · 건물내부는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다. 층은 엘베가 없으면 4 · 5층 −10% · 3층 −5% · 2층 0%, 엘베가 있으면 4층까지 0% · 5층 −10%입니다.</template></p>
               </div>
               <div class="cmp-est">
                 <!-- 기준가 칸은 뺐다 — 위 기준가 카드와 같은 값이라 겹친다(2026-11-11 사용자) -->
