@@ -5606,20 +5606,15 @@ const cmpOn = computed(() => webEmbed && isApartment.value && sonpumMode);
 const cmpConds = computed(() => (cmpOn.value && !selectedRoomType.value ? [] : rankConditions.value));
 /** 세대구성 — 고른 룸수(없으면 평형대)의 가족 */
 const cmpWho = computed(() => whoTextOf((selectedRoomType.value?.details ?? []) as Array<{ who: string; kinds: string[] }>));
-// 거르기(2026-11-11) — 범위(같은 동 · 500m · 1km) · 기간(1년 · 2년) · 평형 폭(±3 · ±5 · ±10㎡) · 거래(매매 · 전세). 고른 값은 새로고침 · 다른 물건에서도 그대로
+// 거르기 — 열 때마다 기본값 1km · 6개월 · 매매(2026-11-11 사용자 규칙 '이 규칙은 지켜줘'). 고른 값을 저장해 두지 않는다
 type CmpRange = 'dong' | 500 | 1000 | 2000;
-const CMP_FILTER_KEY = 'son.cmp.filter';
-const cmpSaved = (() => { try { return JSON.parse(localStorage.getItem(CMP_FILTER_KEY) ?? '{}') as { range?: CmpRange; months?: 6 | 12 | 24; years?: 1 | 2; tol?: 3 | 5 | 10; kind?: '매매' | '전세' }; } catch { return {}; } })();
-// 읍면동 · 1km · 2km — 동 전체가 아니라 선정물건 둘레만 보고 싶을 때(2026-11-11 사용자 다시). 위 청라동 평균 칸은 범위와 상관없이 늘 읍면동
-const cmpRange = ref<CmpRange>(cmpSaved.range === 1000 || cmpSaved.range === 2000 ? cmpSaved.range : 'dong');
+const cmpRange = ref<CmpRange>(1000);   // 읍면동 · 1km · 2km. 위 청라동 평균 칸은 범위와 상관없이 늘 읍면동
 const CMP_RANGES: Array<[CmpRange, string]> = [['dong', '읍면동'], [1000, '1km'], [2000, '2km']];
-/** 기간(개월) — 시세분석처럼 6개월 · 1년 · 2년(2026-11-11). 예전에 저장한 years(1 · 2)는 12 · 24 로 */
-const cmpMonths = ref<6 | 12 | 24>(cmpSaved.months ?? (cmpSaved.years === 2 ? 24 : 12));
+const cmpMonths = ref<6 | 12 | 24>(6);
 const CMP_PERIODS: Array<[6 | 12 | 24, string]> = [[6, '6개월'], [12, '1년'], [24, '2년']];
 /** 평형 폭 — ±3㎡(약 1평)로 고정. 아파트는 59 · 74 · 84㎡처럼 규격이라 넓혀도 같은 단지만 잡히고, ±10㎡는 다른 타입까지 섞였다(2026-11-11 사용자, 단추 뺌) */
 const cmpTol = ref<3 | 5 | 10>(3);
-const cmpKind = ref<'매매' | '전세'>(cmpSaved.kind ?? '매매');   // 처음엔 매매(강의 — 단지 비교 기본 잣대는 매매 평당가, 2026-11-11 사용자). 고른 값은 그대로 남는다
-watch([cmpRange, cmpMonths, cmpTol, cmpKind], () => { try { localStorage.setItem(CMP_FILTER_KEY, JSON.stringify({ range: cmpRange.value, months: cmpMonths.value, tol: cmpTol.value, kind: cmpKind.value })); } catch { /* 이 창에서만 */ } });
+const cmpKind = ref<'매매' | '전세'>('매매');   // 강의 — 단지 비교 기본 잣대는 매매
 /** 단지 열쇠 — 동 · 지번(반경 범위에선 다른 동의 같은 지번이 있다). 선정물건은 'mine' */
 const cmpKeyOf = (c: { mine: boolean; umdNm: string; jibun: string }) => (c.mine ? 'mine' : `${c.umdNm}|${c.jibun}`);
 // 면적 글 — 아파트는 공급면적 먼저, 괄호 안 전용은 숫자만('83.17㎡ (59.98)' · '25.2평 (18.1)'). 단위는 손품조사 탭 줄 단추(sonAreaUnit)
