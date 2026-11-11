@@ -2816,9 +2816,12 @@ const INDIV_GROUPS: IndivGroup[] = [
  *  용적률은 정보요약(표제부 · 단지정보) 값이 자동으로 들어가고, 손으로 고칠 수 있다 */
 const APT_INDIV_EXTRA: IndivItem[] = [
   { id: 'ind.far', label: '용적률', text: true, suffix: '%', rate: '5%' },
-  // 초등학교를 품은 아파트 — 큰길을 건너지 않고 초등학교에 닿나(강의 '끼고 있냐 도로를 건너냐로 5천~1억', 2026-11-11)
-  { id: 'ind.schoolHug', label: '초품아', options: ['O', 'X'], rate: '10%' },
 ];
+/** 초품아 — 초등학교 가는 길에 큰길을 건너나(강의 '끼고 있냐 도로를 건너냐로 5천~1억'). 거리는 입지 점수가 이미 보므로
+ *  개별성이 아니라 입지 점수의 초등학교 칸 보정으로: 건너면 초등학교 거리 점수를 절반(2026-11-11 사용자). 선정물건만 고른다 */
+const SCHOOL_ROAD_CUT = 0.5;
+const SCHOOL_HUG_ITEM = { id: 'ind.schoolHug', label: '초품아', options: ['O', 'X'], rate: '0%' } as IndivItem;
+const schoolCross = computed(() => indivValue('ind.schoolHug') === 'X');
 /** 지하주차장 연결은 같은 단지 안에서도 동마다 달라 단지 내 개별성(호실 가격)으로(2026-11-11 사용자) */
 const APT_UNIT_EXTRA: IndivItem[] = [
   { id: 'ind.ugLink', label: '지하주차장 연결', options: ['O', 'X'], rate: '3%' },
@@ -2917,7 +2920,7 @@ const indivDisplay = (item: IndivItem) => {
  *  값은 사용자가 안산파크푸르지오 물건에 적어 둔 비율 그대로. 지하주차장 연결 · 용적률은 5%(K-apt 연결 전까지),
  *  수리유무 · 건물외부 · 건물내부는 적힌 값이 없어 항목 참고 비율. 층은 층수 규칙(indivFloorRate)이 따로 정한다 */
 const INDIV_RATE_DEFAULT: Record<string, string> = {
-  'ind.age': '20~30', 'ind.parking': '5', 'ind.elevator': '10', 'ind.corridor': '15', 'ind.slope': '5', 'ind.far': '5', 'ind.schoolHug': '10',
+  'ind.age': '20~30', 'ind.parking': '5', 'ind.elevator': '10', 'ind.corridor': '15', 'ind.slope': '5', 'ind.far': '5',
   'ind.mgmt': '5', 'ind.inside': '5',
   'ind.direction': '5', 'ind.type': '5', 'ind.rooms': '5', 'ind.view': '5', 'ind.sunlight': '5', 'ind.repair': '10',
   'ind.ugLink': '3', 'ind.dongPos': '5',   // 지하주차장 연결 동 약 3%(강의) · 동 위치는 강의 '층 · 동 · 타입 개별 편차 약 5%'
@@ -5673,7 +5676,6 @@ const cmpZoneScore = (r: { mine: boolean; buildYear: number }) => {
     const el = indivValue('ind.elevator'); if (el) parts.push([mid('ind.elevator'), el === 'O' ? 100 : 0]);
     const sl = indivValue('ind.slope'); if (sl) parts.push([mid('ind.slope'), sl === 'O' ? 0 : 100]);   // 경사 있으면 감점(현장에서 고른다)
     const co = indivValue('ind.corridor'); if (co) parts.push([mid('ind.corridor'), co === '계단식' ? 100 : 0]);   // 복도식은 춥고 안전 문제로 싸다(강의)
-    const sh = indivValue('ind.schoolHug'); if (sh) parts.push([mid('ind.schoolHug'), sh === 'O' ? 100 : 0]);
     const far = Number(indivDisplay({ id: 'ind.far', label: '용적률', text: true, suffix: '%' } as IndivItem).replace(/[^\d.]/g, ''));
     if (far > 0) parts.push([mid('ind.far'), Math.max(0, Math.min(100, ((300 - far) / 100) * 100))]);
   }
@@ -5718,7 +5720,7 @@ const pctText = ([a, b]: [number, number]) => {
  *  값은 개별성 분석과 같은 칸(indivValues)이라 개별성 분석 · PDF 에도 그대로 나온다. 개별성 분석은 접어 두고 비중 · 비율만 펼쳐 고친다 */
 const cmpIndOpen = ref(false);
 /** 단지 점수(cmpZoneScore)에 들어가는 구역 내 개별성 칸 */
-const ZONE_IDS = ['ind.age', 'ind.parking', 'ind.elevator', 'ind.corridor', 'ind.slope', 'ind.far', 'ind.schoolHug'];
+const ZONE_IDS = ['ind.age', 'ind.parking', 'ind.elevator', 'ind.corridor', 'ind.slope', 'ind.far'];
 const indivPicked = (item: IndivItem, opt: string) => (item.multi ? indivList(item.id).includes(opt) : indivValue(item.id) === opt);
 const indivPick = (item: IndivItem, opt: string) => {
   if (item.multi) toggleIndivMulti(item.id, opt);
@@ -5767,7 +5769,8 @@ const cmpRows = computed<CmpRow[]>(() => {
     const supply = c.mine ? (mySupplyM2.value ? { lo: mySupplyM2.value, hi: mySupplyM2.value } : null) : cmpSupply.value[cmpKeyOf(c)] ?? null;
     // 입지점수 — 조건마다 거리 점수(1km 안에 없으면 0점)를 세대구성 비중으로. 주변시설을 아직 못 받았으면 null
     const lw = conds.map((cond) => CMP_LOC_W[cond] ?? 20);
-    const loc = env && conds.length ? conds.reduce((a2, _c, i) => a2 + lw[i] * (places[i] ? cmpDistScore(places[i]!.m) : 0), 0) / lw.reduce((x, y) => x + y, 0) : null;
+    const cut = (cond: string) => (c.mine && cond === '초등학교' && schoolCross.value ? SCHOOL_ROAD_CUT : 1);   // 선정물건이 큰길을 건너 초등학교에 가면 절반
+    const loc = env && conds.length ? conds.reduce((a2, cond, i) => a2 + lw[i] * (places[i] ? cmpDistScore(places[i]!.m) * cut(cond) : 0), 0) / lw.reduce((x, y) => x + y, 0) : null;
     const zone = cmpZoneScore(c);
     const tot = loc === null ? null : loc * 0.6 + (zone ?? loc) * 0.4;   // 입지 60 · 구역 내 개별성 40(개별성을 모르면 입지로)
     return { ...c, ranks, avg, sum, point, places, supply, loc, zone, tot };
@@ -9473,7 +9476,9 @@ const goBack = () => router.back();
                     <tbody>
                       <tr v-for="(c, i) in cmpConds" :key="c">
                         <td>{{ c }}</td>
-                        <td class="lft cmp-place"><template v-if="cmpPicked.places[i]"><span class="cmp-ic">{{ cmpPicked.places[i]!.ic }}</span>{{ cmpPlaceName(cmpPicked.places[i]!.name) }}</template><template v-else>-</template></td>
+                        <td class="lft cmp-place"><template v-if="cmpPicked.places[i]"><span class="cmp-ic">{{ cmpPicked.places[i]!.ic }}</span>{{ cmpPlaceName(cmpPicked.places[i]!.name) }}</template><template v-else>-</template>
+                          <!-- 초품아 — 선정물건만, 큰길을 건너면 초등학교 거리 점수 절반 -->
+                          <span v-if="cmpPicked.mine && c === '초등학교'" class="cmp-hug"><span class="cmp-ind-seg" role="group" aria-label="초등학교 가는 길 큰길"><button v-for="[v, t] in [['O', '큰길안건넘'], ['X', '큰길건넘']]" :key="v" type="button" :data-t="t" :class="{ on: indivValue('ind.schoolHug') === v }" :aria-pressed="indivValue('ind.schoolHug') === v" @click="indivPick(SCHOOL_HUG_ITEM, v)">{{ t }}</button></span><small class="cmp-auto">건너면 초등학교 점수 절반</small></span></td>
                         <td class="n">{{ cmpPicked.places[i] ? `${cmpPicked.places[i]!.m.toLocaleString('ko-KR')}m` : '-' }}</td>
                         <td class="n">{{ cmpPicked.places[i] ? `${Math.max(1, Math.round(cmpPicked.places[i]!.m / WALK_M_PER_MIN))}분` : '-' }}</td>
                         <td class="n"><span v-if="cmpPicked.ranks[i]" :class="['cmp-rk', { r1: cmpPicked.ranks[i] === 1 }]">{{ cmpPicked.ranks[i] }}</span><template v-else>-</template></td>
@@ -12268,6 +12273,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-rate-in input { width: 68px; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1px solid #e3e8f0; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 700; text-align: right; color: #2b6df3; background: #fff; }
 .cmp-rate-in input::placeholder { color: #374151; font-weight: 400; opacity: 1; }   /* 기본값 — 흐리지 않게(값이 비어 보이지 않게) */
 .cmp-ind-note { margin: 8px 2px 0; font-size: 12.5px; color: #6b7280; line-height: 1.6; }
+.cmp-hug { display: inline-flex; align-items: center; gap: 6px; margin-left: 10px; vertical-align: middle; }
 .cmp-ref { margin-top: 10px; display: grid; gap: 6px; padding: 10px 12px; background: #f7f8fb; border-radius: 8px; }
 .cmp-ref p { margin: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; font-size: 13px; color: #374151; }
 .cmp-ref .lab { min-width: 150px; font-weight: 700; color: #111827; }
