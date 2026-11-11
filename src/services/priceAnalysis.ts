@@ -19,6 +19,9 @@ export type SonPriceOut = {
   /** 다른 단지 거래가 섞였나 — 섞이면 구역 내 개별성을 열어 보정 */
   other: boolean;
   rows: Array<{ same: boolean; name: string; dong?: string; floorNo: number; price: number; areaM2: number }>;
+  /** 시세분석에서 엘베(있음 · 없음)로 걸렀나 · 건축 연도 범위로 걸렀나 — 걸렀으면 그 개별성은 이미 맞춰져 보정 0 */
+  elevFiltered?: boolean;
+  yearFiltered?: boolean;
 };
 export const RADII = [100, 300, 500, 1000] as const;
 export const PERIODS = [3, 6, 12, 24] as const;   // 3년은 뺐다(2026-11-02)

@@ -6143,7 +6143,10 @@ const cmpBase = computed(() => {
 });
 const cmpUnitBase = computed(() => cmpBase.value.value);
 /** 구역 내 개별성 ± — 단지 자체의 장단점을 가격 %로(단지 내 개별성과 같은 방식, 2026-11-11 사용자). 1 가산 · 0 보통 · -1 감산 */
+/** 시세분석 조건으로 이미 맞춘 개별성 — 엘베를 걸었으면 엘베, 건축 연도 범위를 걸었으면 연식은 보정 0(두 번 세지 않게, 2026-11-12 사용자) */
+const zoneMatched = (id: string) => (id === 'ind.elevator' && !!sonPriceOut?.value?.elevFiltered) || (id === 'ind.age' && !!sonPriceOut?.value?.yearFiltered);
 const zoneSign = (id: string): number => {
+  if (zoneMatched(id)) return 0;
   const v = indivValue(id);
   if (id === 'ind.age') { const y = Number((v.match(/^(\d{4})/) ?? [])[1] ?? 0); if (!y) return 0; const age = new Date().getFullYear() - y + 1; return age <= 10 ? 1 : age >= 30 ? -1 : 0; }   // 10년차 이하 신축 + · 30년차 이상 구축 −
   if (id === 'ind.parking') { const n = Number((indivParkingPerHome.value || '').replace(/[^\d.]/g, '')); return !n ? 0 : n >= 1.2 ? 1 : n < 0.8 ? -1 : 0; }   // 세대당 1.2대 이상 + · 0.8대 미만 −
@@ -9761,7 +9764,7 @@ const goBack = () => router.back();
                         <b v-else>{{ indivAutoText(item) }}</b>
                       </td>
                       <td v-if="zoneApplied" class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
-                      <td v-if="zoneApplied" :class="['n', 'adp-ind-adj', !zoneApplied || zoneSign(item.id) === 0 ? 'zero' : zoneSign(item.id) > 0 ? 'up' : 'down']">{{ !zoneApplied || zoneSign(item.id) === 0 ? '0%' : pctText(zoneAdj(item.id)) }}</td></tr>
+                      <td v-if="zoneApplied" :class="['n', 'adp-ind-adj', !zoneApplied || zoneSign(item.id) === 0 ? 'zero' : zoneSign(item.id) > 0 ? 'up' : 'down']">{{ !zoneApplied || zoneSign(item.id) === 0 ? '0%' : pctText(zoneAdj(item.id)) }}<small v-if="zoneMatched(item.id)" class="cmp-zone-match">시세분석 조건으로 맞춤</small></td></tr>
                     <tr v-if="!zoneApplied" class="cmp-zone-note"><td colspan="2">손품 체크리스트 — 이 단지 실거래가 · 전세가에 이미 담겨 있어 가격 보정은 하지 않습니다</td></tr>
                   </tbody>
                 </table></div></div>
@@ -12580,6 +12583,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 #sonUnitSlot .unit-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 #sonUnitSlot .unit-h h3 { margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
 #sonUnitSlot .unit-tag { font-size: 13px; font-weight: 700; color: #2b4fd8; background: #eef2ff; border-radius: 5px; padding: 3px 8px; }   /* 시세분석 '결론 · 입력' 표와 같은 꼴 */
+.cmp-zone-match { display: block; font-size: 12px; color: #9ca3af; }   /* 보정 0 — 시세분석에서 이미 같은 조건으로 걸렀다 */
 .cmp-th-hint { display: block; font-weight: 400; font-size: 12px; color: #2563eb; white-space: normal; }   /* '내용' 아래 줄 — 옆 칸과 겹치지 않게 */   /* 내용 머리 옆 파란 안내(2026-11-11 사용자) */
 .cmp-zone-off.warn { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
 .cmp-zone-off b { flex: 0 0 auto; font-size: 14px; font-weight: 800; color: #6b7280; }   /* 기준가 층 거르기 — 같은층 · ±1층 · 전체 */

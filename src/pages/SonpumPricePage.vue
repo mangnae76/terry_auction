@@ -358,11 +358,12 @@ const view = computed(() => {
 // 손품조사 웹 — 아래 '선정물건 호실 예상가'가 이 예상가 · 고른 거래를 기준가로 쓴다(2026-11-11 사용자 시안)
 const sonPriceOut = inject<Ref<SonPriceOut | null> | null>('sonPriceOut', null);
 if (sonPriceOut) {
-  watch([view, kindF, () => rangeCond.value.floor], () => {
+  watch([view, kindF, () => rangeCond.value.floor, cond], () => {
     const v = view.value;
     const rs = kindF.value === '전세' ? jeonseRows.value : kindF.value === '월세' ? monthRows.value : saleRows.value;
     sonPriceOut.value = v ? {
       kind: kindF.value, est: v.est, n: v.n, sameFloor: rangeCond.value.floor === 0, other: rs.some((r) => !r.same),
+      elevFiltered: !!cond.value.elev, yearFiltered: cond.value.yMin > 1980 || cond.value.yMax < new Date().getFullYear(),
       rows: rs.map((r) => ({ same: !!r.same, name: r.name || r.jibun, dong: r.dong, floorNo: r.floorNo, price: r.price, areaM2: r.areaM2 })),
     } : null;
   }, { immediate: true });
