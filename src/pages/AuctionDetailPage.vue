@@ -12507,14 +12507,14 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-back { margin-left: auto; height: 26px; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; font: inherit; font-size: 13px; font-weight: 400; color: #2b6df3; cursor: pointer; }
 .cmp-two.one { grid-template-columns: minmax(0, 1fr); }
 /* 점수 팝업 */
-.cmp-pop { position: fixed; z-index: 3000; left: 50%; top: 120px; width: min(560px, calc(100vw - 32px)); max-height: min(600px, calc(100vh - 32px)); display: grid; grid-template-rows: auto minmax(0, 1fr); background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; box-shadow: 0 12px 32px rgba(17, 24, 39, .18); font-family: inherit; font-size: 13px; color: #111827; }
+.cmp-pop { position: fixed; z-index: 3000; left: 50%; top: 120px; width: min(560px, calc(100vw - 32px)); display: grid; grid-template-rows: auto auto;   /* 안쪽 스크롤 없이 내용만큼 높이(2026-11-11 사용자) */ background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; box-shadow: 0 12px 32px rgba(17, 24, 39, .18); font-family: inherit; font-size: 13px; color: #111827; }
 .cmp-pop-h { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #e3e8f0; cursor: grab; touch-action: none; user-select: none; }
 .cmp-pop-h:active { cursor: grabbing; }
 .cmp-pop-k { margin-right: 8px; font-size: 12.5px; font-weight: 400; color: #6b7280; }   /* 창 이름(2026-11-11 사용자) */
 .cmp-pop-h .grip { color: #9ca3af; letter-spacing: -2px; }
 .cmp-pop-h h4 { flex: 1; min-width: 0; margin: 0; font-size: 14px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmp-pop-h > button { border: 0; background: none; padding: 0 4px; font-size: 18px; line-height: 1; color: #6b7280; cursor: pointer; }
-.cmp-pop-b { overflow: auto; padding: 12px; display: grid; gap: 10px; align-content: start; }
+.cmp-pop-b { padding: 12px; display: grid; gap: 10px; align-content: start; }
 .cmp-pop-b > .cmp-ind-seg { justify-self: start; display: grid; grid-template-columns: repeat(3, 1fr); }   /* 탭 세 칸 같은 폭 */
 .cmp-pop-b > .cmp-ind-seg button { justify-content: center; text-align: center; }
 .cmp-pop .cmp-tbl :is(th, td) { padding: 6px 8px; font-size: 12.5px; }
