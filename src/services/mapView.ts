@@ -44,6 +44,8 @@ export interface MapView {
   focus(p: LatLng, minZoom: number): void;
   circle(c: LatLng, meters: number, s: CircleStyle): void;
   line(points: LatLng[], s: LineStyle): void;
+  /** 다각형 테두리 · 옅은 칠(단지 경계 등) */
+  polygon(points: LatLng[], s: CircleStyle): void;
   pin(p: LatLng, o: PinOpts): PinHandle;
   clear(): void;
   /** true — 한 손가락 끌기 · 휠 확대를 막는다(두 손가락 · 두 번 눌러 확대는 그대로) */
@@ -161,6 +163,14 @@ const kakaoView = (k: KakaoMaps, el: HTMLElement, opts: MapOpts): MapView => {
       });
       o.setMap(map); items.push(o);
     },
+    polygon(points, s) {
+      const o = new k.Polygon({
+        path: points.map((p) => new k.LatLng(p.lat, p.lng)),
+        strokeWeight: s.weight ?? 2, strokeColor: s.color, strokeOpacity: 0.95, strokeStyle: s.dash ? 'dash' : 'solid',
+        fillColor: s.color, fillOpacity: s.fillOpacity ?? 0.06,
+      });
+      o.setMap(map); items.push(o);
+    },
     pin(p, o) {
       const content = box(o);
       content.style.position = 'relative';   // 안쪽 그림(절대 위치)이 이 상자를 기준으로 서게
@@ -220,6 +230,9 @@ const leafletView = (el: HTMLElement, opts: MapOpts): MapView => {
     },
     line(points, s) {
       L.polyline(points.map(ll), { color: s.color, weight: s.weight ?? 4, opacity: s.opacity ?? 0.85, dashArray: s.dash ? '6 6' : undefined }).addTo(layer);
+    },
+    polygon(points, s) {
+      L.polygon(points.map(ll), { color: s.color, weight: s.weight ?? 2, dashArray: s.dash ? '7 5' : undefined, fillColor: s.color, fillOpacity: s.fillOpacity ?? 0.06 }).addTo(layer);
     },
     pin(p, o) {
       const iconOf = (html: string) => L.divIcon({

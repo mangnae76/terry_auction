@@ -35,6 +35,25 @@ const polygonsOf = (g: Feature['geometry']): Ring[][] => {
   return [];
 };
 
+/** 이 점이 들어 있는 필지의 경계(바깥 고리, 위경도) — 브이월드 연속지적도(LP_PA_CBND_BUBUN). 아파트 단지 테두리를 그린다(2026-11-11).
+ *  같은 점은 이 창에서 한 번만 받는다. 못 받으면 null */
+const parcelMemo = new Map<string, Promise<Array<{ lat: number; lng: number }> | null>>();
+export const parcelShapeOf = (lat: number, lng: number) => {
+  const key = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+  if (!parcelMemo.has(key)) parcelMemo.set(key, (async () => {
+    const q = new URLSearchParams({ service: 'data', request: 'GetFeature', data: 'LP_PA_CBND_BUBUN', geomFilter: `POINT(${lng} ${lat})`, format: 'json', size: '5', crs: 'EPSG:4326', geometry: 'true', attribute: 'true' });
+    try {
+      const res = await fetch(`${VWORLD_BASE}/req/data?${q.toString()}`);
+      if (!res.ok) return null;
+      const json = (await res.json()) as { response?: { result?: { featureCollection?: { features?: Feature[] } } } };
+      const f = json.response?.result?.featureCollection?.features?.[0];
+      const ring = polygonsOf(f?.geometry)[0]?.[0] ?? [];
+      return ring.length >= 3 ? ring.map((p) => ({ lat: p[1], lng: p[0] })) : null;
+    } catch { return null; }
+  })());
+  return parcelMemo.get(key)!;
+};
+
 /** 이 점에서 가장 가까운 상업지역 — 안에 있으면 1m, 1.3km 안에 없거나 못 받으면 빈 배열 */
 export const fetchCommercialZone = async (lat: number, lng: number): Promise<NearbyPlace[]> => {
   const d = 0.012;

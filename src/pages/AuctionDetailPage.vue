@@ -82,7 +82,8 @@ import { buildRightsFacts } from '../services/rightsFacts';
 import RightsPanel from '../components/RightsPanel.vue';
 import SonpumPricePage from './SonpumPricePage.vue';
 import type { CasePropertyType } from '../services/caseTradeAnalysis';
-import { ACADEMY_CLUSTER_RADIUS, fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
+import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
+import { parcelShapeOf } from '../services/zoning';
 import { complexesOf, complexNearbyOf, complexPointOf, metersBetween, LOCATION_SOURCES, nearestPlaceOf, PLACE_ICON, rankFromMeters, walkMinOf, WALK_DETOUR, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
 import KakaoMapTools from '../components/KakaoMapTools.vue';
 import { areaUnit, aptAreaText } from '../services/areaUnit';
@@ -5887,15 +5888,23 @@ watch(() => auction.value?.id, () => { cmpNearby.value = {}; cmpPoints.value = {
 const cmpMapEl = ref<HTMLElement | null>(null);
 let cmpMv: MapView | null = null; let cmpMvP: Promise<void> | null = null; let cmpFitted = '';
 const cmpEsc = (t: string) => t.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]!));
+/** 단지 테두리(연속지적도 필지 경계) — 단지마다 한 번 받아 둔다(null 이면 받는 중이거나 없음, 2026-11-11 사용자) */
+const cmpParcels = ref<Record<string, Array<{ lat: number; lng: number }> | null>>({});
 const cmpDraw = () => {
   const mv = cmpMv; if (!mv) return;
   mv.clear();
   const rows = cmpRows.value.filter((r) => r.point); const pick = cmpPicked.value;
+  // 단지 테두리 — 선정물건 주황, 비교 단지 파랑. 처음 보는 단지는 받아 와서 다시 그린다
+  rows.forEach((r) => {
+    const key = cmpKeyOf(r); const sh = cmpParcels.value[key];
+    if (sh) mv.polygon(sh, { color: r.mine ? '#f05a28' : '#2b4fd8', weight: cmpIsOn(r) || r.mine ? 2.4 : 1.6, fillOpacity: r.mine ? 0.08 : 0.05 });
+    else if (!(key in cmpParcels.value)) {
+      cmpParcels.value = { ...cmpParcels.value, [key]: null };
+      void parcelShapeOf(r.point!.lat, r.point!.lng).then((v) => { cmpParcels.value = { ...cmpParcels.value, [key]: v }; if (v) cmpDraw(); });
+    }
+  });
   if (pick?.point) {
     mv.circle(pick.point, (WALK_M_PER_MIN * 10) / WALK_DETOUR, { color: '#2b6df3', weight: 1.4, dash: true, fillOpacity: 0 });
-    // 고른 단지 학원가 — 학원이 모인 200m 원(2026-11-11 사용자). 상업지역 경계는 지도 도구 '지적도'가 빨갛게 보여 따로 그리지 않는다
-    const acPl = pick.places.find((p) => p?.cond === '학원가');
-    if (acPl?.lat && acPl.lng) mv.circle({ lat: acPl.lat, lng: acPl.lng }, ACADEMY_CLUSTER_RADIUS, { color: '#6d28d9', weight: 1.6, dash: true, fillOpacity: 0.07 });
     mv.circle(pick.point, (WALK_M_PER_MIN * 5) / WALK_DETOUR, { color: '#2b6df3', weight: 1.6, fillOpacity: 0.07 });
     // 조건별 가장 가까운 시설 — 지도 도구 '주변'과 같은 그림 · 색 상자(이름 · 거리), 단지와 선으로 잇는다
     pick.places.forEach((p) => {
@@ -9532,7 +9541,7 @@ const goBack = () => router.back();
                   <KakaoMapTools v-if="cmpTools" :k="cmpTools.k" :map="cmpTools.map" :near="cmpMePoint" />
                   <button v-if="!cmpFs" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="cmpFs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
                   <!-- 범례 — 시세분석 지도처럼 왼쪽 아래(2026-11-11) -->
-                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span><span><i class="ring" />도보 5분(직선 270m)</span><span><i class="ring dash" />도보 10분(직선 530m)</span><span><i class="ring dash ac" />학원가</span></div>
+                  <div class="cmp-map-legend"><span><i class="dot me" />선정물건</span><span><i class="dot" />비교 단지</span><span><i class="ring" />도보 5분(직선 270m)</span><span><i class="ring dash" />도보 10분(직선 530m)</span></div>
                   <p v-if="!cmpRows.some((r) => r.point)" class="cmp-wait">{{ supLoaded ? '단지 위치를 찾는 중입니다…' : '실거래를 받는 중입니다…' }}</p>
                 </div>
                 <aside v-if="cmpFs" class="cmp-fs-list">
@@ -12394,7 +12403,6 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-map-legend .dot.me { background: #f05a28; }
 .cmp-map-legend .ring { width: 14px; height: 0; border-top: 2px solid #2b6df3; }
 .cmp-map-legend .ring.dash { border-top-style: dashed; }
-.cmp-map-legend .ring.ac { border-top-color: #6d28d9; }
 .cmp-map.fs .cmp-map-legend { left: 12px; bottom: 12px; font-size: 13px; }   /* 전체화면 — 왼쪽 끝 아래(목록 밑, 2026-11-11 사용자) */   /* 전체화면 — 떠 있는 왼쪽 목록 옆으로 */
 .cmp-wait { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 13px; color: #6b7280; pointer-events: none; }
 .cmp-map :deep(.cmp-bub) { position: relative; cursor: pointer; }
