@@ -12445,7 +12445,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-sc { border: 0; background: none; padding: 2px 6px; border-radius: 5px; font: inherit; font-size: 13px; color: #111827; cursor: pointer; text-decoration: underline dotted #9ca3af; text-underline-offset: 3px; }
 .cmp-sc.big { font-weight: 800; }
 .cmp-sc:hover, .cmp-sc:focus-visible { background: #eef2ff; color: #2b6df3; outline: none; }
-.cmp-flt { flex: 0 0 auto; margin-right: 4px; vertical-align: -1px; color: #6b7280; }   /* 필터로 고른 조건을 적은 설명 앞 — 깔때기(2026-11-11 사용자 규칙) */
+.cmp-flt { flex: 0 0 auto; margin-right: 4px; vertical-align: -1px; color: #111827; }   /* 필터로 고른 조건을 적은 설명 앞 — 깔때기(2026-11-11 사용자 규칙) */
 .cmp-guide { margin: 10px 2px 0; padding: 9px 12px; border-radius: 8px; background: #f7f8fb; font-size: 12.5px; line-height: 1.6; color: #4b5563; }
 .cmp-todo { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: #f7f8fb; font-size: 13px; color: #374151; }
 .cmp-todo b { font-weight: 800; color: #111827; }
