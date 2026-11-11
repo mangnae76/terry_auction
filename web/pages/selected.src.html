@@ -7713,7 +7713,7 @@ span.cal-day.has { cursor: help; }
     if (!(m2 > 0)) return '<td>-</td>';
     if (!apt) return `<td class="num area">${m2.toFixed(2)}㎡<small>${(m2 / 3.305785).toFixed(1)}평</small></td>`;
     const sp = sxSupplyOf(full, m2);
-    return sp ? `<td class="num area">${sxT2(sp).toFixed(2)}㎡<small>(${sxT2(m2).toFixed(2)})</small></td>` : `<td class="num area">전용 ${sxT2(m2).toFixed(2)}㎡</td>`;
+    return sp ? `<td class="num area">${sxT2(sp).toFixed(2)}㎡<small>(${sxT2(m2).toFixed(2)})</small></td>` : `<td class="num area">-<small>(${sxT2(m2).toFixed(2)})</small></td>`;   /* 공급 모르면 '-' */
   };
   /* 검색리스트 맨 위 '내 물건' — 사건 고정카드의 물건(매각 전이라 매각가 · 매각가율 · 응찰은 비움) */
   function sxMeRowHtml(it) {

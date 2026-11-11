@@ -22,7 +22,8 @@ export const aptAreaText = (supply: number | { lo: number; hi: number } | null |
   const one = (v: number) => (py ? (v / PY).toFixed(1) : t2(v));
   const ex = exclusive > 0 ? one(exclusive) : '-';
   const s = typeof supply === 'number' ? (supply > 0 ? { lo: supply, hi: supply } : null) : supply ?? null;
-  if (!s || !(s.lo > 0)) return `전용 ${ex}${py ? '평' : '㎡'}`;
+  // 공급을 모르면(대장에 없음) 공급 자리는 '-' — '전용 ○㎡'처럼 전용만 적지 않는다(2026-11-11 사용자)
+  if (!s || !(s.lo > 0)) return `- (${ex})`;
   const sp = one(s.lo) === one(s.hi) ? one(s.lo) : `${one(s.lo)}~${one(s.hi)}`;   // 평으로 줄이면 같아지는 범위(25.2~25.2)는 하나로
   return `${sp}${py ? '평' : '㎡'} (${ex})`;
 };
