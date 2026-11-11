@@ -5591,7 +5591,8 @@ const cmpRange = ref<CmpRange>(cmpSaved.range === 500 ? 'dong' : cmpSaved.range 
 /** 기간(개월) — 시세분석처럼 6개월 · 1년 · 2년(2026-11-11). 예전에 저장한 years(1 · 2)는 12 · 24 로 */
 const cmpMonths = ref<6 | 12 | 24>(cmpSaved.months ?? (cmpSaved.years === 2 ? 24 : 12));
 const CMP_PERIODS: Array<[6 | 12 | 24, string]> = [[6, '6개월'], [12, '1년'], [24, '2년']];
-const cmpTol = ref<3 | 5 | 10>(cmpSaved.tol ?? 5);
+/** 평형 폭 — ±3㎡(약 1평)로 고정. 아파트는 59 · 74 · 84㎡처럼 규격이라 넓혀도 같은 단지만 잡히고, ±10㎡는 다른 타입까지 섞였다(2026-11-11 사용자, 단추 뺌) */
+const cmpTol = ref<3 | 5 | 10>(3);
 const cmpKind = ref<'매매' | '전세'>(cmpSaved.kind ?? '전세');
 watch([cmpRange, cmpMonths, cmpTol, cmpKind], () => { try { localStorage.setItem(CMP_FILTER_KEY, JSON.stringify({ range: cmpRange.value, months: cmpMonths.value, tol: cmpTol.value, kind: cmpKind.value })); } catch { /* 이 창에서만 */ } });
 /** 500m 는 같은 동과 거의 겹쳐 뺐다(2026-11-11 사용자) */
@@ -9536,7 +9537,6 @@ const goBack = () => router.back();
                 <span class="pa-lab">범위<span class="pa-seg pa-out" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRange === v }" :aria-checked="cmpRange === v" :data-t="t" @click="cmpRange = v">{{ t }}</button></span></span>
                 <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :data-k="k" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" @click="cmpKind = k">{{ k }}</button></span></span>
                 <span class="pa-lab">기간<span class="pa-seg pa-out" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonths === m }" :aria-checked="cmpMonths === m" :data-t="t" @click="cmpMonths = m">{{ t }}</button></span></span>
-                <span class="pa-lab">평형<span class="pa-seg pa-out" role="radiogroup" aria-label="평형 폭"><button v-for="t in [3, 5, 10] as const" :key="t" type="button" role="radio" :class="{ on: cmpTol === t }" :aria-checked="cmpTol === t" :data-t="`±${t}㎡`" @click="cmpTol = t">±{{ t }}㎡</button></span></span>
               </div>
               <p v-if="!cmpConds.length" class="cmp-noroom">매매수요 조사 맨 위에서 <b>룸수</b>를 고르면 세대구성에 맞는 입지조건과 단지별 입지등수가 나옵니다.</p>
               <div class="son-demand sup-tbl">
