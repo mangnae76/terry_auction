@@ -6183,7 +6183,7 @@ const cmpUnitRaw = computed<[number, number] | null>(() => {
   return [b * (1 + lo / 100) + add, b * (1 + hi / 100) + add];
 });
 const cmpUnitClamp = computed(() => {
-  const raw = cmpUnitRaw.value; const r = cmpUnitRange.value;
+  const raw = cmpUnitRaw.value; const r = isApartment.value ? cmpUnitRange.value : null;   // 빌라는 자르지 않는다 — 같은 건물 거래가 몇 건뿐이라 그 최고가로 잘리면 보정이 사라졌다(2026-11-12)
   if (!raw) return null;
   if (!r) return { lo: raw[0], hi: raw[1], cut: '' };
   const c = (v: number) => Math.min(r.max, Math.max(r.min, v));
@@ -6199,7 +6199,8 @@ const cmpUnitEst = computed(() => {
 const cmpUnitFormula = computed(() => {
   const b = cmpUnitBase.value; if (!(b > 0)) return '';
   const p = pctText(totalAdj.value).replace(/^([+−])/, '$1 ').replace(/^0%/, '+ 0%');
-  return `${cmpEok(b)} × (1 ${p})${repairMan() > 0 ? ` + 수리 ${repairMan().toLocaleString('ko-KR')}만` : ''} = ${cmpUnitEst.value}`;
+  const raw = cmpUnitRaw.value; const rawTx = raw ? (Math.abs(raw[0] - raw[1]) < 5e5 ? cmpEok(raw[0]) : `${cmpEok(raw[0])}~${cmpEok(raw[1])}`) : '-';   // 자르기 전 값 — 잘렸으면 아래 줄에 따로
+  return `${cmpEok(b)} × (1 ${p})${repairMan() > 0 ? ` + 수리 ${repairMan().toLocaleString('ko-KR')}만` : ''} = ${rawTx}`;
 });
 const unitAdjText = computed(() => (repairMan() > 0 ? `${pctText(totalAdj.value)} · 수리 ${repairText(repairMan())}` : pctText(totalAdj.value)));
 // 억 — 소수는 있을 때만(7.50 → 7.5억, 8.00 → 8억, 7.23억 그대로, 2026-11-11 사용자)
