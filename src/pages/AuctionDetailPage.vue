@@ -2831,10 +2831,11 @@ const APT_UNIT_EXTRA: IndivItem[] = [
 /** 아파트 타입 — 모양 하나(판상형 · 타워형 · 복층형) + 베이 하나(2 · 3 · 4베이). 다락은 뺐다(2026-11-11 사용자) */
 const TYPE_SHAPES = ['판상형', '타워형', '복층형'];
 const TYPE_BAYS = ['2베이', '3베이', '4베이'];
-/** 묶음마다 하나만 고르는 칸 — 타입(모양 · 베이), 구조(방 · 화장실)(2026-11-11 사용자) */
+/** 묶음마다 하나만 고르는 칸 — 타입(모양 · 베이), 구조(방 · 화장실), 향(2026-11-11 사용자) */
 const UNIT_PICK_GROUPS: Record<string, Array<{ label: string; opts: string[] }>> = {
   'ind.type': [{ label: '타입 모양', opts: TYPE_SHAPES }, { label: '베이', opts: TYPE_BAYS }],
   'ind.rooms': [{ label: '방 수', opts: ['1방', '2방', '3방', '4방'] }, { label: '화장실 수', opts: ['1화', '2화', '3화'] }],
+  'ind.direction': [{ label: '향', opts: ['동', '서', '남', '북'] }],   // 향도 하나만(2026-11-11 사용자)
 };
 const indivGroups = computed<IndivGroup[]>(() => (isApartment.value
   ? INDIV_GROUPS.map((g, i) => (i === 0
