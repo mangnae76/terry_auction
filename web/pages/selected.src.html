@@ -7439,7 +7439,7 @@ span.cal-day.has { cursor: help; }
       const off = g.list.every((r) => sxIsOff(r));   /* 그 건물 매각을 다 '제외'하면 핀도 회색(시세분석과 같게) */
       /* 말풍선 — 매매수요 지도와 같은 꼴, 이름 · 평균 매각가만(순위 없음). 누르면 건수 · 거리까지(2026-11-11 사용자) */
       const pr = g.list.map((r) => Number(r['매각가'])).filter((v) => v > 0); const avg = pr.length ? pr.reduce((x, y) => x + y, 0) / pr.length : 0;
-      const bub = `<div class="cb"><b><span class="nm" title="${esc(g.name)}">${esc(g.name)}</span></b><span>${avg ? `매각 ${(avg / 1e8).toFixed(2)}억` : '매각'}${on ? `<i></i>${g.list.length}건${g.dist != null ? ` · ${g.dist.toLocaleString('ko-KR')}m` : ''}` : ''}</span></div>`;
+      const bub = `<div class="cb"><b><span class="nm" title="${esc(g.name)}">${esc(g.name)}</span></b><span>${avg ? `매각 ${(avg / 1e8).toFixed(2)}억` : '매각'}${on ? `<i></i>${g.list.length}건` : ''}</span></div>`;
       mv.pin(g.p, { className: `cmp-bub${on ? ' on' : ''}${off ? ' off' : ''}`, html: bub, onClick: () => {
         /* 지역으로이고 기준이 없으면 — 그 지번의 가장 최근 매각을 기준으로 */
         if (S.route === 'market' && saleMode === 'region' && !sxRef) { const r = [...g.list].sort((a, b) => String(b['매각일'] || '').localeCompare(String(a['매각일'] || '')))[0]; if (r) { sxSetRef(r); return; } }

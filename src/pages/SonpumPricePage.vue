@@ -590,7 +590,7 @@ const drawMap = () => {
       const avg = lp.reduce((a, b) => a + b, 0) / (lp.length || 1);
       mv!.pin(g.spot, {
         className: `cmp-bub${on ? ' on' : ''}${off ? ' off' : ''}`,
-        html: `<div class="cb"><b><span class="nm" title="${esc(g.name)}">${esc(g.name)}</span></b><span>${kindF.value} ${eok(avg)}${on ? `<i></i>${live.length}건 · ${g.dist}m` : ''}</span></div>`,
+        html: `<div class="cb"><b><span class="nm" title="${esc(g.name)}">${esc(g.name)}</span></b><span>${kindF.value} ${eok(avg)}${on ? `<i></i>${live.length}건` : ''}</span></div>`,
         onClick: () => { meOpen.value = false; focus.value = on ? '' : g.jibun; },
         z: on ? 50 : 1,
       });
