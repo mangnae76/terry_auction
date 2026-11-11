@@ -9519,7 +9519,7 @@ const goBack = () => router.back();
                   <table class="adm-table cmp-tbl">
                     <colgroup><col style="width: 200px" /></colgroup>
                     <thead><tr>
-                      <th>단지<small>(공급(전용))</small></th>
+                      <th>단지 리스트<small>(공급(전용))</small></th>
                       <th>입지<small>100점 · 거리</small></th><th>개별성<small>100점 · 구역 내</small></th><th :aria-sort="cmpSortAria('tot')" @click="cmpSortBy('tot')">종합<i :class="['sdir', { on: cmpSortK === 'tot' }]" aria-hidden="true">{{ cmpSortK === 'tot' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>100점 · 입지 60 · 개별성 40</small></th><th>순위</th><th :aria-sort="cmpSortAria('year')" @click="cmpSortBy('year')">연식<i :class="['sdir', { on: cmpSortK === 'year' }]" aria-hidden="true">{{ cmpSortK === 'year' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(건축년도)</small></th><th :aria-sort="cmpSortAria('sale')" @click="cmpSortBy('sale')">평균 매매가<i :class="['sdir', { on: cmpSortK === 'sale' }]" aria-hidden="true">{{ cmpSortK === 'sale' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th :aria-sort="cmpSortAria('jeonse')" @click="cmpSortBy('jeonse')">평균 전세가<i :class="['sdir', { on: cmpSortK === 'jeonse' }]" aria-hidden="true">{{ cmpSortK === 'jeonse' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th>전용 평당가<small>({{ cmpKind }})</small></th><th>전세가율</th>
                     </tr></thead>
                     <tbody>
