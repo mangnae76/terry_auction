@@ -9551,7 +9551,8 @@ const goBack = () => router.back();
               </div>
               <!-- 고른 단지 — 실거래가 없어 단지를 못 만들어도 상자는 남기고 '데이터가 없습니다'(2026-11-11 사용자, 청라 호반베르디움) -->
               <template v-if="cmpOn">
-                <p class="sup-head cmp-pick">고른 단지 <span class="area cmp-chip">{{ cmpPicked?.name || cmpPicked?.jibun || supName || '선정물건' }}</span> <small class="cmp-sub">지도 점이나 위 표 줄을 누르면 바뀝니다</small></p>
+                <!-- '고른 단지' → '보고 있는 단지'(2026-11-11 사용자). 다른 단지를 보고 있으면 오른쪽에 '선정물건으로' -->
+                <p class="sup-head cmp-pick">보고 있는 단지 <span class="area cmp-chip">{{ cmpPicked?.name || cmpPicked?.jibun || supName || '선정물건' }}</span> <small class="cmp-sub">표나 지도에서 단지를 누르면 바뀝니다</small><button v-if="cmpPicked && !cmpPicked.mine" type="button" class="cmp-back" @click="cmpPick = ''">선정물건으로</button></p>
                 <div class="cmp-two one">
                   <div class="son-demand sup-tbl"><div class="adm-table-wrap cmp-deals"><table class="adm-table cmp-tbl">
                     <thead><tr><th>구분</th><th>계약일</th><th>면적<small>공급(전용)</small></th><th>층</th><th>실거래가</th></tr></thead>
@@ -12416,6 +12417,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-todo { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: #f7f8fb; font-size: 13px; color: #374151; }
 .cmp-todo b { font-weight: 800; color: #111827; }
 .cmp-todo button { height: 26px; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; font: inherit; font-size: 13px; color: #2b6df3; cursor: pointer; }
+.cmp-back { margin-left: auto; height: 26px; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; font: inherit; font-size: 13px; font-weight: 400; color: #2b6df3; cursor: pointer; }
 .cmp-two.one { grid-template-columns: minmax(0, 1fr); }
 /* 점수 팝업 */
 .cmp-pop { position: fixed; z-index: 3000; left: 50%; top: 120px; width: min(560px, calc(100vw - 32px)); max-height: min(600px, calc(100vh - 32px)); display: grid; grid-template-rows: auto minmax(0, 1fr); background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; box-shadow: 0 12px 32px rgba(17, 24, 39, .18); font-family: inherit; font-size: 13px; color: #111827; }
