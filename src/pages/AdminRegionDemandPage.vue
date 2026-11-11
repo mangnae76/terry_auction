@@ -657,7 +657,7 @@ const downloadCsv = () => {
         </template>
       </div>
 
-      <p v-if="webEmbed && rows.length > 0" class="dm-block-head">{{ props.boxNo ? '' : '③ ' }}상세수치</p>
+      <p v-if="webEmbed && rows.length > 0 && !props.embed" class="dm-block-head">③ 상세수치</p>
       <div v-if="rows.length > 0" class="adm-table-wrap">
         <!-- 지역분석 안 탭(embedded)은 시군구 하나만 보므로 '소속 구' 칸은 뺀다 — 모든 줄이 같은 값이다 -->
         <table :class="['adm-table', { even: embedded }]">
