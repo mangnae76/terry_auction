@@ -69,8 +69,8 @@ import { cached, cachedEntryOrStale, loadOrFail, cacheKey, readCache, writeCache
 // 셈은 화면 밖에 따로 둔다 — 표로 매번 확인할 수 있게 (profitMath.test.ts · registryAnalysis.test.ts)
 import { taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxProfitOf } from '../services/profitMath';
 import { baseDateOf, isTakenOver, normalizeYmd } from '../services/registryAnalysis';
-import { VWORLD_KEY_EXPIRES, PRICE_YEAR, fetchApartUnits, type ApartUnit } from '../services/vworldApi';
-import { HUG_RATE, matchUnit, type SonPriceOut } from '../services/priceAnalysis';
+import { VWORLD_KEY_EXPIRES, PRICE_YEAR } from '../services/vworldApi';
+import type { SonPriceOut } from '../services/priceAnalysis';
 import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
 import { addressParts, buildingNameOf, hasBuildingName, isUnitToken } from '../utils/addressName';
@@ -5868,10 +5868,6 @@ const cmpRankOf = computed(() => {
 const cmpScore = (v: number | null) => (v === null ? '-' : String(Math.round(v)));
 const cmpPicked = computed(() => cmpRows.value.find((r) => cmpKeyOf(r) === cmpPick.value) ?? cmpRows.value.find((r) => r.mine) ?? null);
 /** 고른 단지 실거래가 표 — 거래(매매 · 전세) 단추를 따라 그 거래만(매매는 직거래 포함, 2026-11-11) */
-const CMP_DEALS_N = 6;
-const cmpDealsAll = ref(false);
-watch(() => cmpPick.value, () => { cmpDealsAll.value = false; });   // 다른 단지를 보면 다시 접는다
-const cmpPickedDeals = computed(() => (cmpPicked.value?.deals ?? []).filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세')));
 /** '3억 1,500' — 원 → 억 · 만 */
 const cmpMoney = (won: number) => {
   if (!(won > 0)) return '-';
@@ -5882,33 +5878,6 @@ const cmpMoney = (won: number) => {
 // 반경 범위면 ① 후보 좌표만 먼저(네 곳씩) → ② 반경 안 단지만 주변시설(두 곳씩). 같은 동이면 ②만
 let cmpRun = 0;
 const cmpAddr = (c: CompareComplex) => { const r = supRegion.value; return r ? `${r.sido} ${r.sigungu} ${c.umdNm} ${c.jibun}` : ''; };
-// 보고 있는 단지 거래 표 — 시세분석 표와 같은 칸(주소만 뺀다, 2026-11-11 사용자). 공시가(호실 공동주택가격) · 엘베는 고른 단지만 받는다
-const cmpUnits = ref<Record<string, ApartUnit[]>>({});
-const cmpElev = ref<Record<string, number | null>>({});
-watch(() => (cmpOn.value && cmpPicked.value ? cmpKeyOf(cmpPicked.value) : ''), async (k) => {
-  const c = cmpPicked.value; if (!k || !c) return;
-  const addr = cmpAddr(c); if (!addr) return;
-  if (!(k in cmpUnits.value)) {
-    const rg = await resolveRegionFromAddress(addr).catch(() => null);
-    const us = rg?.bCode10 ? await fetchApartUnits(rg.bCode10, c.jibun).catch(() => []) : [];
-    cmpUnits.value = { ...cmpUnits.value, [k]: us };
-  }
-  if (!(k in cmpElev.value)) { const f = await getBuildingFacts(addr).catch(() => null); cmpElev.value = { ...cmpElev.value, [k]: f ? f.elevator : null }; }
-}, { immediate: true });
-/** 거래 한 줄의 공시가 — 동을 알면 그 동 호실에서, 같은 층 · 같은 전용 */
-const cmpPubOf = (d: { areaM2: number; floor: string; dong?: string }) => {
-  const c = cmpPicked.value; if (!c) return 0;
-  const us = cmpUnits.value[cmpKeyOf(c)] ?? [];
-  const dn = String(d.dong ?? '').replace(/\D/g, '');
-  const inDong = dn ? us.filter((u) => u.dong.replace(/\D/g, '') === dn) : [];
-  return matchUnit(inDong.length ? inDong : us, d.areaM2, Number(d.floor) || 0).pub;
-};
-const cmpUnitsReady = computed(() => !!cmpPicked.value && cmpKeyOf(cmpPicked.value) in cmpUnits.value);
-const cmpPickedDist = computed(() => { const c = cmpPicked.value; if (!c) return null; if (c.mine) return 0; const me = cmpMePt.value; return me && c.point ? Math.round(metersBetween(me, c.point)) : null; });
-const n0 = (w: number) => Math.round(w).toLocaleString('ko-KR');
-const pctOf = (a: number, b: number) => (a > 0 && b > 0 ? `${Math.round((a / b) * 100)}%` : '-');
-const cmpGoNaver = () => { const c = cmpPicked.value; if (c) void openNaverSpot(cmpAddr(c), 'apt'); };
-const cmpGoPlanet = () => { const c = cmpPicked.value; if (c) void openPlanetSpot(`${c.umdNm} ${c.jibun}`); };
 const cmpPool = async <T,>(items: T[], n: number, run: number, fn: (x: T) => Promise<void>) => {
   let i = 0;
   await Promise.all(Array.from({ length: n }, async () => { while (i < items.length && run === cmpRun) { const x = items[i]; i += 1; await fn(x).catch(() => undefined); } }));
@@ -9712,35 +9681,7 @@ const goBack = () => router.back();
                 <button v-if="cmpTodo.some((t) => t.kind === 'zone')" type="button" @click="cmpPopOpen('zone', cmpMineRow, $event)">개별성에서고르기</button>
                 <button v-if="cmpTodo.some((t) => t.kind === 'loc')" type="button" @click="cmpPopOpen('loc', cmpMineRow, $event)">입지에서고르기</button>
               </div>
-              <!-- 고른 단지 — 실거래가 없어 단지를 못 만들어도 상자는 남기고 '데이터가 없습니다'(2026-11-11 사용자, 청라 호반베르디움) -->
-              <template v-if="cmpOn">
-                <!-- '고른 단지' → '보고 있는 단지'(2026-11-11 사용자). 다른 단지를 보고 있으면 오른쪽에 '선정물건으로' -->
-                <p class="sup-head cmp-pick">보고 있는 단지 <span class="area cmp-chip">{{ cmpPicked?.name || cmpPicked?.jibun || supName || '선정물건' }}</span> <small class="cmp-sub">단지 리스트 표나 지도에서 단지를 누르면 아래 표 내용이 바뀝니다.</small><button v-if="cmpPicked && !cmpPicked.mine" type="button" class="cmp-back" @click="cmpPick = ''">선정물건으로</button></p>
-                <div class="cmp-two one">
-                  <div class="son-demand sup-tbl"><div class="adm-table-wrap cmp-deals"><table class="adm-table cmp-tbl">
-                    <thead><tr><th>구분</th><th>계약일</th><th>실거래가</th><th>평당가</th><th>공시가 <small class="inl">매매가율</small></th><th>전세 <small class="inl">갭</small></th><th>면적 <small class="inl">공급(전용)</small></th><th>엘베</th><th>건축</th><th>거리</th><th>동 · 층</th><th>바로가기</th></tr></thead>
-                    <tbody>
-                      <tr v-for="(d, i) in (cmpDealsAll ? cmpPickedDeals : cmpPickedDeals.slice(0, CMP_DEALS_N))" :key="i">
-                        <td><span :class="['cmp-kind', { j: d.kind === '전세', m: d.kind === '월세' }]">{{ d.kind === '직거래' ? '매매' : d.kind }}</span></td><td class="n">{{ d.contractDate }}</td>
-                        <td class="n amt"><b>{{ n0(d.price) }}</b></td><td class="n">{{ d.areaM2 > 0 ? n0(d.price / (d.areaM2 / 3.305785)) : '-' }}</td>
-                        <template v-if="cmpPubOf(d)"><td class="n two">{{ n0(cmpPubOf(d)) }}<small>{{ pctOf(d.price, cmpPubOf(d)) }}</small></td>
-                          <td v-if="d.kind === '전세'" class="n two">{{ n0(cmpPubOf(d) * HUG_RATE) }}<small :class="{ neg: d.price > cmpPubOf(d) * HUG_RATE }">{{ d.price > cmpPubOf(d) * HUG_RATE ? `한도초과 ${n0(d.price - cmpPubOf(d) * HUG_RATE)}` : '한도 안' }}</small></td>
-                          <td v-else class="n two">{{ n0(cmpPubOf(d) * HUG_RATE) }}<small :class="{ neg: d.price - cmpPubOf(d) * HUG_RATE < 0 }">갭 {{ n0(d.price - cmpPubOf(d) * HUG_RATE) }}</small></td></template>
-                        <template v-else><td class="n cmp-dim">{{ cmpUnitsReady ? '공시가 없음' : '조회 중' }}</td><td class="n">-</td></template>
-                        <td class="n">{{ areaPair(cmpPicked?.supply ?? null, d.areaM2) }}</td>
-                        <td class="n">{{ !cmpPicked || !(cmpKeyOf(cmpPicked) in cmpElev) ? '조회 중' : cmpElev[cmpKeyOf(cmpPicked)] == null ? '-' : (cmpElev[cmpKeyOf(cmpPicked)] ?? 0) > 0 ? `${cmpElev[cmpKeyOf(cmpPicked)]}대있음` : '없음' }}</td>
-                        <td class="n">{{ d.buildYear || cmpPicked?.buildYear || '-' }}</td><td class="n">{{ cmpPickedDist == null ? '-' : `${n0(cmpPickedDist)}m` }}</td>
-                        <td class="n">{{ [d.dong ? `${d.dong}동` : '', d.floor ? `${d.floor}층` : ''].filter(Boolean).join(' ') || '-' }}</td>
-                        <td class="n"><span class="cmp-acts"><button type="button" class="ab n" title="네이버 부동산에서 이 단지 보기" aria-label="네이버 부동산에서 보기" @click="cmpGoNaver">N</button><button type="button" class="ab p" title="부동산플래닛에서 보기 — 주소를 복사해 두고 지도를 엽니다" aria-label="부동산플래닛에서 보기" @click="cmpGoPlanet">P</button></span></td>
-                      </tr>
-                      <tr v-if="!cmpPicked"><td colspan="12" class="cmp-dim">{{ supLoaded ? '해당 단지의 실거래 데이터가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
-                      <tr v-else-if="!cmpPickedDeals.length"><td colspan="12" class="cmp-dim">최근 {{ cmpMonths }}개월 해당평형 {{ cmpKind }} 거래가 없습니다.</td></tr>
-                    </tbody>
-                  </table></div></div>
-                  <!-- 거래가 많으면 처음엔 몇 줄만, 아래 '더보기'로 펼친다(잘려서 안쪽 스크롤로 보던 것, 2026-11-11 사용자) -->
-                  <button v-if="cmpPickedDeals.length > CMP_DEALS_N" type="button" class="cmp-more" @click="cmpDealsAll = !cmpDealsAll">{{ cmpDealsAll ? '접기' : `더보기 (${cmpPickedDeals.length - CMP_DEALS_N}건 더)` }}</button>
-                </div>
-              </template>
+              <!-- 보고 있는 단지 거래 표는 뺐다 — 거래 하나하나는 가격(시세분석) 몫, 매매수요는 단지 리스트 평균으로 등수만 본다(2026-11-11 사용자) -->
               <!-- 점수 팝업 — 머리 줄을 잡고 옮긴다. 폰에서는 아래에서 올라오는 창(2026-11-11 시안) -->
               <Teleport to="body">
                 <div v-if="cmpPop && cmpPopRow" class="cmp-pop" role="dialog" aria-modal="false" :aria-label="`입지 창 ${cmpPopRow.name || cmpPopRow.jibun} ${CMP_POP_TITLE[cmpPop.kind]}`" :style="cmpPopPos ? { left: `${cmpPopPos.x}px`, top: `${cmpPopPos.y}px` } : {}">
