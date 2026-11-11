@@ -5976,6 +5976,13 @@ watch(cmpFs, async (on) => {
 onBeforeUnmount(() => { window.removeEventListener('keydown', onCmpFsKey); if (cmpFs.value) document.documentElement.style.overflow = ''; });
 /** 단지 입지비교 위 칸 줄 — 표에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 실거래(최근 12개월)로 계산한다(2026-11-11).
  *  평균 전세가 · 중간값 · 최저 · 최고 · 평균 평당가 · 전용 / 연식 · 거래건수. 표에 없는 값도 고른 단지의 거래로 계산해 넣는다 */
+/** 단지를 고르기 전(동 전체) — 리스트 단지들의 유사평형 고른 거래를 다 모아 평균 · 평당가 · 건수 · 단지 수만(중간값 · 최저 · 최고는 단지가 섞여 뜻이 없어 단지를 누를 때만, 2026-11-11 사용자) */
+const cmpAll = computed(() => {
+  const ds = cmpRows.value.flatMap((r) => r.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).map((d) => ({ p: d.price, py: d.areaM2 > 0 ? d.price / (d.areaM2 / 3.305785) : 0 })));
+  if (!ds.length) return null;
+  const pys = ds.filter((d) => d.py > 0);
+  return { n: ds.length, avg: ds.reduce((a, d) => a + d.p, 0) / ds.length, perPy: pys.length ? pys.reduce((a, d) => a + d.py, 0) / pys.length : 0, complexes: cmpRows.value.length };
+});
 const cmpEst = computed(() => {
   const r = cmpPicked.value; if (!r) return null;
   const ps = r.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세') && d.price > 0).map((d) => d.price).sort((a, b) => a - b);
@@ -9520,11 +9527,13 @@ const goBack = () => router.back();
 
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
-              <div class="cmp-est-h"><h3><span class="cmp-no">②</span>단지 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}</span><span class="cmp-q">내가 선정한 아파트 단지는 몇 등일까?</span></h3>
-                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>최근 {{ cmpMonths }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 같은 평형 {{ cmpKind }} 실거래 · 아래 표나 지도에서 단지를 고르면 바뀝니다</span>
+              <div class="cmp-est-h"><h3><span class="cmp-no">②</span>단지 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}<template v-if="cmpPick && cmpPicked"> · {{ cmpPicked.name || cmpPicked.jibun }}</template></span><span class="cmp-q">내가 선정한 아파트 단지는 몇 등일까?</span></h3>
+                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><template v-if="cmpPick">최근 {{ cmpMonths }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 같은 평형 {{ cmpKind }} 실거래 · 다시 누르면 동 전체로 돌아갑니다</template><template v-else>최근 {{ cmpMonths }}개월 · 유사평형 {{ cmpKind }} 실거래 · 단지 {{ cmpRows.length }}곳 전체 · 단지를 누르면 그 단지로 바뀝니다</template></span>
               </div>
               <div class="cmp-est">
                 <div class="cmp-tiles">
+                  <!-- 단지를 고르기 전엔 동 전체(평균 · 평당가 · 건수 · 단지 수), 고르면 그 단지(중간값 · 최저 · 최고 · 면적까지). 칸 자리는 그대로 — 흔들리지 않게 -->
+                  <template v-if="cmpPick">
                   <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.avg) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">중간값</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.med) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">최저가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.min) : '-' }}</span></div>
@@ -9532,6 +9541,14 @@ const goBack = () => router.back();
                   <div class="cmp-tile"><span class="k">평균 평당가</span><span class="v">{{ cmpEst ? cmpPy(cmpEst.perPy) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">면적 공급(전용) / 연식</span><span class="v sm">{{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }}</span><span class="s">{{ cmpEst?.year ? `${cmpEst.year}년식` : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">{{ cmpKind }} 거래건수</span><span class="v">{{ cmpEst?.n ?? 0 }}건</span></div>
+                  </template>
+                  <template v-else>
+                  <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · 동 전체</span><span class="v">{{ cmpAll ? cmpEok(cmpAll.avg) : '-' }}</span></div>
+                  <div v-for="k in ['중간값', '최저가', '최고가']" :key="k" class="cmp-tile off"><span class="k">{{ k }}</span><span class="v sm">단지를 누르면 보입니다</span></div>
+                  <div class="cmp-tile"><span class="k">평균 평당가</span><span class="v">{{ cmpAll ? cmpPy(cmpAll.perPy) : '-' }}</span></div>
+                  <div class="cmp-tile"><span class="k">단지 수</span><span class="v">{{ cmpAll?.complexes ?? cmpRows.length }}곳</span></div>
+                  <div class="cmp-tile"><span class="k">{{ cmpKind }} 거래건수</span><span class="v">{{ cmpAll?.n ?? 0 }}건</span></div>
+                  </template>
                 </div>
               </div>
                           <!-- 칸 줄과 지도 · 표는 한 상자(2026-11-11) -->
@@ -12534,6 +12551,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-back { margin-left: auto; height: 26px; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; font: inherit; font-size: 13px; font-weight: 400; color: #2b6df3; cursor: pointer; }
 .cmp-tbl tr.cmp-grp td small { margin-left: 8px; font-weight: 400; color: #9ca3af; }
 .cmp-deals .cmp-tbl th small.inl, .cmp-tbl th small.inl { display: inline !important; margin-left: 2px; }   /* 말머리 한 줄 — 보고 있는 단지 표 */
+.cmp-tile.off .v { font-size: 12.5px; font-weight: 400; color: #9ca3af; }   /* 동 전체일 때 비워 둔 칸 */
 .cmp-two.one { grid-template-columns: minmax(0, 1fr); }
 /* 점수 팝업 */
 .cmp-pop { position: fixed; z-index: 3000; left: 50%; top: 120px; width: min(560px, calc(100vw - 32px)); display: grid; grid-template-rows: auto auto;   /* 안쪽 스크롤 없이 내용만큼 높이(2026-11-11 사용자) */ background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; box-shadow: 0 12px 32px rgba(17, 24, 39, .18); font-family: inherit; font-size: 13px; color: #111827; }
