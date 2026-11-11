@@ -2808,7 +2808,7 @@ const INDIV_GROUPS: IndivGroup[] = [
       },
       { id: 'ind.view', label: '뷰', options: ['뻥뷰', '단지뷰'], rate: '5%' },
       { id: 'ind.sunlight', label: '일조량', survey: true, options: ['좋음', '보통', '나쁨'], rate: '5%' },
-      { id: 'ind.repair', label: '수리유무', survey: true, options: ['부분수리', '올수리'], note: '올수리 1500 > 부분수리 500~1000 현금, 샷시 판단', rate: '10%' },
+      { id: 'ind.repair', label: '수리유무', survey: true, multi: true, options: ['부분수리', '올수리', '샤시'], note: '20평대 기준 부분수리 1,000만 · 올수리 2,000만 · 샤시까지 3,000만(강의 2026-11-11)', rate: '10%' },
     ],
   },
 ];
@@ -2816,10 +2816,14 @@ const INDIV_GROUPS: IndivGroup[] = [
  *  용적률은 정보요약(표제부 · 단지정보) 값이 자동으로 들어가고, 손으로 고칠 수 있다 */
 const APT_INDIV_EXTRA: IndivItem[] = [
   { id: 'ind.far', label: '용적률', text: true, suffix: '%', rate: '5%' },
+  // 초등학교를 품은 아파트 — 큰길을 건너지 않고 초등학교에 닿나(강의 '끼고 있냐 도로를 건너냐로 5천~1억', 2026-11-11)
+  { id: 'ind.schoolHug', label: '초품아', options: ['O', 'X'], rate: '10%' },
 ];
 /** 지하주차장 연결은 같은 단지 안에서도 동마다 달라 단지 내 개별성(호실 가격)으로(2026-11-11 사용자) */
 const APT_UNIT_EXTRA: IndivItem[] = [
-  { id: 'ind.ugLink', label: '지하주차장 연결', options: ['O', 'X'], rate: '5%' },
+  { id: 'ind.ugLink', label: '지하주차장 연결', options: ['O', 'X'], rate: '3%' },
+  // 단지 안 입지 — 초등학교 · 학원가 · 출입구에 가까운 동이 로얄동(강의 2026-11-11)
+  { id: 'ind.dongPos', label: '동 위치', options: ['로얄동', '보통', '외곽'], rate: '5%' },
 ];
 const indivGroups = computed<IndivGroup[]>(() => (isApartment.value
   ? INDIV_GROUPS.map((g, i) => (i === 0
@@ -2913,10 +2917,24 @@ const indivDisplay = (item: IndivItem) => {
  *  값은 사용자가 안산파크푸르지오 물건에 적어 둔 비율 그대로. 지하주차장 연결 · 용적률은 5%(K-apt 연결 전까지),
  *  수리유무 · 건물외부 · 건물내부는 적힌 값이 없어 항목 참고 비율. 층은 층수 규칙(indivFloorRate)이 따로 정한다 */
 const INDIV_RATE_DEFAULT: Record<string, string> = {
-  'ind.age': '20~30', 'ind.parking': '5', 'ind.elevator': '10', 'ind.corridor': '15', 'ind.slope': '5', 'ind.ugLink': '5', 'ind.far': '5',
+  'ind.age': '20~30', 'ind.parking': '5', 'ind.elevator': '10', 'ind.corridor': '15', 'ind.slope': '5', 'ind.far': '5', 'ind.schoolHug': '10',
   'ind.mgmt': '5', 'ind.inside': '5',
   'ind.direction': '5', 'ind.type': '5', 'ind.rooms': '5', 'ind.view': '5', 'ind.sunlight': '5', 'ind.repair': '10',
+  'ind.ugLink': '3', 'ind.dongPos': '5',   // 지하주차장 연결 동 약 3%(강의) · 동 위치는 강의 '층 · 동 · 타입 개별 편차 약 5%'
 };
+/** 수리는 % 가 아니라 금액(만 원) — 20평대 기준 부분수리 1,000 · 올수리 2,000 · 샤시 +1,000(강의 2026-11-11). 칸에 적으면 그 금액 */
+const REPAIR_MAN: Record<string, number> = { 부분수리: 1000, 올수리: 2000, 샤시: 1000 };
+const repairDefaultMan = () => {
+  const picked = indivList('ind.repair');
+  const base = picked.includes('올수리') ? REPAIR_MAN.올수리 : picked.includes('부분수리') ? REPAIR_MAN.부분수리 : 0;
+  return base + (picked.includes('샤시') ? REPAIR_MAN.샤시 : 0);
+};
+const repairMan = () => {
+  if (!indivList('ind.repair').length) return 0;
+  const typed = Number(indivValue('ind.repair.amt').replace(/[^\d]/g, ''));
+  return typed > 0 ? typed : repairDefaultMan();
+};
+const repairText = (man: number) => (man > 0 ? `+${man.toLocaleString('ko-KR')}만` : '0');
 const indivRateNum = (item: IndivItem) => {
   if (item.id === 'ind.floorNum') {
     const auto = indivFloorRate();
@@ -5654,6 +5672,8 @@ const cmpZoneScore = (r: { mine: boolean; buildYear: number }) => {
     if (park > 0) parts.push([mid('ind.parking'), Math.max(0, Math.min(100, ((park - 0.5) / 0.8) * 100))]);
     const el = indivValue('ind.elevator'); if (el) parts.push([mid('ind.elevator'), el === 'O' ? 100 : 0]);
     const sl = indivValue('ind.slope'); if (sl) parts.push([mid('ind.slope'), sl === 'O' ? 0 : 100]);   // 경사 있으면 감점(현장에서 고른다)
+    const co = indivValue('ind.corridor'); if (co) parts.push([mid('ind.corridor'), co === '계단식' ? 100 : 0]);   // 복도식은 춥고 안전 문제로 싸다(강의)
+    const sh = indivValue('ind.schoolHug'); if (sh) parts.push([mid('ind.schoolHug'), sh === 'O' ? 100 : 0]);
     const far = Number(indivDisplay({ id: 'ind.far', label: '용적률', text: true, suffix: '%' } as IndivItem).replace(/[^\d.]/g, ''));
     if (far > 0) parts.push([mid('ind.far'), Math.max(0, Math.min(100, ((300 - far) / 100) * 100))]);
   }
@@ -5667,7 +5687,7 @@ const unitSign = (id: string): number => {
   if (id === 'ind.floorNum') {
     const n = Number(sumVal('sum.floorCurrent').match(/\d+/)?.[0] ?? 0); const t = Number(sumVal('sum.floorTotal').match(/\d+/)?.[0] ?? 0);
     if (!n) return 0;
-    return n <= 3 || (t > 0 && n === t) ? -1 : 1;   // 1 ~ 3층 · 꼭대기층은 감산, 중간 · 고층은 가산
+    return n <= 3 || (t > 0 && n === t) ? -1 : 0;   // 1 ~ 3층 · 탑층은 감산, 4층 ~ 탑층 아래는 기준층이라 0(강의 2026-11-11)
   }
   if (!v) return 0;
   const has = (...xs: string[]) => xs.some((x) => v.includes(x));
@@ -5677,8 +5697,9 @@ const unitSign = (id: string): number => {
     case 'ind.rooms': return has('3방', '4방', '2화', '3화') ? 1 : has('1방', '2방', '1화') ? -1 : 0;
     case 'ind.view': return has('뻥뷰') ? 1 : 0;
     case 'ind.sunlight': return has('좋음') ? 1 : has('나쁨') ? -1 : 0;
-    case 'ind.repair': return has('올수리', '부분수리') ? 1 : 0;
+    case 'ind.repair': return 0;   // 수리는 % 가 아니라 금액(repairMan)
     case 'ind.ugLink': return v === 'O' ? 1 : v === 'X' ? -1 : 0;
+    case 'ind.dongPos': return v === '로얄동' ? 1 : v === '외곽' ? -1 : 0;
     default: return 0;
   }
 };
@@ -5687,7 +5708,7 @@ const unitAdj = (id: string): [number, number] => {
   const sg = unitSign(id); const [a, b] = rateOf(id).map(Math.abs) as [number, number];
   return sg > 0 ? [Math.min(a, b), Math.max(a, b)] : sg < 0 ? [-Math.max(a, b), -Math.min(a, b)] : [0, 0];
 };
-const UNIT_IDS = ['ind.floorNum', 'ind.direction', 'ind.type', 'ind.rooms', 'ind.view', 'ind.sunlight', 'ind.repair', 'ind.ugLink'];
+const UNIT_IDS = ['ind.floorNum', 'ind.direction', 'ind.type', 'ind.rooms', 'ind.view', 'ind.sunlight', 'ind.repair', 'ind.ugLink', 'ind.dongPos'];
 const unitAdjSum = computed<[number, number]>(() => UNIT_IDS.reduce<[number, number]>((acc, id) => { const [a, b] = unitAdj(id); return [acc[0] + a, acc[1] + b]; }, [0, 0]));
 const pctText = ([a, b]: [number, number]) => {
   const one = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n * 10) / 10)}%`;
@@ -5696,8 +5717,8 @@ const pctText = ([a, b]: [number, number]) => {
 /** 아파트 개별성 입력은 쓰는 표(단지 입지비교 · 호실 예상가) 안에서 바로 고른다 — 편집 단추 없이 고르면 곧바로 적는다(2026-11-11 시안).
  *  값은 개별성 분석과 같은 칸(indivValues)이라 개별성 분석 · PDF 에도 그대로 나온다. 개별성 분석은 접어 두고 비중 · 비율만 펼쳐 고친다 */
 const cmpIndOpen = ref(false);
-/** 단지 점수(cmpZoneScore)에 들어가는 구역 내 개별성 칸만 — 현관구조는 점수에 안 들어가 여기 두지 않는다 */
-const ZONE_IDS = ['ind.age', 'ind.parking', 'ind.elevator', 'ind.slope', 'ind.far'];
+/** 단지 점수(cmpZoneScore)에 들어가는 구역 내 개별성 칸 */
+const ZONE_IDS = ['ind.age', 'ind.parking', 'ind.elevator', 'ind.corridor', 'ind.slope', 'ind.far', 'ind.schoolHug'];
 const indivPicked = (item: IndivItem, opt: string) => (item.multi ? indivList(item.id).includes(opt) : indivValue(item.id) === opt);
 const indivPick = (item: IndivItem, opt: string) => {
   if (item.multi) toggleIndivMulti(item.id, opt);
@@ -5891,12 +5912,45 @@ const cmpEst = computed(() => {
 /** 표 · 목록의 시설 이름 — 옆 칸이 이미 '학원가'라 '학원가 · 학원 12곳' 은 '학원 12곳' 으로만(2026-11-11) */
 const cmpPlaceName = (name: string) => name.replace(/^학원가\s*·\s*/, '');
 /** ② 호실 예상가 — 선정물건 단지(같은 평형)의 고른 거래 평균 × (1 + 보정 합) */
-const cmpUnitBase = computed(() => { const r = cmpRows.value.find((x) => x.mine); return r ? (cmpKind.value === '매매' ? r.saleAvg : r.jeonseAvg) : 0; });
+/** 전용 평당가(원/평) — 고른 거래(매매 · 전세) 평균 ÷ 전용 평 */
+const cmpPerPy = (r: { area: number; saleAvg: number; jeonseAvg: number }, kind = cmpKind.value) => {
+  const p = kind === '매매' ? r.saleAvg : r.jeonseAvg; return p > 0 && r.area > 0 ? p / (r.area / 3.305785) : 0;
+};
+/** 전세가율(%) — 평균 전세가 ÷ 평균 매매가 */
+const cmpJeonseRate = (r: { saleAvg: number; jeonseAvg: number }) => (r.saleAvg > 0 && r.jeonseAvg > 0 ? (r.jeonseAvg / r.saleAvg) * 100 : 0);
+/** 실거래가 적을 때 적정 시세(강의 2026-11-11) — ① 순위로: 종합 순위 바로 위 · 아래 단지의 전용 평당가 사이(종합 점수 비율로 자리 잡기) × 선정물건 전용 평
+ *  ② 전세가율로(매매만): 연식 ±5년 이웃 단지 전세가율 평균으로 선정물건 평균 전세가 ÷ 전세가율 */
+const cmpRankEst = computed(() => {
+  const me = cmpRows.value.find((r) => r.mine); if (!me || me.tot === null || !(me.area > 0)) return null;
+  const others = cmpRows.value.filter((r) => !r.mine && r.tot !== null && cmpPerPy(r) > 0);
+  const up = others.filter((r) => (r.tot ?? 0) >= (me.tot ?? 0)).sort((a, b) => (a.tot ?? 0) - (b.tot ?? 0))[0];
+  const dn = others.filter((r) => (r.tot ?? 0) < (me.tot ?? 0)).sort((a, b) => (b.tot ?? 0) - (a.tot ?? 0))[0];
+  if (!up && !dn) return null;
+  const py = me.area / 3.305785;
+  const upPy = up ? cmpPerPy(up) : 0; const dnPy = dn ? cmpPerPy(dn) : 0;
+  let mid = upPy || dnPy;
+  if (up && dn && (up.tot ?? 0) > (dn.tot ?? 0)) mid = dnPy + (((me.tot ?? 0) - (dn.tot ?? 0)) / ((up.tot ?? 0) - (dn.tot ?? 0))) * (upPy - dnPy);
+  // 한쪽만 있으면(선정물건이 1위 · 꼴찌) 사이 값이 아니라 '이상 · 이하' 한계값만 — 기준가로는 쓰지 않는다
+  return { up, dn, upPy, dnPy, mid: mid * py, side: up && dn ? 'between' as const : dn ? 'above' as const : 'below' as const };
+});
+const cmpRateEst = computed(() => {
+  const me = cmpRows.value.find((r) => r.mine); if (!me || !(me.jeonseAvg > 0)) return null;
+  const near = cmpRows.value.filter((r) => !r.mine && cmpJeonseRate(r) > 0 && (!me.buildYear || !r.buildYear || Math.abs(r.buildYear - me.buildYear) <= 5));
+  if (!near.length) return null;
+  const rate = near.reduce((a, r) => a + cmpJeonseRate(r), 0) / near.length;
+  return { rate, n: near.length, sale: me.jeonseAvg / (rate / 100) };
+});
+const cmpUnitActual = computed(() => { const r = cmpRows.value.find((x) => x.mine); return r ? (cmpKind.value === '매매' ? r.saleAvg : r.jeonseAvg) : 0; });
+/** 호실 예상가 기준 — 선정물건 단지 실거래 평균, 없으면 순위로 본 값, 그것도 없으면(매매) 전세가율로 본 값 */
+const cmpUnitBaseFrom = computed<'avg' | 'rank' | 'rate' | ''>(() => (cmpUnitActual.value > 0 ? 'avg' : cmpRankEst.value?.side === 'between' ? 'rank' : cmpKind.value === '매매' && cmpRateEst.value ? 'rate' : ''));
+const cmpUnitBase = computed(() => (cmpUnitBaseFrom.value === 'avg' ? cmpUnitActual.value : cmpUnitBaseFrom.value === 'rank' ? cmpRankEst.value!.mid : cmpUnitBaseFrom.value === 'rate' ? cmpRateEst.value!.sale : 0));
 const cmpUnitEst = computed(() => {
   const b = cmpUnitBase.value; if (!(b > 0)) return '-';
-  const [lo, hi] = unitAdjSum.value; const a = (b * (1 + lo / 100)) / 1e8; const z = (b * (1 + hi / 100)) / 1e8;
+  const add = repairMan() * 1e4;
+  const [lo, hi] = unitAdjSum.value; const a = (b * (1 + lo / 100) + add) / 1e8; const z = (b * (1 + hi / 100) + add) / 1e8;
   return lo === hi ? `${a.toFixed(2)}억` : `${a.toFixed(2)}~${z.toFixed(2)}억`;
 });
+const unitAdjText = computed(() => (repairMan() > 0 ? `${pctText(unitAdjSum.value)} · 수리 ${repairText(repairMan())}` : pctText(unitAdjSum.value)));
 const cmpEok = (w: number) => (w > 0 ? `${(w / 1e8).toFixed(2)}억` : '-');
 const cmpPy = (w: number) => (w > 0 ? `${Math.round(w / 1e4).toLocaleString('ko-KR')}만/평` : '-');
 const cmpFsGo = (r: CmpRow) => { cmpToggle(cmpKeyOf(r)); if (cmpPick.value && r.point) cmpMv?.focus(r.point, 16); };
@@ -9365,7 +9419,7 @@ const goBack = () => router.back();
                     <thead><tr>
                       <th>단지<small>(공급(전용))</small></th><th :aria-sort="cmpSortAria('year')" @click="cmpSortBy('year')">연식<i :class="['sdir', { on: cmpSortK === 'year' }]" aria-hidden="true">{{ cmpSortK === 'year' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(건축년도)</small></th>
                       <th v-for="c in cmpConds" :key="c">{{ c }}</th>
-                      <th>입지점수<small>거리</small></th><th>구역 내<br>개별성</th><th :aria-sort="cmpSortAria('tot')" @click="cmpSortBy('tot')">종합<i :class="['sdir', { on: cmpSortK === 'tot' }]" aria-hidden="true">{{ cmpSortK === 'tot' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>입지 60 · 개별성 40</small></th><th>순위</th><th :aria-sort="cmpSortAria('sale')" @click="cmpSortBy('sale')">평균 매매가<i :class="['sdir', { on: cmpSortK === 'sale' }]" aria-hidden="true">{{ cmpSortK === 'sale' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th :aria-sort="cmpSortAria('jeonse')" @click="cmpSortBy('jeonse')">평균 전세가<i :class="['sdir', { on: cmpSortK === 'jeonse' }]" aria-hidden="true">{{ cmpSortK === 'jeonse' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th>
+                      <th>입지점수<small>거리</small></th><th>구역 내<br>개별성</th><th :aria-sort="cmpSortAria('tot')" @click="cmpSortBy('tot')">종합<i :class="['sdir', { on: cmpSortK === 'tot' }]" aria-hidden="true">{{ cmpSortK === 'tot' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>입지 60 · 개별성 40</small></th><th>순위</th><th :aria-sort="cmpSortAria('sale')" @click="cmpSortBy('sale')">평균 매매가<i :class="['sdir', { on: cmpSortK === 'sale' }]" aria-hidden="true">{{ cmpSortK === 'sale' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th :aria-sort="cmpSortAria('jeonse')" @click="cmpSortBy('jeonse')">평균 전세가<i :class="['sdir', { on: cmpSortK === 'jeonse' }]" aria-hidden="true">{{ cmpSortK === 'jeonse' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th>전용 평당가<small>({{ cmpKind }})</small></th><th>전세가율</th>
                     </tr></thead>
                     <tbody>
                       <tr v-for="r in cmpRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine, on: cmpIsOn(r) }]" tabindex="0" @click="cmpToggle(cmpKeyOf(r))" @keydown.enter="cmpToggle(cmpKeyOf(r))">
@@ -9380,8 +9434,11 @@ const goBack = () => router.back();
                         <!-- 고른 거래 쪽 평균을 굵게. 중간값은 고른 거래(매매 · 전세)의 가운데 값 -->
                         <td class="n amt"><b v-if="cmpKind === '매매'">{{ cmpMoney(r.saleAvg) }}</b><template v-else>{{ cmpMoney(r.saleAvg) }}</template></td>
                         <td class="n amt"><b v-if="cmpKind === '전세'">{{ cmpMoney(r.jeonseAvg) }}</b><template v-else>{{ cmpMoney(r.jeonseAvg) }}</template></td>
+                        <!-- 입지 순위대로 전용 평당가가 늘어선다 · 비슷한 연식은 전세가율이 비슷하다(강의 2026-11-11) -->
+                        <td class="n">{{ cmpPerPy(r) > 0 ? `${Math.round(cmpPerPy(r) / 1e4).toLocaleString('ko-KR')}만` : '-' }}</td>
+                        <td class="n">{{ cmpJeonseRate(r) > 0 ? `${Math.round(cmpJeonseRate(r))}%` : '-' }}</td>
                       </tr>
-                      <tr v-if="!cmpRows.length"><td :colspan="cmpConds.length + 8" class="cmp-dim">{{ supLoaded ? '범위 안에 견줄 단지 거래가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
+                      <tr v-if="!cmpRows.length"><td :colspan="cmpConds.length + 10" class="cmp-dim">{{ supLoaded ? '범위 안에 견줄 단지 거래가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -9451,18 +9508,28 @@ const goBack = () => router.back();
                           <template v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
                           <template v-else-if="INDIV_AUTO.has(item.id)"><span v-if="item.id === 'ind.floorNum'" class="cmp-ind-in"><input inputmode="numeric" :value="sumVal('sum.floorTotal')" placeholder="전체" aria-label="전체 층" @input="setSumVal('sum.floorTotal', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층 중<input inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" aria-label="해당 층" @input="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층</span><span v-else-if="item.options" class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span><span v-else class="cmp-ind-in"><input :inputmode="item.yearMonth ? 'text' : 'decimal'" :value="indivValue(item.id)" :placeholder="item.yearMonth ? '2004-05' : item.id === 'ind.parking' ? '총 주차대수' : '0'" :aria-label="item.label" @input="indivPickText(item.id, ($event.target as HTMLInputElement).value, !!item.yearMonth)" />{{ item.yearMonth ? '' : item.id === 'ind.parking' ? '대' : item.suffix ?? '' }}</span><small class="cmp-auto">자료에 없어 직접 넣습니다</small></template>
                           <span v-else class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span>
-                        </td><td class="n"><span class="cmp-rate-in"><input inputmode="decimal" :class="{ typed: !!indivValue(`${item.id}.rate`) }" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td><td :class="['n', 'adp-ind-adj', unitSign(item.id) > 0 ? 'up' : unitSign(item.id) < 0 ? 'down' : 'zero']">{{ unitSign(item.id) === 0 ? '0%' : pctText(unitAdj(item.id)) }}</td></tr>
-                    <tr class="cmp-sum"><td>합계</td><td /><td /><td :class="['n', 'adp-ind-adj', unitAdjSum[1] > 0 ? 'up' : unitAdjSum[0] < 0 ? 'down' : 'zero']"><b>{{ pctText(unitAdjSum) }}</b></td></tr>
+                        </td>
+                        <!-- 수리는 금액(만 원) — 고른 수리에 따른 기본 금액, 적으면 그 금액 -->
+                        <td v-if="item.id === 'ind.repair'" class="n"><span class="cmp-rate-in"><input inputmode="numeric" :class="{ typed: !!indivValue('ind.repair.amt') }" :value="indivValue('ind.repair.amt') ? Number(indivValue('ind.repair.amt')).toLocaleString('ko-KR') : ''" :placeholder="repairDefaultMan().toLocaleString('ko-KR')" aria-label="수리 금액" @input="indivPickText('ind.repair.amt', ($event.target as HTMLInputElement).value)" />만</span></td>
+                        <td v-else class="n"><span class="cmp-rate-in"><input inputmode="decimal" :class="{ typed: !!indivValue(`${item.id}.rate`) }" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
+                        <td v-if="item.id === 'ind.repair'" :class="['n', 'adp-ind-adj', repairMan() > 0 ? 'up' : 'zero']">{{ repairText(repairMan()) }}</td>
+                        <td v-else :class="['n', 'adp-ind-adj', unitSign(item.id) > 0 ? 'up' : unitSign(item.id) < 0 ? 'down' : 'zero']">{{ unitSign(item.id) === 0 ? '0%' : pctText(unitAdj(item.id)) }}</td></tr>
+                    <tr class="cmp-sum"><td>합계</td><td /><td /><td :class="['n', 'adp-ind-adj', unitAdjSum[1] > 0 || repairMan() > 0 ? 'up' : unitAdjSum[0] < 0 ? 'down' : 'zero']"><b>{{ unitAdjText }}</b></td></tr>
                   </tbody>
                 </table></div></div>
-                <p class="cmp-ind-note">비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다(파란 숫자가 고친 값). 향 · 뷰 · 일조량 · 수리유무는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다.</p>
+                <p class="cmp-ind-note">비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다(파란 숫자가 고친 값). 향 · 뷰 · 일조량 · 수리유무 · 동 위치는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다. 층은 4층부터 탑층 아래까지가 기준층이라 0%, 수리는 20평대 기준 금액입니다.</p>
               </div>
               <div class="cmp-est">
                 <div class="cmp-tiles three">
-                  <div class="cmp-tile"><span class="k">단지 평균 {{ cmpKind }}가</span><span class="v">{{ cmpUnitBase ? cmpEok(cmpUnitBase) : '-' }}</span></div>
-                  <div class="cmp-tile"><span class="k">단지 내 개별성 보정</span><span class="v">{{ pctText(unitAdjSum) }}</span></div>
+                  <div class="cmp-tile"><span class="k">{{ cmpUnitBaseFrom === 'rank' ? `순위로 본 ${cmpKind}가` : cmpUnitBaseFrom === 'rate' ? '전세가율로 본 매매가' : `단지 평균 ${cmpKind}가` }}</span><span class="v">{{ cmpUnitBase ? cmpEok(cmpUnitBase) : '-' }}</span></div>
+                  <div class="cmp-tile"><span class="k">단지 내 개별성 보정</span><span class="v">{{ unitAdjText }}</span></div>
                   <div class="cmp-tile key"><span class="k">선정물건 예상 {{ cmpKind }}가</span><span class="v">{{ cmpUnitEst }}</span></div>
                 </div>
+              </div>
+              <!-- 실거래가 적을 때 적정 시세 — 순위로 · 전세가율로(강의 2026-11-11). 실거래 평균이 있으면 견주어 보는 참고 -->
+              <div class="cmp-ref">
+                <p><span class="lab">순위로 본 적정 {{ cmpKind }}가</span><template v-if="cmpRankEst"><b>{{ cmpEok(cmpRankEst.mid) }}{{ cmpRankEst.side === 'above' ? ' 이상' : cmpRankEst.side === 'below' ? ' 이하' : '' }}</b><small>{{ [cmpRankEst.up ? `위 ${cmpRankOf.get(cmpKeyOf(cmpRankEst.up))}위 ${cmpRankEst.up.name || cmpRankEst.up.jibun} ${cmpPy(cmpRankEst.upPy)}` : '', cmpRankEst.dn ? `아래 ${cmpRankOf.get(cmpKeyOf(cmpRankEst.dn))}위 ${cmpRankEst.dn.name || cmpRankEst.dn.jibun} ${cmpPy(cmpRankEst.dnPy)}` : ''].filter(Boolean).join(' · ') }} {{ cmpRankEst.side === 'between' ? ' 사이를 종합 점수로 나눠 전용 평에 곱했습니다' : ' — 선정물건이 끝 순위라 한쪽 단지 평당가만으로 계산한 한계값입니다' }}</small></template><span v-else class="cmp-dim">위아래 순위 단지에 거래가 없습니다</span></p>
+                <p v-if="cmpKind === '매매'"><span class="lab">전세가율로 본 매매가</span><template v-if="cmpRateEst"><b>{{ cmpEok(cmpRateEst.sale) }}</b><small>연식 ±5년 이웃 {{ cmpRateEst.n }}곳 전세가율 {{ Math.round(cmpRateEst.rate) }}%로 선정물건 평균 전세가를 나눴습니다</small></template><span v-else class="cmp-dim">선정물건 전세 거래나 이웃 전세가율이 없습니다</span></p>
               </div>
             </section>
           </div>
@@ -12201,6 +12268,11 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-rate-in input { width: 68px; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1px solid #e3e8f0; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 700; text-align: right; color: #2b6df3; background: #fff; }
 .cmp-rate-in input::placeholder { color: #374151; font-weight: 400; opacity: 1; }   /* 기본값 — 흐리지 않게(값이 비어 보이지 않게) */
 .cmp-ind-note { margin: 8px 2px 0; font-size: 12.5px; color: #6b7280; line-height: 1.6; }
+.cmp-ref { margin-top: 10px; display: grid; gap: 6px; padding: 10px 12px; background: #f7f8fb; border-radius: 8px; }
+.cmp-ref p { margin: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; font-size: 13px; color: #374151; }
+.cmp-ref .lab { min-width: 150px; font-weight: 700; color: #111827; }
+.cmp-ref b { font-size: 15px; font-weight: 800; color: #111827; }
+.cmp-ref small { font-size: 12px; color: #6b7280; }
 .cmp-ind-fold-note { font-size: 12.5px; font-weight: 400; color: #6b7280; }
 .adp-dm-sub > .adp-edit-btn + .adp-photo-fold { margin-left: 6px; }
 .cmp-nm-line { display: flex; align-items: center; min-width: 0; }
