@@ -9572,7 +9572,7 @@ const goBack = () => router.back();
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
             <section v-if="webEmbed && isApartment && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
               <div class="cmp-est-h"><h3><span class="cmp-no">②</span>단지 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}<template v-if="cmpPick && cmpPicked"> · {{ cmpPicked.name || cmpPicked.jibun }}</template></span><span class="cmp-q">내가 선정한 아파트 단지는 몇 등일까?</span></h3>
-                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><template v-if="cmpPick"><span class="cmp-desc-hi">최근 {{ cmpMonths }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 같은 평형 {{ cmpKind }} 실거래</span> · 다시 누르면 동 전체로 돌아갑니다</template><template v-else><span class="cmp-desc-hi">최근 {{ cmpMonths }}개월 · 유사평형 {{ cmpKind }} 실거래</span> · 단지 {{ cmpRows.length }}곳 전체 · 단지를 누르면 그 단지로 바뀝니다</template></span>
+                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><template v-if="cmpPick"><span class="cmp-desc-hi">최근 {{ cmpMonths }}개월 · {{ cmpPicked ? areaPair(cmpPicked.supply, cmpPicked.area) : '-' }} 같은 평형 {{ cmpKind }} 실거래</span> · 다시 누르면 동 전체로 돌아갑니다</template><template v-else><span class="cmp-desc-hi">최근 {{ cmpMonths }}개월 · 유사평형(전용 ±{{ cmpTol }}㎡) {{ cmpKind }} 실거래</span> · 단지 {{ cmpRows.length }}곳 전체 · 단지를 누르면 그 단지로 바뀝니다</template></span>
               </div>
               <div class="cmp-est">
                 <div class="cmp-tiles">
@@ -9588,7 +9588,7 @@ const goBack = () => router.back();
                   <div class="cmp-tile"><span class="k">{{ cmpKind }} 거래건수</span><span class="v">{{ cmpEst?.n ?? 0 }}건</span></div>
                   </template>
                   <template v-else>
-                  <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · {{ supRegion?.dong || '동 전체' }}</span><span class="v">{{ cmpAll ? cmpEok(cmpAll.avg) : '-' }}</span></div>
+                  <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · {{ supRegion?.dong || '동 전체' }}</span><span class="v">{{ cmpAll ? cmpEok(cmpAll.avg) : '-' }}</span><span class="s">유사평형(전용 ±{{ cmpTol }}㎡)</span></div>
                   <div v-for="k in ['중간값', '최저가', '최고가']" :key="k" class="cmp-tile off"><span class="k">{{ k }}</span><span class="v sm">단지를 누르면 보입니다</span></div>
                   <div class="cmp-tile"><span class="k">평균 평당가</span><span class="v">{{ cmpAll ? cmpPy(cmpAll.perPy) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">단지 수</span><span class="v">{{ cmpAll?.complexes ?? 0 }}곳</span></div>
