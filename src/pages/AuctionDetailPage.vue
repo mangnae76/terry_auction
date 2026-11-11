@@ -9684,10 +9684,10 @@ const goBack = () => router.back();
                 <p class="sup-head cmp-pick">보고 있는 단지 <span class="area cmp-chip">{{ cmpPicked?.name || cmpPicked?.jibun || supName || '선정물건' }}</span> <small class="cmp-sub">단지 리스트 표나 지도에서 단지를 누르면 아래 표 내용이 바뀝니다.</small><button v-if="cmpPicked && !cmpPicked.mine" type="button" class="cmp-back" @click="cmpPick = ''">선정물건으로</button></p>
                 <div class="cmp-two one">
                   <div class="son-demand sup-tbl"><div class="adm-table-wrap cmp-deals"><table class="adm-table cmp-tbl">
-                    <thead><tr><th>구분</th><th>계약일</th><th>면적 <small class="inl">공급(전용)</small></th><th>층</th><th>실거래가</th></tr></thead>
+                    <thead><tr><th>구분</th><th>계약일</th><th>면적 <small class="inl">공급(전용)</small></th><th>동 · 층</th><th>실거래가</th></tr></thead>
                     <tbody>
                       <tr v-for="(d, i) in (cmpDealsAll ? cmpPickedDeals : cmpPickedDeals.slice(0, CMP_DEALS_N))" :key="i">
-                        <td><span :class="['cmp-kind', { j: d.kind === '전세', m: d.kind === '월세' }]">{{ d.kind === '직거래' ? '매매' : d.kind }}</span></td><td class="n">{{ d.contractDate }}</td><td class="n">{{ areaPair(cmpPicked?.supply ?? null, d.areaM2) }}</td><td class="n">{{ d.floor ? `${d.floor}층` : '-' }}</td><td class="n amt"><b>{{ cmpMoney(d.price) }}</b></td>
+                        <td><span :class="['cmp-kind', { j: d.kind === '전세', m: d.kind === '월세' }]">{{ d.kind === '직거래' ? '매매' : d.kind }}</span></td><td class="n">{{ d.contractDate }}</td><td class="n">{{ areaPair(cmpPicked?.supply ?? null, d.areaM2) }}</td><td class="n">{{ [d.dong ? `${d.dong}동` : '', d.floor ? `${d.floor}층` : ''].filter(Boolean).join(' ') || '-' }}</td><td class="n amt"><b>{{ cmpMoney(d.price) }}</b></td>
                       </tr>
                       <tr v-if="!cmpPicked"><td colspan="5" class="cmp-dim">{{ supLoaded ? '해당 단지의 실거래 데이터가 없습니다.' : '실거래를 받는 중입니다…' }}</td></tr>
                       <tr v-else-if="!cmpPickedDeals.length"><td colspan="5" class="cmp-dim">최근 {{ cmpMonths }}개월 같은 평형 {{ cmpKind }} 거래가 없습니다.</td></tr>

@@ -793,6 +793,8 @@ export interface RealTradeMatchRow {
   roadName?: string;
   /** 지번 (도로명이 없는 자료 대비) */
   jibun?: string;
+  /** 아파트 동(국토부 aptDong — 등기를 마친 거래 위주로 붙는다). 호수는 공개되지 않는다 */
+  dong?: string;
   /** 거래유형 — '중개거래' / '직거래' */
   dealType?: string;
   /** 주택유형 — 국토부 houseType ('다세대' / '연립' / '연립다세대') */
@@ -1324,6 +1326,7 @@ export const fetchPlaceHistory = async (params: {
       apartmentName: String(row.mhouseNm ?? row.aptNm ?? row.offiNm ?? '').trim() || undefined,
       buildYear: num(row.buildYear) > 1800 ? num(row.buildYear) : undefined,
       jibun: String(row.jibun ?? '').trim() || undefined,
+      dong: String(row.aptDong ?? '').trim().replace(/동$/, '') || undefined,
       dealType: String(row.dealingGbn ?? '').trim() || undefined,
       houseType: String(row.houseType ?? '').trim() || undefined,
       cancelled: String(row.cdealType ?? '').trim().toUpperCase() === 'O'

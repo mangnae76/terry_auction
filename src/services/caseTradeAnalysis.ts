@@ -32,6 +32,8 @@ export interface CaseTradeRow {
   jibun: string;
   /** 건축년도 — 유사물건을 연식으로 거를 때 쓴다(국토부 자료에 없으면 비어 있다) */
   buildYear?: number;
+  /** 아파트 동(매매만 · 등기를 마친 거래 위주) */
+  dong?: string;
   /** 월세 (원) — 월세 줄만 */
   monthly?: number;
 }
@@ -63,7 +65,7 @@ const won = (n: number) => (n > 0 ? Math.round(n).toLocaleString('ko-KR') : '-')
 
 /** 시군구 한 곳의 매매·전월세를 통째로 받는다 (받아 둔 것이 있으면 그걸 쓴다) */
 const loadDistrict = async (lawdCd5: string, propertyType: CasePropertyType, years: number) => {
-  const key = cacheKey(lawdCd5, propertyType, `y${years}`);
+  const key = cacheKey(lawdCd5, propertyType, `y${years}d`);   // d — 아파트 동(aptDong)을 더한 뒤(2026-11-11). 달 문서(cacheTradeMonth)는 원본 그대로라 국토부를 다시 부르지 않고 새로 편다
   type Payload = Awaited<ReturnType<typeof fetchPlaceHistory>>;
   // ① 이 브라우저 → ② DB(조각으로 나눠 둔 것, 다른 기기 · 다른 사람이 받아 둔 것) → ③ 국토부에서 새로(194번쯤). 하루 지나면 새로
   // 대문 숫자(모아 둔 실거래 · 단지) — 불러온 시군구를 하루 한 번 집계에 더한다(services/landingStats)
@@ -147,6 +149,7 @@ const toRows = (data: Awaited<ReturnType<typeof fetchPlaceHistory>>): CaseTradeR
     name: r.apartmentName ?? '',
     jibun: r.jibun ?? '',
     buildYear: r.buildYear,
+    ...(r.dong ? { dong: r.dong } : {}),
   })),
   // 전월세는 국토부가 '만원'으로 준다 — 매매(원)와 한 칸에 서니 원으로 맞춰 적는다
   ...data.rents.map((r) => ({
