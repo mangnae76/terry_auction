@@ -9511,6 +9511,12 @@ const goBack = () => router.back();
                 <div v-if="cmpFs" class="cmp-fs-top">
                   <button type="button" class="cmp-fs-x" @click="cmpFs = false"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>전체화면 닫기</button>
                   <b>단지 입지비교<small>{{ [auction?.caseNumber, [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ')].filter(Boolean).join(' · ') }}</small></b>
+                  <!-- 전체화면에서도 거르기 — 아래 화면 거르기와 같은 값(어디서 바꾸든 같이, 2026-11-11 사용자) -->
+                  <div class="cmp-fs-conds">
+                    <span class="lab">범위<span class="fseg" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRange === v }" :aria-checked="cmpRange === v" :data-t="t" @click="cmpRange = v">{{ t }}</button></span></span>
+                    <span class="lab">거래<span class="fseg" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" :data-t="k" @click="cmpKind = k">{{ k }}</button></span></span>
+                    <span class="lab">기간<span class="fseg" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonths === m }" :aria-checked="cmpMonths === m" :data-t="t" @click="cmpMonths = m">{{ t }}</button></span></span>
+                  </div>
                 </div>
                 <!-- 지도 칸 — 도구 막대 · 전체화면 단추는 이 칸 안에(전체화면에서 오른쪽 목록과 겹치지 않게) -->
                 <div class="cmp-map-box">
@@ -12386,6 +12392,12 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-fs-top b { font-size: 14px; font-weight: 800; color: #fff; }
 .cmp-fs-top b small { margin-left: 8px; font-size: 12px; font-weight: 500; color: rgba(255, 255, 255, .72); }
 .cmp-fs-x { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid rgba(255, 255, 255, .35); border-radius: 8px; background: transparent; font: inherit; font-size: 14px; color: #fff; cursor: pointer; }
+.cmp-fs-conds { margin-left: auto; display: flex; align-items: center; gap: 14px; }   /* 남색 띠 오른쪽 — 흰 테두리 단추 */
+.cmp-fs-conds .lab { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: rgba(255, 255, 255, .78); }
+.cmp-fs-conds .fseg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid rgba(255, 255, 255, .3); border-radius: 8px; }
+.cmp-fs-conds .fseg button { display: inline-grid; align-content: center; height: 28px; padding: 0 11px; border: 0 !important; border-radius: 6px; background: transparent !important; font: inherit; font-size: 13px; font-weight: 400; color: rgba(255, 255, 255, .85) !important; cursor: pointer; white-space: nowrap; box-shadow: none !important; }   /* 웹 공통 button 흰 바탕을 덮는다 */
+.cmp-fs-conds .fseg button::after { content: attr(data-t); height: 0; overflow: hidden; visibility: hidden; font-weight: 700; }   /* 굵어져도 폭 그대로 */
+.cmp-fs-conds .fseg button.on { background: #fff !important; color: #213366 !important; font-weight: 700; }
 .cmp-fs-x:hover { background: rgba(255, 255, 255, .1); }
 .cmp-fs-list { grid-column: 1; grid-row: 2; position: relative; z-index: 2; align-self: start; max-height: calc(100% - 24px); margin: 12px 0 12px 12px; overflow-y: auto; padding: 10px 10px 14px; display: grid; gap: 6px; align-content: start; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 6px 20px rgba(17, 24, 39, .14); }
 .cmp-fs-lh { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 2px 4px 4px; }
