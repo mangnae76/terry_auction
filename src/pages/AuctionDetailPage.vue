@@ -2828,10 +2828,18 @@ const APT_UNIT_EXTRA: IndivItem[] = [
   // 단지 안 입지 — 초등학교 · 학원가 · 출입구에 가까운 동이 로얄동(강의 2026-11-11)
   { id: 'ind.dongPos', label: '동 위치', options: ['로얄동', '보통', '외곽'], rate: '5%' },
 ];
+/** 아파트 타입 — 모양 하나(판상형 · 타워형 · 복층형) + 베이 하나(2 · 3 · 4베이). 다락은 뺐다(2026-11-11 사용자) */
+const TYPE_SHAPES = ['판상형', '타워형', '복층형'];
+const TYPE_BAYS = ['2베이', '3베이', '4베이'];
+/** 묶음마다 하나만 고르는 칸 — 타입(모양 · 베이), 구조(방 · 화장실)(2026-11-11 사용자) */
+const UNIT_PICK_GROUPS: Record<string, Array<{ label: string; opts: string[] }>> = {
+  'ind.type': [{ label: '타입 모양', opts: TYPE_SHAPES }, { label: '베이', opts: TYPE_BAYS }],
+  'ind.rooms': [{ label: '방 수', opts: ['1방', '2방', '3방', '4방'] }, { label: '화장실 수', opts: ['1화', '2화', '3화'] }],
+};
 const indivGroups = computed<IndivGroup[]>(() => (isApartment.value
   ? INDIV_GROUPS.map((g, i) => (i === 0
     ? { ...g, items: [...g.items.filter((it) => it.id !== 'ind.mgmt' && it.id !== 'ind.inside'), ...APT_INDIV_EXTRA] }
-    : { ...g, items: [...g.items, ...APT_UNIT_EXTRA] }))
+    : { ...g, items: [...g.items.map((it) => (it.id === 'ind.type' ? { ...it, options: [...TYPE_SHAPES, ...TYPE_BAYS] } : it)), ...APT_UNIT_EXTRA] }))
   : INDIV_GROUPS));
 /** PDF(건축물대장 · 단지정보) · 건축물대장 API 로 자동으로 채우는 항목 — 이름 글자를 블루그레이로(아래 watch 의 자동 채움과 같은 목록) */
 const INDIV_AUTO = new Set(['ind.age', 'ind.parking', 'ind.elevator', 'ind.corridor', 'ind.floorNum', 'ind.far']);
@@ -5734,6 +5742,12 @@ const indivPick = (item: IndivItem, opt: string) => {
 };
 /** 비중 · 비율 칸 — 기본값은 흐리지 않은 회색 글(placeholder), 고친 값은 파랑. 비우면 기본값으로 돌아간다 */
 const indivRateInput = (id: string, v: string) => { setIndivValue(`${id}.rate`, v.replace(/[^\d.~\-]/g, '')); persistSoon(); };
+/** 묶음 안에서 하나만 — 같은 묶음의 다른 것은 풀고 이것만(다시 누르면 해제). 다른 묶음 값은 그대로 */
+const indivPickOne = (id: string, opt: string, group: string[]) => {
+  const rest = indivList(id).filter((x) => !group.includes(x));
+  setIndivValue(id, (indivList(id).includes(opt) ? rest : [...rest, opt]).join(', '));
+  persistSoon();
+};
 const indivPickText = (id: string, v: string, ym = false) => { setIndivValue(id, ym ? v.replace(/[^\d-]/g, '').slice(0, 7) : v.replace(/[^\d.]/g, '')); persistSoon(); };
 /** 자동 칸이 자료에 없어 비었나 — 물건을 열 때 한 번 정해 둔다(치는 동안 값이 생겨 입력칸이 글로 바뀌지 않게) */
 const autoMissCache = new Map<string, boolean>();
@@ -9646,6 +9660,7 @@ const goBack = () => router.back();
                           <!-- 자동 칸은 공식 자료 값 그대로(고치지 않는다). 자료에 없어 비었을 때만 직접 넣는다(2026-11-11 사용자) -->
                           <template v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
                           <template v-else-if="INDIV_AUTO.has(item.id)"><span v-if="item.id === 'ind.floorNum'" class="cmp-ind-in"><input inputmode="numeric" :value="sumVal('sum.floorTotal')" placeholder="전체" aria-label="전체 층" @input="setSumVal('sum.floorTotal', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층 중<input inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" aria-label="해당 층" @input="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층</span><span v-else-if="item.options" class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span><span v-else class="cmp-ind-in"><input :inputmode="item.yearMonth ? 'text' : 'decimal'" :value="indivValue(item.id)" :placeholder="item.yearMonth ? '2004-05' : item.id === 'ind.parking' ? '총 주차대수' : '0'" :aria-label="item.label" @input="indivPickText(item.id, ($event.target as HTMLInputElement).value, !!item.yearMonth)" />{{ item.yearMonth ? '' : item.id === 'ind.parking' ? '대' : item.suffix ?? '' }}</span><small class="cmp-auto">자료에 없어 직접 넣습니다</small></template>
+                          <span v-else-if="UNIT_PICK_GROUPS[item.id] && isApartment" class="cmp-type-pick"><span v-for="grp in UNIT_PICK_GROUPS[item.id]" :key="grp.label" class="cmp-ind-seg" role="radiogroup" :aria-label="grp.label"><button v-for="opt in grp.opts" :key="opt" type="button" role="radio" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-checked="indivPicked(item, opt)" @click="indivPickOne(item.id, opt, grp.opts)">{{ opt }}</button></span></span>
                           <span v-else class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span>
                         </td>
                         <!-- 수리는 금액(만 원) — 고른 수리에 따른 기본 금액, 적으면 그 금액 -->
@@ -12401,6 +12416,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-ind-seg button { display: inline-grid; align-content: center; border: none; background: transparent; border-radius: 5px; height: 26px; padding: 0 10px; font: inherit; font-size: 13px; font-weight: 400; color: #6b7280; cursor: pointer; white-space: nowrap; }
 .cmp-ind-seg button::after { content: attr(data-t); height: 0; overflow: hidden; visibility: hidden; font-weight: 700; pointer-events: none; }
 .cmp-ind-seg button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
+.cmp-type-pick { display: inline-flex; flex-wrap: wrap; gap: 8px; }   /* 모양 하나 · 베이 하나 */
 .cmp-ind-in { display: inline-flex; align-items: center; gap: 4px; }
 .cmp-ind-in input { width: 84px; margin: 0 2px; height: 28px; box-sizing: border-box; padding: 0 8px; border: 1px solid #d7dde8; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 700; text-align: right; color: #111827; background: #fff; }
 .cmp-rate-in { display: inline-flex; align-items: center; gap: 2px; }
