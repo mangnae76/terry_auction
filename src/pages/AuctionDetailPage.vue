@@ -2842,6 +2842,14 @@ const UNIT_PICK_GROUPS: Record<string, Array<{ label: string; opts: string[] }>>
   'ind.direction': [{ label: '향', opts: ['동', '서', '남', '북'] }],
   'ind.view': [{ label: '뷰', opts: VIEW_OPTS }],   // 향도 하나만(2026-11-11 사용자)
 };
+/** 빌라 호실 개별성 — 묶음마다 하나만: 타입(모양 · 베이), 구조(방 수 · 화장실 수), 향, 뷰. 다락 · 1방 은 뺐다(2026-11-12 사용자) */
+const UNIT_PICK_GROUPS_VILLA: Record<string, Array<{ label: string; opts: string[] }>> = {
+  'ind.type': [{ label: '타입 모양', opts: TYPE_SHAPES }, { label: '베이', opts: ['2베이', '3베이', '4베이'] }],
+  'ind.rooms': [{ label: '방 수', opts: ['2방', '3방'] }, { label: '화장실 수', opts: ['1화', '2화'] }],
+  'ind.direction': [{ label: '향', opts: ['동', '서', '남', '북'] }],
+  'ind.view': [{ label: '뷰', opts: VIEW_OPTS }],
+};
+const unitPickGroups = computed(() => (isApartment.value ? UNIT_PICK_GROUPS : UNIT_PICK_GROUPS_VILLA));
 const indivGroups = computed<IndivGroup[]>(() => (isApartment.value
   ? INDIV_GROUPS.map((g, i) => (i === 0
     ? { ...g, items: [...g.items.filter((it) => it.id !== 'ind.mgmt' && it.id !== 'ind.inside'), ...APT_INDIV_EXTRA] }
@@ -5769,8 +5777,13 @@ const unitSign = (id: string): number => {
   const has = (...xs: string[]) => xs.some((x) => v.includes(x));
   switch (id) {
     case 'ind.direction': return has('남') ? 1 : has('북') && !has('동') && !has('서') ? -1 : 0;
-    case 'ind.type': return has('판상형') ? 1 : has('타워형', '복층형') ? -1 : 0;   // 모양만(예전에 골라 둔 베이 · 방은 보지 않는다)
-    case 'ind.rooms': return has('3방', '4방', '2화', '3화') ? 1 : has('1방', '2방', '1화') ? -1 : 0;
+    case 'ind.type': {
+      if (isApartment.value) return has('판상형') ? 1 : has('타워형', '복층형') ? -1 : 0;   // 모양만(예전에 골라 둔 베이 · 방은 보지 않는다)
+      // 빌라 — 모양 · 베이를 더해 방향만(판상 · 3~4베이는 +, 타워 · 복층은 −)
+      const t = (has('판상형') ? 1 : has('타워형', '복층형') ? -1 : 0) + (has('3베이', '4베이') ? 1 : 0);
+      return Math.sign(t);
+    }
+    case 'ind.rooms': return Math.sign((has('3방', '4방') ? 1 : has('1방', '2방') ? -1 : 0) + (has('2화', '3화') ? 1 : has('1화') ? -1 : 0));   // 방 · 화장실을 더해 방향만
     case 'ind.view': return has('뻥뷰', VIEW_LAKE) ? 1 : 0;
     case 'ind.sunlight': return has('좋음') ? 1 : has('나쁨') ? -1 : 0;
     case 'ind.repair': return 0;   // 수리는 % 가 아니라 금액(repairMan)
@@ -9756,7 +9769,7 @@ const goBack = () => router.back();
                           <!-- 자동 칸은 공식 자료 값 그대로(고치지 않는다). 자료에 없어 비었을 때만 직접 넣는다(2026-11-11 사용자) -->
                           <template v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
                           <template v-else-if="INDIV_AUTO.has(item.id)"><span v-if="item.id === 'ind.floorNum'" class="cmp-ind-in"><input inputmode="numeric" :value="sumVal('sum.floorTotal')" placeholder="전체" aria-label="전체 층" @input="setSumVal('sum.floorTotal', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층 중<input inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" aria-label="해당 층" @input="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층</span><span v-else-if="item.options" class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span><span v-else class="cmp-ind-in"><input :inputmode="item.yearMonth ? 'text' : 'decimal'" :value="indivValue(item.id)" :placeholder="item.yearMonth ? '2004-05' : item.id === 'ind.parking' ? '총 주차대수' : '0'" :aria-label="item.label" @input="indivPickText(item.id, ($event.target as HTMLInputElement).value, !!item.yearMonth)" />{{ item.yearMonth ? '' : item.id === 'ind.parking' ? '대' : item.suffix ?? '' }}</span><small class="cmp-auto">자료에 없어 직접 넣습니다</small></template>
-                          <span v-else-if="UNIT_PICK_GROUPS[item.id] && isApartment" class="cmp-type-pick"><span v-for="grp in UNIT_PICK_GROUPS[item.id]" :key="grp.label" class="cmp-ind-seg" role="radiogroup" :aria-label="grp.label"><button v-for="opt in grp.opts" :key="opt" type="button" role="radio" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-checked="indivPicked(item, opt)" @click="indivPickOne(item.id, opt, grp.opts)">{{ opt }}</button></span></span>
+                          <span v-else-if="unitPickGroups[item.id]" class="cmp-type-pick"><span v-for="grp in unitPickGroups[item.id]" :key="grp.label" class="cmp-ind-seg" role="radiogroup" :aria-label="grp.label"><button v-for="opt in grp.opts" :key="opt" type="button" role="radio" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-checked="indivPicked(item, opt)" @click="indivPickOne(item.id, opt, grp.opts)">{{ opt }}</button></span></span>
                           <span v-else class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span>
                         </td>
                         <!-- 수리는 금액(만 원) — 고른 수리에 따른 기본 금액, 적으면 그 금액 -->
