@@ -2825,23 +2825,17 @@ const SCHOOL_HUG_ITEM = { id: 'ind.schoolHug', label: '초품아', options: ['O'
 const schoolCross = computed(() => indivValue('ind.schoolHug') === 'X');
 /** 지하주차장 연결은 같은 단지 안에서도 동마다 달라 단지 내 개별성(호실 가격)으로(2026-11-11 사용자) */
 const APT_UNIT_EXTRA: IndivItem[] = [
-  { id: 'ind.ugLink', label: '지하주차장 연결', options: ['O', 'X'], rate: '3%' },
   // 단지 안 입지 — 초등학교 · 학원가 · 출입구에 가까운 동이 로얄동(강의 2026-11-11)
   { id: 'ind.dongPos', label: '동 위치', options: ['로얄동', '보통', '외곽'], rate: '5%' },
 ];
 /** 아파트 타입 — 모양 하나(판상형 · 타워형 · 복층형) + 베이 하나(2 · 3 · 4베이). 다락은 뺐다(2026-11-11 사용자) */
 const TYPE_SHAPES = ['판상형', '타워형', '복층형'];
-const TYPE_BAYS = ['2베이', '3베이', '4베이'];
-/** 같은 평형인데 방 수가 다른 타입(59A 3방 · 59B 2방 등) — 구조 칸 대신 타입 안에서(2026-11-11 사용자) */
-const TYPE_ROOMS = ['2방', '3방'];
-/** 화장실 수 — 기록용(값 보정에는 넣지 않는다, 2026-11-11 사용자) */
-const TYPE_BATHS = ['1화', '2화'];
 /** 뷰 — 호수 · 강 · 공원이 보이는 조망은 따로(청라 레이크뷰 동이 같은 평형 +25%, 2026-11-11 사용자 확인). 하나만 고른다 */
 const VIEW_LAKE = '호수·강·공원뷰';
 const VIEW_OPTS = ['뻥뷰', '단지뷰', VIEW_LAKE];
 /** 묶음마다 하나만 고르는 칸 — 타입(모양 · 베이), 구조(방 · 화장실), 향(2026-11-11 사용자) */
 const UNIT_PICK_GROUPS: Record<string, Array<{ label: string; opts: string[] }>> = {
-  'ind.type': [{ label: '타입 모양', opts: TYPE_SHAPES }, { label: '베이', opts: TYPE_BAYS }, { label: '방 수', opts: TYPE_ROOMS }, { label: '화장실 수', opts: TYPE_BATHS }],
+  'ind.type': [{ label: '타입 모양', opts: TYPE_SHAPES }],   // 베이 · 방 · 화장실은 같은 평형이면 같아 뺐다(2026-11-11 사용자)
   'ind.rooms': [{ label: '방 수', opts: ['1방', '2방', '3방', '4방'] }, { label: '화장실 수', opts: ['1화', '2화', '3화'] }],
   'ind.direction': [{ label: '향', opts: ['동', '서', '남', '북'] }],
   'ind.view': [{ label: '뷰', opts: VIEW_OPTS }],   // 향도 하나만(2026-11-11 사용자)
@@ -2849,7 +2843,7 @@ const UNIT_PICK_GROUPS: Record<string, Array<{ label: string; opts: string[] }>>
 const indivGroups = computed<IndivGroup[]>(() => (isApartment.value
   ? INDIV_GROUPS.map((g, i) => (i === 0
     ? { ...g, items: [...g.items.filter((it) => it.id !== 'ind.mgmt' && it.id !== 'ind.inside'), ...APT_INDIV_EXTRA] }
-    : { ...g, items: [...g.items.map((it) => (it.id === 'ind.type' ? { ...it, options: [...TYPE_SHAPES, ...TYPE_BAYS, ...TYPE_ROOMS, ...TYPE_BATHS] } : it.id === 'ind.view' ? { ...it, options: VIEW_OPTS } : it.id === 'ind.direction' ? { ...it, label: '향/일조량' } : it)), ...APT_UNIT_EXTRA] }))
+    : { ...g, items: [...g.items.map((it) => (it.id === 'ind.type' ? { ...it, options: TYPE_SHAPES } : it.id === 'ind.view' ? { ...it, options: VIEW_OPTS } : it.id === 'ind.direction' ? { ...it, label: '향/일조량' } : it)), ...APT_UNIT_EXTRA] }))
   : INDIV_GROUPS));
 /** PDF(건축물대장 · 단지정보) · 건축물대장 API 로 자동으로 채우는 항목 — 이름 글자를 블루그레이로(아래 watch 의 자동 채움과 같은 목록) */
 const INDIV_AUTO = new Set(['ind.age', 'ind.parking', 'ind.elevator', 'ind.corridor', 'ind.floorNum', 'ind.far']);
@@ -5743,7 +5737,7 @@ const unitSign = (id: string): number => {
   const has = (...xs: string[]) => xs.some((x) => v.includes(x));
   switch (id) {
     case 'ind.direction': return has('남') ? 1 : has('북') && !has('동') && !has('서') ? -1 : 0;
-    case 'ind.type': return has('판상형', '3베이', '4베이', '3방') ? 1 : has('타워형', '2베이', '복층형', '다락', '2방') ? -1 : 0;
+    case 'ind.type': return has('판상형') ? 1 : has('타워형', '복층형') ? -1 : 0;   // 모양만(예전에 골라 둔 베이 · 방은 보지 않는다)
     case 'ind.rooms': return has('3방', '4방', '2화', '3화') ? 1 : has('1방', '2방', '1화') ? -1 : 0;
     case 'ind.view': return has('뻥뷰', VIEW_LAKE) ? 1 : 0;
     case 'ind.sunlight': return has('좋음') ? 1 : has('나쁨') ? -1 : 0;
@@ -5760,7 +5754,7 @@ const unitAdj = (id: string): [number, number] => {
   const sg = unitSign(id); const [a, b] = rateOf(rateIdOf(id)).map(Math.abs) as [number, number];
   return sg > 0 ? [Math.min(a, b), Math.max(a, b)] : sg < 0 ? [-Math.max(a, b), -Math.min(a, b)] : [0, 0];
 };
-const UNIT_IDS = ['ind.floorNum', 'ind.direction', 'ind.type', 'ind.view', 'ind.repair', 'ind.ugLink', 'ind.dongPos'];   // 구조 · 일조량 뺐다(2026-11-11)
+const UNIT_IDS = ['ind.floorNum', 'ind.direction', 'ind.type', 'ind.view', 'ind.repair', 'ind.dongPos'];   // 구조 · 일조량 뺐다(2026-11-11)
 const unitAdjSum = computed<[number, number]>(() => UNIT_IDS.reduce<[number, number]>((acc, id) => { const [a, b] = unitAdj(id); return [acc[0] + a, acc[1] + b]; }, [0, 0]));
 const pctText = ([a, b]: [number, number]) => {
   const one = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n * 10) / 10)}%`;
@@ -6062,7 +6056,7 @@ const UNIT_GROUPS = [
   { title: '자동(서류)', ids: ['ind.floorNum'] },
   { title: '서류 · 도면으로', ids: ['ind.type'] },
   // 구조(방 · 화장실)는 같은 단지 같은 평형이면 다 같아 뺐다, 일조량은 향으로 따진다(강의) — '향/일조량' 한 칸(2026-11-11 사용자)
-  { title: '현장 확인', ids: ['ind.direction', 'ind.dongPos', 'ind.ugLink', 'ind.view', 'ind.repair'] },
+  { title: '현장 확인', ids: ['ind.direction', 'ind.dongPos', 'ind.view', 'ind.repair'] },   // 지하주차장 연결은 뺐다 — 요즘 단지는 다 연결돼 같은 단지 안 차이가 없다(2026-11-11 사용자)
 ];
 const unitGroupsView = computed(() => UNIT_GROUPS.map((g) => ({ title: g.title, items: g.ids.map((id) => indivGroups.value[1].items.find((it) => it.id === id)).filter((it): it is IndivItem => !!it) })).filter((g) => g.items.length));
 /** 전용 평당가(원/평) — 고른 거래(매매 · 전세) 평균 ÷ 전용 평 */
