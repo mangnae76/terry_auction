@@ -8,7 +8,7 @@ import type { AuctionDetail, MarketPickRow, MarketPicks, PriceView } from '../ty
 import { analyzeAddress, floorOfHo, pickCaseTrade, type CasePropertyType, type CaseTradeResult, type CaseTradeRow } from '../services/caseTradeAnalysis';
 import {
   PY, HUG_RATE, RADII, PERIODS, SIM_STEPS, radText, periodText, simCond, simDefText, groupOf, floorNum, matchUnit, inRange,
-  estStats, jeonseEstimate, distM, visitOrder, type PriceCond, type PriceRow,
+  estStats, jeonseEstimate, distM, visitOrder, areaIn, type PriceCond, type PriceRow,
   type SonPriceOut,
 } from '../services/priceAnalysis';
 import { fetchApartUnits, type ApartUnit } from '../services/vworldApi';
@@ -101,7 +101,8 @@ const lot = computed(() => res.value?.parts.lot ?? '');
 // ===== 선정물건 — 전용 · 건축년 · 층 · 공시가 =====
 const sameRaw = computed(() => res.value?.rows ?? []);
 const me = computed(() => {
-  const areaM2 = res.value?.baseAreaM2 || props.auction.buildingAreaM2 || 0;
+  // 아파트는 물건 자료 전용(다른 탭 · 고정카드와 같은 84.39)이 먼저 — 실거래에서 고른 값(84.40)과 끝자리가 달라 직접범위 끝이 84.4 로 보였다(2026-11-11)
+  const areaM2 = (props.kind === 'apt' ? Number(props.auction.buildingAreaM2) || 0 : 0) || res.value?.baseAreaM2 || props.auction.buildingAreaM2 || 0;
   const year = Number(String(props.auction.approvalDate ?? '').slice(0, 4)) || sameRaw.value.find((r) => r.buildYear)?.buildYear || 0;
   return { areaM2, year, floor: floorOfHo(res.value?.parts.ho ?? '') };
 });
@@ -241,7 +242,10 @@ const cond = computed<PriceCond>(() => {
   return elevPick.value ? { ...base, elev: elevPick.value } : base;
 });
 const candidates = computed(() => {
-  const list = inRange(allRows.value, radius.value, cond.value, me.value.floor);
+  const raw = inRange(allRows.value, radius.value, cond.value, me.value.floor);
+  // 웹 — 같은 건물(같은 지번) 거래에도 면적 · 건축 조건을 건다. 아파트는 한 지번에 여러 평형이 있어, 면적을 좁혀도 같은 단지 다른 평형이 그대로 남았다(2026-11-11 사용자)
+  const c = cond.value;
+  const list = webEmbed ? raw.filter((r) => !r.same || (areaIn(r.areaM2, c) && (!(r.buildYear ?? 0) || ((r.buildYear ?? 0) >= c.yMin && (r.buildYear ?? 0) <= c.yMax)))) : raw;
   // 웹 — '같은 층'이면 같은 건물 거래에도 층을 건다. 같은 건물은 늘 넣는 규칙이 앞서 5층 · 3층이 섞여 층이 안 먹는 것처럼 보였다(2026-11-08)
   if (!webEmbed || rangeCond.value.floor !== 0 || !me.value.floor) return list;
   return list.filter((r) => !r.same || !r.floorNo || r.floorNo === me.value.floor);
@@ -371,12 +375,16 @@ const setRange = (k: keyof PriceCond, v: number, el?: HTMLInputElement) => {
   // 웹 — 범위는 늘 내 물건(빨간 줄)을 품는다: 왼쪽 동그라미는 빨간 줄을 넘어 오른쪽으로, 오른쪽 동그라미는 왼쪽으로 못 간다(2026-11-07)
   if (webEmbed) {
     const a = me.value.areaM2; const y = me.value.year;
-    if (a > 0) { c.mMin = Math.min(c.mMin, Math.floor(a)); c.mMax = Math.max(c.mMax, Math.ceil(a)); }
+    // 동그라미를 내 면적까지 끝까지 밀면 정확히 내 면적(84.39 ~ 84.39)에서 멈춘다 — 84 · 85 에서 멈춰 같은 면적만 고를 수 없었다(2026-11-11 사용자)
+    const a2 = Math.floor(a * 100 + 1e-6) / 100;   // 화면과 같은 소수 둘째 자리(84.39)
+    if (a > 0) { c.mMin = Math.min(c.mMin, a2); c.mMax = Math.max(c.mMax, a2); }
     if (y > 0) { c.yMin = Math.min(c.yMin, y); c.yMax = Math.max(c.yMax, y); }
   }
   rangeCond.value = c;
   if (el && el.value !== String(c[k])) el.value = String(c[k]);   // 막힌 자리로 동그라미도 되돌린다(값이 그대로면 화면이 다시 그려지지 않는다)
 };
+/** 직접범위 면적 글 — 정수는 그대로(84), 소수는 둘째 자리 버림(84.39) */
+const areaTx = (v: number) => (Number.isInteger(v) ? String(v) : (Math.floor(v * 100 + 1e-6) / 100).toFixed(2));
 const fillStyle = (lo: number, hi: number, min: number, max: number) => ({ left: `${((lo - min) / (max - min)) * 100}%`, right: `${100 - ((hi - min) / (max - min)) * 100}%` });
 const baseLeft = (v: number, min: number, max: number) => `${Math.min(100, Math.max(0, ((v - min) / (max - min)) * 100))}%`;
 /** 웹 직접범위 — 막대 위 숫자 셋은 빨간 줄 자리에 고정: 가운데 내 물건 값, 왼쪽 최소 · 오른쪽 최대. 동그라미를 움직이면 숫자만 바뀐다(2026-11-07) */
@@ -872,11 +880,11 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <div v-else class="simB">
             <div :class="['dl', { one: webEmbed && !fs }]"><span class="dn">{{ webEmbed && !fs ? '면적 ㎡' : '면적' }}<small v-if="webEmbed && !fs" class="pa-num">{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</small></span>
               <div class="dual">
-                <div class="track"><i class="fill" :style="fillStyle(rangeCond.mMin, rangeCond.mMax, AREA_MIN, AREA_MAX)" /><i class="base" :data-label="webEmbed && !fs ? '' : `${me.areaM2.toFixed(2)}㎡`" :style="{ left: baseLeft(me.areaM2, AREA_MIN, AREA_MAX) }" /><span v-if="webEmbed && !fs" class="tvg m pa-num" :style="{ left: baseLeft(me.areaM2, AREA_MIN, AREA_MAX) }"><i>{{ rangeCond.mMin }}</i><i class="me">{{ me.areaM2.toFixed(2) }}</i><i>{{ rangeCond.mMax }}</i></span></div>
+                <div class="track"><i class="fill" :style="fillStyle(rangeCond.mMin, rangeCond.mMax, AREA_MIN, AREA_MAX)" /><i class="base" :data-label="webEmbed && !fs ? '' : `${me.areaM2.toFixed(2)}㎡`" :style="{ left: baseLeft(me.areaM2, AREA_MIN, AREA_MAX) }" /><span v-if="webEmbed && !fs" class="tvg m pa-num" :style="{ left: baseLeft(me.areaM2, AREA_MIN, AREA_MAX) }"><i>{{ areaTx(rangeCond.mMin) }}</i><i class="me">{{ areaTx(me.areaM2) }}</i><i>{{ areaTx(rangeCond.mMax) }}</i></span></div>
                 <input type="range" :min="AREA_MIN" :max="AREA_MAX" step="1" :value="rangeCond.mMin" aria-label="면적 최소(㎡)" @input="setRange('mMin', Number(($event.target as HTMLInputElement).value), $event.target as HTMLInputElement)">
                 <input type="range" :min="AREA_MIN" :max="AREA_MAX" step="1" :value="rangeCond.mMax" aria-label="면적 최대(㎡)" @input="setRange('mMax', Number(($event.target as HTMLInputElement).value), $event.target as HTMLInputElement)">
               </div>
-              <b v-if="!(webEmbed && !fs)">{{ rangeCond.mMin }}~{{ rangeCond.mMax }}㎡<small>{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</small></b>
+              <b v-if="!(webEmbed && !fs)">{{ areaTx(rangeCond.mMin) }}~{{ areaTx(rangeCond.mMax) }}㎡<small>{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</small></b>
             </div>
             <div :class="['dl', { one: webEmbed && !fs }]"><span class="dn">건축<small v-if="webEmbed && !fs" class="pa-num">{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</small></span>
               <div class="dual">

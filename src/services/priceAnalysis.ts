@@ -85,8 +85,10 @@ export const matchUnit = (units: ApartUnit[], areaM2: number, floor: number): { 
   return { pub: Math.round(median(hit.map((u) => u.price))), ho: hit.length === 1 ? `${hit[0].ho.replace(/\D/g, '')}호` : '' };
 };
 
+/** 면적이 범위 안인가 — 화면처럼 소수 둘째 자리 버림으로 견준다(실거래 84.3986 = 84.39 · 2026-11-11) */
+export const areaIn = (m: number, c: { mMin: number; mMax: number }) => { const a = Math.floor(m * 100 + 1e-6) / 100; return a >= c.mMin - 1e-6 && a <= c.mMax + 1e-6; };
 export const matchCond = (r: PriceRow, c: PriceCond, myFloor: number) => (
-  r.areaM2 >= c.mMin && r.areaM2 <= c.mMax
+  areaIn(r.areaM2, c)
   && (r.buildYear ?? 0) >= c.yMin && (r.buildYear ?? 0) <= c.yMax
   && (c.floor === null || !myFloor || Math.abs(r.floorNo - myFloor) <= c.floor)
   && (!c.elev || r.elev == null || (c.elev === 'yes' ? r.elev > 0 : r.elev === 0))
