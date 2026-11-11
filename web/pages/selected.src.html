@@ -3616,7 +3616,10 @@ img.eb-cv { aspect-ratio: auto; height: auto; max-height: 260px; object-fit: con
 .hm-list small i { font-style: normal; margin-right: 6px; padding: 1px 6px; border-radius: 4px; background: var(--blue-soft); color: var(--blue); font-weight: 700; }
 .hm-list .chev { flex: 0 0 auto; color: var(--faint); }
 .adp-rank-hint { color: var(--muted) !important; }   /* 입지등수 안내글 — 밤 화면에서도 읽히게 웹 회색 */
-.it-th-sub { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }   /* 표 머리 아래 작은 글 — '면적종류' 밑 '공급(전용)' */
+.it-th-sub { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+.it-sum dt .it-th-sub { display: inline; margin-left: 4px; }   /* 정보요약 — '면적 공급(전용)' 한 줄 */   /* 표 머리 아래 작은 글 — '면적종류' 밑 '공급(전용)' */
+.ih-unit { display: inline-flex; align-items: center; gap: 3px; height: 24px; margin-left: 8px; padding: 0 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); font: inherit; font-size: 12.5px; color: var(--text); cursor: pointer; white-space: nowrap; }   /* 고정카드 면적 단위 — 네이버 '↻ 평' 꼴 */
+.ih-unit:hover { border-color: var(--blue); color: var(--blue); }
 .snap-cover { position: absolute; left: 0; right: 0; z-index: 35; background: var(--bg); pointer-events: none; }   /* 새로고침 덮개 — 보던 화면 그림(누를 수 없음), 진짜 화면이 다 그려지면 걷는다 */
 /* 최근 분석 한 줄 — 첫 줄 사건 · 주소 … 오른쪽 끝 날짜, 둘째 줄 꼬리표 칩 + 설명(홈 · 전체보기 창 같은 꼴) */
 .hm-recent .t1 { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
@@ -6673,14 +6676,28 @@ span.cal-day.has { cursor: help; }
     const grid = document.querySelector('#itemContent .it-grid'); if (grid) grid.classList.toggle('folded', S.itFold);
     syncFoldBtn();
   };
+  /* 아파트 면적 한 줄 — '공급㎡ (전용)'(단위는 고정카드 단추, services/areaUnit). 공급은 이 호실 건축물대장 값만, 모르면 '전용 59.98㎡'(2026-11-11) */
+  const aptAreaOf = (it, a) => {
+    const T = CLOUD.T; if (!T || !T.aptAreaText) return '';
+    const ar = areasFor(it.id); const sup = (ar && ar.mine && ar.mine.supply) || Number(((a.basicSummary || {})['sum.supplyArea'] || '').replace(/[^\d.]/g, '')) || 0;
+    const ex = Number(a.buildingAreaM2) || (ar && ar.mine && ar.mine.exclusive) || 0;   /* 전용은 물건 자료(PDF) 값이 먼저 — 손품조사 실사용자와 같은 값(59.98) */
+    return T.aptAreaText(sup || null, ex);
+  };
+  const isAptItem = (a) => /아파트/.test((a && a.propertyType) || '');
+  /* 고정카드 오른쪽 면적 단위 단추 — 누르면 모든 탭의 아파트 면적이 ㎡ ↔ 평 */
+  const unitBtnHtml = () => { const T = CLOUD.T; const py = T && T.getAreaUnit && T.getAreaUnit() === 'py'; return `<button type="button" class="ih-unit" data-act="area-unit"${tip(py ? '면적을 ㎡로' : '면적을 평으로')}><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg>${py ? '㎡' : '평'}</button>`; };
   function itemHeadHtml(it, pick = null) {   /* pick — 단계 단추 오른쪽 물건카드교체(경매사례는 넘겨 주고, 선정물건 물건상세는 여기서 만든다) */
     if (pick === null) pick = S.route === 'item' ? cardPickHtml('item', it.id) : '';
     const a = detailOf(it); const T = CLOUD.T;
     const kind = TYPE_NAME(it.type) || '다세대';
     /* 매각구분 · 전용 면적 · 사용승인 — 앱 saleKindOf · headMetaLineOf. 웹은 '토건일괄매각'을 풀어 쓴다. 면적 앞 글은 '전용'(예전 '건물', 2026-11-10) */
     const sale = (T ? T.saleKindOf(a) : '토건일괄매각').replace('토건일괄매각', '토지건물 일괄매각');
-    const meta = T ? T.headMetaLineOf(a, new Date().getFullYear()) : '';
-    const metaText = meta ? (/㎡/.test(meta) ? `전용 ${meta}` : meta) : '';
+    /* 연차를 앞에, 면적을 뒤에(2026-11-11). 아파트는 '공급㎡ (전용)' + 오른쪽 ㎡ · 평 단추, 빌라는 '전용 ㎡/평' 그대로 */
+    const yearOnly = T ? T.headMetaLineOf({ ...a, buildingAreaM2: 0 }, new Date().getFullYear()) : '';
+    const areaOnly = T ? T.headMetaLineOf({ ...a, approvalDate: '', buildingHeader: { ...(a.buildingHeader || {}), approvalDate: '' } }, new Date().getFullYear()) : '';
+    const apt = isAptItem(a);
+    const areaText = apt ? aptAreaOf(it, a) : (areaOnly ? `전용 ${areaOnly}` : '');
+    const metaText = [yearOnly, areaText].filter(Boolean).join(' · ');
     const stage = T && CLOUD.raw.has(it.id) ? T.stageLabelOf(a) : stageLabel(it);
     const hot = stage === '입찰진행'; const done = stage === '낙찰' || stage === '매도'; const off = stage === '유찰' || /취소/.test(stage);
     /* 고정카드의 PDF 단추는 뺐다(2026-11-07) */
@@ -6697,7 +6714,7 @@ span.cal-day.has { cursor: help; }
       </div>
       <div class="ih-prop">
         <span class="ih-kind">${esc(kind)}</span>
-        <span class="ih-line"><span class="ih-sale">${esc(sale)}${metaText ? ` · ${esc(metaText)}` : ''}</span><span class="ih-stars">${starsHtml(it)}</span></span>
+        <span class="ih-line"><span class="ih-sale">${esc(sale)}${metaText ? ` · ${esc(metaText)}` : ''}</span>${apt ? unitBtnHtml() : ''}<span class="ih-stars">${starsHtml(it)}</span></span>
         <button type="button" class="ih-copy" data-act="item-copy" data-id="${it.id}" aria-label="주소 복사"${tip('지번주소 복사')}>${I.copy}주소</button>
         <p class="ih-addr">${esc(it.addr)}${it.bld ? ` <b>${esc(it.bld)}</b>` : ''}${it.unit ? ` <b>${esc(it.unit)}</b>` : ''}</p>
         <button type="button" class="ih-fold" id="ihFold" data-act="fold-all" aria-label="전체 접기"${tip('전체 접기 · 펼치기', 'left')}><img src="${CHEV_PNG}" alt=""></button>
@@ -6728,9 +6745,9 @@ span.cal-day.has { cursor: help; }
       const summaryRows = [
         ['관할법원', `${esc(sv('sum.court') || '-')}${sv('sum.courtDept') ? `<span class="it-dept">${esc(sv('sum.courtDept'))}</span>` : ''}${sv('sum.courtPhone') ? ` <a class="it-tel" href="tel:${esc(sv('sum.courtPhone').replace(/[^0-9+]/g, ''))}">${TEL_ICO}${esc(sv('sum.courtPhone'))}</a>` : ''}`],
         ['사용승인', hi(`${esc(sv('sum.approval') || '-')}${age ? ` / ${age}` : ''}`)],
-        ['전용면적(㎡/평)', hi(T.summaryAreaText(sv('sum.exclusiveArea')))],
-        /* 공급면적은 아파트만 — 전용 아래 따로, 같은 꼴. 건축물대장(전용 + 주건축물 공용)이 먼저(2026-11-10) */
-        ...(isApt ? [['공급면적(㎡/평)', T.summaryAreaText(supplyM2 ? String(supplyM2) : sv('sum.supplyArea'))],
+        /* 아파트는 '면적 공급(전용)' 한 줄 — '83.18㎡ (59.98)', 단위는 고정카드 단추(2026-11-11). 빌라는 전용면적 그대로 */
+        ...(isApt ? [['면적<small class="it-th-sub">공급(전용)</small>', hi(esc(aptAreaOf(it, a)))]] : [['전용면적(㎡/평)', hi(T.summaryAreaText(sv('sum.exclusiveArea')))]]),
+        ...(isApt ? [
           /* 용적률 — 아파트만, 표제부(없으면 PDF 단지정보), 앱과 같다 */
           ['용적률', (() => { const n = sv('sum.far') || ((a.aptComplexInfo && a.aptComplexInfo.floorRatio) || '').replace(/[^\d.]/g, ''); return n ? `${esc(n)}%` : '-'; })()]] : []),
         ['대지면적(㎡/평)', T.summaryAreaText(sv('sum.landArea'))],
@@ -6843,7 +6860,7 @@ span.cal-day.has { cursor: help; }
     if (h.landAreaTotal || h.buildingAreaTotal || h.totalFloorArea) {
       out += `<div class="it-subtab">표제부</div>` + kvTable([
         `<tr><th>위치</th><td colspan="3">${v(h.locationDetail || full)}</td></tr>`,
-        `<tr><th>가구</th><td>${v(h.households)}</td><th>전용</th><td>${esc(exAll)}</td></tr>`,
+        `<tr><th>가구</th><td>${v(h.households)}</td>${isAptItem(a) ? `<th>면적<small class="it-th-sub">공급(전용)</small></th><td>${esc(aptAreaOf(it, a))}</td>` : `<th>전용</th><td>${esc(exAll)}</td>`}</tr>`,
         `<tr><th>대지</th><td>${v(h.landAreaTotal)}</td><th>건폐율</th><td>${v(h.buildingCoverage)}</td></tr>`,
         `<tr><th>건축</th><td>${v(h.buildingAreaTotal)}</td><th>용적률</th><td>${v(h.floorAreaRatio)}</td></tr>`,
         `<tr><th>연면적</th><td>${v(h.totalFloorArea)}</td><th>주용도</th><td>${v(h.mainUse || a.propertyType)}</td></tr>`,
@@ -6857,14 +6874,10 @@ span.cal-day.has { cursor: help; }
       out += `<div class="it-subtab">전유부</div>` + kvTable([
         `<tr><th>소재지</th><td colspan="3">${v(h.unitLocation || full)}</td></tr>`,
         ...(h.unitHouseholds || h.households ? [`<tr><th>총 가구/세대/호</th><td>${v(h.unitHouseholds || h.households)}</td><th>주용도</th><td>${v(h.mainUse || a.propertyType)}</td></tr>`] : []),
-        `<tr><th>전용면적</th><td>${v(h.unitExclusiveArea || ex)}</td><th>공용면적</th><td>${v(h.unitCommonArea)}</td></tr>`,
-        /* 공급면적 — 아파트만, 건축물대장 전용 + 주건축물 공용(PDF 공용면적엔 지하주차장까지 들어 있다, 앱과 같다) */
-        ...(() => {
-          if (!/아파트/.test(a.propertyType || '') || !CLOUD.T || !CLOUD.T.myGroupOf) return [];
-          const ar = areasFor(it.id);
-          const sup = (ar && ar.mine && ar.mine.supply) || 0;   /* 이 호실 건축물대장 값만 */
-          return sup ? [`<tr><th>공급면적</th><td colspan="3">${esc(CLOUD.T.exclusiveAreaText ? CLOUD.T.exclusiveAreaText(sup, Math.round((sup / 3.305785) * 100) / 100) : `${sup}㎡`)}</td></tr>`] : [];
-        })(),
+        /* 아파트는 '면적 공급(전용)' 한 줄(공급 = 건축물대장 전용 + 주건축물 공용, 단위는 고정카드 단추) + 공용면적, 빌라는 전용 · 공용 그대로(2026-11-11) */
+        ...(isAptItem(a)
+          ? [`<tr><th>면적<small class="it-th-sub">공급(전용)</small></th><td>${esc(aptAreaOf(it, a))}</td><th>공용면적</th><td>${v(h.unitCommonArea)}</td></tr>`]
+          : [`<tr><th>전용면적</th><td>${v(h.unitExclusiveArea || ex)}</td><th>공용면적</th><td>${v(h.unitCommonArea)}</td></tr>`]),
         `<tr><th>층</th><td>${v(h.unitFloor)}</td><th>층수(지하/지상)</th><td>${v(h.floors)}</td></tr>`,
         `<tr><th>사용승인일자</th><td>${v(h.approvalDate || a.approvalDate)}</td><th>승강기(비상/승용)</th><td>${v(h.elevator)}</td></tr>`,
         `<tr><th>구조</th><td>${v(h.unitStructure || a.structureType)}</td><th>총 주차수</th><td>${v(CLOUD.T && CLOUD.T.totalParkingOf ? CLOUD.T.totalParkingOf(a) : (h.unitTotalParking || h.parking))}</td></tr>`,
@@ -6873,7 +6886,7 @@ span.cal-day.has { cursor: help; }
     if (!out) {
       out = kvTable([
         `<tr><th>위치</th><td colspan="3">${v(full)}</td></tr>`,
-        `<tr><th>전용면적</th><td>${esc(exAll)}</td><th>사용승인</th><td>${v(a.approvalDate)}</td></tr>`,
+        `<tr>${isAptItem(a) ? `<th>면적<small class="it-th-sub">공급(전용)</small></th><td>${esc(aptAreaOf(it, a))}</td>` : `<th>전용면적</th><td>${esc(exAll)}</td>`}<th>사용승인</th><td>${v(a.approvalDate)}</td></tr>`,
         `<tr><th>구조</th><td colspan="3">${v(a.structureType)}</td></tr>`,
       ], 4);
     }
@@ -6933,7 +6946,7 @@ span.cal-day.has { cursor: help; }
     const name = T.complexNameOf ? T.complexNameOf(a) : c.name;
     /* 면적종류 — 건축물대장 공급면적마다 세대수 · 내 호실(타입 · 평형으로 묶지 않는다). 받기 전이면 PDF 평형 이름만 */
     const got = CLOUD.areas.get(it.id); const ready = got && !got.busy && got.value && got.value.groups.length;
-    const rows = ready && T.supplyRowsOf ? T.supplyRowsOf(got.value)
+    const rows = ready && T.supplyRowsOf ? T.supplyRowsOf(got.value, T.getAreaUnit ? T.getAreaUnit() : 'm2')
       : String(c.areaTypes || '').split(/\s*,\s*/).filter(Boolean).map((text) => ({ text, count: 0, mine: false }));
     const areas = rows.length ? rows.map((t) => `<span class="${t.mine ? 'it-apt-mine' : ''}">${esc(t.text)}${t.count ? ` ${t.count.toLocaleString('ko-KR')}세대` : ''}${t.mine ? '<small>내 물건</small>' : ''}</span>`).join(', ') : esc(c.areaTypes || '');
     return itCard('apt', '단지정보', kvTable([
@@ -8250,6 +8263,8 @@ span.cal-day.has { cursor: help; }
       + `<p class="addrline"><span class="pd lead"><em>매각기일</em><b>${ymd(x.date)}</b></span><i class="bar"></i><span class="addr">${esc(x.addr)}${x.bld ? ` <b>${esc(x.bld)}</b>` : ''}</span></p></article>`).join('')}</div>` : '';
     return `<span class="sx-pickanchor${wide ? ' wide' : ''}">${btn}${list}</span>`;
   }
+  /* 면적 단위가 바뀌면 — 고정카드와 물건정보(웹이 그린 탭)를 다시 그린다. 앱 화면 탭은 같은 단위(services/areaUnit)를 바로 따른다 */
+  window.addEventListener('ta:areaUnit', () => { repaintCardHead(); if (S.route === 'item' && (S.itemTab === 'basic' || !S.itemTab)) { try { renderItem(); } catch (e) { /* 그만 */ } } });
   /* 열고 닫을 때 — 지금 보이는 사건 카드만 다시 그린다 */
   function repaintCardHead() {
     if (S.route === 'market') { renderSonHead(); return; }
@@ -10038,6 +10053,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'item-copy': copyText(addrText(it)); break;
       case 'sx-bid-copy': copyText(String(v), `${Number(v).toLocaleString('ko-KR')}원을 복사했습니다.`); break;
       case 'fold-all': toggleFoldAll(); break;
+      case 'area-unit': if (CLOUD.T && CLOUD.T.toggleAreaUnit) CLOUD.T.toggleAreaUnit(); break;   /* 아파트 면적 ㎡ ↔ 평 — 모든 탭(2026-11-11) */
       case 'fav-open': S.pop = ''; render(); S.modal = favModal(-1); renderModal(); break;
       case 'fav-edit-open': e.stopPropagation(); S.pop = ''; render(); S.modal = favModal(Number(v)); renderModal(); break;
       case 'fav-add': {

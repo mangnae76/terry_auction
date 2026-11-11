@@ -85,6 +85,7 @@ import type { CasePropertyType } from '../services/caseTradeAnalysis';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
 import { complexesOf, complexNearbyOf, complexPointOf, metersBetween, LOCATION_SOURCES, nearestPlaceOf, PLACE_ICON, rankFromMeters, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
 import KakaoMapTools from '../components/KakaoMapTools.vue';
+import { areaUnit, aptAreaText } from '../services/areaUnit';
 import { createMapView, type MapView } from '../services/mapView';
 import { geocodeAddress } from '../services/routeOptimizer';
 import {
@@ -3034,7 +3035,7 @@ const myAreaUnits = computed(() => areaUnitsOf(complexAreas.value, sumVal('sum.a
 const mySupplyM2 = computed(() => complexAreas.value?.mine?.supply || 0);
 /** 단지정보 면적종류 — 건축물대장 공급면적마다 세대수 · 내 호실(타입 · 평형으로 묶지 않는다). 받기 전이면 PDF 평형 이름만 */
 const aptAreaRows = computed(() => {
-  if (complexAreas.value?.groups.length) return supplyRowsOf(complexAreas.value);
+  if (complexAreas.value?.groups.length) return supplyRowsOf(complexAreas.value, webEmbed ? areaUnit.value : 'm2');
   return (auction.value?.aptComplexInfo?.areaTypes ?? '').split(/\s*,\s*/).filter(Boolean).map((text) => ({ text, count: 0, mine: false }));
 });
 
@@ -5554,15 +5555,9 @@ const CMP_RANGES: Array<[CmpRange, string]> = [['dong', '읍면동'], [500, '500
 /** 단지 열쇠 — 동 · 지번(반경 범위에선 다른 동의 같은 지번이 있다). 선정물건은 'mine' */
 const cmpKeyOf = (c: { mine: boolean; umdNm: string; jibun: string }) => (c.mine ? 'mine' : `${c.umdNm}|${c.jibun}`);
 // 면적 글 — 아파트는 공급면적 먼저, 괄호 안 전용은 숫자만('83.17㎡ (59.98)' · '25.2평 (18.1)'). 단위는 손품조사 탭 줄 단추(sonAreaUnit)
-const sonAreaUnit = inject<Ref<'m2' | 'py'> | null>('sonAreaUnit', null);
-const areaPair = (supply: { lo: number; hi: number } | null, exclusive: number, unit?: 'm2' | 'py') => {
-  const py = (unit ?? sonAreaUnit?.value) === 'py';
-  const one = (v: number) => (py ? (v / 3.305785).toFixed(1) : trunc2(v));
-  const ex = exclusive > 0 ? one(exclusive) : '-';
-  if (!supply || !(supply.lo > 0)) return `전용 ${ex}${py ? '평' : '㎡'}`;   // 공급을 모르면 전용만 단위와 함께
-  const sp = Math.abs(supply.hi - supply.lo) < 0.005 ? one(supply.lo) : `${one(supply.lo)}~${one(supply.hi)}`;
-  return `${sp}${py ? '평' : '㎡'} (${ex})`;
-};
+// 단위는 고정카드 '↻ 평 / ↻ ㎡' 단추 하나(services/areaUnit) — 모든 탭이 같이 바뀐다
+const sonAreaUnit = areaUnit;
+const areaPair = (supply: { lo: number; hi: number } | null, exclusive: number, unit?: 'm2' | 'py') => aptAreaText(supply, exclusive, unit ?? areaUnit.value);
 /** 단지마다 공급면적 — 건축물대장 전유공용(단지 문서 aptComplexes 에 두고 같이 쓴다). 전용이 같은 호실들의 공급 범위 */
 const cmpSupply = ref<Record<string, { lo: number; hi: number } | null>>({});
 const cmpNearby = ref<Record<string, ComplexNearby | null>>({});   // 단지 열쇠 → 좌표 · 주변시설(null = 못 찾음)

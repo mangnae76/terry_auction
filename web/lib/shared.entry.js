@@ -422,3 +422,6 @@ export const mountAppPage = (el, key, tab, hooks = {}) => {
   };
   return stop;
 };
+
+/* 아파트 면적 단위(㎡ · 평) — 고정카드 단추 하나로 모든 탭이 같이 바뀐다(2026-11-11) */
+export { toggleAreaUnit, getAreaUnit, aptAreaText } from '../../src/services/areaUnit';
