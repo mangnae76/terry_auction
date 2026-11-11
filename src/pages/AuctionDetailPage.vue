@@ -5583,11 +5583,11 @@ const hasTypedRank = computed(() => rankConditions.value.some((c) => !!rankOf(c)
 const cmpOn = computed(() => webEmbed && isApartment.value && sonpumMode);
 /** 매매수요 맨 위 '① 실사용자' 줄 — 아파트 · 빌라 모두(빌라도 아파트와 같은 꼴, 2026-11-12 사용자) */
 const personaOn = computed(() => webEmbed && sonpumMode);
-/** 빌라 전용면적 글 — 물건 자료 전용(없으면 실거래 기준 면적), ㎡ 는 둘째 자리 버림 · 평은 첫째 자리 */
-const villaExText = (u: 'm2' | 'py') => {
+/** 빌라 전용 — '55.14㎡ / 16.68평'(빌라 규칙: ㎡ 먼저 / 평). 소수는 있을 때만(15평 · 16.7평), 2026-11-12 사용자 */
+const villaExText = () => {
   const ex = Number(auction.value?.buildingAreaM2) || supMyArea.value || 0;
   if (!(ex > 0)) return '-';
-  return u === 'py' ? `${(ex / 3.305785).toFixed(1)}평` : `${(Math.floor(ex * 100 + 1e-6) / 100).toFixed(2)}㎡`;
+  return `${Number((Math.floor(ex * 100 + 1e-6) / 100).toFixed(2))}㎡ / ${Number((ex / 3.305785).toFixed(2))}평`;
 };
 /** 단지 입지비교 · 맨 위 줄의 입지조건 — 룸수를 고르기 전에는 비운다(평수로 미리 채우면 룸수를 고르는 뜻이 없다, 2026-11-11 사용자).
  *  웹 · 아파트 손품조사만. 앱 · 빌라의 실사용자 표는 예전처럼 평수 구간으로 채운다 */
@@ -8872,7 +8872,7 @@ const goBack = () => router.back();
                 <!-- ㎡ · 평 두 글을 겹쳐 두고 지금 단위만 보인다 — 평 / ㎡ 단추를 눌러도 상자 폭이 그대로(2026-11-11) -->
                 <span v-if="isApartment" class="grp"><span class="k">면적<small>공급(전용)</small></span><span class="val stack"><span v-for="u in (['m2', 'py'] as const)" :key="u" :class="{ on: (sonAreaUnit ?? 'm2') === u }" :aria-hidden="(sonAreaUnit ?? 'm2') !== u">{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2 || supMyArea, u) }}</span></span></span>
                 <!-- 빌라 — 전용면적(빌라는 공급을 쓰지 않는다). ㎡ · 평 두 글을 겹쳐 두고 지금 단위만 -->
-                <span v-else class="grp"><span class="k">전용면적</span><span class="val stack"><span v-for="u in (['m2', 'py'] as const)" :key="u" :class="{ on: (sonAreaUnit ?? 'm2') === u }" :aria-hidden="(sonAreaUnit ?? 'm2') !== u">{{ villaExText(u) }}</span></span></span>
+                <span v-else class="grp"><span class="k">전용<small>(㎡/평)</small></span><span class="val">{{ villaExText() }}</span></span>
                 <i class="sep" aria-hidden="true" />
                 <span class="grp"><span class="k">룸수</span><span class="pa-seg" role="radiogroup" aria-label="룸수"><button v-for="r in ROOM_TYPES" :key="r.id" type="button" role="radio" :class="{ on: selectedRoomType?.id === r.id }" :aria-checked="selectedRoomType?.id === r.id" :data-t="r.label" @click="pickRoomType(selectedRoomType?.id === r.id ? '' : r.id)">{{ r.label }}</button></span></span>
                 <i class="sep" aria-hidden="true" />
