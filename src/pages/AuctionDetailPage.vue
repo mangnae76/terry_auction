@@ -2823,7 +2823,8 @@ const APT_INDIV_EXTRA: IndivItem[] = [
  *  개별성이 아니라 입지 점수의 초등학교 칸 보정으로: 건너면 초등학교 거리 점수를 절반(2026-11-11 사용자). 선정물건만 고른다 */
 const SCHOOL_ROAD_CUT = 0.5;
 const SCHOOL_HUG_ITEM = { id: 'ind.schoolHug', label: '초품아', options: ['O', 'X'], rate: '0%' } as IndivItem;
-const schoolCross = computed(() => indivValue('ind.schoolHug') === 'X');
+// 빌라는 초품아를 보지 않는다 — 빌라엔 크게 의미가 없다(2026-11-12 사용자)
+const schoolCross = computed(() => isApartment.value && indivValue('ind.schoolHug') === 'X');
 /** 지하주차장 연결은 같은 단지 안에서도 동마다 달라 단지 내 개별성(호실 가격)으로(2026-11-11 사용자) */
 const APT_UNIT_EXTRA: IndivItem[] = [
   // 단지 안 입지 — 초등학교 · 학원가 · 출입구에 가까운 동이 로얄동(강의 2026-11-11)
@@ -6071,7 +6072,7 @@ const cmpLocParts = (r: CmpRow) => cmpConds.value.map((cond, i) => {
 /** 평가표 아래 '선정물건에서 직접 고를 것' — 아직 비어 있는 현장 · 수동 칸 */
 const cmpTodo = computed(() => {
   const out: Array<{ label: string; kind: CmpPopKind }> = [];
-  if (cmpConds.value.includes('초등학교') && !indivValue('ind.schoolHug')) out.push({ label: '초품아(큰길 건넘)', kind: 'loc' });
+  if (isApartment.value && cmpConds.value.includes('초등학교') && !indivValue('ind.schoolHug')) out.push({ label: '초품아(큰길 건넘)', kind: 'loc' });
   return out;
 });
 /** 매매수요 조사 단계 — 눌러서 그 상자로(이름은 각 상자 제목) */
@@ -9692,7 +9693,7 @@ const goBack = () => router.back();
                             <td>{{ x.cond }}</td>
                             <td class="lft cmp-place"><template v-if="x.pl"><span class="cmp-ic">{{ x.pl.ic }}</span>{{ cmpPlaceName(x.pl.name) }}</template><template v-else>1km 안에 없음</template>
                               <!-- 초품아 — 선정물건만, 큰길을 건너면 초등학교 거리 점수 절반 -->
-                              <span v-if="cmpPopRow.mine && x.cond === '초등학교'" class="cmp-hug"><span class="cmp-ind-seg" role="group" aria-label="초등학교 가는 길 큰길"><button v-for="[v, t] in [['O', '큰길안건넘'], ['X', '큰길건넘']]" :key="v" type="button" :data-t="t" :class="{ on: indivValue('ind.schoolHug') === v }" :aria-pressed="indivValue('ind.schoolHug') === v" @click="indivPick(SCHOOL_HUG_ITEM, v)">{{ t }}</button></span></span></td>
+                              <span v-if="isApartment && cmpPopRow.mine && x.cond === '초등학교'" class="cmp-hug"><span class="cmp-ind-seg" role="group" aria-label="초등학교 가는 길 큰길"><button v-for="[v, t] in [['O', '큰길안건넘'], ['X', '큰길건넘']]" :key="v" type="button" :data-t="t" :class="{ on: indivValue('ind.schoolHug') === v }" :aria-pressed="indivValue('ind.schoolHug') === v" @click="indivPick(SCHOOL_HUG_ITEM, v)">{{ t }}</button></span></span></td>
                             <td class="n">{{ x.pl ? `${x.pl.m.toLocaleString('ko-KR')}m · ${Math.max(1, Math.round(walkMinOf(x.pl.m)))}분` : '-' }}</td>
                             <td class="n"><b>{{ Math.round(x.score) }}</b><small v-if="x.cut" class="cmp-auto">절반</small></td>
                             <td class="n">{{ x.w }}</td>
