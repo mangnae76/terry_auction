@@ -9549,7 +9549,7 @@ const goBack = () => router.back();
                   <div v-if="cmpPicked" class="cmp-fs-places">
                     <p class="cmp-fs-ph"><b>구역 내 개별성</b><small>{{ cmpPicked.name || cmpPicked.jibun }}</small><em>개별성점수 <b>{{ cmpScore(cmpPicked.zone) }}</b> / 100</em></p>
                     <template v-if="cmpPicked.mine">
-                      <span v-for="item in ZONE_ITEMS" :key="item.id" class="z"><span class="c">{{ item.label }}</span><b>{{ INDIV_AUTO.has(item.id) ? indivAutoText(item) : (indivValue(item.id) || '고르세요') }}</b><em class="sc">{{ cmpZoneParts(cmpPicked).has(item.id) ? `${Math.round(cmpZoneParts(cmpPicked).get(item.id)!.v)}점` : '-' }}</em></span>
+                      <span v-for="item in ZONE_ITEMS" :key="item.id" class="z"><span class="c">{{ item.label }}</span><b v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)">{{ indivAutoText(item) }}</b><b v-else-if="indivValue(item.id)">{{ indivValue(item.id) }}</b><button v-else type="button" class="cmp-fs-pick" @click="cmpPopOpen('zone', cmpPicked, $event)">고르세요</button><em class="sc">{{ cmpZoneParts(cmpPicked).has(item.id) ? `${Math.round(cmpZoneParts(cmpPicked).get(item.id)!.v)}점` : '-' }}</em></span>
                     </template>
                     <template v-else>
                       <span class="z"><span class="c">연식</span><b>{{ cmpPicked.buildYear ? `${cmpPicked.buildYear}년` : '-' }}</b><em class="sc">{{ cmpZoneParts(cmpPicked).has('ind.age') ? `${Math.round(cmpZoneParts(cmpPicked).get('ind.age')!.v)}점` : '-' }}</em></span>
@@ -12447,6 +12447,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-fs-ph small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #9ca3af; }
 .cmp-fs-ph em { margin-left: auto; font-style: normal; font-size: 12.5px; color: #6b7280; white-space: nowrap; }
 .cmp-fs-ph em b { font-size: 15px; font-weight: 800; color: #111827; }
+.cmp-fs-pick { justify-self: start; height: 24px; padding: 0 9px; border: 1px solid #c7d2fe; border-radius: 6px; background: #fff; font: inherit; font-size: 12.5px; color: #2b6df3; cursor: pointer; }   /* 비어 있는 칸 — 눌러 입지 · 개별성 창에서 고른다(하이픈 대신, 2026-11-11 사용자) */
 .cmp-fs-pn { font-size: 12px; color: #9ca3af; }   /* 아이콘 · 조건 · 시설 이름 시작점을 세로로 맞춘다(2026-11-11 사용자) */
 .cmp-fs-places b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmp-fs-places b { font-weight: 400; color: #111827; }
