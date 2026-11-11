@@ -120,7 +120,7 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
           <template #son-demand>
             <div class="son-demand">
               <p v-if="loading" class="son-msg">{{ region?.label }} 최근 12개월 거래를 받는 중입니다…</p>
-              <AdminRegionDemandPage v-if="demandEmbed && rows.length" :embed="demandEmbed" class="adm-supply" />
+              <AdminRegionDemandPage v-if="demandEmbed && rows.length" :embed="demandEmbed" :box-no="kindOf(auction?.propertyType ?? '') === 'apt' ? '④' : ''" class="adm-supply" />
               <p v-else-if="!loading && region" class="son-msg">이 지역의 최근 12개월 거래가 없습니다.</p>
             </div>
           </template>

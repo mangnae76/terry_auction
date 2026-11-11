@@ -5990,7 +5990,7 @@ const cmpTodo = computed(() => {
 /** 매매수요 조사 단계 — 눌러서 그 상자로(이름은 각 상자 제목) */
 const CMP_STEPS = [
   { no: '①', t: '실사용자', sel: '.o-persona' }, { no: '②', t: '단지입지비교', sel: '.o-est' },
-  { no: '③', t: '호실예상가', sel: '.o-unit' }, { no: '④', t: '수급분석', sel: '.o-demand' },
+  { no: '③', t: '호실예상가', sel: '.o-unit' }, { no: '④', t: '읍면동수급', sel: '.o-demand' }, { no: '⑤', t: '단지수급', sel: '.o-sup' },
 ];
 const cmpGo = async (ev: Event, sel: string) => {
   const card = (ev.currentTarget as HTMLElement).closest('.adp-card');
@@ -9011,8 +9011,8 @@ const goBack = () => router.back();
             <!-- 아파트만 — 빌라는 단지 개념이 없다 -->
             <section v-if="webEmbed && isApartment" class="adp-dm-block boxed sup-dm o-sup">
               <!-- 제목 '수요분석' 왼쪽, 단지 이름은 오른쪽에 알약 없이 파란 글(2026-11-11 사용자) -->
-              <p class="sup-scope">수급분석<span class="area">{{ supName || '단지' }}</span><small class="cmp-q">이 단지는 내놓으면 얼마나 빨리 팔릴까?</small></p>
-              <p class="sup-head">① 기초수치</p>
+              <p class="sup-scope"><span class="cmp-no">⑤</span>단지 수급분석<span class="area">{{ supName || '단지' }}</span><small class="cmp-q">이 단지는 내놓으면 얼마나 빨리 팔릴까?</small></p>
+              <p class="sup-head">기초수치</p>
               <div class="sup-row">
                 <div :class="['sup-cell', { lit: supLit('deal') }]" @mouseenter="supLitKey = 'deal'" @mouseleave="supLitKey = ''">
                   <div class="sup-h"><InfoTip :rows="SUP_TIPS.deal" under="box">{{ supAreaUnits ? '거래량(해당평형)' : '거래량' }}</InfoTip></div>
@@ -9037,7 +9037,7 @@ const goBack = () => router.back();
                   <div class="sup-b"><input class="sup-in" inputmode="numeric" placeholder="입력" aria-label="현재 매물수" :value="supListings ? supListings.toLocaleString('ko-KR') : ''" @change="setSupVal('sup.listings', ($event.target as HTMLInputElement).value)" /><button type="button" class="sup-nv" :title="`${supName || '이 단지'} — 네이버 부동산 매매 매물`" @click="openSupNaver">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></div>
                 </div>
               </div>
-              <p class="sup-head">② 수요지표</p>
+              <p class="sup-head">수요지표</p>
               <div class="sup-row">
                 <div v-for="c in supStats" :key="c.id" :class="['sup-cell', { lit: supLit(c.id) }]" @mouseenter="supLitKey = c.id" @mouseleave="supLitKey = ''">
                   <!-- ⓘ — 위 동 수요분석과 같은 말풍선(services/demandGrade) -->
@@ -9055,7 +9055,7 @@ const goBack = () => router.back();
                 <template v-else>수요지표는 단지 전체 기준 — 12개월 거래량 {{ supDealCount.toLocaleString('ko-KR') }}건, 총 세대수 {{ supHouseholds ? `${supHouseholds.toLocaleString('ko-KR')}세대` : '-' }}로 계산합니다.</template>
               </p>
               <!-- 위 동 수요분석 표와 같은 칸 · 꾸밈(son-demand 안이라 웹 공통 꾸밈도 같이 받는다). 해당평형 한 줄 -->
-              <p class="sup-head sup-tbl-head">③ 상세수치</p>
+              <p class="sup-head sup-tbl-head">상세수치</p>
               <div class="son-demand sup-tbl">
                 <div class="adm-table-wrap">
                   <table class="adm-table even">
@@ -12266,7 +12266,7 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-body.cmp-order { display: flex; flex-direction: column; }
 .adp-dm-body.cmp-order > * { order: 10; }
 .adp-dm-body.cmp-order > .o-persona { order: 1; }
-.adp-dm-body.cmp-order > :is(.o-persona, .o-est, .o-unit, .o-demand) { scroll-margin-top: 140px; }
+.adp-dm-body.cmp-order > :is(.o-persona, .o-est, .o-unit, .o-demand, .o-sup) { scroll-margin-top: 140px; }
 .adp-dm-body.cmp-order > .o-est { order: 2; }
 .adp-dm-body.cmp-order > .o-unit { order: 3; }
 .adp-dm-body.cmp-order > .adp-dm-block.cmp-box.o-unit { margin-top: 10px !important; }   /* 위 단지 입지비교와 띄운다(웹 ':has(.dm-result) 0 !important' 에 덮였다) */
