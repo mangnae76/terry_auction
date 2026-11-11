@@ -9670,13 +9670,13 @@ const goBack = () => router.back();
               <div class="cmp-bases" role="radiogroup" aria-label="기준가">
                 <button v-for="b in cmpBases" :key="b.id" type="button" role="radio" :class="['cmp-base', { on: cmpUnitBaseFrom === b.id }]" :aria-checked="cmpUnitBaseFrom === b.id" :disabled="!(b.value > 0)" @click="cmpBasePick = b.id"><span class="k">{{ b.label }}</span><span class="v">{{ b.text }}</span><small>{{ b.note }}</small></button>
               </div>
-              <div class="cmp-two">
+              <!-- 구역 내 · 단지 내 개별성 — 가로로 나란히(좁으면 위아래, 2026-11-11 사용자) -->
+              <div class="cmp-two pair">
                 <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
-                  <colgroup><col style="width: 16%" /><col /><col style="width: 11%" /><col style="width: 20%" /></colgroup>
-                  <thead><tr><th>개별성</th><th>내용</th><th>비율</th><th>보정</th></tr></thead>
+                  <colgroup><col style="width: 22%" /><col /><col style="width: 17%" /><col style="width: 18%" /></colgroup>
+                  <thead><tr><th>구역 내 개별성</th><th>내용</th><th>비율</th><th>보정</th></tr></thead>
                   <tbody>
                     <!-- 구역 내 개별성 — 단지 자체(연식 · 주차 · 엘베 · 현관구조 · 경사 · 용적률). 기준가가 단지 평균이면 이미 담겨 있어 0(2026-11-11 사용자) -->
-                    <tr class="cmp-grp"><td colspan="4">구역 내 개별성<small v-if="!zoneApplied">기준가(단지 평균)에 이미 담겨 있어 보정하지 않습니다</small></td></tr>
                     <tr v-for="item in ZONE_UNIT_ITEMS" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
                       <td class="lft cmp-ind-ct">
                         <template v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
@@ -9685,7 +9685,13 @@ const goBack = () => router.back();
                       </td>
                       <td class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
                       <td :class="['n', 'adp-ind-adj', !zoneApplied || zoneSign(item.id) === 0 ? 'zero' : zoneSign(item.id) > 0 ? 'up' : 'down']">{{ !zoneApplied || zoneSign(item.id) === 0 ? '0%' : pctText(zoneAdj(item.id)) }}</td></tr>
-                    <tr class="cmp-grp"><td colspan="4">단지 내 개별성</td></tr>
+                    <tr v-if="!zoneApplied" class="cmp-zone-note"><td colspan="4">기준가가 이 단지 실거래 평균이라 이미 담겨 있어 보정하지 않습니다</td></tr>
+                  </tbody>
+                </table></div></div>
+                <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
+                  <colgroup><col style="width: 22%" /><col /><col style="width: 17%" /><col style="width: 18%" /></colgroup>
+                  <thead><tr><th>단지 내 개별성</th><th>내용</th><th>비율</th><th>보정</th></tr></thead>
+                  <tbody>
                     <template v-for="g in unitGroupsView" :key="g.title">
                     <tr v-for="item in g.items" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
                         <td class="lft cmp-ind-ct">
@@ -12468,6 +12474,10 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .adp-ind-adj.zero { color: #9ca3af; }
 .sup-tbl .adm-table tbody tr.cmp-sum td { background: #f7f9fc; font-weight: 700; }
 .o-unit .cmp-two { margin-bottom: 12px; grid-template-columns: minmax(0, 1fr); }
+.o-unit .cmp-two.pair { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }   /* 구역 내 · 단지 내 나란히 */
+.o-unit .cmp-two.pair > .cmp-ind-note { grid-column: 1 / -1; }
+@media (max-width: 1100px) { .o-unit .cmp-two.pair { grid-template-columns: minmax(0, 1fr); } }
+.cmp-tbl tr.cmp-zone-note td { font-size: 12px; color: #9ca3af; text-align: left; }
 /* 개별성 입력을 쓰는 표 안에서 — 자동 칸은 이름 블루그레이 + '자동', 수동 칸은 고르기 단추(시세분석 단추 꼴 · 굵은 폭 미리 잡기, 2026-11-11) */
 .cmp-ind-tbl { margin-top: 0; }
 .cmp-tbl td.cmp-ind-nm { font-weight: 800; color: #111827; white-space: nowrap; }
