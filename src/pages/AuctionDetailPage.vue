@@ -5664,8 +5664,15 @@ const cmpSortAria = (k: CmpSortKey) => (cmpSortK.value === k ? (cmpSortDir.value
 // ===== 단지 점수(2026-11-11 시안 3) — ① 입지점수(걸어서 몇 분 → 0~100) + 구역 내 개별성 점수 → 종합 · 순위, ② 선정물건 호실 예상가 =====
 /** 입지조건 비중 — 세대구성에 따라(3 · 4인 가족: 초등 30 · 학원가 30 · 인프라 20 · 교통 20). 표에 없는 조건은 20 */
 const CMP_LOC_W: Record<string, number> = { 초등학교: 30, 학원가: 30, 유치원: 30, 인프라: 20, 교통: 20, 공원: 20 };
-/** 거리 → 점수 — 걸어서 0분 100점, 15분(1,200m) 이상 0점(도보 1분 80m) */
-const cmpDistScore = (m: number) => Math.max(0, Math.min(100, 100 - (m / WALK_M_PER_MIN / 15) * 100));
+/** 거리 → 점수 — 걸어서 5분(400m) 이내 100점, 10분(800m) 80점, 15분(1,200m) 40점, 20분(1,600m) 넘으면 0점. 사이는 직선(도보 1분 80m, 직선거리).
+ *  0분 100점이면 바로 앞 학교도 80점대라 만점이 없었다 — 10분이면 괜찮은 입지(2026-11-11 사용자) */
+const cmpDistScore = (m: number) => {
+  const min = m / WALK_M_PER_MIN;
+  if (min <= 5) return 100;
+  if (min <= 10) return 100 - (min - 5) * 4;
+  if (min <= 20) return 80 - (min - 10) * 8;
+  return 0;
+};
 /** 비율 칸 글('20~30' · '5' · '-10') → [작은 값, 큰 값] */
 const rateRange = (raw: string): [number, number] => {
   const ns = String(raw ?? '').match(/-?\d+(\.\d+)?/g)?.map(Number) ?? [];
@@ -9608,7 +9615,7 @@ const goBack = () => router.back();
                           </tr>
                         </tbody>
                       </table></div></div>
-                      <p class="cmp-formula">걸어서 0분 100점 → 15분 0점(분당 {{ WALK_M_PER_MIN }}m 직선거리). 조건 점수 × 비중 ÷ 비중 합<template v-if="cmpPopRow.mine"> · 큰길을 건너면 초등학교 점수 절반</template><br>입지 점수 <b>{{ cmpScore(cmpPopRow.loc) }}</b> / 100</p>
+                      <p class="cmp-formula">입지조건까지 거리가 가까울수록 선호도가 높습니다.<br>걸어서 5분 이내 100점 · 10분 80점 · 15분 40점 · 20분 넘으면 0점(분당 {{ WALK_M_PER_MIN }}m 직선거리). 조건 점수 × 비중 ÷ 비중 합<template v-if="cmpPopRow.mine"> · 큰길을 건너면 초등학교 점수 절반</template><br>입지 점수 <b>{{ cmpScore(cmpPopRow.loc) }}</b> / 100</p>
                     </template>
                     <template v-else-if="cmpPop.kind === 'zone'">
                       <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
