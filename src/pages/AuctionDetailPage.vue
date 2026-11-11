@@ -5616,8 +5616,6 @@ const cmpKeyOf = (c: { mine: boolean; umdNm: string; jibun: string }) => (c.mine
 // 면적 글 — 아파트는 공급면적 먼저, 괄호 안 전용은 숫자만('83.17㎡ (59.98)' · '25.2평 (18.1)'). 단위는 손품조사 탭 줄 단추(sonAreaUnit)
 // 단위는 고정카드 '↻ 평 / ↻ ㎡' 단추 하나(services/areaUnit) — 모든 탭이 같이 바뀐다
 const sonAreaUnit = areaUnit;
-/** 이름표 앞 평형 — 공급 평 반올림 + 괄호 전용 평('35평 (25.5)', 2026-11-11 사용자). 공급을 모르면 면적 글 그대로 */
-const pyPair = (supply: { lo: number; hi: number } | null, exclusive: number) => (supply?.lo ? `${Math.round(supply.lo / 3.305785)}평 (${(exclusive / 3.305785).toFixed(1)})` : aptAreaText(supply, exclusive, 'py'));
 const areaPair = (supply: { lo: number; hi: number } | null, exclusive: number, unit?: 'm2' | 'py') => aptAreaText(supply, exclusive, unit ?? areaUnit.value);
 /** 단지마다 공급면적 — 건축물대장 전유공용(단지 문서 aptComplexes 에 두고 같이 쓴다). 전용이 같은 호실들의 공급 범위 */
 const cmpSupply = ref<Record<string, { lo: number; hi: number } | null>>({});
@@ -5940,7 +5938,7 @@ const cmpDraw = () => {
   rows.forEach((r) => {
     const on = cmpIsOn(r);
     const v = cmpKind.value === '매매' ? r.saleAvg : r.jeonseAvg;   // 말풍선 금액 — 고른 거래(매매 · 전세)
-    const eok = v > 0 ? `${cmpKind.value} ${(v / 1e8).toFixed(1)}억` : `${cmpKind.value} -`;
+    const eok = v > 0 ? `${cmpKind.value} ${Number((v / 1e8).toFixed(1))}억` : `${cmpKind.value} -`;
     mv.pin(r.point!, {
       className: `cmp-bub${r.mine ? ' me' : ''}${on ? ' on' : ''}`,
       // 첫 줄 — 단지 이름 | 등수평균, 아래 띠 — 평균 전세가(2026-11-10)
@@ -6087,7 +6085,9 @@ const cmpBase = computed(() => {
   const me = cmpRows.value.find((r) => r.mine);
   const my = Number(sumVal('sum.floorCurrent').match(/\d+/)?.[0] ?? 0);
   const allSame = o.rows.every((r) => r.same && me && Math.abs(r.areaM2 - me.area) < 0.05);
-  const label = allSame && me ? `기준가 · ${pyPair(me.supply, me.area)} 해당평형 ${o.sameFloor && my ? `${my}층 ` : ''}${o.kind}가` : `기준가 · 시세분석 예상 ${o.kind}가`;
+  // '기준가 · 35평 2층 매매가' — 평은 공급 평 반올림, 층은 같은 층으로 골랐을 때만(2026-11-11 사용자)
+  const py = me?.supply ? `${Math.round(me.supply.lo / 3.305785)}평 ` : '';
+  const label = allSame && me ? `기준가 · ${py}${o.sameFloor && my ? `${my}층 ` : ''}${o.kind}가` : `기준가 · 시세분석 예상 ${o.kind}가`;
   const list = o.rows.length <= 6 ? ` · ${o.rows.map((r) => [r.same ? (r.dong ? `${r.dong}동` : '') : r.name, r.floorNo ? `${r.floorNo}층` : '', cmpEok(r.price)].filter(Boolean).join(' ')).join(' · ')}` : '';
   return { label, value: o.est, note: `위 표에서 고른 ${o.n}건으로 낸 예상가${list}` };
 });
@@ -6139,7 +6139,7 @@ const cmpUnitClamp = computed(() => {
 const cmpUnitEst = computed(() => {
   const v = cmpUnitClamp.value; if (!v) return '-';
   const a = v.lo / 1e8; const z = v.hi / 1e8;
-  return Math.abs(a - z) < 0.005 ? `${a.toFixed(2)}억` : `${a.toFixed(2)}~${z.toFixed(2)}억`;
+  return Math.abs(a - z) < 0.005 ? `${eokNum(a)}억` : `${eokNum(a)}~${eokNum(z)}억`;
 });
 /** 예상가 아래 계산식 한 줄 — '8.10억 × (1 − 5%) = 7.70억'(어디서 나온 숫자인지 바로 보이게, 2026-11-11 사용자) */
 const cmpUnitFormula = computed(() => {
@@ -6148,7 +6148,9 @@ const cmpUnitFormula = computed(() => {
   return `${cmpEok(b)} × (1 ${p})${repairMan() > 0 ? ` + 수리 ${repairMan().toLocaleString('ko-KR')}만` : ''} = ${cmpUnitEst.value}`;
 });
 const unitAdjText = computed(() => (repairMan() > 0 ? `${pctText(totalAdj.value)} · 수리 ${repairText(repairMan())}` : pctText(totalAdj.value)));
-const cmpEok = (w: number) => (w > 0 ? `${(w / 1e8).toFixed(2)}억` : '-');
+// 억 — 소수는 있을 때만(7.50 → 7.5억, 8.00 → 8억, 7.23억 그대로, 2026-11-11 사용자)
+const eokNum = (v: number) => String(Number(v.toFixed(2)));
+const cmpEok = (w: number) => (w > 0 ? `${eokNum(w / 1e8)}억` : '-');
 const cmpPy = (w: number) => (w > 0 ? `${Math.round(w / 1e4).toLocaleString('ko-KR')}만/평` : '-');
 const cmpFsGo = (r: CmpRow) => { cmpToggle(cmpKeyOf(r)); if (cmpPick.value && r.point) cmpMv?.focus(r.point, 16); };
 onBeforeUnmount(() => { cmpMv?.destroy(); cmpMv = null; cmpMvP = null; });
@@ -9704,7 +9706,6 @@ const goBack = () => router.back();
                   <colgroup><col style="width: 20%" /><col /><col style="width: 19%" /><col style="width: 22%" /></colgroup>
                   <thead><tr><th>단지 내 개별성</th><th>내용</th><th>비율</th><th>보정</th></tr></thead>
                   <tbody>
-                    <tr class="cmp-zone-note"><td colspan="4">기준가 거래와 다를 때만 고르세요 — 같으면 이미 기준가에 담겨 있습니다</td></tr>
                     <template v-for="g in unitGroupsView" :key="g.title">
                     <tr v-for="item in g.items" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
                         <td class="lft cmp-ind-ct">

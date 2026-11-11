@@ -39,7 +39,7 @@ const meName = computed(() => (props.loose ? '검색주소' : '선정물건'));
 const store = useAuctionStore();
 
 const n0 = (w: number) => Math.round(w).toLocaleString('ko-KR');
-const eok = (w: number) => `${(w / 1e8).toFixed(2)}억`;
+const eok = (w: number) => `${Number((w / 1e8).toFixed(2))}억`;   // 소수는 있을 때만(7.5억 · 8억)
 const man = (w: number) => `${Math.round(w / 1e4).toLocaleString('ko-KR')}만/평`;
 const squash = (v: string) => String(v ?? '').replace(/\s+/g, '').toLowerCase();
 const KIND_LABEL: Record<CasePropertyType, string> = { villa: '연립다세대', apt: '아파트', officetel: '오피스텔' };
@@ -499,7 +499,7 @@ const mapGroups = computed(() => {
   return [...by.entries()].map(([jibun, list]) => {
     const prices = list.map((r) => r.price);
     const lo = Math.min(...prices); const hi = Math.max(...prices);
-    return { jibun, list, spot: spots.value[jibun]!, name: list[0].name || jibun, range: lo === hi ? eok(lo) : `${(lo / 1e8).toFixed(2)}~${eok(hi)}`, dist: list[0].dist ?? 0 };
+    return { jibun, list, spot: spots.value[jibun]!, name: list[0].name || jibun, range: lo === hi ? eok(lo) : `${Number((lo / 1e8).toFixed(2))}~${eok(hi)}`, dist: list[0].dist ?? 0 };
   });
 });
 /** 웹 표 머리 '근거 유사물건' 옆 — 표에 든 지번 수 · 거래 수(거르기 · 거래 종류 그대로) */
@@ -596,7 +596,7 @@ const drawMap = () => {
     // 건수 · 가격대는 제외하지 않은 거래만(다 제외했으면 원래 값을 회색으로)
     const live = webEmbed && !off ? g.list.filter((r) => !isOff(r)) : g.list;
     const lp = live.map((r) => r.price); const lo = Math.min(...lp); const hi = Math.max(...lp);
-    const range = lo === hi ? eok(lo) : `${(lo / 1e8).toFixed(2)}~${eok(hi)}`;
+    const range = lo === hi ? eok(lo) : `${Number((lo / 1e8).toFixed(2))}~${eok(hi)}`;
     if (webEmbed) {
       // 웹 — 매매수요 지도와 같은 말풍선, 이름 · 평균 금액만(등수는 시세분석엔 필요 없다, 2026-11-11 사용자). 누르면 건수 · 거리까지
       const avg = lp.reduce((a, b) => a + b, 0) / (lp.length || 1);
