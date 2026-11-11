@@ -5922,8 +5922,8 @@ const cmpPlaceName = (name: string) => name.replace(/^학원가\s*·\s*/, '');
 /** ② 호실 예상가 — 선정물건 단지(같은 평형)의 고른 거래 평균 × (1 + 보정 합) */
 /** 점수 팝업(2026-11-11 시안) — 평가표 점수를 누르면 그 단지 계산 내역. 머리 줄을 잡고 옮겨 표와 나란히 본다. 옮긴 자리는 다음에 열어도 그대로 */
 type CmpPopKind = 'loc' | 'zone' | 'tot';
-const CMP_POP_TABS: Array<[CmpPopKind, string]> = [['loc', '입지'], ['zone', '개별성'], ['tot', '종합']];
-const CMP_POP_TITLE: Record<CmpPopKind, string> = { loc: '입지 점수', zone: '개별성 점수', tot: '종합 점수' };
+const CMP_POP_TABS: Array<[CmpPopKind, string]> = [['loc', '입지'], ['zone', '구역 내 개별성'], ['tot', '종합']];
+const CMP_POP_TITLE: Record<CmpPopKind, string> = { loc: '입지 점수', zone: '구역 내 개별성 점수', tot: '종합 점수' };
 const CMP_POP_W = 560;
 const cmpPop = ref<{ kind: CmpPopKind; key: string } | null>(null);
 const cmpPopPos = ref<{ x: number; y: number } | null>(null);
@@ -9605,10 +9605,10 @@ const goBack = () => router.back();
                           <tr><td class="cmp-ind-nm auto">연식</td><td class="lft cmp-ind-ct"><b>{{ cmpPopRow.buildYear ? `${cmpPopRow.buildYear}년` : '-' }}</b><small class="cmp-auto">국토부 실거래</small></td><td class="n">{{ cmpZoneParts(cmpPopRow).has('ind.age') ? Math.round(cmpZoneParts(cmpPopRow).get('ind.age')!.v) : '-' }}</td><td class="n">{{ Math.round(Math.abs((rateOf('ind.age')[0] + rateOf('ind.age')[1]) / 2)) || 25 }}%</td></tr>
                         </tbody>
                       </table></div></div>
-                      <p class="cmp-formula"><template v-if="cmpPopRow.mine">칸 점수 × 비중 ÷ 비중 합. 비중은 점수 무게이고 가격에는 들어가지 않습니다. 비중은 눌러서 바꿀 수 있습니다(파란 숫자가 고친 값)</template><template v-else>다른 단지는 건축물대장 값이 없어 연식만으로 계산합니다</template><br>개별성 점수 <b>{{ cmpScore(cmpPopRow.zone) }}</b> / 100</p>
+                      <p class="cmp-formula"><template v-if="cmpPopRow.mine">칸 점수 × 비중 ÷ 비중 합. 비중은 점수 무게이고 가격에는 들어가지 않습니다. 비중은 눌러서 바꿀 수 있습니다(파란 숫자가 고친 값)</template><template v-else>다른 단지는 건축물대장 값이 없어 연식만으로 계산합니다</template><br>구역 내 개별성 점수 <b>{{ cmpScore(cmpPopRow.zone) }}</b> / 100</p>
                     </template>
                     <template v-else>
-                      <p class="cmp-formula">입지 {{ cmpScore(cmpPopRow.loc) }} × 60% + 개별성 {{ cmpScore(cmpPopRow.zone) }} × 40%<br>종합 점수 <b>{{ cmpScore(cmpPopRow.tot) }}</b> / 100<template v-if="cmpRankOf.get(cmpKeyOf(cmpPopRow))"> · {{ cmpRankOf.get(cmpKeyOf(cmpPopRow)) }}위 / {{ cmpRankOf.size }}곳</template></p>
+                      <p class="cmp-formula">입지 {{ cmpScore(cmpPopRow.loc) }} × 60% + 구역 내 개별성 {{ cmpScore(cmpPopRow.zone) }} × 40%<br>종합 점수 <b>{{ cmpScore(cmpPopRow.tot) }}</b> / 100<template v-if="cmpRankOf.get(cmpKeyOf(cmpPopRow))"> · {{ cmpRankOf.get(cmpKeyOf(cmpPopRow)) }}위 / {{ cmpRankOf.size }}곳</template></p>
                       <p class="cmp-ind-note">입지는 어디에 있나, 개별성은 단지 자체가 어떤가입니다. 둘을 합쳐 단지 순위를 매기고, 가격은 ③ 호실 예상가에서 정합니다.</p>
                     </template>
                   </div>
@@ -12420,7 +12420,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-pop-h h4 { flex: 1; min-width: 0; margin: 0; font-size: 14px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmp-pop-h > button { border: 0; background: none; padding: 0 4px; font-size: 18px; line-height: 1; color: #6b7280; cursor: pointer; }
 .cmp-pop-b { overflow: auto; padding: 12px; display: grid; gap: 10px; align-content: start; }
-.cmp-pop-b > .cmp-ind-seg { justify-self: start; }
+.cmp-pop-b > .cmp-ind-seg { justify-self: start; display: grid; grid-template-columns: repeat(3, 1fr); }   /* 탭 세 칸 같은 폭 */
+.cmp-pop-b > .cmp-ind-seg button { justify-content: center; text-align: center; }
 .cmp-pop .cmp-tbl :is(th, td) { padding: 6px 8px; font-size: 12.5px; }
 .cmp-pop .cmp-ind-ct .cmp-auto { display: block; margin: 3px 0 0; }   /* 좁은 창 — '자동 · 직접 넣습니다'는 값 아래 줄로 */
 .cmp-pop .cmp-ind-seg { flex-wrap: nowrap; }
