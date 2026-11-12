@@ -6030,14 +6030,14 @@ watch(() => `${cmpSnapOn.value}|${cmpQueried.value}|${cmpElevR.value}|${cmpRange
   if (run !== cmpRun || !supRegion.value) return;
   if (cmpRange.value !== 'dong') {
     const need = cmpCandidates.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpPoints.value) && !(cmpKeyOf(c) in cmpNearby.value));
-    await cmpPool(need, 4, run, async (c) => { const p = await complexPointOf(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpPoints.value = { ...cmpPoints.value, [cmpKeyOf(c)]: p }; });
+    await cmpPool(need, 8, run, async (c) => { const p = await complexPointOf(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpPoints.value = { ...cmpPoints.value, [cmpKeyOf(c)]: p }; });
   }
   if (cmpElevR.value || !isApartment.value) {   // 빌라는 표에 엘베 칸이 있어 늘 받는다(2026-11-12 사용자)
     const ev = cmpListBase.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpElevs.value));
-    await cmpPool(ev, 3, run, async (c) => { const f = await getBuildingFacts(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpElevs.value = { ...cmpElevs.value, [cmpKeyOf(c)]: f ? f.elevator : null }; });
+    await cmpPool(ev, 6, run, async (c) => { const f = await getBuildingFacts(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpElevs.value = { ...cmpElevs.value, [cmpKeyOf(c)]: f ? f.elevator : null }; });
   }
   const todo = cmpList.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpNearby.value));
-  await cmpPool(todo, 2, run, async (c) => { const nb = await complexNearbyOf(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpNearby.value = { ...cmpNearby.value, [cmpKeyOf(c)]: nb }; });
+  await cmpPool(todo, 6, run, async (c) => { const nb = await complexNearbyOf(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpNearby.value = { ...cmpNearby.value, [cmpKeyOf(c)]: nb }; });
   // 공급면적 — 단지 문서에 있으면 바로, 없으면 건축물대장을 받아 단지 문서에 둔다(한 곳씩 — 큰 단지는 여러 쪽)
   const sup = isApartment.value ? cmpList.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpSupply.value)) : [];   // 빌라는 공급면적을 쓰지 않는다
   await cmpPool(sup, 1, run, async (c) => {
@@ -6046,7 +6046,7 @@ watch(() => `${cmpSnapOn.value}|${cmpQueried.value}|${cmpElevR.value}|${cmpRange
     if (run === cmpRun) cmpSupply.value = { ...cmpSupply.value, [cmpKeyOf(c)]: v };
   });
 });
-watch(() => auction.value?.id, () => { cmpWarm = false; cmpElevs.value = {}; cmpNearby.value = {}; cmpPoints.value = {}; cmpSupply.value = {}; cmpPick.value = ''; cmpLastCandidates = []; cmpDongLast = []; });
+watch(() => auction.value?.id, () => { cmpWarm = false; cmpFitted = ''; cmpElevs.value = {}; cmpNearby.value = {}; cmpPoints.value = {}; cmpSupply.value = {}; cmpPick.value = ''; cmpLastCandidates = []; cmpDongLast = []; });
 // 지도 — 시세분석 지도와 같은 점(웹 pa-pin). 평소엔 점만, 고른 단지는 크게 + 이름표 · 도보 5분 / 10분 원 · 조건별 가장 가까운 시설
 const cmpMapEl = ref<HTMLElement | null>(null);
 let cmpMv: MapView | null = null; let cmpMvP: Promise<void> | null = null; let cmpFitted = '';
@@ -6109,11 +6109,16 @@ const cmpDraw = () => {
   if (me && !rows.some((r) => r.mine)) {
     const nm = cmpEsc(supName.value || '선정물건');
     mv.pin(me, { className: 'cmp-bub me', html: `<div class="cb"><b><span class="nm" title="${nm}">${nm}</span></b><span>선정물건</span></div>`, z: 500, interactive: false });
-    const k0 = `me|${cmpRange.value}`;
-    if (!rows.length && k0 !== cmpFitted) { cmpFitted = k0; mv.fitRadius(me, cmpRange.value === 'dong' ? 1000 : cmpRange.value); }
   }
-  const key = rows.map((r) => cmpKeyOf(r)).join(',');
-  if (key && key !== cmpFitted) { cmpFitted = key; mv.fitPoints(rows.map((r) => r.point!), 40, 17, false); }
+  // 지도 맞추기는 범위를 바꿀 때만 — 필터(유사도 · 기간 …)로 말풍선이 바뀔 때마다 다시 맞춰 지도가 출렁였다(2026-11-12 사용자 '말풍선만 사라지면 되잖아')
+  // 반경이면 그 원에, 읍면동이면 처음 그린 건물들에
+  if (me && cmpRange.value !== 'dong') {
+    const k = `r|${cmpRange.value}`;
+    if (k !== cmpFitted) { cmpFitted = k; mv.fitRadius(me, cmpRange.value); }
+  } else if (rows.length > 1 || (me && !rows.length)) {
+    const k = 'dong';
+    if (k !== cmpFitted) { cmpFitted = k; if (rows.length > 1) mv.fitPoints(rows.map((r) => r.point!), 40, 17, false); else if (me) mv.fitRadius(me, 1000); }
+  }
 };
 const cmpEnsureMap = async () => {
   await nextTick();
