@@ -891,7 +891,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 <template>
   <div :class="['pa-wrap', { app: props.app, phone: sonApp }]">
   <Teleport to="body" :disabled="!fs">
-  <section :class="['pa', 'pa-card', { fs }]" aria-label="시세분석">
+  <section :class="['pa', 'pa-card', { fs, stick: webEmbed && !props.app }]" aria-label="시세분석">
     <!-- 전체화면 위 띠 — 닫기 · 사건 · 조회기간 · 조회 -->
     <div v-if="fs" class="fs-top">
       <button type="button" class="fs-x" @click="fs = false"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>전체화면 닫기</button>
@@ -906,7 +906,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       </span>
     </div>
     <!-- Ⓐ 결론 — 제목 줄에 조회(지역은 물건 카드에서 온다, 기간만 고른다) -->
-    <div class="zone">
+    <div class="zone zone-est">
       <div class="zone-h"><span class="pa-tag">결론</span><h3>{{ webEmbed ? '이 물건 매도가 예상' : '이 물건 실거래가 예상' }}</h3>
         <span :class="['bar-desc', { hi: webEmbed }]"><svg v-if="webEmbed" class="flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ regionText || '지역 확인 중' }}{{ webEmbed ? ` · 반경 ${radText(radius)} · ${periodText(loadedMonths)}` : '' }} · {{ KIND_LABEL[kind] }} 실거래</span>
         <span class="pa-load-r">
@@ -1737,4 +1737,8 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 /* 밤 — 선정물건 줄: 낮 연분홍 선(#f3c9c9)이 하얀 줄로 보였다. 매각분석 · 매매수요 내 물건 줄과 같은 색 */
 :root[data-theme="dark"] .pa-list tbody tr.mine { background: rgba(224, 62, 62, .1); box-shadow: inset 0 -2px 0 rgba(224, 62, 62, .35); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pa-list tbody tr.mine { background: rgba(224, 62, 62, .1); box-shadow: inset 0 -2px 0 rgba(224, 62, 62, .35); } }
+/* 웹 — 내비게이터(매도가 예상 · 평균 평당가 · 전용/연식 · 유사 거래건수)를 스크롤해도 위에 붙여 둔다. 매각분석 결과 머리(.sx-hero)와 같은 자리 · 같은 그림자(2026-11-13 사용자).
+   붙는 높이는 웹이 화면마다 --pa-stick-top 으로 준다. 결론 단락을 풀어(display: contents) 칸이 시세분석 상자 끝까지 붙어 있게 한다 */
+.pa.stick:not(.fs) > .zone-est { display: contents; }
+.pa.stick:not(.fs) .est { position: sticky; top: var(--pa-stick-top, 8px); z-index: 19; box-shadow: 0 6px 16px rgba(17, 24, 39, .08); }
 </style>

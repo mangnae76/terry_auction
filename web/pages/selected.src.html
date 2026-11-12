@@ -1173,6 +1173,9 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-hero { padding: 16px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
 /* 매각분석 위 '○○동 · 연립다세대' 상자(감정가 · 예상 입찰가)는 내비게이터 — 내려도 위에 붙어 있다(사건 고정카드 바로 아래, 2026-11-12 사용자 '틀 고정') */
 .sx-results > .sx-hero { position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px) + 8px); z-index: 19; box-shadow: 0 6px 16px rgba(17, 24, 39, .08); }
+/* 시세분석 내비게이터도 같은 자리에 붙는다(SonpumPricePage .pa.stick .est) — 선정물건 손품조사는 매각분석 머리와 같은 높이, 시장분석 시세예측은 검색 띠 아래(2026-11-13 사용자) */
+.app-market[data-s="son"] { --pa-stick-top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px) + 8px); }
+.app-market[data-s="sonq"] { --pa-stick-top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 60px); }
 .sx-results > .sx-card:not(.sx-hero) { position: relative; z-index: 0; }   /* 지도 도구 · 핀이 붙박이 상자 위로 올라오지 않게 */
 .sx-where { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .sx-where h2 { margin: 0; font-size: 18px; font-weight: 800; text-wrap: balance; }
