@@ -36,7 +36,7 @@ const setHi = (el: HTMLInputElement) => { const v = Math.max(Number(el.value), p
 <style scoped>
 .drb { display: inline-flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 4px 12px; height: 42px; box-sizing: border-box; font-size: 14px; font-weight: 700; color: #374151; }
 .dn { white-space: nowrap; }
-.dual { position: relative; width: 140px; height: 24px; }
+.dual { position: relative; flex: 1 1 auto; min-width: 120px; height: 24px; }   /* 상자 폭을 따라 늘어난다 */
 .track { position: absolute; left: 8px; right: 8px; top: 50%; height: 4px; transform: translateY(-50%); background: #dde3ee; border-radius: 2px; }
 .fill { position: absolute; top: 0; bottom: 0; background: #2b6df3; border-radius: 2px; }
 .base { position: absolute; top: -5px; width: 2px; height: 14px; background: #e03e3e; transform: translateX(-1px); }
