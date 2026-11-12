@@ -906,7 +906,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <div class="est">
         <!-- 웹 — 중간값 · 최저 · 최고는 뺐다. 거래가를 내 평수로 바꿔 만든 값이라 실제로 거래된 값이 아니다(2026-11-11 사용자) -->
         <div :class="['tiles', { four: !props.app }]">
-          <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? '매도가 예상' : '실거래가 예상' }}({{ kindF }})</InfoTip></span><span class="v pa-num">{{ view ? vfmt(view.est) : '-' }}</span><span v-if="view?.capped" class="cap">보증보험 한도 적용</span><span v-if="view" class="s rad">반경 {{ radText(radius) }} · {{ periodText(loadedMonths) }} · {{ view.n.toLocaleString('ko-KR') }}건</span></div>
+          <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? '매도가 예상' : '실거래가 예상' }}({{ kindF }})</InfoTip></span><span class="v pa-num">{{ view ? vfmt(view.est) : '-' }}</span><!-- 웹 — 0건이 돼도 아래 두 줄 자리를 그대로(칸 높이가 줄면 아래 필터 · 표가 통째로 올라갔다 내려왔다, 2026-11-12 사용자 '엘베 누르면 흔들려') --><span v-if="webEmbed || view?.capped" class="cap" :style="{ visibility: view?.capped ? 'visible' : 'hidden' }">보증보험 한도 적용</span><span v-if="webEmbed || view" class="s rad">반경 {{ radText(radius) }} · {{ periodText(loadedMonths) }} · {{ (view?.n ?? 0).toLocaleString('ko-KR') }}건</span></div>
           <div v-if="props.app" class="tile"><span class="k">중간값</span><span class="v pa-num">{{ view ? vfmt(view.med) : '-' }}</span></div>
           <div v-if="props.app" class="tile"><span class="k">최저가</span><span class="v pa-num">{{ view ? vfmt(view.min) : '-' }}</span></div>
           <div v-if="props.app" class="tile"><span class="k">최고가</span><span class="v pa-num">{{ view ? vfmt(view.max) : '-' }}</span></div>
