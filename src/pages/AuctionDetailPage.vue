@@ -9654,14 +9654,15 @@ const goBack = () => router.back();
             </section>
 
             <!-- 빌라 손품조사는 개별성을 시세분석 › 선정물건 호실 예상가로 옮겼다(2026-11-12 사용자) -->
-            <div v-if="!cmpOn && !personaOn" class="adp-dm-head sec2 o-indh">
+            <div v-if="!cmpOn && !personaOn && !appPrice" class="adp-dm-head sec2 o-indh">
               <strong class="adp-dm-title">{{ personaOn ? '개별성' : `${sonpumMode ? '' : '2. '}입지/개별성` }}<small v-if="!personaOn">(구역내등수)</small></strong>
             </div>
 
 
             <!-- ② 개별성 분석 (웹 · 아파트 손품조사는 ①) -->
             <!-- 아파트 손품조사는 입력을 단지 입지비교 · 호실 예상가 표와 점수 팝업으로 옮겨 이 카드를 없앤다(2026-11-11 시안) -->
-            <div v-if="!cmpOn && !personaOn" class="adp-dm-block boxed o-ind">
+            <!-- 앱 — 입지/개별성(구역내등수) 제목과 개별성 분석 표 둘은 뺐다(호실 예상가 상자의 개별성 표가 대신, 2026-11-13 사용자) -->
+            <div v-if="!cmpOn && !personaOn && !appPrice" class="adp-dm-block boxed o-ind">
             <div class="adp-dm-sub">
               {{ cmpOn ? '①' : personaOn ? '' : '②' }} 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
               <span v-if="cmpOn && !cmpIndOpen" class="cmp-ind-fold-note">아파트는 단지 입지비교 · 호실 예상가 표에서 바로 고릅니다</span>
