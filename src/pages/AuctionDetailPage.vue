@@ -3109,7 +3109,7 @@ const aptAreaRows = computed(() => {
   return (auction.value?.aptComplexInfo?.areaTypes ?? '').split(/\s*,\s*/).filter(Boolean).map((text) => ({ text, count: 0, mine: false }));
 });
 
-// ===== 웹 손품조사 — 단지 수급(거투 4분면 시장분석, 2026-11-10 시험 · 웹만) =====
+// ===== 웹 손품조사 — 단지 수급(2026-11-10 · 웹만) =====
 // 총세대수 · 현재 매물수 · 12개월 거래량 · 해당 세대수로 매물율 · 거래율 · 월평균 거래 · 매물소화기간을 계산한다.
 // 거래량은 이 단지(같은 지번) 국토부 매매(정상 + 직거래, 계약해제 제외), 조회일부터 12개월. 짐작한 값은 넣지 않는다
 const supRows = ref<CaseTradeRow[]>([]);
@@ -5626,7 +5626,7 @@ const CMP_RANGES = computed<Array<[CmpRange, string]>>(() => (isApartment.value
   ? [['dong', '읍면동'], [1000, '1km'], [2000, '2km']]
   : [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']]));   // 빌라는 읍면동 뺌 — 건물이 많아 너무 넓다(2026-11-12 사용자)
 const cmpMonths = ref<3 | 6 | 12 | 24>(6);
-const CMP_PERIODS: Array<[3 | 6 | 12 | 24, string]> = [[3, '3개월'], [6, '6개월'], [12, '1년'], [24, '2년']];
+const CMP_PERIODS: Array<[3 | 6 | 12 | 24, string]> = [[3, '3개월'], [6, '6개월'], [12, '1년']];   // 2년 뺌 — 처음 받는 1년치 안에서만 고른다(2026-11-12 사용자)
 /** 평형 폭 — ±3㎡로 고정. ±1㎡로 좁혀 봤더니 같은 건물의 조금 다른 평형(정성드림빌 52.32㎡ ↔ 55.14㎡) 거래가 빠졌다 — 예외 처리 없이 ±3㎡ 하나로(2026-11-12 사용자) */
 const cmpTol = ref<1 | 3 | 5 | 10>(3);
 const cmpKind = ref<'매매' | '전세'>('매매');   // 강의 — 단지 비교 기본 잣대는 매매
@@ -5662,11 +5662,8 @@ const cmpCondText = computed(() => {
   const a = cmpRangeTx(cmpAreaR.value, '㎡'); const y = cmpRangeTx(cmpYearR.value, '년');
   return `직접범위 · 전용 ${a || '전체'}${y ? ` · 건축 ${y}` : ''}${fl}`;
 });
-/** 저장본도 없고 아직 조회하지 않았다 — 리스트가 비어 있고 조회하기를 기다린다 */
-const cmpWaiting = computed(() => !cmpQueried.value && !cmpSnapOn.value);
-/** 조회하기를 눌렀나(이 물건 · 이 화면에서) — 누르기 전엔 아무것도 받지 않는다. 저장본이 있으면 저장본만 보여 준다(2026-11-12 사용자) */
-const cmpQueried = ref(false);
-watch(() => auction.value?.id, () => { cmpQueried.value = false; });
+/** 리스트를 계산하나 — 조회하기를 뺐다(2026-11-12 사용자): 받아 둔 실거래 1년치로 늘 바로. 저장본과 거르기가 같으면 저장본을 보여 준다 */
+const cmpQueried = ref(true);
 /** 거르기 기본값(2026-11-12 사용자 확정) — 반경 1km · 6개월 · 매매 · 면적 내 물건 ±3㎡ · 건축 전체 · 층 전체 · 엘베는 빌라면 내 물건과 같게(아파트는 전체) */
 type CmpFilter = SearchFilter;   // 거르기 한 벌의 꼴은 부품(components/SearchFilterBar)에 하나로
 /** 기본값(2026-11-12 사용자 다시 정함) — 반경 500m(아파트는 500m 단추가 없어 1km) · 매매 · 3개월 · 엘베 전체 · 층 전체 · 기준 유사도 80%(직접범위 칸도 그 범위) */
@@ -5677,7 +5674,7 @@ const cmpNormFilter = (f?: DemandFilter | null): CmpFilter => {
   const old = !f.mode;
   const area = (f.area ?? (old ? cmpAreaDef() : [null, null])) as [number | null, number | null];
   return {
-    range: CMP_RANGES.value.some(([v]) => v === f.range) ? f.range : (isApartment.value ? 1000 : 500), months: f.months ?? 3, kind: f.kind ?? '매매',
+    range: CMP_RANGES.value.some(([v]) => v === f.range) ? f.range : (isApartment.value ? 1000 : 500), months: f.months === 24 ? 12 : f.months ?? 3, kind: f.kind ?? '매매',
     mode: f.mode ?? 'range', sim: f.sim ?? 80, area: [...area] as [number | null, number | null], year: [...(f.year ?? [null, null])] as [number | null, number | null],
     floor: f.floor ?? null, elev: f.elev ?? null,
   };
@@ -5690,7 +5687,6 @@ const cmpF = useFilterDraft<CmpFilter>(
     cmpModeR.value = v.mode; cmpSimR.value = v.sim;
     cmpAreaR.value = [...v.area] as [number | null, number | null]; cmpYearR.value = [...v.year] as [number | null, number | null];
     cmpFloorR.value = v.floor; cmpElevR.value = v.elev;
-    cmpQueried.value = true; cmpForce.value = true;
   },
   cmpDefaults,
 );
@@ -6018,6 +6014,7 @@ const cmpMoney = (won: number) => {
 // 다른 단지 좌표 · 주변시설 — 처음 여는 화면의 다른 조회가 끝나게 3초 쉬었다가. 받아 둔 단지는 이 브라우저 · DB 에서 바로 온다.
 // 반경 범위면 ① 후보 좌표만 먼저(네 곳씩) → ② 반경 안 단지만 주변시설(두 곳씩). 같은 동이면 ②만
 let cmpRun = 0;
+let cmpWarm = false;
 const cmpAddr = (c: CompareComplex) => { const r = supRegion.value; return r ? `${r.sido} ${r.sigungu} ${c.umdNm} ${c.jibun}` : ''; };
 const cmpPool = async <T,>(items: T[], n: number, run: number, fn: (x: T) => Promise<void>) => {
   let i = 0;
@@ -6027,7 +6024,7 @@ watch(() => `${cmpSnapOn.value}|${cmpQueried.value}|${cmpElevR.value}|${cmpRange
   const run = ++cmpRun;
   if (cmpSnapOn.value || !cmpQueried.value) return;   // 저장본으로 그린다 · 조회하기 전엔 받지 않는다
   if (!cmpCandidates.value.some((c) => !c.mine)) return;
-  await new Promise((ok) => { window.setTimeout(ok, 3000); });
+  if (!cmpWarm) { await new Promise((ok) => { window.setTimeout(ok, 3000); }); cmpWarm = true; }   // 쉬는 건 물건을 처음 열 때만 — 필터를 바꿀 때마다 3초 기다리지 않게
   if (run !== cmpRun || !supRegion.value) return;
   if (cmpRange.value !== 'dong') {
     const need = cmpCandidates.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpPoints.value) && !(cmpKeyOf(c) in cmpNearby.value));
@@ -6047,7 +6044,7 @@ watch(() => `${cmpSnapOn.value}|${cmpQueried.value}|${cmpElevR.value}|${cmpRange
     if (run === cmpRun) cmpSupply.value = { ...cmpSupply.value, [cmpKeyOf(c)]: v };
   });
 });
-watch(() => auction.value?.id, () => { cmpElevs.value = {}; cmpNearby.value = {}; cmpPoints.value = {}; cmpSupply.value = {}; cmpPick.value = ''; cmpLastCandidates = []; cmpDongLast = []; });
+watch(() => auction.value?.id, () => { cmpWarm = false; cmpElevs.value = {}; cmpNearby.value = {}; cmpPoints.value = {}; cmpSupply.value = {}; cmpPick.value = ''; cmpLastCandidates = []; cmpDongLast = []; });
 // 지도 — 시세분석 지도와 같은 점(웹 pa-pin). 평소엔 점만, 고른 단지는 크게 + 이름표 · 도보 5분 / 10분 원 · 조건별 가장 가까운 시설
 const cmpMapEl = ref<HTMLElement | null>(null);
 let cmpMv: MapView | null = null; let cmpMvP: Promise<void> | null = null; let cmpFitted = '';
@@ -9801,7 +9798,7 @@ const goBack = () => router.back();
                 <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">필터 기준 검색</span></span>
               </div>
               <!-- 검색 거르기 — 부품 하나(components/SearchFilterBar, '필터 기본 부품 세트' 2026-11-12). 다른 화면은 이 부품을 그대로 끼우고 hide 로 뺄 항목만 끈다 -->
-              <SearchFilterBar v-model:draft="cmpDraft" :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :dirty="cmpDirty" :waiting="cmpWaiting" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :loading="cmpLoading" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" :saved-day="cmpSnapDay" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
+              <SearchFilterBar v-model:draft="cmpDraft" :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :loading="cmpLoading" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" :saved-day="cmpSnapDay" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
               <div class="cmp-est">
                 <div class="cmp-tiles">
                   <!-- 단지를 고르기 전엔 동 전체(평균 · 평당가 · 건수 · 단지 수), 고르면 그 단지(중간값 · 최저 · 최고 · 면적까지). 칸 자리는 그대로 — 흔들리지 않게 -->
@@ -9824,7 +9821,7 @@ const goBack = () => router.back();
                   </template>
                 </div>
                 <!-- 근거 거래 한 줄 — 건물 · 단지를 고르면 칸 줄이 어느 거래로 계산됐는지. 고르기 전엔 안내만(자리를 늘 두어 지도가 위아래로 출렁이지 않게) -->
-                <p class="cmp-basis"><template v-if="cmpBasis"><b class="k">근거</b><template v-if="cmpBasis.n"><span v-for="(t, i) in cmpBasis.shown" :key="i" class="d"><i v-if="i" class="sep">|</i>{{ t }}</span><span v-if="cmpBasis.more" class="more">외 {{ cmpBasis.more }}건</span></template><span v-else class="d">기간 안 {{ cmpKind }} 거래 없음</span><span class="cmp-basis-nt">{{ cmpCondText }} 거래만 셌습니다{{ cmpBasis.out ? ` · 다른 평형 ${cmpBasis.out}건은 빠졌습니다` : '' }}</span></template><span v-else-if="cmpWaiting" class="hint">필터를 고르고 <b>조회하기</b>를 누르면 실거래를 불러옵니다 · 마음에 들면 <b>저장하기</b></span><span v-else class="hint">{{ cmpN }}를 누르면 평균이 어느 거래로 계산됐는지 보입니다</span></p>
+                <p class="cmp-basis"><template v-if="cmpBasis"><b class="k">근거</b><template v-if="cmpBasis.n"><span v-for="(t, i) in cmpBasis.shown" :key="i" class="d"><i v-if="i" class="sep">|</i>{{ t }}</span><span v-if="cmpBasis.more" class="more">외 {{ cmpBasis.more }}건</span></template><span v-else class="d">기간 안 {{ cmpKind }} 거래 없음</span><span class="cmp-basis-nt">{{ cmpCondText }} 거래만 셌습니다{{ cmpBasis.out ? ` · 다른 평형 ${cmpBasis.out}건은 빠졌습니다` : '' }}</span></template><span v-else class="hint">{{ cmpN }}를 누르면 평균이 어느 거래로 계산됐는지 보입니다</span></p>
               </div>
                           <!-- 칸 줄과 지도 · 표는 한 상자(2026-11-11) -->
               <div class="cmp-gap" />

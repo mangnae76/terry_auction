@@ -30,12 +30,9 @@ const props = defineProps<{
   yearMax: number;
   /** 유사도 % → 면적 · 건축 범위 */
   simRange: (sim: number) => { area: [number, number]; year: [number, number] };
-  dirty: boolean;
-  /** 아직 조회 전(저장본도 없음) — 조회하기를 파랗게 */
-  waiting: boolean;
   isDefault: boolean;
   canSave: boolean;
-  /** 조회 중 — 조회하기 단추에 '조회 중…'(점이 움직인다) */
+  /** 건물 정보(좌표 · 주변시설 · 엘베)를 받는 중 — 저장하기에 '불러오는 중' */
   loading?: boolean;
   saving: boolean;
   /** 저장본과 같다 — '저장됨' */
@@ -47,7 +44,8 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ 'update:draft': [v: SearchFilter]; apply: []; reset: []; save: [] }>();
 const off = (k: SearchFilterKey) => !!props.hide?.includes(k);
-const set = (patch: Partial<SearchFilter>) => emit('update:draft', { ...props.draft, ...patch });
+// 고르면 바로 적용 — 받아 둔 실거래 1년치에서 거르기만 해서 조회하기가 필요 없다(전체화면과 같게, 2026-11-12 사용자)
+const set = (patch: Partial<SearchFilter>) => { emit('update:draft', { ...props.draft, ...patch }); emit('apply'); };
 const key = <K extends keyof SearchFilter>(k: K) => computed<SearchFilter[K]>({ get: () => props.draft[k], set: (v) => set({ [k]: v } as Partial<SearchFilter>) });
 const rangeD = key('range');
 const kindD = key('kind');
@@ -90,9 +88,8 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
         <RangeInputBox v-if="modeD === 'range' && !off('year')" label="건축" :min="yearMin" :max="yearMax" :lo="yearD[0]" :hi="yearD[1]" :base="baseYear" :lo-text="yearD[0] == null ? '' : String(yearD[0])" :base-text="String(baseYear || '')" :hi-text="yearD[1] == null ? '' : String(yearD[1])" :sub="yearD[0] != null && yearD[1] != null ? `${yearMax - yearD[1] + 1}~${yearMax - yearD[0] + 1}년차` : ''" allow-blank @update="(lo, hi) => (yearD = [lo, hi])" />
     </div>
     <span class="cmp-qbtns">
-        <button type="button" class="cmp-reset" :disabled="isDefault" title="필터를 기본값(반경 500m · 매매 · 3개월 · 엘베 · 층 전체 · 유사도 80%)으로 — 조회하기를 눌러야 적용" @click="emit('reset')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button>
-          <button type="button" :class="['cmp-go', { dirty: dirty || waiting, busy: loading }]" :aria-busy="loading" @click="emit('apply')"><template v-if="loading">조회 중<span class="dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></template><template v-else>조회하기</template></button>
-        <button type="button" :class="['cmp-save', { ready: canSave }]" :disabled="!canSave || saving" :title="saved ? '저장된 리스트입니다' : dirty ? '조회하기를 누른 뒤 저장할 수 있습니다' : canSave ? '지금 리스트를 저장합니다' : '조회하기로 불러온 뒤 저장할 수 있습니다'" @click="emit('save')"><template v-if="saved">저장됨<small v-if="savedDay" class="cmp-save-day">{{ savedDay }}</small></template><template v-else>저장하기</template></button>
+        <button type="button" class="cmp-reset" :disabled="isDefault" title="필터를 기본값으로" @click="emit('reset'); emit('apply')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button>
+        <button type="button" :class="['cmp-save', { ready: canSave }]" :disabled="!canSave || saving" :title="saved ? '저장된 리스트입니다' : canSave ? '지금 리스트를 저장합니다' : '건물 정보를 다 받으면 저장할 수 있습니다'" @click="emit('save')"><template v-if="saved">저장됨<small v-if="savedDay" class="cmp-save-day">{{ savedDay }}</small></template><template v-else>저장하기</template></button>
       </span>
     </div>
   </div>
@@ -110,7 +107,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-conds > .pa-lab > .pa-seg { flex: 1 1 auto; justify-content: space-between; }
 .cmp-conds > .pa-lab > .pa-seg > button { flex: 1 1 auto; padding: 0 8px; }
 @media (max-width: 1180px) { .cmp-conds { flex-wrap: wrap; } }
-.cmp-bars-row { display: flex; align-items: stretch; gap: 8px; margin: -2px 0 12px; }   /* [기준][면적][건축 | 유사도] … [필터초기화][조회하기][저장하기] — 상자 사이 모두 8px */
+.cmp-bars-row { display: flex; align-items: stretch; gap: 8px; margin: -2px 0 12px; }   /* [기준][면적][건축 | 유사도] … [필터초기화][저장하기] — 상자 사이 모두 8px */
 .cmp-bars { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
 .cmp-bars > .cmp-mode { display: inline-flex; align-items: center; gap: 10px; height: 42px; box-sizing: border-box; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 4px 12px; font-size: 14px; font-weight: 700; color: #6b7280; white-space: nowrap; }   /* 기준 — 반경 · 기간 상자와 같은 꼴 */
 .cmp-bars > .cmp-mode .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
@@ -137,9 +134,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-qbtns > .cmp-reset { min-width: 96px; }
 .cmp-reset:disabled { color: #b8bfcc; cursor: default; }
 :root[data-theme="dark"] .cmp-reset { background: transparent; border-color: #34405a; color: #b5bfd0; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-reset { background: transparent; border-color: #34405a; color: #b5bfd0; } }   /* 면적 · 건축 상자와 같은 높이(2026-11-12 사용자) */   /* 면적 · 건축 옆 — 필터초기화 · 조회하기 · 저장하기(2026-11-12 사용자). .cmp-acts 는 표 줄 바로가기 단추라 이름을 따로 */
-.cmp-go { height: 42px; padding: 0 22px; border: 1px solid #2b6df3; border-radius: 8px; background: #fff; color: #2b6df3; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }   /* 조회하기 — 고른 거르기가 지금과 다르면 파랗게 채운다 */
-.cmp-go.dirty { background: #2b6df3; color: #fff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-reset { background: transparent; border-color: #34405a; color: #b5bfd0; } }   /* 면적 · 건축 상자와 같은 높이(2026-11-12 사용자) */   /* 면적 · 건축 옆 — 필터초기화 · 저장하기(2026-11-12 사용자, 조회하기는 뺐다). .cmp-acts 는 표 줄 바로가기 단추라 이름을 따로 */
 .cmp-save { height: 42px; min-width: 96px; padding: 0 18px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #9ca3af; font: inherit; font-size: 14px; font-weight: 700; cursor: default; }   /* 저장하기 — 조회 결과가 다 오면 초록으로 */
 .cmp-save.ready { border-color: #16a34a; background: #16a34a; color: #fff; cursor: pointer; }
 .cmp-save { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; }
@@ -153,19 +148,13 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-conds .kindF button:not(.on)[data-k="전세"]:hover { background: #f9e7c6; }
 .cmp-conds .kindF button.on:hover { filter: brightness(1.08); }
 .cmp-reset:not(:disabled):hover { background: #f3f5f9; border-color: #b8c2d3; color: #1f2937; }
-.cmp-go:not(.dirty):not(.busy):hover { background: #eef3fe; }
-.cmp-go.dirty:hover { background: #1f5ad6; border-color: #1f5ad6; }
 .cmp-save.ready:not(:disabled):hover { background: #15803d; border-color: #15803d; }
 :root[data-theme="dark"] .cmp-conds .pa-seg.pa-out button:not(.on):hover { background: #2a3449; color: #e5e9f0; }
 :root[data-theme="dark"] .cmp-reset:not(:disabled):hover { background: #232c3f; border-color: #4a5672; color: #e5e9f0; }
-:root[data-theme="dark"] .cmp-go:not(.dirty):not(.busy):hover { background: rgba(91, 140, 255, .14); }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .cmp-conds .pa-seg.pa-out button:not(.on):hover { background: #2a3449; color: #e5e9f0; }
   :root:not([data-theme="light"]) .cmp-reset:not(:disabled):hover { background: #232c3f; border-color: #4a5672; color: #e5e9f0; }
-  :root:not([data-theme="light"]) .cmp-go:not(.dirty):not(.busy):hover { background: rgba(91, 140, 255, .14); }
 }
-:root[data-theme="dark"] .cmp-go:not(.dirty) { background: transparent; color: #8fb0ff; border-color: #5b8cff; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-go:not(.dirty) { background: transparent; color: #8fb0ff; border-color: #5b8cff; } }
 .cmp-conds .pa-lab { display: inline-flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 4px 12px; font-size: 14px; font-weight: 700; color: #6b7280; white-space: nowrap; }
 .cmp-conds .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
 .cmp-conds .pa-seg button { border: none; background: transparent; border-radius: 5px; height: 26px; padding: 0 13px; font: inherit; font-size: 14px; font-weight: 400; color: #6b7280; cursor: pointer; white-space: nowrap; }
@@ -178,11 +167,4 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-conds .kindF button[data-k="전세"] { background: #fdf3e1; color: #b7791f; }
 .cmp-conds .kindF button.on[data-k="매매"] { background: #2b3a67; color: #fff; }
 .cmp-conds .kindF button.on[data-k="전세"] { background: #b7791f; color: #fff; }
-.cmp-go.busy { background: #2b6df3; color: #fff; }
-/* 조회 중 점 셋이 차례로 떠오른다 — 폭은 고정(글이 흔들리지 않게) */
-.dots { display: inline-flex; width: 1.2em; justify-content: flex-start; }
-.dots i { font-style: normal; animation: sfb-dot 1.2s infinite both; }
-.dots i:nth-child(2) { animation-delay: .2s; } .dots i:nth-child(3) { animation-delay: .4s; }
-@keyframes sfb-dot { 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .dots i { animation: none; opacity: 1; } }
 </style>
