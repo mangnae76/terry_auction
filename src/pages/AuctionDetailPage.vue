@@ -6426,7 +6426,7 @@ const unitKind = computed(() => sonPriceOut?.value?.kind ?? cmpKind.value);
 const cmpFloorZero = computed(() => !!sonPriceOut?.value?.sameFloor);   // 시세분석 '같은 층' — 층은 이미 기준가에 담겨 있다
 const cmpBase = computed(() => {
   const o = sonPriceOut?.value;
-  if (!o || !(o.est > 0)) return { label: '기준가', value: 0, note: '위 시세분석 표에 고른 거래가 없습니다' };
+  if (!o || !(o.est > 0)) return { label: '기준가', value: 0, note: '위 시세분석 표에 고른 거래가 없습니다', formula: '' };
   const me = cmpRows.value.find((r) => r.mine);
   const my = Number(sumVal('sum.floorCurrent').match(/\d+/)?.[0] ?? 0);
   const allSame = o.rows.every((r) => r.same && me && Math.abs(r.areaM2 - me.area) < 0.05);
@@ -6434,7 +6434,10 @@ const cmpBase = computed(() => {
   const py = me?.supply ? `${Math.round(me.supply.lo / 3.305785)}평 ` : me && !isApartment.value && me.area > 0 ? `${Number((me.area / 3.305785).toFixed(1))}평 ` : '';   // 빌라는 전용 평
   const label = allSame && me ? `기준가 · ${py}${o.sameFloor && my ? `${my}층 ` : ''}${o.kind}가` : `기준가 · 시세분석 예상 ${o.kind}가`;
   const list = o.rows.length <= 6 ? ` · ${o.rows.map((r) => [r.same ? (r.dong ? `${r.dong}동` : '') : r.name, r.floorNo ? `${r.floorNo}층` : '', cmpEok(r.price)].filter(Boolean).join(' ')).join(' · ')}` : '';
-  return { label, value: o.est, note: `위 표에서 고른 ${o.n}건으로 낸 예상가${list}` };
+  // 공식 — 고른 거래 평균 평당가 × 이 물건 전용 평(소수 둘째 자리 — 위 머리의 16.7평은 반올림) = 예상가(2026-11-12 사용자 '어떻게 해서 1.42억인지')
+  const per = o.kind === '월세' ? '평당 월세' : '평당가';
+  const formula = o.avgPy && o.myPy ? `고른 ${o.n}건 평균 ${per} ${Math.round(o.avgPy / 1e4).toLocaleString('ko-KR')}만 × 전용 ${o.myPy.toFixed(2)}평 = ${cmpEok(o.est)}` : '';
+  return { label, value: o.est, note: `위 표에서 고른 ${o.n}건${list}`, formula };
 });
 const cmpUnitBase = computed(() => cmpBase.value.value);
 /** 구역 내 개별성 ± — 단지 자체의 장단점을 가격 %로(단지 내 개별성과 같은 방식, 2026-11-11 사용자). 1 가산 · 0 보통 · -1 감산 */
@@ -10040,7 +10043,7 @@ const goBack = () => router.back();
             <section class="adp-dm-block boxed cmp-box o-unit">
               <div class="cmp-est-h unit-h"><span class="unit-tag">보정</span><h3>선정물건 호실 예상가<span v-if="cmpMineRow" class="cmp-scope-chip">{{ cmpArea(cmpMineRow.supply, cmpMineRow.area) }}</span></h3><small class="cmp-q">{{ isApartment ? '같은 단지 안에서 내 호실의 가치는?' : '비슷한 빌라들 사이에서 내 호실의 가치는?' }}</small>
                 <span class="cmp-est-desc"><span class="cmp-desc-hi">기준가 = 위 표 예상 실거래가 · 기준가 × (1 + 개별성 보정) + 수리 금액</span></span></div>
-              <div class="cmp-bases one"><div class="cmp-base on"><span class="k">{{ cmpBase.label }}</span><span class="v">{{ cmpEok(cmpBase.value) }}</span><small>{{ cmpBase.note }}</small></div></div>
+              <div class="cmp-bases one"><div class="cmp-base on"><span class="k">{{ cmpBase.label }}</span><span class="v">{{ cmpEok(cmpBase.value) }}</span><small>{{ cmpBase.note }}</small><small v-if="cmpBase.formula" class="cmp-base-f">{{ cmpBase.formula }}</small></div></div>
               <!-- 구역 내 · 단지 내 개별성 — 가로로 나란히(좁으면 위아래, 2026-11-11 사용자) -->
               <!-- 구역 내 개별성 — 위 표가 모두 이 단지 거래면 접어 둔다(이미 담겨 있다). 다른 단지 거래가 섞이면 열려 % 로 보정 -->
               <div v-if="!zoneApplied" :class="['cmp-zone-off', { warn: zoneMixed }]"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span v-if="zoneMixed">위 표에 다른 {{ isApartment ? '단지' : '건물' }} 거래 {{ zoneMixed }}건이 섞여 있습니다. 이 {{ isApartment ? '단지' : '건물' }} 거래만 쓰려면 그 줄을 제외하세요. 다른 {{ isApartment ? '단지' : '건물' }} 거래만 남으면 열려 연식 · 주차 · 엘베 · 현관 · 경사 · 용적률을 % 로 보정합니다.</span><span v-else>기준가가 모두 이 {{ isApartment ? '단지' : '건물' }} 거래라 쓰지 않습니다. 이 {{ isApartment ? '단지' : '건물' }} 거래가 없어 다른 {{ isApartment ? '단지' : '건물' }} 거래만 쓸 때 열려 연식 · 주차 · 엘베 · 현관 · 경사 · 용적률을 % 로 보정합니다.</span></div>
@@ -12840,6 +12843,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-kind.j { background: #fdf3e1; color: #b7791f; }
 .cmp-kind.m { background: #eef7f1; color: #22a55a; }
 /* 입지 창 — 비율(노선 · 학원 수)은 시설 이름 밑 작은 줄(점수 칸을 넘지 않게, 2026-11-12 사용자) */
+.cmp-base-f { display: block; margin-top: 2px; color: #2b6df3 !important; }   /* 호실 예상가 기준가 공식 줄 — 파랑(2026-11-12 사용자) */
 .cmp-place .cmp-ratio { display: block; margin-top: 1px; font-size: 12px; font-weight: 400; color: #6b7280; }
 .cmp-tbl th[aria-sort], .cmp-tbl th:has(> .sdir) { cursor: pointer; white-space: nowrap; }
 .cmp-tbl .sdir { margin-left: 3px; font-style: normal; font-size: 10px; color: #c3c9d4; }   /* 정렬 삼각형 — 시세분석 표와 같은 꼴 */
