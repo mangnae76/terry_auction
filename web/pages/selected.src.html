@@ -57,6 +57,7 @@
   --faint: #9ca3af;
   --nav: #213366;
   --nav-text: #ffffff; --foot-link: #fff; --chip-gray: #d5dbe6;
+  --nav-proc: #c6d2ec; --nav-tool: #8494b8; --nav-on: #ffffff;   /* 메뉴 글 세 단계 — 고른 메뉴 흰색 · 경매 진행(물건등록 ~ 자금관리) 밝은 회청 · 도구(시장분석 ~ 마이페이지) 어두운 회청(2026-11-13 사용자) */
   --nav-name: #50c3fc;
   --nav-orange: #f4700a; /* 고른 메뉴 밑줄 — 탁하지 않게 채도를 올리고 명도를 낮췄다 */
   --blue: #2b6df3;
@@ -112,6 +113,7 @@
     --line: #232c3f; --line-2: #2a3449; --tb-line: #2a3449; --card-line: #1f2839;   /* 밤 선 — 한 단계 어둡게(2026-11-06, 너무 밝았다) */
     --text: #cfd6e2; --text-2: #a9b2c2; --muted: #8b95a8; --faint: #6e788c;
     --nav: #172449; --nav-name: #50c3fc; --nav-text: #cdd5e3; --foot-link: #c3cad6; --chip-gray: #3a4660;
+    --nav-proc: #a9b4ca; --nav-tool: #6f7b96; --nav-on: #ffffff;
     --blue: #5b8cff; --blue-soft: rgba(91, 140, 255, 0.14); --cta-hover: #6a91f5;
     --pill-line: #2f3a51; --pill-text: #9aa4b8;
     --on-line: #7d93f5; --on-bg: rgba(107, 133, 240, 0.22); --on-text: #b5c3ff;
@@ -135,6 +137,7 @@
   --row-line: #232d42; --subtab-line: #232e45;   /* 밤낮 단추로 켰을 때도 탭 줄 선이 밤 색이게(빠져 있어 낮 색 흰 선이 나왔다) */
   --text: #cfd6e2; --text-2: #a9b2c2; --muted: #8b95a8; --faint: #6e788c;
   --nav: #172449; --nav-name: #50c3fc; --nav-text: #cdd5e3; --foot-link: #c3cad6; --chip-gray: #3a4660;
+  --nav-proc: #a9b4ca; --nav-tool: #6f7b96; --nav-on: #ffffff;
   --blue: #5b8cff; --blue-soft: rgba(91, 140, 255, 0.14); --cta-hover: #6a91f5;
   --pill-line: #2f3a51; --pill-text: #9aa4b8;
   --on-line: #7d93f5; --on-bg: rgba(107, 133, 240, 0.22); --on-text: #b5c3ff;
@@ -213,6 +216,10 @@ button { cursor: pointer; }
 .g-menu.tool { gap: 5px; color: #c3cde6; font-weight: 500; }
 .g-menu.tool svg { flex: 0 0 auto; width: 15px; height: 15px; }
 .g-menu.tool:hover, .g-menu.tool.on { color: #fff; }
+/* 메뉴 글 밝기 세 단계 — 다 흰색이라 고른 메뉴가 덜 보였다(2026-11-13 사용자). 고른 메뉴만 흰색 + 주황 막대, 경매 진행 묶음은 밝은 회청, 도구 묶음은 한 단계 더 어둡게 — 두 묶음도 갈린다. 굵기는 그대로(폭 흔들림 없게) */
+.g-menu:not(.tool):not(.off) { color: var(--nav-proc); }
+.g-menu.tool:not(.off) { color: var(--nav-tool); }
+.g-menu:not(.off):is(:hover, .on) { color: var(--nav-on); }
 .g-menu.tool::after { left: 50%; right: auto; width: 92px; margin-left: -46px; }   /* 도구(시장분석 ~ 마이페이지) 막대는 글자 수와 상관없이 같은 길이 — 아이콘 포함 메뉴 가운데에 92px(가장 긴 마이페이지 폭). 사이 틈이 좁아 더 길면 옆 막대와 붙는다 */
 .g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: var(--nav-text) !important; border-radius: 6px; transition: color .15s, background .15s; }
 .g-ico:hover { background: rgba(255, 255, 255, 0.14); }
