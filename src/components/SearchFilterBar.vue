@@ -123,19 +123,18 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-bars > .cmp-mode .pa-seg button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
 .cmp-bars { flex: 1 1 auto; min-width: 0; }   /* 필터초기화 단추까지 같은 8px 간격으로 채운다 */
 .cmp-bars > :is(.rib, .cmp-sim) { flex: 1 1 0; min-width: 0; }
-.cmp-sim { display: flex; align-items: center; height: 42px; box-sizing: border-box; padding: 0 14px; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; overflow: hidden; }   /* 유사도 막대 상자 — 높이는 다른 상자와 같은 42px */
+.cmp-sim { display: flex; align-items: center; height: 42px; box-sizing: border-box; padding: 0 14px; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; overflow: hidden; }   /* 유사도 막대 상자 — 글 · 막대 · 눈금은 부품 기본(시세분석과 같다) */
 .cmp-sim > * { flex: 1 1 auto; min-width: 0; }
-.cmp-sim :deep(.simA) { gap: 0; }
-.cmp-sim :deep(.simlab) { font-size: 11.5px; line-height: 1.1; gap: 8px; }
-.cmp-sim :deep(.simlab span + span) { font-size: 11px; }
-.cmp-sim :deep(.ticks) { font-size: 9px; transform: none; padding: 0 1px; }
-.cmp-sim :deep(input[type="range"]) { -webkit-appearance: none; appearance: none; height: 12px; margin: 1px 0; background: transparent; }
-.cmp-sim :deep(input[type="range"]::-webkit-slider-runnable-track) { height: 3px; border-radius: 2px; background: linear-gradient(#2b6df3, #2b6df3) 0 / var(--p, 57%) 100% no-repeat, #dde3ee; }
-.cmp-sim :deep(input[type="range"]::-webkit-slider-thumb) { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5.5px; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; box-shadow: 0 1px 2px rgba(17, 24, 39, .3); cursor: grab; }
-.cmp-sim :deep(input[type="range"]::-moz-range-track) { height: 3px; border-radius: 2px; background: #dde3ee; }
-.cmp-sim :deep(input[type="range"]::-moz-range-progress) { height: 3px; border-radius: 2px; background: #2b6df3; }
-.cmp-sim :deep(input[type="range"]::-moz-range-thumb) { width: 12px; height: 12px; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; }   /* 면적 · 건축 — 반경 · 기간과 같은 상자(막대 뺌, 2026-11-12 사용자) */
 @media (max-width: 760px) { .cmp-bars-row { flex-wrap: wrap; } }
+/* 둘째 줄(기준 · 유사도 · 면적 · 건축 · 필터초기화 · 저장하기) — 시세분석 유사도 상자와 같은 높이 66px(2026-11-12 사용자 '시세분석 사이즈로'). 좁은 칸(전체화면)은 따로 */
+.sfb:not(.compact) .cmp-bars > .cmp-mode, .sfb:not(.compact) .cmp-sim, .sfb:not(.compact) :deep(.rib) { height: 66px; }
+.sfb:not(.compact) .cmp-sim { padding: 0 18px; }
+.sfb:not(.compact) .cmp-bars > .cmp-mode .pa-seg { height: 36px; }
+.sfb:not(.compact) .cmp-bars > .cmp-mode .pa-seg button { height: 30px; }
+.sfb:not(.compact) :deep(.rib) { padding: 4px 12px 4px 14px; }
+.sfb:not(.compact) :deep(.rib .vals) { padding: 4px; }
+.sfb:not(.compact) :deep(.rib .vals input.in.in) { width: 72px; height: 32px !important; }
+.sfb:not(.compact) .cmp-qbtns > button { min-height: 66px; }
 /* 좁은 칸 줄 맞춤 — 한 줄 하나짜리(반경 · 거래 · 기간 · 기준 · 면적 · 건축)는 이름 칸 폭을 하나(--lab)로 둬
    단추 묶음 · 적는 칸 회색 상자가 모두 같은 x 에서 시작해 줄 끝까지 간다(2026-11-12 사용자). 엘베 · 층(반씩)은 따로 */
 .sfb.compact { --lab: 72px; }
@@ -156,6 +155,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .sfb.compact .cmp-bars > .cmp-mode .pa-seg { flex: 1 1 auto; }   /* 기준 단추도 위 줄들처럼 줄 끝까지 넓게 */
 .sfb.compact .cmp-bars > .cmp-mode .pa-seg button { flex: 1 1 0; }
 .sfb.compact .cmp-bars > :is(.rib, .cmp-sim) { flex: 0 0 auto; width: 100%; }
+.sfb.compact .cmp-sim { height: auto; min-height: 42px; padding: 6px 12px; }   /* 좁은 칸 — 유사도 글 · 막대 · 눈금이 잘리지 않게 */
 .sfb.compact .cmp-qbtns { margin-left: 0; }
 .sfb.compact .cmp-qbtns > button { flex: 1 1 0; min-width: 0; height: 38px; }
 .cmp-qbtns { display: flex; align-items: stretch; gap: 8px; margin-left: auto; }
