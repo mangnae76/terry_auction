@@ -5711,7 +5711,8 @@ const cmpMePt = computed(() => (supRegion.value?.lat ? { lat: supRegion.value.la
 /** 반경 범위면 좌표를 아는 단지 중 반경 안만 */
 /** ===== 매매수요 저장본(2026-11-12 사용자) — 필터로 뽑은 리스트는 사용자 데이터라 바뀌면 안 된다.
  *  필터가 저장본과 같으면 새로 계산하지 않고 저장본(실거래 · 좌표 · 시설 거리)으로 그린다. 필터를 바꾸면 새로 계산하고, 다 받으면 자동으로 다시 저장한다. ===== */
-const cmpSnap = computed<DemandSnap | null>(() => (auction.value?.demandSnap?.v === 1 ? auction.value.demandSnap : null));
+// 비교 건물이 하나도 없는 저장본은 쓰지 않는다 — 실거래를 못 받았을 때 빈 리스트가 굳어 버리지 않게
+const cmpSnap = computed<DemandSnap | null>(() => { const sn = auction.value?.demandSnap; return sn?.v === 1 && sn.rows.some((r) => !r.mine) ? sn : null; });
 const cmpSnapOn = computed(() => { const s = cmpSnap.value; return !!s && s.filter.range === cmpRange.value && s.filter.months === cmpMonths.value && s.filter.kind === cmpKind.value; });
 const cmpSnapRows = computed(() => { const m = new Map<string, DemandSnapRow>(); if (cmpSnapOn.value) cmpSnap.value!.rows.forEach((r) => m.set(cmpKeyOf(r), r)); return m; });
 const cmpList = computed<CompareComplex[]>(() => {
@@ -6088,12 +6089,13 @@ const cmpBasis = computed(() => {
 /** 저장본 만들기 — 다 받았을 때(실거래 · 좌표 · 시설 · 공급면적) 지금 리스트를 통째로. 시설은 입지조건 전부(룸수를 바꿔도 다시 받지 않게) */
 const cmpLiveReady = computed(() => {
   if (cmpSnapOn.value || !supLoaded.value || !supRegion.value || !nearbyEnv.value) return false;
+  if (!supAllRows.value.length || (cmpMonths.value === 24 && !cmpRows2y.value?.length)) return false;   // 실거래를 못 받았으면 저장하지 않는다
   if (cmpMonths.value === 24 && !cmpRows2y.value) return false;
   if (cmpRange.value !== 'dong' && cmpCandidates.value.some((c) => !c.mine && !(cmpKeyOf(c) in cmpPoints.value) && !(cmpKeyOf(c) in cmpNearby.value))) return false;
   const list = cmpList.value;
   if (list.some((c) => !c.mine && !(cmpKeyOf(c) in cmpNearby.value))) return false;
   if (isApartment.value && list.some((c) => !c.mine && !(cmpKeyOf(c) in cmpSupply.value))) return false;
-  return true;
+  return list.some((c) => !c.mine);   // 비교 건물이 없으면 저장하지 않는다(다음에 열 때 다시 계산)
 });
 const cmpSnapBuild = (): DemandSnap => {
   const conds = Object.keys(LOCATION_SOURCES);
