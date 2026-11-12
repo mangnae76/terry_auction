@@ -97,7 +97,7 @@ watch(() => `${region.value?.districtCode ?? ''}|${auction.value?.propertyType ?
 }, { immediate: true });
 const demandEmbed = computed(() => (region.value && auction.value ? {
   sido: region.value.sido, districtCode: region.value.districtCode, dong: region.value.dong, kind: kindOf(auction.value.propertyType),
-  dealKind: 'sale' as const, months: 12, token: token.value, rows: rows.value, asOf: asOf.value, label: region.value.label,
+  dealKind: 'sale' as const, months: 12, token: token.value, rows: rows.value, asOf: asOf.value, label: region.value.label, itemId: auction.value.id,
 } : null));
 
 // ===== 시세조사 — 물건 주소 · 종류로 바로 조회 =====

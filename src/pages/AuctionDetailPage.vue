@@ -9383,7 +9383,7 @@ const goBack = () => router.back();
             <!-- 앱 ② 빌라 · 단지 입지비교 — 웹 매매수요 빌라 · 단지 리스트(웹에서 저장한 값)에서 이름 · 입지점수 · 순위 · 평균 매매가 네 칸만.
                  필터는 앱에 두지 않고 웹에서 정한 값 그대로 — 룸수(입지조건)는 위 ① 과 같이 움직인다(2026-11-13 사용자) -->
             <div v-if="!webEmbed && !sonpumMode" class="adp-dm-block boxed o-loc">
-              <div class="adp-dm-sub o-loc-h"><span class="cmp-no">②</span>{{ cmpN }} 입지비교<span class="adp-dm-area">{{ surveyAreaLabel }}</span><small class="o-loc-q">{{ isApartment ? '내가 선정한 아파트 단지는 몇 등일까?' : '내가 선정한 빌라는 주변 유사 빌라 중 몇 등일까?' }}</small></div>
+              <div class="adp-dm-sub o-loc-h"><span class="cmp-no">②</span><span class="o-loc-t">{{ cmpN }} 입지비교</span><small class="o-loc-q">{{ isApartment ? '내가 선정한 아파트 단지는 몇 등일까?' : '내가 선정한 빌라는 주변 유사 빌라 중 몇 등일까?' }}</small><span class="adp-dm-area">{{ surveyAreaLabel }}</span></div>
               <div v-if="cmpSnapOn && cmpRows.length" class="son-demand sup-tbl">
                 <div class="adm-table-wrap">
                   <table class="adm-table cmp-tbl app-loc">
@@ -12556,13 +12556,15 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-area { color: #2b6df3; }
 .adp-dm-area-gap { margin-left: 6px; }
 .adp-dm-title.adp-dm-title-sm { font-size: 13px; }   /* ③ 제목 — 위 ① · ② 상자 제목(13 · 800)과 같은 크기, 동 이름까지 */
-.dm-app-opinion { margin-top: 10px; padding: 12px 14px; }
-.dm-app-opinion b { font-size: 15px; }
-.dm-app-opinion > span { font-size: 13px; color: #111827; }
-.dm-app-opinion .wait { color: #9ca3af; }
+.sup-opinion.dm-app-opinion { margin-top: 10px; padding: 12px 14px; }
+.sup-opinion.dm-app-opinion b { font-size: 13px; }   /* 결론 — 위 상자 제목(13)과 같은 크기 */
+.sup-opinion.dm-app-opinion b::before { font-size: 11px; }
+.sup-opinion.dm-app-opinion > span { font-size: 12.5px; line-height: 1.55; color: #111827; }
+.sup-opinion.dm-app-opinion .wait { color: #9ca3af; }
 .o-loc .sup-tbl { margin-top: 8px; }
-.o-loc-h { flex-wrap: wrap; }
-.o-loc-q { flex: 0 0 100%; margin-top: 2px; font-size: 12.5px; font-weight: 400; color: #6b7280; }   /* 물음은 제목 아래 한 줄 */
+.adp-dm-sub.o-loc-h { flex-wrap: nowrap; white-space: nowrap; }
+.o-loc-h .o-loc-t, .o-loc-h .adp-dm-area { flex: none; }
+.o-loc-q { min-width: 0; font-size: 11px; font-weight: 400; color: #6b7280; letter-spacing: -0.6px; white-space: nowrap; }   /* 물음 — 동 이름 왼쪽, 제목과 한 줄(2026-11-13 사용자) */
 .o-loc .app-loc :is(th, td) { padding-left: 4px; padding-right: 4px; }   /* 폰 폭 네 칸 */
 .adp-dm-q { min-width: 0; font-size: 12.5px; font-weight: 400; color: #6b7280; white-space: nowrap; letter-spacing: -0.4px; }   /* 물음 — 검암동 바로 옆 한 줄(2026-11-12 사용자) */
 :is(.o-rank:first-child, .o-loc) + .adp-dm-head:has(.adp-dm-q) { flex-wrap: nowrap; gap: 6px; }

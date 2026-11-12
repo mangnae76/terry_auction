@@ -26,6 +26,8 @@ import { useAuthStore } from '../stores/authStore';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
 import { dongStatsFromRows, fetchDongTradeStats, tradeWindowOf, ymd8Of, type DongTradeDetailRow, type DongTradeStat } from '../services/publicDataApi';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
+import { useAuctionStore } from '../stores/auctionStore';
+import { updateStamp } from '../services/updateStamp';
 import { buildingAgeOf } from '../utils/buildingAge';
 
 type Kind = 'villa' | 'apt' | 'officetel';
@@ -44,6 +46,8 @@ type EmbedFilter = {
   sido: string; districtCode: string; dong: string; kind: Kind; dealKind: 'sale' | 'jeonse'; months: number; token: number;
   /** 지역분석이 받아 둔 거래(기간 안) · 조회 기준 시각 · 이름 — 있으면 다시 묻지 않고 이것으로 센다 */
   rows?: DongTradeDetailRow[]; asOf?: number; label?: string;
+  /** 손품조사 물건 — 있으면 총 매물수를 그 물건 문서(fs.dm.listings)에 적고 읽는다. 앱 매매수요와 같은 칸이라 서로 같은 값(2026-11-13 사용자) */
+  itemId?: string;
 };
 /** boxNo — 손품조사 매매수요 안에서 상자 번호(④). 있으면 제목 '④ 읍면동 수급분석', 안쪽 ① ② ③ 번호는 뺀다(상자 번호와 겹쳐서, 2026-11-11) */
 const props = defineProps<{ embed?: EmbedFilter | null; chip?: { tone: string; text: string } | null; boxNo?: string; dongLabel?: boolean }>();   // dongLabel — 번호 없이 '읍면동 수급분석'(손품조사 빌라)
@@ -114,7 +118,28 @@ watch(() => auth.uid, () => { void loadManual(); });
 
 const rowKey = (sigungu: string, umdNm: string) => `${kind.value}|${sigungu}|${umdNm}`;
 const manualOf = (sigungu: string, umdNm: string): Manual => manual.value[rowKey(sigungu, umdNm)] ?? {};
+// ===== 손품조사 물건의 총 매물수 — 물건 문서에(앱 매매수요와 같은 칸 fs.dm.listings · fs.dm.listingsAt) =====
+const auctionStore = useAuctionStore();
+const embedItem = computed(() => (props.embed?.itemId ? auctionStore.auctions.find((a) => a.id === props.embed!.itemId) ?? null : null));
+/** 물건에 적힌 총 매물수 — 물건이 없으면(지역분석) null 이라 사용자 설정 값을 쓴다 */
+const itemListings = computed<number | null>(() => {
+  if (!embedItem.value) return null;
+  const n = Number(String(embedItem.value.surveyForm?.fieldValues?.['fs.dm.listings'] ?? '').replace(/[^\d.]/g, ''));
+  return Number.isFinite(n) ? n : 0;
+});
+let itemSaveTimer: ReturnType<typeof setTimeout> | null = null;
+const setItemListings = (raw: string) => {
+  const a = embedItem.value; if (!a) return;
+  const digits = raw.replace(/[^\d]/g, '');
+  if (!a.surveyForm) return;
+  if (!a.surveyForm.fieldValues) a.surveyForm.fieldValues = {};
+  a.surveyForm.fieldValues['fs.dm.listings'] = digits;
+  a.surveyForm.fieldValues['fs.dm.listingsAt'] = digits ? updateStamp() : '';
+  if (itemSaveTimer) clearTimeout(itemSaveTimer);
+  itemSaveTimer = setTimeout(() => { itemSaveTimer = null; void auctionStore.saveAuction(a); }, 700);
+};
 const setManual = (sigungu: string, umdNm: string, field: keyof Manual, raw: string) => {
+  if (field === 'listings' && embedItem.value) { setItemListings(raw); return; }
   const n = Number(raw.replace(/[^\d]/g, ''));
   const next = { ...manualOf(sigungu, umdNm), [field]: Number.isFinite(n) && n > 0 ? n : undefined };
   manual.value = { ...manual.value, [rowKey(sigungu, umdNm)]: next };
@@ -190,7 +215,7 @@ const rows = computed<Row[]>(() => stats.value
   .map((s) => {
   const m = manualOf(s.sigungu, s.umdNm);
   const units = Math.max(0, autoUnits.value[rowKey(s.sigungu, s.umdNm)] ?? 0); // 건축물대장 자동값만
-  const listings = m.listings ?? 0;
+  const listings = itemListings.value ?? m.listings ?? 0;   // 손품조사 물건이면 그 물건에 적은 값
   const deals = dealOf(s);   // 웹은 정상 + 직거래(총 거래건수와 같은 셈)
   const monthly = deals / Math.max(1, months.value);
   // 회전율·소화율은 1년치로 환산한다 — 24개월을 받아도 뜻이 같아야
