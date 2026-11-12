@@ -9765,7 +9765,7 @@ const goBack = () => router.back();
               </div>
               <span class="cmp-acts">
                   <button type="button" :class="['cmp-go', { dirty: cmpDirty || cmpWaiting }]" @click="cmpApply">조회하기</button>
-                  <button type="button" :class="['cmp-save', { ready: cmpLiveReady }]" :disabled="!cmpLiveReady || cmpSaving" :title="cmpSnapOn ? '저장된 리스트입니다' : cmpLiveReady ? '지금 리스트를 저장합니다' : '조회하기로 불러온 뒤 저장할 수 있습니다'" @click="cmpSave">{{ cmpSnapOn ? '저장됨' : '저장하기' }}</button>
+                  <button type="button" :class="['cmp-save', { ready: cmpLiveReady }]" :disabled="!cmpLiveReady || cmpSaving" :title="cmpSnapOn && !cmpDirty ? '저장된 리스트입니다' : cmpDirty ? '조회하기를 누른 뒤 저장할 수 있습니다' : cmpLiveReady ? '지금 리스트를 저장합니다' : '조회하기로 불러온 뒤 저장할 수 있습니다'" @click="cmpSave">{{ cmpSnapOn && !cmpDirty ? '저장됨' : '저장하기' }}</button>
                 </span>
               </div>
               <div class="cmp-est">
