@@ -5646,7 +5646,7 @@ const cmpYearR = ref<[number, number] | null>(null);
 const cmpAreaDef = (): [number, number] => { const m = supMyArea.value || 0; return m > 0 ? [Math.max(10, Math.floor(m - 3)), Math.ceil(m + 3)] : [20, 150]; };
 const cmpArea2 = computed<[number, number]>(() => cmpAreaR.value ?? cmpAreaDef());
 const cmpYear2 = computed<[number, number]>(() => cmpYearR.value ?? [CMP_YEAR_MIN, cmpYearMax]);
-const cmpAreaBarMax = computed(() => Math.max(150, Math.ceil((supMyArea.value || 0) * 2)));
+const cmpAreaBarMax = computed(() => Math.max(150, Math.ceil((supMyArea.value || 0) * 1.5)));   // 시세분석과 같은 20~150㎡(큰 평형이면 더 넓게)
 /** 층 · 엘베 거르기(시세분석과 같은 단추 — 층: 전체 · 같은 층, 엘베: 전체 · 있음 · 없음, 2026-11-12 사용자) */
 const cmpFloorR = ref<'same' | null>(null);
 const cmpElevR = ref<'yes' | 'no' | null>(null);
@@ -9752,8 +9752,8 @@ const goBack = () => router.back();
               </div>
               <!-- 면적 · 건축 막대 — 거르기 줄 밑 한 줄, 두 상자가 위 줄 폭에 맞게 반씩(2026-11-12 사용자) -->
               <div class="cmp-bars">
-                  <DualRangeBar label="면적" :min="10" :max="cmpAreaBarMax" :lo="cmpAreaD[0]" :hi="cmpAreaD[1]" :base="supMyArea" :text="`${cmpAreaD[0]}~${cmpAreaD[1]}㎡`" :sub="cmpPyTx(cmpAreaD[0], cmpAreaD[1])" @update="(lo, hi) => (cmpAreaD = [lo, hi])" />
-                  <DualRangeBar label="건축" :min="CMP_YEAR_MIN" :max="cmpYearMax" :lo="cmpYearD[0]" :hi="cmpYearD[1]" :base="cmpMyYear" :text="`${cmpYearD[0]}~${cmpYearD[1]}년`" :sub="`${cmpYearMax - cmpYearD[1] + 1}~${cmpYearMax - cmpYearD[0] + 1}년차`" @update="(lo, hi) => (cmpYearD = [lo, hi])" />
+                  <DualRangeBar label="면적 ㎡" :min="20" :max="cmpAreaBarMax" :lo="cmpAreaD[0]" :hi="cmpAreaD[1]" :base="supMyArea" :lo-text="String(cmpAreaD[0])" :base-text="String(Number((Math.floor(supMyArea * 100 + 1e-6) / 100).toFixed(2)))" :hi-text="String(cmpAreaD[1])" :sub="cmpPyTx(cmpAreaD[0], cmpAreaD[1])" :tvg-w="136" @update="(lo, hi) => (cmpAreaD = [lo, hi])" />
+                  <DualRangeBar label="건축" :min="CMP_YEAR_MIN" :max="cmpYearMax" :lo="cmpYearD[0]" :hi="cmpYearD[1]" :base="cmpMyYear" :lo-text="String(cmpYearD[0])" :base-text="String(cmpMyYear || '')" :hi-text="String(cmpYearD[1])" :sub="`${cmpYearMax - cmpYearD[1] + 1}~${cmpYearMax - cmpYearD[0] + 1}년차`" :tvg-w="140" @update="(lo, hi) => (cmpYearD = [lo, hi])" />
               </div>
               <div class="cmp-est">
                 <div class="cmp-tiles">
@@ -12576,8 +12576,10 @@ input.cmp-rk.in { padding: 0; font: inherit; font-weight: 700; text-align: cente
 input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b45309; }   /* 손으로 고친 등수 */
 /* 단지 입지비교 거르기 — 시세분석 조건 줄(.pa-lab · .pa-seg · .kindF) 값 그대로(2026-11-11) */
 .cmp-conds { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 12px; }
-.cmp-bars { display: flex; gap: 8px; margin: -4px 0 12px; }
-.cmp-bars > .drb { flex: 1 1 0; min-width: 0; }
+.cmp-bars { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 32px; margin: -2px 0 12px; padding: 16px 20px 14px; background: #fff; border: 1px solid #dde3ee; border-radius: 10px; }   /* 면적 · 건축 막대 — 시세분석 직접범위 상자와 같은 꼴 */
+:root[data-theme="dark"] .cmp-bars { background: #182031; border-color: #2a3449; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-bars { background: #182031; border-color: #2a3449; } }
+@media (max-width: 760px) { .cmp-bars { grid-template-columns: minmax(0, 1fr); row-gap: 14px; } }
 .cmp-go { margin-left: auto; height: 42px; padding: 0 22px; border: 1px solid #2b6df3; border-radius: 8px; background: #fff; color: #2b6df3; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }   /* 조회하기 — 고른 거르기가 지금과 다르면 파랗게 채운다 */
 .cmp-go.dirty { background: #2b6df3; color: #fff; }
 .cmp-save { height: 42px; min-width: 96px; padding: 0 18px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #9ca3af; font: inherit; font-size: 14px; font-weight: 700; cursor: default; }   /* 저장하기 — 조회 결과가 다 오면 초록으로 */
