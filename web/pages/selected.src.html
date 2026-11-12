@@ -7980,7 +7980,7 @@ span.cal-day.has { cursor: help; }
   const SXM_SAVED_KEY = 'ta.web.sale.mapSaved';
   let sxSaved = (() => { try { return JSON.parse(localStorage.getItem(SXM_SAVED_KEY) || 'null'); } catch (e) { return null; } })();
   let sxUndo = null; let sxUndoTimer = 0;
-  const sxSnapNow = () => ({ radius: SXM.radius, elev: SXM.elev, floor: SXM.floor, basis: SXM.basis, sim: SXM.sim, rc: { ...SXM.rc }, period: (saleApplied && saleApplied.period) || saleSeg.period });
+  const sxSnapNow = () => ({ radius: SXM.radius, elev: SXM.elev, floor: SXM.floor, basis: SXM.basis, sim: SXM.sim, rc: { ...SXM.rc }, period: (saleApplied && saleApplied.period) || saleSeg.period, drop: [...sxDrop].sort() });
   const sxSnapRestore = (o) => {
     Object.assign(SXM, { radius: o.radius, elev: o.elev, floor: o.floor, basis: o.basis, sim: o.sim, rc: { ...o.rc } }); sxSaveM();
     saleSeg.period = o.period; saleSave(); if (saleApplied) saleApply({ ...saleApplied, period: o.period });
@@ -8001,9 +8001,31 @@ span.cal-day.has { cursor: help; }
     agPaintTable();
     sxUndoTimer = setTimeout(() => { sxUndo = null; const b = document.querySelector('.sx-reset.undo'); if (b) { b.classList.remove('undo'); b.setAttribute('aria-label', '초기화'); b.textContent = '초기화'; } }, 5000);
   }
+  /* 손품조사 › 매각분석 조건은 물건마다 따로 — 물건 문서(saleFilter)에 저장하고, 물건을 열 때 그 값으로(2026-11-12 사용자 '물건마다 당연히 따로').
+     저장한 게 없으면 기본값(반경 100m · 매각기간 3개월 · 직접범위 · 유사도 80% · 엘베 있음 · 층 같은층, 아파트는 엘베 · 층 전체). 시장분석 경매사례는 예전처럼 사용자 하나 */
+  function sxLoadItemFilter(it) {
+    const f = (detailOf(it) || {}).saleFilter; const apt = /아파트/.test(String(it.type || ''));
+    if (f && f.snap) {
+      const o = f.snap;
+      Object.assign(SXM, { radius: Number(o.radius) || 100, elev: o.elev || '', floor: o.floor || '', basis: o.basis === 'sim' ? 'sim' : 'range', sim: Number(o.sim) || 80, rc: { ...(o.rc || {}) } });
+      if (o.period) saleSeg.period = o.period;
+      sxDrop.clear(); (Array.isArray(o.drop) ? o.drop : []).forEach((k) => sxDrop.add(k));
+      sxSaved = { snap: o, at: Number(f.at) || 0 };
+    } else {
+      Object.assign(SXM, { radius: 100, elev: apt ? '' : 'yes', floor: apt ? '' : '0', basis: 'range', sim: 80 });
+      saleSeg.period = '3개월'; sxDrop.clear(); sxSaved = null;
+      sxRcFromSim();   /* 직접범위 칸은 유사도 80% 범위에서 시작 */
+    }
+    sxDropVer += 1; SXM.kindOf = apt ? 'apt' : 'etc'; sxSaveM(); saleSave();
+  }
   function sxMapSave() {
     sxSaved = { snap: sxSnapNow(), at: Date.now() };
     try { localStorage.setItem(SXM_SAVED_KEY, JSON.stringify(sxSaved)); } catch (e) { /* 그만 */ }
+    /* 손품조사 — 그 물건 문서에 */
+    if (S.route === 'item') {
+      const id = saleItemId || S.itemId; const a = CLOUD.raw.get(id); const st = CLOUD.store;
+      if (a && st) Promise.resolve(st.saveAuction({ ...a, saleFilter: { snap: sxSaved.snap, at: sxSaved.at } }, { where: '손품조사 › 매각분석', note: '매각분석 조건 저장' })).catch((err) => toast(userMsg(err, '매각분석 조건을 저장하지 못했습니다. 다시 눌러 주세요.'), 'info'));
+    }
     const el = document.querySelector('.sx-acts'); if (el) el.outerHTML = sxActsHtml();
     /* 필터 부품의 저장 단추도 '저장됨'으로 — 옛 단추만 고치고 부품엔 알리지 않아 눌러도 그대로 '저장하기'였다(2026-11-12 사용자 '저장이 안 된다') */
     if (SXF.app) SXF.app.set(sxFiltProps());
@@ -8537,6 +8559,7 @@ span.cal-day.has { cursor: help; }
     sonSaleFor = it.id; sonSaleFail = false;
     saleItemId = it.id; try { localStorage.setItem(SALE_ITEM_KEY, it.id); } catch (e) { /* 그만 */ }
     if (it.apr > 0) SX.my = Number(it.apr).toLocaleString('ko-KR');
+    sxLoadItemFilter(it);   /* 이 물건에 저장한 조건으로(없으면 기본값) — 물건마다 따로 */
     saleRegionOf(it, (r) => {
       if (sonSaleFor !== it.id) return;
       if (!r) { sonSaleFail = true; paintSonSale(); return; }   /* 못 찾으면 검색 띠를 보여 고르게 */

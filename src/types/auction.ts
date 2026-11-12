@@ -632,6 +632,8 @@ export interface AuctionDetail {
   /** 매매수요 입지비교 저장본 — 필터로 뽑은 그때의 리스트(실거래 · 좌표 · 시설 거리)를 통째로. 다시 열면 새로 계산하지 않고 이 값으로 그린다.
    *  필터를 바꾸면 새로 계산해 자동으로 다시 저장한다(2026-11-12 사용자 — 사용자가 뽑은 리스트는 바뀌면 안 된다) */
   demandSnap?: DemandSnap;
+  /** 웹 손품조사 › 매각분석 저장 조건(반경 · 엘베 · 층 · 기준 · 유사도 · 직접범위 · 매각기간 · 제외 체크) — 물건마다 따로(2026-11-12 사용자) */
+  saleFilter?: { snap: Record<string, unknown>; at: number };
   /** @deprecated 자유입력 방식이던 시절의 필드 — 남은 데이터 보존용 */
   realUserArea?: string;
   realUserRooms?: string;
