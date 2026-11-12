@@ -30,6 +30,37 @@ export const WALK_DETOUR = 1.5;
 export const walkMinOf = (m: number) => (m * WALK_DETOUR) / WALK_M_PER_MIN;
 export const rankFromMeters = (m: number) => { const min = walkMinOf(m); return min <= 5 ? 1 : min <= 10 ? 2 : 3; };
 
+/** ===== 입지점수 비율 — 절대 기준(2026-11-12 사용자 확정, 바꾸지 않는다) =====
+ *  점수 = 거리 점수 × 비율. 역은 노선, 학원가는 학원 수로 같은 거리라도 값이 다르다 */
+/** 역 노선 — 서울 직결 급행 · 광역 100% · 서울 지하철 · 서울 직결 전철 90% · 지역 지하철 60% · 경전철 50%. 환승역은 노선마다 따로 오고 그중 높은 쪽을 쓴다 */
+export const stationLineRatio = (text: string): number => {
+  const t = String(text ?? '').replace(/\s+/g, '');
+  if (/인천(지하철)?2호선|우이신설|신림선|김포골드|의정부경전철|에버라인|경전철/.test(t)) return 0.5;
+  if (/GTX|공항철도|신분당선|KTX|SRT/i.test(t)) return 1;
+  if (/인천(지하철)?1호선|부산|대구|광주|대전|도시철도/.test(t)) return 0.6;
+  if (/[1-9]호선|경의중앙|수인분당|분당선|경춘선|서해선|경강선/.test(t)) return 0.9;
+  return 0.6;
+};
+/** 버스정류장 — 역보다 낮게(경전철 아래) */
+export const BUS_RATIO = 0.4;
+/** 학원가 학원 수 — 10곳 미만 학원가 아님 · 10~20 40% · 21~50 60% · 51~100 80% · 101~200 90% · 200 넘음 100% */
+export const academyRatio = (n: number) => (n < 10 ? 0 : n <= 20 ? 0.4 : n <= 50 ? 0.6 : n <= 100 ? 0.8 : n <= 200 ? 0.9 : 1);
+/** '학원가 · 학원 123곳' → 123 */
+export const academyCountOf = (name: string) => Number((String(name ?? '').match(/학원\s*([\d,]+)곳/)?.[1] ?? '0').replace(/,/g, ''));
+/** 시설 하나의 비율 — 역 · 버스 · 학원가만, 나머지는 1 */
+export const placeRatio = (p: { src?: string; name: string; category?: string }) => (p.src === 'subway' ? stationLineRatio(`${p.name} ${p.category ?? ''}`)
+  : p.src === 'busStop' ? BUS_RATIO : p.src === 'academyCluster' ? academyRatio(academyCountOf(p.name)) : 1);
+/** 그 조건에서 점수가 가장 높은 한 곳 — 거리 점수 × 비율(같으면 가까운 곳). 가까운 경전철역보다 조금 먼 공항철도역이 높을 수 있다 */
+export const bestPlaceOf = (env: NearbyEnvironment | null | undefined, cond: string, score: (m: number) => number): (NearbyPlace & { src: keyof NearbyEnvironment; ratio: number }) | null => {
+  const keys = LOCATION_SOURCES[cond];
+  if (!env || !keys) return null;
+  const all = keys.flatMap((k) => (env[k] ?? []).map((p) => ({ ...p, src: k, ratio: placeRatio({ ...p, src: k }) }))).filter((p) => Number(p.distanceMeters) > 0);
+  if (!all.length) return null;
+  return all.reduce((a, b) => { const sa = score(a.distanceMeters) * a.ratio; const sb = score(b.distanceMeters) * b.ratio; return sb > sa || (sb === sa && b.distanceMeters < a.distanceMeters) ? b : a; });
+};
+/** 비율 이름 — 팝업 '× 90%' 옆 글 */
+export const placeRatioLabel = (src?: string) => (src === 'subway' ? '노선' : src === 'busStop' ? '버스' : src === 'academyCluster' ? '학원 수' : '');
+
 /** 그 조건에서 가장 가까운 한 곳 — 없으면 null(1km 안에 없음). src 는 어느 시설 묶음에서 왔는지(지도 그림 · 색) */
 export const nearestPlaceOf = (env: NearbyEnvironment | null | undefined, cond: string): (NearbyPlace & { src: keyof NearbyEnvironment }) | null => {
   const keys = LOCATION_SOURCES[cond];

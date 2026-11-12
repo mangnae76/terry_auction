@@ -865,7 +865,7 @@ export interface PostWinFlow {
 }
 
 /** 매매수요 입지비교 저장본 한 줄(건물 · 단지) */
-export type DemandSnapPlace = { name: string; m: number; lat: number; lng: number; src: string };
+export type DemandSnapPlace = { name: string; m: number; lat: number; lng: number; src: string; /** 카카오 분류(역 노선) — 예전 저장본엔 없다 */ cat?: string };
 export type DemandSnapDeal = { kind: string; price: number; contractDate: string; areaM2: number; floor: string };
 export type DemandSnapRow = {
   jibun: string; name: string; umdNm: string; area: number; jeonseAvg: number; saleAvg: number; mine: boolean; buildYear: number;

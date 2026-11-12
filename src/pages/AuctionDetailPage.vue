@@ -87,7 +87,7 @@ import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kaka
 import { dongShapeOf, parcelShapeOf } from '../services/zoning';
 import SearchFilterBar, { type SearchFilter } from '../components/SearchFilterBar.vue';
 import { useFilterDraft } from '../composables/useFilterDraft';
-import { complexesOf, complexNearbyOf, complexPointOf, metersBetween, LOCATION_SOURCES, nearestPlaceOf, PLACE_ICON, rankFromMeters, walkMinOf, WALK_DETOUR, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
+import { bestPlaceOf, complexesOf, complexNearbyOf, complexPointOf, metersBetween, LOCATION_SOURCES, nearestPlaceOf, PLACE_ICON, placeRatio, placeRatioLabel, rankFromMeters, walkMinOf, WALK_DETOUR, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
 import KakaoMapTools from '../components/KakaoMapTools.vue';
 import { areaUnit, aptAreaText } from '../services/areaUnit';
 import { createMapView, type MapView } from '../services/mapView';
@@ -5952,7 +5952,8 @@ const indivAutoText = (item: IndivItem) => {
   if (item.id === 'ind.floorNum') return indivFloorText.value;
   return indivDisplay(item);
 };
-type CmpPlace = { cond: string; name: string; m: number; lat?: number; lng?: number; ic: string; color: string };
+/** ratio — 역 노선 · 버스 · 학원가 학원 수 비율(complexCompare placeRatio, 2026-11-12 사용자 절대 기준) */
+type CmpPlace = { cond: string; name: string; m: number; lat?: number; lng?: number; ic: string; color: string; src: string; ratio: number };
 type CmpRow = CompareComplex & { ranks: Array<number | null>; avg: number | null; sum: number; point: { lat: number; lng: number } | null; places: Array<CmpPlace | null>; supply: { lo: number; hi: number } | null; loc: number | null; zone: number | null; tot: number | null };
 const cmpRows = computed<CmpRow[]>(() => {
   const conds = cmpConds.value;
@@ -5960,8 +5961,9 @@ const cmpRows = computed<CmpRow[]>(() => {
     const sr = cmpSnapRows.value.get(cmpKeyOf(c));   // 저장본 줄 — 있으면 시설 · 좌표 · 공급면적을 여기서
     const nb = sr || c.mine ? null : cmpNearby.value[cmpKeyOf(c)];
     const env = sr ? (sr.env ? true : null) : c.mine ? nearbyEnv.value : nb?.env ?? null;
-    const places = conds.map((cond) => { if (sr) { const q = sr.places[cond]; const qi = q ? PLACE_ICON[q.src as keyof typeof PLACE_ICON] : undefined; return q ? { cond, name: q.name, m: q.m, lat: q.lat, lng: q.lng, ic: qi?.ic ?? '📍', color: qi?.color ?? '#6b7280' } : null; }
-      const p = nearestPlaceOf(env as NearbyEnvironment | null, cond); const ic = p ? PLACE_ICON[p.src] : undefined; return p ? { cond, name: p.name, m: p.distanceMeters, lat: p.lat, lng: p.lng, ic: ic?.ic ?? '📍', color: ic?.color ?? '#6b7280' } : null; });
+    const places = conds.map((cond) => { if (sr) { const q = sr.places[cond]; const qi = q ? PLACE_ICON[q.src as keyof typeof PLACE_ICON] : undefined; return q ? { cond, name: q.name, m: q.m, lat: q.lat, lng: q.lng, ic: qi?.ic ?? '📍', color: qi?.color ?? '#6b7280', src: q.src, ratio: placeRatio({ src: q.src, name: q.name, category: q.cat }) } : null; }
+      // 가장 가까운 곳이 아니라 '거리 점수 × 비율'이 가장 높은 곳(역 노선 · 학원가 규모, 2026-11-12 사용자)
+      const p = bestPlaceOf(env as NearbyEnvironment | null, cond, cmpDistScore); const ic = p ? PLACE_ICON[p.src] : undefined; return p ? { cond, name: p.name, m: p.distanceMeters, lat: p.lat, lng: p.lng, ic: ic?.ic ?? '📍', color: ic?.color ?? '#6b7280', src: String(p.src), ratio: p.ratio } : null; });
     // 내 물건도 다른 단지와 같은 자동 등수 — 웹 손품조사엔 등수 손입력이 없다(2026-11-12 사용자, 예전 손입력 값은 DB에서 지움)
     // 주변시설을 받았는데 1km 안에 없으면 3등(위 자동 등수와 같은 규칙)
     const ranks = conds.map((cond, i) => (c.mine && !sr ? (Number(autoRankOf(cond)) || null) : (places[i] ? rankFromMeters(places[i]!.m) : env && cond in LOCATION_SOURCES ? 3 : null)));
@@ -5974,7 +5976,7 @@ const cmpRows = computed<CmpRow[]>(() => {
     // 입지점수 — 조건마다 거리 점수(1km 안에 없으면 0점)를 세대구성 비중으로. 주변시설을 아직 못 받았으면 null
     const lw = conds.map((cond) => cmpLocW(cond));
     const cut = (cond: string) => (c.mine && cond === '초등학교' && schoolCross.value ? SCHOOL_ROAD_CUT : 1);   // 선정물건이 큰길을 건너 초등학교에 가면 절반
-    const loc = env && conds.length ? conds.reduce((a2, cond, i) => a2 + lw[i] * (places[i] ? cmpDistScore(places[i]!.m) * cut(cond) : 0), 0) / lw.reduce((x, y) => x + y, 0) : null;
+    const loc = env && conds.length ? conds.reduce((a2, cond, i) => a2 + lw[i] * (places[i] ? cmpDistScore(places[i]!.m) * places[i]!.ratio * cut(cond) : 0), 0) / lw.reduce((x, y) => x + y, 0) : null;
     const zone = cmpZoneScore(c);
     const tot = loc;   // 순위는 입지점수로만 — 개별성 · 종합점수는 뺐다(단지끼리 같은 잣대가 없어서, 2026-11-11 사용자)
     return { ...c, ranks, avg, sum, point, places, supply, loc, zone, tot };
@@ -6227,7 +6229,7 @@ const cmpSnapBuild = (): DemandSnap => {
     const key = cmpKeyOf(c);
     const env = c.mine ? nearbyEnv.value : cmpNearby.value[key]?.env ?? null;
     const row = cmpRows.value.find((r) => cmpKeyOf(r) === key);
-    const places = Object.fromEntries(conds.map((cond) => { const q = env ? nearestPlaceOf(env, cond) : null; return [cond, q ? { name: q.name, m: q.distanceMeters, lat: q.lat, lng: q.lng, src: String(q.src) } : null]; })) as DemandSnapRow['places'];
+    const places = Object.fromEntries(conds.map((cond) => { const q = env ? bestPlaceOf(env, cond, cmpDistScore) : null; return [cond, q ? { name: q.name, m: q.distanceMeters, lat: q.lat, lng: q.lng, src: String(q.src), cat: q.category ?? '' } : null]; })) as DemandSnapRow['places'];
     const basisAll = src.filter((d) => sq(d.jibun) === sq(c.jibun) && sq(d.umdNm) === sq(c.umdNm) && d.contractDate.replace(/\D/g, '') >= cmpFrom.value
       && (cmpKind.value === '전세' ? d.kind === '전세' : ['매매', '직거래'].includes(d.kind)) && d.price > 0).length;
     return {
@@ -6301,7 +6303,7 @@ if (typeof window !== 'undefined') { window.addEventListener('keydown', cmpPopEs
 const cmpLocParts = (r: CmpRow) => cmpConds.value.map((cond, i) => {
   const pl = r.places[i];
   const cutBy = r.mine && cond === '초등학교' && schoolCross.value ? SCHOOL_ROAD_CUT : 1;
-  return { cond, pl, score: pl ? cmpDistScore(pl.m) * cutBy : 0, w: cmpLocW(cond), cut: cutBy < 1 };
+  return { cond, pl, score: pl ? cmpDistScore(pl.m) * pl.ratio * cutBy : 0, w: cmpLocW(cond), cut: cutBy < 1, ratio: pl?.ratio ?? 1, rlab: placeRatioLabel(pl?.src) };
 });
 /** 평가표 아래 '선정물건에서 직접 고를 것' — 아직 비어 있는 현장 · 수동 칸 */
 const cmpTodo = computed(() => {
@@ -9940,7 +9942,7 @@ const goBack = () => router.back();
                               <!-- 초품아 — 선정물건만, 큰길을 건너면 초등학교 거리 점수 절반 -->
                               <span v-if="isApartment && cmpPopRow.mine && x.cond === '초등학교'" class="cmp-hug"><span class="cmp-ind-seg" role="group" aria-label="초등학교 가는 길 큰길"><button v-for="[v, t] in [['O', '큰길안건넘'], ['X', '큰길건넘']]" :key="v" type="button" :data-t="t" :class="{ on: indivValue('ind.schoolHug') === v }" :aria-pressed="indivValue('ind.schoolHug') === v" @click="indivPick(SCHOOL_HUG_ITEM, v)">{{ t }}</button></span></span></td>
                             <td class="n">{{ x.pl ? `${x.pl.m.toLocaleString('ko-KR')}m · ${Math.max(1, Math.round(walkMinOf(x.pl.m)))}분` : '-' }}</td>
-                            <td class="n"><b>{{ Math.round(x.score) }}</b><small v-if="x.cut" class="cmp-auto">절반</small></td>
+                            <td class="n"><b>{{ Math.round(x.score) }}</b><small v-if="x.cut" class="cmp-auto">절반</small><small v-if="x.ratio < 1" class="cmp-auto">{{ x.rlab }} {{ Math.round(x.ratio * 100) }}%</small></td>
                             <td class="n">{{ x.w }}</td>
                           </tr>
                         </tbody>

@@ -90,6 +90,19 @@ const searchByCategory = async (
   }
 };
 
+/** 그 업종이 반경 안에 모두 몇 곳인지 — 카카오는 목록을 45곳까지만 주지만 total_count 는 전체 수다(학원가 규모, 2026-11-12) */
+const countByCategory = async (lng: number, lat: number, categoryCode: string, radius: number): Promise<number> => {
+  const params = new URLSearchParams({ category_group_code: categoryCode, x: String(lng), y: String(lat), radius: String(radius), size: '1' });
+  try {
+    const res = await fetch(`${KAKAO_BASE}/v2/local/search/category.json?${params.toString()}`, { headers: buildHeaders() });
+    if (!res.ok) return 0;
+    const data = (await res.json()) as { meta?: { total_count?: number } };
+    return Number(data.meta?.total_count ?? 0);
+  } catch {
+    return 0;
+  }
+};
+
 const searchByKeyword = async (
   lng: number,
   lat: number,
@@ -158,6 +171,8 @@ export interface NearbyEnvironment {
  *  이 점에서 가장 가까운 곳 하나. 없으면 빈 배열 */
 export const ACADEMY_CLUSTER_RADIUS = 200;
 export const ACADEMY_CLUSTER_MIN = 10;
+/** 학원가 규모 — 무리 가운데에서 이 반경 안 학원 수(카카오 전체 수). 점수 비율은 complexCompare academyRatio */
+export const ACADEMY_COUNT_RADIUS = 300;
 const meterBetween = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
   const kx = 111320 * Math.cos((a.lat * Math.PI) / 180);
   return Math.hypot((a.lng - b.lng) * kx, (a.lat - b.lat) * 110540);
@@ -229,6 +244,13 @@ export const fetchNearbyEnvironment = async (
     searchByKeyword(lng, lat, '전통시장', radius, 10).then((items) => items.filter((p) => /시장/.test(p.name))),
   ]);
   const allAcademy = dedupe([...academy, ...academy2, ...academy3]);
+  // 학원가 규모 — 받은 45곳으로는 큰 학원가(대치 953곳 등)를 다 못 센다. 가운데에서 300m 안 전체 수로 이름을 바꾼다(2026-11-12 사용자)
+  const academyCluster = academyClusterOf(lat, lng, allAcademy);
+  const c0 = academyCluster[0];
+  if (c0?.lat && c0.lng) {
+    const n = await countByCategory(c0.lng, c0.lat, 'AC5', ACADEMY_COUNT_RADIUS);
+    if (n > 0) academyCluster[0] = { ...c0, name: `학원가 · 학원 ${n.toLocaleString('ko-KR')}곳` };
+  }
   const bigPark = park.filter((p) => /공원$|공원\s|수목원|숲$/.test(p.name) && !/어린이|소공원|쌈지|놀이터|주차장|화장실|입구|정류장/.test(p.name));
   return {
     busStop: dedupe(busStop),
@@ -247,7 +269,7 @@ export const fetchNearbyEnvironment = async (
     commerce: dedupe(commerce),
     bigPark: dedupe(bigPark),
     commercialZone,
-    academyCluster: academyClusterOf(lat, lng, allAcademy),
+    academyCluster,
     market: dedupe(market),
   };
 };
