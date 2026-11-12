@@ -9795,7 +9795,7 @@ const goBack = () => router.back();
               <div class="cmp-bars-row">
               <div class="cmp-bars">
                   <span class="pa-lab cmp-mode">기준<span class="pa-seg pa-out" role="radiogroup" aria-label="유사 조건 방식"><button v-for="[v, t] in ([['sim', '유사도'], ['range', '직접범위']] as const)" :key="v" type="button" role="radio" :class="{ on: cmpModeD === v }" :aria-checked="cmpModeD === v" :data-t="t" @click="cmpModeD = v">{{ t }}</button></span></span>
-                  <span v-if="cmpModeD === 'sim'" class="cmp-sim"><SimRangeBox :sim="cmpSimD" :text="`면적 ${cmpDraft.area[0]}~${cmpDraft.area[1]}㎡ · 건축 ${cmpDraft.year[0]}~${cmpDraft.year[1]}년`" @update="(v) => (cmpSimD = v)" /></span>
+                  <span v-if="cmpModeD === 'sim'" class="cmp-sim" :style="{ '--p': `${((cmpSimD - 60) / 35) * 100}%` }"><SimRangeBox :sim="cmpSimD" :text="`면적 ${cmpDraft.area[0]}~${cmpDraft.area[1]}㎡ · 건축 ${cmpDraft.year[0]}~${cmpDraft.year[1]}년`" @update="(v) => (cmpSimD = v)" /></span>
                   <RangeInputBox v-if="cmpModeD === 'range'" label="면적 ㎡" :min="20" :max="cmpAreaBarMax" :lo="cmpAreaD[0]" :hi="cmpAreaD[1]" :base="supMyArea" :lo-text="String(cmpAreaD[0])" :base-text="String(Number((Math.floor(supMyArea * 100 + 1e-6) / 100).toFixed(2)))" :hi-text="String(cmpAreaD[1])" :sub="cmpPyTx(cmpAreaD[0], cmpAreaD[1])" @update="(lo, hi) => (cmpAreaD = [lo, hi])" />
                   <RangeInputBox v-if="cmpModeD === 'range'" label="건축" :min="CMP_YEAR_MIN" :max="cmpYearMax" :lo="cmpYearD[0]" :hi="cmpYearD[1]" :base="cmpMyYear" :lo-text="String(cmpYearD[0])" :base-text="String(cmpMyYear || '')" :hi-text="String(cmpYearD[1])" :sub="`${cmpYearMax - cmpYearD[1] + 1}~${cmpYearMax - cmpYearD[0] + 1}년차`" @update="(lo, hi) => (cmpYearD = [lo, hi])" />
               </div>
@@ -12630,14 +12630,27 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-conds > .pa-lab > .pa-seg { flex: 1 1 auto; justify-content: space-between; }
 .cmp-conds > .pa-lab > .pa-seg > button { flex: 1 1 auto; padding: 0 8px; }
 @media (max-width: 1180px) { .cmp-conds { flex-wrap: wrap; } }
-.cmp-bars-row { display: flex; align-items: stretch; gap: 8px; margin: -2px 0 12px; }
+.cmp-bars-row { display: flex; align-items: stretch; gap: 8px; margin: -2px 0 12px; }   /* [기준][면적][건축 | 유사도] … [필터초기화][조회하기][저장하기] — 상자 사이 모두 8px */
 .cmp-bars { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
 .cmp-bars > .cmp-mode { display: inline-flex; align-items: center; gap: 10px; height: 42px; box-sizing: border-box; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 4px 12px; font-size: 14px; font-weight: 700; color: #6b7280; white-space: nowrap; }   /* 기준 — 반경 · 기간 상자와 같은 꼴 */
 .cmp-bars > .cmp-mode .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
 .cmp-bars > .cmp-mode .pa-seg button { border: none; background: transparent; border-radius: 5px; height: 26px; padding: 0 12px; font: inherit; font-size: 14px; font-weight: 400; color: #6b7280; cursor: pointer; }
 .cmp-bars > .cmp-mode .pa-seg button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
-.cmp-sim { display: flex; align-items: center; width: 420px; height: 42px; box-sizing: border-box; padding: 2px 14px; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; }   /* 유사도 막대 상자 */
-.cmp-sim > * { flex: 1 1 auto; }   /* 면적 · 건축 — 반경 · 기간과 같은 상자(막대 뺌, 2026-11-12 사용자) */
+.cmp-bars { flex: 1 1 auto; min-width: 0; }   /* 필터초기화 단추까지 같은 8px 간격으로 채운다 */
+.cmp-bars > :is(.rib, .cmp-sim) { flex: 1 1 0; min-width: 0; }
+.cmp-sim { display: flex; align-items: center; height: 42px; box-sizing: border-box; padding: 0 14px; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; overflow: hidden; }   /* 유사도 막대 상자 — 높이는 다른 상자와 같은 42px */
+.cmp-sim > * { flex: 1 1 auto; min-width: 0; }
+/* 상자 안에 다 들어가게 — 글 · 눈금 · 막대 · 동그라미를 작게(2026-11-12 사용자). 시세분석 유사도 막대는 그대로 */
+.cmp-sim :deep(.simA) { gap: 0; }
+.cmp-sim :deep(.simlab) { font-size: 11.5px; line-height: 1.1; gap: 8px; }
+.cmp-sim :deep(.simlab span + span) { font-size: 11px; }
+.cmp-sim :deep(.ticks) { font-size: 9px; transform: none; padding: 0 1px; }
+.cmp-sim :deep(input[type="range"]) { -webkit-appearance: none; appearance: none; height: 12px; margin: 1px 0; background: transparent; }
+.cmp-sim :deep(input[type="range"]::-webkit-slider-runnable-track) { height: 3px; border-radius: 2px; background: linear-gradient(#2b6df3, #2b6df3) 0 / var(--p, 57%) 100% no-repeat, #dde3ee; }
+.cmp-sim :deep(input[type="range"]::-webkit-slider-thumb) { -webkit-appearance: none; width: 11px; height: 11px; margin-top: -4px; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; box-shadow: 0 1px 2px rgba(17, 24, 39, .3); cursor: grab; }
+.cmp-sim :deep(input[type="range"]::-moz-range-track) { height: 3px; border-radius: 2px; background: #dde3ee; }
+.cmp-sim :deep(input[type="range"]::-moz-range-progress) { height: 3px; border-radius: 2px; background: #2b6df3; }
+.cmp-sim :deep(input[type="range"]::-moz-range-thumb) { width: 9px; height: 9px; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; }   /* 면적 · 건축 — 반경 · 기간과 같은 상자(막대 뺌, 2026-11-12 사용자) */
 @media (max-width: 760px) { .cmp-bars-row { flex-wrap: wrap; } }
 .cmp-qbtns { display: flex; align-items: stretch; gap: 8px; margin-left: auto; }
 .cmp-qbtns > button { height: auto; min-width: 110px; }
