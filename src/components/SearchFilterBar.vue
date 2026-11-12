@@ -89,7 +89,8 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
     <!-- 면적 · 건축 막대 — 거르기 줄 밑 한 줄, 두 상자가 위 줄 폭에 맞게 반씩(2026-11-12 사용자) -->
     <!-- 면적 · 건축 상자(적는 칸), 조회하기 · 저장하기는 오른쪽 — 단추는 위 거르기까지 다 같이 쓴다(2026-11-12 사용자) -->
     <div class="cmp-bars-row">
-    <div class="cmp-bars">
+    <!-- 기준 묶음 — 기준 · 유사도(또는 면적 · 건축)를 흰 상자 하나에, 안쪽은 얇은 선으로만 나눈다(2026-11-12 사용자 시안) -->
+    <div class="cmp-bars joined">
         <span v-if="!off('mode')" class="pa-lab cmp-mode">기준<span class="pa-seg pa-out" role="radiogroup" aria-label="유사 조건 방식"><button v-for="[v, t] in ([['sim', '유사도'], ['range', '직접범위']] as const)" :key="v" type="button" role="radio" :class="{ on: modeD === v }" :aria-checked="modeD === v" :data-t="t" @click="modeD = v">{{ t }}</button></span></span>
         <span v-if="modeD === 'sim'" class="cmp-sim" :style="{ '--p': `${((simD - 60) / 35) * 100}%` }"><SimRangeBox :sim="simD" :text="simText" @update="(v) => (simD = v)" /></span>
         <RangeInputBox v-if="modeD === 'range' && !off('area')" label="면적 ㎡" :min="20" :max="areaMax" :lo="areaD[0]" :hi="areaD[1]" :base="baseArea" :lo-text="areaD[0] == null ? '' : String(areaD[0])" :base-text="String(Number((Math.floor(baseArea * 100 + 1e-6) / 100).toFixed(2)))" :hi-text="areaD[1] == null ? '' : String(areaD[1])" :sub="areaD[0] != null && areaD[1] != null ? pyTx(areaD[0], areaD[1]) : ''" allow-blank @update="(lo, hi) => (areaD = [lo, hi])" />
@@ -197,4 +198,18 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-conds .kindF button[data-k="전세"] { background: #fdf3e1; color: #b7791f; }
 .cmp-conds .kindF button.on[data-k="매매"] { background: #2b3a67; color: #fff; }
 .cmp-conds .kindF button.on[data-k="전세"] { background: #b7791f; color: #fff; }
+/* ===== 기준 묶음 한 상자(2026-11-12 사용자) — 바깥 테두리 하나, 안쪽 상자들은 테두리 · 바탕을 빼고 세로선으로만 나눈다. 기준을 바꿔도 상자 크기 그대로 ===== */
+.sfb .cmp-bars.joined { gap: 0; flex-wrap: nowrap; align-items: stretch; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; overflow: hidden; box-sizing: border-box; }
+.sfb .cmp-bars.joined > .cmp-mode, .sfb .cmp-bars.joined > .cmp-sim, .sfb .cmp-bars.joined > :deep(.rib) { border: 0; border-radius: 0; background: transparent; }
+.sfb .cmp-bars.joined > * + * { border-left: 1px solid #e3e8f0 !important; }
+.sfb:not(.compact) .cmp-bars.joined { height: 66px; }
+.sfb:not(.compact) .cmp-bars.joined > .cmp-mode, .sfb:not(.compact) .cmp-bars.joined > .cmp-sim, .sfb:not(.compact) .cmp-bars.joined > :deep(.rib) { height: 64px; }
+.sfb.compact .cmp-bars.joined { flex-direction: column; }
+.sfb.compact .cmp-bars.joined > * + * { border-left: 0 !important; border-top: 1px solid #e3e8f0 !important; }
+:root[data-theme="dark"] .sfb .cmp-bars.joined { background: #182031; border-color: #2a3449; }
+:root[data-theme="dark"] .sfb .cmp-bars.joined > * + * { border-left-color: #2a3449 !important; border-top-color: #2a3449 !important; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .sfb .cmp-bars.joined { background: #182031; border-color: #2a3449; }
+  :root:not([data-theme="light"]) .sfb .cmp-bars.joined > * + * { border-left-color: #2a3449 !important; border-top-color: #2a3449 !important; }
+}
 </style>
