@@ -9853,12 +9853,8 @@ const goBack = () => router.back();
                 <aside v-if="cmpFs" class="cmp-fs-list">
                   <!-- 접기 — 지도를 넓게 보게 목록을 접는다(머리 줄만 남김, 2026-11-11 사용자) -->
                   <div class="cmp-fs-lh"><b>{{ cmpN }} {{ cmpRows.length }}곳<small>{{ cmpN }}를 누르면 아래에 순위 이유가 나옵니다.</small></b><button type="button" class="cmp-fs-fold" :aria-label="cmpFsFold ? '목록 펼치기' : '목록 접기'" :aria-expanded="!cmpFsFold" @click="cmpFsFold = !cmpFsFold"><img :src="chevronDownIcon" :class="['adp-chev', { up: !cmpFsFold }]" alt="" /></button></div>
-                  <!-- 전체화면 거르기 — 왼쪽 창 머리 아래(목록 바로 위, 접어도 남는다). 아래 화면 거르기와 같은 값(2026-11-11 사용자) -->
-                  <div class="cmp-fs-conds">
-                    <div :class="isApartment ? 'row2' : 'row1'"><span class="lab">범위<span class="fseg" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRange === v }" :aria-checked="cmpRange === v" :data-t="t" @click="cmpRange = v">{{ t }}</button></span></span>
-                    <span class="lab">거래<span class="fseg" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" :data-t="`${k} ${cmpKindCount(k)}`" @click="cmpKind = k">{{ k }} {{ cmpKindCount(k) }}</button></span></span></div>
-                    <span class="lab">기간<span class="fseg" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonths === m }" :aria-checked="cmpMonths === m" :data-t="t" @click="cmpMonths = m">{{ t }}</button></span></span>
-                  </div>
+                  <!-- 전체화면 거르기 — 왼쪽 창 머리 아래(목록 바로 위, 접어도 남는다). 밖과 같은 부품(필터 기본 부품 세트)을 좁은 꼴로 — 엘베 · 층 · 기준까지 같은 값(2026-11-12 사용자) -->
+                  <SearchFilterBar v-model:draft="cmpDraft" compact :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :loading="cmpLoading" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" :saved-day="cmpSnapDay" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
                   <template v-if="!cmpFsFold">
                   <!-- 단지 줄을 테두리 상자 하나로 묶고 위에 회색 머리(단지 · 평균 ○○가) — 줄마다 '평균 ○○가'를 적지 않는다(2026-11-11 사용자) -->
                   <div class="cmp-fs-rows">
@@ -12630,7 +12626,6 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 /* 상자 안에 다 들어가게 — 글 · 눈금 · 막대 · 동그라미를 작게(2026-11-12 사용자). 시세분석 유사도 막대는 그대로 */
 .cmp-fixed { margin-left: auto; align-self: center; font-size: 12px; color: #6b7280; }   /* 필터 줄 오른쪽 빈자리 — 위 설명 줄과 같은 꼴(깔때기 + 파란 글, 2026-11-11 사용자) */
 /* 고르면 굵어져도 폭이 그대로 — 굵은 글 폭을 보이지 않게 미리 잡아 둔다(data-t), 단추를 눌러도 줄이 흔들리지 않게(2026-11-11) */
-.cmp-fs-conds .fseg[aria-label="거래 종류"] button { min-width: 76px; }
 /* 시세분석 결론 칸 줄 — SonpumPricePage .zone-h · .pa-tag · .est · .tiles · .tile 값 그대로(2026-11-11) */
 .cmp-persona .pa-seg button { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; }
 .cmp-persona .pa-seg button::after { content: attr(data-t); height: 0; overflow: hidden; visibility: hidden; font-weight: 700; pointer-events: none; }   /* 실사용자 줄 단추 — 굵은 글 폭 예약(검색 거르기 부품에도 같은 규칙) */
@@ -12702,14 +12697,6 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-fs-top b { font-size: 14px; font-weight: 800; color: #fff; }
 .cmp-fs-top b small { margin-left: 8px; font-size: 12px; font-weight: 500; color: rgba(255, 255, 255, .72); }
 .cmp-fs-x { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid rgba(255, 255, 255, .35); border-radius: 8px; background: transparent; font: inherit; font-size: 14px; color: #fff; cursor: pointer; }
-.cmp-fs-conds { display: grid; gap: 6px; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 9px; background: #f7f9fc; }   /* 왼쪽 창 — 범위 · 거래 · 기간 한 줄씩 */
-.cmp-fs-conds .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }   /* 범위 · 거래 한 줄(2026-11-11 사용자) */
-.cmp-fs-conds .row1 { display: grid; gap: 6px; }   /* 빌라 — 범위 단추가 다섯이라 범위 · 거래를 한 줄씩 */
-.cmp-fs-conds .lab { display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: center; gap: 10px; font-size: 13px; font-weight: 700; color: #6b7280; }   /* 단추 묶음은 오른쪽 끝까지 — 세 줄 끝점이 같다 */
-.cmp-fs-conds .fseg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; padding: 3px; border-radius: 6px; background: #eef1f6; }   /* 줄 안 단추는 같은 폭(읍면동 · 1km · 매매 · 전세 같은 크기, 2026-11-11 사용자) */
-.cmp-fs-conds .fseg button { display: inline-grid; align-content: center; justify-content: center; height: 28px; padding: 0 8px; border: 0 !important; border-radius: 5px; background: transparent !important; font: inherit; font-size: 13px; font-weight: 400; color: #6b7280 !important; cursor: pointer; white-space: nowrap; box-shadow: none !important; }   /* 웹 공통 button 꾸밈을 덮는다 */
-.cmp-fs-conds .fseg button::after { content: attr(data-t); height: 0; overflow: hidden; visibility: hidden; font-weight: 700; }   /* 굵어져도 폭 그대로 */
-.cmp-fs-conds .fseg button.on { background: #fff !important; color: #2b6df3 !important; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3 !important; }
 .cmp-fs-x:hover { background: rgba(255, 255, 255, .1); }
 .cmp-fs-list > * { min-width: 0; }   /* 긴 이름 · 표가 창을 옆으로 밀지 않게 */
 .cmp-fs-list { overflow-x: hidden !important; scrollbar-gutter: stable; grid-column: 1; grid-row: 2; position: relative; z-index: 2; align-self: start; max-height: calc(100% - 24px); margin: 12px 0 12px 12px; overflow-y: auto; padding: 10px 10px 14px; display: grid; gap: 6px; align-content: start; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 6px 20px rgba(17, 24, 39, .14); }

@@ -39,6 +39,8 @@ const props = defineProps<{
   saved: boolean;
   /** 저장한 날 — '저장됨' 밑에 작게(2026-11-12 사용자 '같은 세트') */
   savedDay?: string;
+  /** 좁은 칸(전체화면 왼쪽 창) — 줄마다 한 항목, 엘베 · 층은 한 줄에 둘(2026-11-12 사용자) */
+  compact?: boolean;
   /** 뺄 항목 — '반경만 빼' 같은 요청 */
   hide?: SearchFilterKey[];
 }>();
@@ -69,7 +71,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 </script>
 
 <template>
-  <div class="sfb">
+  <div :class="['sfb', { compact }]">
     <!-- 거르기 — 제목 · 검색기준 줄 바로 밑(2026-11-12 사용자). 단추는 고르기만, 조회하기를 눌러야 리스트 · 지도 · 칸 줄이 바뀌고 저장된다. (예전: 지도 밑 · 표 바로 위, 2026-11-11) 시세분석 조건 줄과 같은 단추 · 순서(범위 → 거래 → 기간 → 평형). 표 · 지도 · 위 칸 줄이 같이 바뀐다 -->
     <div class="cmp-conds">
       <span v-if="!off('range')" class="pa-lab">반경<span class="pa-seg pa-out" role="radiogroup" aria-label="반경"><button v-for="[v, t] in rangeOptions" :key="String(v)" type="button" role="radio" :class="{ on: rangeD === v }" :aria-checked="rangeD === v" :data-t="t" @click="rangeD = v">{{ t }}</button></span></span>
@@ -128,6 +130,17 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-sim :deep(input[type="range"]::-moz-range-progress) { height: 3px; border-radius: 2px; background: #2b6df3; }
 .cmp-sim :deep(input[type="range"]::-moz-range-thumb) { width: 12px; height: 12px; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; }   /* 면적 · 건축 — 반경 · 기간과 같은 상자(막대 뺌, 2026-11-12 사용자) */
 @media (max-width: 760px) { .cmp-bars-row { flex-wrap: wrap; } }
+/* 좁은 칸 — 전체화면 왼쪽 창(폭 ~400px). 반경 · 거래 · 기간 · 기준 · 유사도(면적 · 건축)는 한 줄씩, 엘베 · 층은 반씩, 단추 둘은 맨 아래 반씩 */
+.sfb.compact { margin: 0; padding: 8px 10px; }
+.sfb.compact > .cmp-conds { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 6px; }
+.sfb.compact > .cmp-conds > .pa-lab { grid-column: 1 / -1; height: 38px; box-sizing: border-box; }
+.sfb.compact > .cmp-conds > .pa-lab:has([aria-label="엘베"]), .sfb.compact > .cmp-conds > .pa-lab:has([aria-label="층"]) { grid-column: auto; }
+.sfb.compact > .cmp-bars-row { flex-direction: column; gap: 6px; }
+.sfb.compact .cmp-bars { flex-direction: column; flex-wrap: nowrap; gap: 6px; }
+.sfb.compact .cmp-bars > .cmp-mode { justify-content: space-between; height: 38px; }
+.sfb.compact .cmp-bars > :is(.rib, .cmp-sim) { flex: 0 0 auto; width: 100%; }
+.sfb.compact .cmp-qbtns { margin-left: 0; }
+.sfb.compact .cmp-qbtns > button { flex: 1 1 0; min-width: 0; height: 38px; }
 .cmp-qbtns { display: flex; align-items: stretch; gap: 8px; margin-left: auto; }
 .cmp-qbtns > button { height: auto; min-width: 110px; }
 .cmp-reset { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #4b5563; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
