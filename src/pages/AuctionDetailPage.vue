@@ -12647,10 +12647,10 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-sim :deep(.ticks) { font-size: 9px; transform: none; padding: 0 1px; }
 .cmp-sim :deep(input[type="range"]) { -webkit-appearance: none; appearance: none; height: 12px; margin: 1px 0; background: transparent; }
 .cmp-sim :deep(input[type="range"]::-webkit-slider-runnable-track) { height: 3px; border-radius: 2px; background: linear-gradient(#2b6df3, #2b6df3) 0 / var(--p, 57%) 100% no-repeat, #dde3ee; }
-.cmp-sim :deep(input[type="range"]::-webkit-slider-thumb) { -webkit-appearance: none; width: 11px; height: 11px; margin-top: -4px; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; box-shadow: 0 1px 2px rgba(17, 24, 39, .3); cursor: grab; }
+.cmp-sim :deep(input[type="range"]::-webkit-slider-thumb) { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5.5px; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; box-shadow: 0 1px 2px rgba(17, 24, 39, .3); cursor: grab; }
 .cmp-sim :deep(input[type="range"]::-moz-range-track) { height: 3px; border-radius: 2px; background: #dde3ee; }
 .cmp-sim :deep(input[type="range"]::-moz-range-progress) { height: 3px; border-radius: 2px; background: #2b6df3; }
-.cmp-sim :deep(input[type="range"]::-moz-range-thumb) { width: 9px; height: 9px; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; }   /* 면적 · 건축 — 반경 · 기간과 같은 상자(막대 뺌, 2026-11-12 사용자) */
+.cmp-sim :deep(input[type="range"]::-moz-range-thumb) { width: 12px; height: 12px; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; }   /* 면적 · 건축 — 반경 · 기간과 같은 상자(막대 뺌, 2026-11-12 사용자) */
 @media (max-width: 760px) { .cmp-bars-row { flex-wrap: wrap; } }
 .cmp-qbtns { display: flex; align-items: stretch; gap: 8px; margin-left: auto; }
 .cmp-qbtns > button { height: auto; min-width: 110px; }
