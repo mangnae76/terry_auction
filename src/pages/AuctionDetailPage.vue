@@ -6276,6 +6276,27 @@ const cmpHold = computed(() => cmpLoading.value && !cmpGiveUp.value);
 // 받는 동안엔 바로 전에 보여 준 리스트 · 말풍선을 그대로 둔다(지웠다 다시 그리지 않는다, 2026-11-12 사용자 '굳이 왜 지워야 되냐'). 처음이라 보여 준 게 없으면 선정물건만
 let cmpShown: CmpRow[] = [];
 watch(() => auction.value?.id, () => { cmpShown = []; });
+/** 리스트가 바뀔 때 보던 자리 지키기 — 필터 위치를 바뀌기 전에 재고(pre), 그린 뒤 밀렸으면(페이지가 짧아져 끌어올려진 것) 그만큼 아래를 받쳐 되돌린다 */
+const cmpBarRef = ref<{ $el?: HTMLElement } | null>(null);
+const cmpSpacerEl = ref<HTMLElement | null>(null);
+const cmpSpacer = ref(0);
+let cmpBarY0: number | null = null;
+const cmpBarTop = () => { const el = cmpBarRef.value?.$el; return el && el.isConnected && el.getBoundingClientRect ? el.getBoundingClientRect().top : null; };
+watch(() => cmpViewRows.value.map((r) => cmpKeyOf(r)).join(','), () => { cmpBarY0 = cmpBarTop(); }, { flush: 'pre' });
+watch(() => cmpViewRows.value.map((r) => cmpKeyOf(r)).join(','), () => {
+  const y0 = cmpBarY0; cmpBarY0 = null; if (y0 == null) return;
+  // 브라우저가 화면을 옮기는 건 그린 다음 틀(frame)이라 그때 잰다 — 밀린 만큼 아래를 받치고 되돌린다
+  requestAnimationFrame(async () => {
+    const y1 = cmpBarTop(); if (y1 == null) return;
+    const dy = Math.round(y1 - y0);
+    if (Math.abs(dy) <= 1) return;
+    if (dy > 0) { cmpSpacer.value += dy; await nextTick(); }
+    window.scrollBy(0, dy);
+  });
+}, { flush: 'post' });
+const onCmpScroll = () => { const el = cmpSpacerEl.value; if (cmpSpacer.value && el && el.getBoundingClientRect().top > window.innerHeight) cmpSpacer.value = 0; };   // 받침이 화면 밖이면 걷어도 화면이 안 움직인다
+if (typeof window !== 'undefined') { window.addEventListener('scroll', onCmpScroll, { passive: true }); onBeforeUnmount(() => window.removeEventListener('scroll', onCmpScroll)); }
+watch(() => auction.value?.id, () => { cmpSpacer.value = 0; });
 const cmpViewRows = computed(() => {
   if (!cmpHold.value) { cmpShown = cmpRows.value; return cmpRows.value; }
   return cmpShown.length ? cmpShown : cmpRows.value.filter((r) => r.mine);
@@ -9976,7 +9997,7 @@ const goBack = () => router.back();
               </div>
               <p v-if="!cmpConds.length" class="cmp-noroom">매매수요 조사 맨 위에서 <b>룸수</b>를 고르면 세대구성에 맞는 입지조건과 {{ cmpN }}별 입지등수가 나옵니다.</p>
               <!-- 검색 거르기 — 지도와 빌라 · 단지 리스트 사이(2026-11-12 사용자). 부품 하나(components/SearchFilterBar, '필터 기본 부품 세트' 2026-11-12). 다른 화면은 이 부품을 그대로 끼우고 hide 로 뺄 항목만 끈다 -->
-              <SearchFilterBar v-model:draft="cmpDraft" :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :loading="cmpLoading" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" :saved-day="cmpSnapDay" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
+              <SearchFilterBar ref="cmpBarRef" v-model:draft="cmpDraft" :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :loading="cmpLoading" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" :saved-day="cmpSnapDay" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
               <div class="son-demand sup-tbl">
                 <div class="adm-table-wrap">
                   <table class="adm-table cmp-tbl">
@@ -10009,6 +10030,8 @@ const goBack = () => router.back();
                   </table>
                 </div>
               </div>
+              <!-- 밑 받침 — 필터를 보다가 리스트가 줄면 페이지가 짧아져 브라우저가 화면을 끌어올렸다. 줄어든 만큼 잠깐 받쳐 두고, 화면 밖으로 나가면 걷는다(2026-11-12 사용자) -->
+              <div v-if="cmpSpacer" class="cmp-spacer" :style="{ height: `${cmpSpacer}px` }" aria-hidden="true" ref="cmpSpacerEl" />
               <!-- 선정물건에서 직접 고를 것 — 비어 있는 현장 · 수동 칸만. 누르면 그 점수 팝업(2026-11-11 시안) -->
               <div v-if="cmpTodo.length" class="cmp-todo"><b>선정물건에서 직접 고를 것 {{ cmpTodo.length }}개</b><span>{{ cmpTodo.map((t) => t.label).join(' · ') }}</span>
                 <button v-if="cmpTodo.some((t) => t.kind === 'zone')" type="button" @click="cmpPopOpen('zone', cmpMineRow, $event)">개별성에서고르기</button>
@@ -12850,6 +12873,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-kind.m { background: #eef7f1; color: #22a55a; }
 /* 입지 창 — 비율(노선 · 학원 수)은 시설 이름 밑 작은 줄(점수 칸을 넘지 않게, 2026-11-12 사용자) */
 .cmp-base-f { display: block; margin-top: 2px; color: #2b6df3 !important; }   /* 호실 예상가 기준가 공식 줄 — 파랑(2026-11-12 사용자) */
+.cmp-est > .son-demand.sup-tbl, .o-est .son-demand.sup-tbl { overflow-anchor: none; }   /* 리스트 줄이 바뀌어도 브라우저가 스크롤을 옮기지 않게(스크롤 고정점 끔) */
 .cmp-place .cmp-ratio { display: block; margin-top: 1px; font-size: 12px; font-weight: 400; color: #6b7280; }
 .cmp-tbl th[aria-sort], .cmp-tbl th:has(> .sdir) { cursor: pointer; white-space: nowrap; }
 .cmp-tbl .sdir { margin-left: 3px; font-style: normal; font-size: 10px; color: #c3c9d4; }   /* 정렬 삼각형 — 시세분석 표와 같은 꼴 */

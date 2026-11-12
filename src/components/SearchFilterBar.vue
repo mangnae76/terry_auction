@@ -51,7 +51,15 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:draft': [v: SearchFilter]; apply: []; reset: []; save: [] }>();
 const off = (k: SearchFilterKey) => !!props.hide?.includes(k);
 // 고르면 바로 적용 — 받아 둔 실거래 1년치에서 거르기만 해서 조회하기가 필요 없다(전체화면과 같게, 2026-11-12 사용자)
-const set = (patch: Partial<SearchFilter>) => { emit('update:draft', { ...props.draft, ...patch }); emit('apply'); };
+// 보던 자리 지키기 — 필터를 바꾸면 위쪽 칸(예상가 · 지표 등) 높이가 바뀌어 화면이 밀렸다. 바꾸기 전 이 필터의 화면 위치를 재 두고, 다시 그려진 뒤 그만큼 스크롤을 되돌린다(2026-11-12 사용자)
+const rootEl = ref<HTMLElement | null>(null);
+const keepPlace = () => {
+  const el = rootEl.value; if (!el || typeof window === 'undefined') return;
+  const y0 = el.getBoundingClientRect().top;
+  const fix = () => { if (!el.isConnected) return; const dy = el.getBoundingClientRect().top - y0; if (Math.abs(dy) > 1) window.scrollBy(0, dy); };
+  requestAnimationFrame(() => { fix(); requestAnimationFrame(fix); });
+};
+const set = (patch: Partial<SearchFilter>) => { keepPlace(); emit('update:draft', { ...props.draft, ...patch }); emit('apply'); };
 // 유사도 막대는 끄는 동안 값이 계속 바뀐다 — 막대 · 글은 이 부품 안에서만 바로 따라가고(simLive), 화면에 알리기(값 바꾸기 · 다시 계산)는 손을 멈춘 뒤 한 번.
 // 예전엔 단계마다 화면 값을 바꿔 표 · 지도를 매번 다시 그려 막대가 무거웠다(2026-11-12 사용자 '슬라이드 바가 너무 무거워')
 const simLive = ref<number | null>(null);
@@ -82,7 +90,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 </script>
 
 <template>
-  <div :class="['sfb', { compact }]">
+  <div ref="rootEl" :class="['sfb', { compact }]">
     <!-- 거르기 — 제목 · 검색기준 줄 바로 밑(2026-11-12 사용자). 단추는 고르기만, 조회하기를 눌러야 리스트 · 지도 · 칸 줄이 바뀌고 저장된다. (예전: 지도 밑 · 표 바로 위, 2026-11-11) 시세분석 조건 줄과 같은 단추 · 순서(범위 → 거래 → 기간 → 평형). 표 · 지도 · 위 칸 줄이 같이 바뀐다 -->
     <div class="cmp-conds">
       <span v-if="!off('range')" class="pa-lab">반경<span class="pa-seg pa-out" role="radiogroup" aria-label="반경"><button v-for="[v, t] in rangeOptions" :key="String(v)" type="button" role="radio" :class="{ on: rangeD === v }" :aria-checked="rangeD === v" :data-t="t" @click="rangeD = v">{{ t }}</button></span></span>
@@ -102,7 +110,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
         <RangeInputBox v-if="modeD === 'range' && !off('year')" label="건축" :min="yearMin" :max="yearMax" :lo="yearD[0]" :hi="yearD[1]" :base="baseYear" :lo-text="yearD[0] == null ? '' : String(yearD[0])" :base-text="String(baseYear || '')" :hi-text="yearD[1] == null ? '' : String(yearD[1])" :sub="yearD[0] != null && yearD[1] != null ? `${yearMax - yearD[1] + 1}~${yearMax - yearD[0] + 1}년차` : ''" allow-blank @update="(lo, hi) => (yearD = [lo, hi])" />
     </div>
     <span class="cmp-qbtns">
-        <button type="button" class="cmp-reset" :disabled="isDefault" title="필터를 기본값으로" @click="emit('reset'); emit('apply')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button>
+        <button type="button" class="cmp-reset" :disabled="isDefault" title="필터를 기본값으로" @click="keepPlace(); emit('reset'); emit('apply')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button>
         <button v-if="!off('save')" type="button" :class="['cmp-save', { ready: canSave && !saved }]" :disabled="!canSave || saving || saved" :title="saved ? '저장된 리스트입니다' : canSave ? '지금 리스트를 저장합니다' : '건물 정보를 다 받으면 저장할 수 있습니다'" @click="emit('save')"><template v-if="saved">저장됨<small v-if="savedDay" class="cmp-save-day">{{ savedDay }}</small></template><template v-else>저장하기</template></button>
       </span>
     </div>

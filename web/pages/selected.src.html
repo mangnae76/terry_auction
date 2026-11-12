@@ -1552,7 +1552,7 @@ html.mk-map-lock :is(.foot, .foot-note) { display: none; }
    화면 폭과 상관없이 늘 고정한다. 좁은 화면에선 머리띠가 두 줄이 되므로 --gnb-h 는 syncStickTop() 이 실제 높이로 맞춘다 */
 :root { --gnb-h: 57px; --subtab-h: 43px; --stick-top: env(safe-area-inset-top, 0px); }
 /* 세로 스크롤바 자리는 늘 잡아 둔다 — 랭킹지도처럼 스크롤을 잠그는 화면으로 오갈 때 스크롤바가 생겼다 없어지며 화면 전체가 좌우로 움직였다(2026-11-03) */
-html { scrollbar-gutter: stable; }
+html { scrollbar-gutter: stable; overflow-anchor: none; }   /* 스크롤 고정점 끔 — 필터로 리스트 · 표가 줄면 브라우저가 화면을 끌어올려 보던 자리에서 밀렸다(2026-11-12 사용자). 화면이 직접 자리를 지킨다 */
 html.ta-leaving body { visibility: hidden; }   /* 로그아웃 중 — 대문으로 갈 때까지 화면을 가린다 */
 /* 엣지 — 비밀번호 칸에 브라우저가 붙이는 '보기' 눈 단추를 숨긴다(우리 눈 단추와 둘이 나왔다, 2026-11-07) */
 input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
@@ -8043,20 +8043,7 @@ span.cal-day.has { cursor: help; }
       return `<div class="sx-results" id="sxResults">${saleBandHtml() ? `<section class="sx-card sx-bandcard">${saleBandHtml()}</section>` : ''}<section class="sx-card sx-wait"><b>인근 매각물건 분석</b><span>${S.route === 'item' && !sonSaleFail ? '이 물건 지역의 모은 매각물건을 불러오는 중입니다…' : '위에서 지역 · 종류를 고르고 <b>조회</b>를 누르면(또는 물건카드에서 물건을 고르면) 모은 매각물건으로 예상 입찰가 · 지표 · 매각가율 분포를 보여 줍니다.'}</span></section></div>`;
     }
     const q = saleApplied; const st = sxStats(rows);
-    /* 0건 — 조회는 됐는데 아무것도 안 나오면 눌리지 않은 것처럼 보였다(2026-11-08). 왜 0건인지 적고, 조건을 바꿀 수 있게 지도 칸(검색 띠 · 아래 줄)은 그대로 */
-    if (!st.n) {
-      const re = SALE_KIND_RE[q.kind]; const place = [q.sgg, q.dong].filter(Boolean).join(' ') || q.sido;
-      const all = AG.recs.filter((r) => { const g = agRegParts(r); return regIn(g, q.sido, q.sgg) && (!q.dong || g.dong === q.dong) && (!r['종류'] || !re || re.test(String(r['종류']))); }).length;
-      const inPeriod = (saleRows() || []).length;
-      const me = sxMe();
-      const msg = !all ? `${place} · ${q.kind || '전체'}로 모은 매각물건이 없습니다. 위 데이터수집에서 이 동네를 먼저 모아 주세요.`
-        : !inPeriod ? `${place}에 모은 ${all.toLocaleString('ko-KR')}건이 모두 최근 ${q.period} 밖이거나 매각일이 비어 있습니다.${q.period === SALE_SEG.period[SALE_SEG.period.length - 1] ? '' : ' 매각기간을 늘려 보세요.'}`
-        : me ? `최근 ${q.period} ${inPeriod.toLocaleString('ko-KR')}건이 있지만, 물건카드 물건(${me.caseNo}) 둘레 반경 ${SXM.radius >= 1000 ? `${SXM.radius / 1000}km` : `${SXM.radius}m`} · 직접범위 · 엘베 · 층 조건에 맞는 물건이 없습니다.`
-        : `최근 ${q.period} ${inPeriod.toLocaleString('ko-KR')}건이 있지만, 아래 직접범위 · 엘베 · 층 조건에 맞는 물건이 없습니다.`;
-      /* 0건이어도 PDF '○○동 전체 매각사례 평균'은 그대로 — 유사도를 좁혀 0건이 되면 함께 사라지던 것(2026-11-12 사용자) */
-      const pdf = me && !me.__ref ? `<section class="sx-card sx-pdfcard">${sxPdfNearHtml(me)}</section>` : '';
-      return `<div class="sx-results" id="sxResults"><section class="sx-card sx-wait"><b>${esc(place)} · ${esc(q.kind || '전체')} — 0건</b><span>${esc(msg)}</span></section>${sxMapCardHtml()}${pdf}</div>`;
-    }
+    /* 내비게이터(위 붙박이 상자) — 0건이어도 늘 그린다(조건을 좁혀 0건이 되면 사라지던 것, 2026-11-12 사용자) */
     const conds = [`최근 ${q.period} ${saleSpan(q.period)}`, (sxNum(q.amin) || sxNum(q.amax)) ? `면적 ${q.amin || ''}~${q.amax || ''}㎡` : '', (sxNum(q.ymin) || sxNum(q.ymax)) ? `건축 ${q.ymin || ''}~${q.ymax || ''}년` : '', `${st.n.toLocaleString('ko-KR')}건 기준`].filter(Boolean).join(' · ');
     /* 경매물건을 고르면(손품조사 › 경매사례는 늘) 그 물건 동까지 적고, 실제 거르는 범위인 반경도 함께 — '서해구 검암동 · 반경 500m'(2026-11-07) */
     const me = sxMe(); const meDong = me ? (String(me.addr || '').split(/\s+/).find((t) => /^[가-힣0-9]+(동|읍|면|가)$/.test(t)) || '') : '';
@@ -8067,6 +8054,18 @@ span.cal-day.has { cursor: help; }
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 평균 매각가율</span>${sxBidHtml('A', st.avg)}</div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 중앙값 매각가율</span>${sxBidHtml('B', st.med)}</div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 평균 매각평당가</span>${sxPyBidHtml(st.py)}</div></section>`;
+    /* 0건 — 조회는 됐는데 아무것도 안 나오면 눌리지 않은 것처럼 보였다(2026-11-08). 왜 0건인지 적고, 조건을 바꿀 수 있게 지도 칸(검색 띠 · 아래 줄)은 그대로 */
+    if (!st.n) {
+      const re = SALE_KIND_RE[q.kind]; const place = [q.sgg, q.dong].filter(Boolean).join(' ') || q.sido;
+      const all = AG.recs.filter((r) => { const g = agRegParts(r); return regIn(g, q.sido, q.sgg) && (!q.dong || g.dong === q.dong) && (!r['종류'] || !re || re.test(String(r['종류']))); }).length;
+      const inPeriod = (saleRows() || []).length;
+      const msg = !all ? `${place} · ${q.kind || '전체'}로 모은 매각물건이 없습니다. 위 데이터수집에서 이 동네를 먼저 모아 주세요.`
+        : !inPeriod ? `${place}에 모은 ${all.toLocaleString('ko-KR')}건이 모두 최근 ${q.period} 밖이거나 매각일이 비어 있습니다.${q.period === SALE_SEG.period[SALE_SEG.period.length - 1] ? '' : ' 매각기간을 늘려 보세요.'}`
+        : me ? `최근 ${q.period} ${inPeriod.toLocaleString('ko-KR')}건이 있지만, 물건카드 물건(${me.caseNo}) 둘레 반경 ${SXM.radius >= 1000 ? `${SXM.radius / 1000}km` : `${SXM.radius}m`} · 직접범위 · 엘베 · 층 조건에 맞는 물건이 없습니다.`
+        : `최근 ${q.period} ${inPeriod.toLocaleString('ko-KR')}건이 있지만, 아래 직접범위 · 엘베 · 층 조건에 맞는 물건이 없습니다.`;
+      /* 0건이어도 '근거 · 인근 유사 매각사례' 상자는 그대로 — 제목 · 0건 · 표 머리와 '조건에 맞는 매각물건이 없습니다' 한 줄, 그 아래 PDF '○○동 전체 매각사례 평균'(2026-11-12 사용자) */
+      return `<div class="sx-results" id="sxResults">${hero}<section class="sx-card sx-wait"><b>${esc(place)} · ${esc(q.kind || '전체')} — 0건</b><span>${esc(msg)}</span></section>${sxMapCardHtml()}<section class="sx-card sx-list" aria-label="인근 유사 매각사례">${sxListHtml(rows)}</section></div>`;
+    }
     /* 지표 배치(2026-11-06) — 위 줄은 건수 · 금액, 아래 줄은 매각가율. 세로로 짝을 맞춘다:
        감정가 ↔ 전체 매각가율(총 매각가 ÷ 총 감정가) · 평균 매각가 ↔ 평균 매각가율 · 중앙값 매각가 ↔ 중앙값 매각가율, 양 끝은 최저 · 최고 매각가율 */
     const metrics = [['매각건수', `${st.n.toLocaleString('ko-KR')}건`], ['평균 감정가', sxWon(st.appr)], ['평균 매각가', sxWon(st.sold)], ['중앙값 매각가', sxWon(st.soldMed)], ['평균 응찰자수', st.bids != null ? `${st.bids.toFixed(1)}명` : '-'],
