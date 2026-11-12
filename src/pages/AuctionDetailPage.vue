@@ -35,7 +35,7 @@ import { complexNameOf, totalParkingOf } from '../services/aptComplex';
 import { getComplexAreas, supplyRowsOf, areaUnitsOf, sameExclusiveCountOf, type ComplexAreas } from '../services/complexAreas';
 import { COMPLEX_BURDEN_LINE, DEMAND_PLAIN, dec1, demandFitText, demandGradeOf, demandOpinionOf, demandPassText, demandTip, type DemandMetric } from '../services/demandGrade';
 import { openNaverComplexListing, openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
-import { computed, inject, markRaw, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch, type Ref } from 'vue';
+import { computed, inject, markRaw, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
@@ -6407,7 +6407,10 @@ const cmpPerPy = (r: { area: number; saleAvg: number; jeonseAvg: number }, kind 
 const cmpJeonseRate = (r: { saleAvg: number; jeonseAvg: number }) => (r.saleAvg > 0 && r.jeonseAvg > 0 ? (r.jeonseAvg / r.saleAvg) * 100 : 0);
 /** 호실 예상가 기준가 — 시세분석 표에서 고른 거래로 낸 예상가(손품조사 › 시세분석, 2026-11-11 사용자 시안).
  *  매매수요에서 따로 계산하던 기준가(단지 평균 · 전세가율 · 기준층 중간값)는 숫자가 갈려 없앴다 */
-const sonPriceOut = inject<Ref<SonPriceOut | null> | null>('sonPriceOut', null);
+const sonPriceOutUp = inject<Ref<SonPriceOut | null> | null>('sonPriceOut', null);
+/** 앱 — 위에서 건네주는 곳이 없으니 여기서 만들어 아래 시세분석(SonpumPricePage)이 채우게 한다(호실 예상가 기준가) */
+const sonPriceOut = sonPriceOutUp ?? (appPrice ? ref<SonPriceOut | null>(null) : null);
+if (!sonPriceOutUp && sonPriceOut) provide('sonPriceOut', sonPriceOut);
 const unitKind = computed(() => sonPriceOut?.value?.kind ?? cmpKind.value);
 const cmpFloorZero = computed(() => !!sonPriceOut?.value?.sameFloor);   // 시세분석 '같은 층' — 층은 이미 기준가에 담겨 있다
 const cmpBase = computed(() => {
@@ -10036,8 +10039,24 @@ const goBack = () => router.back();
               </Teleport>
             </section>
 
+          </div>
+        </section>
+
+        <!-- 손품분석에서는 여기까지(본건사진 · 수요분석 · 입지/개별성) — 아래 카드들은 손품조사에서만 -->
+        <!-- 실거래가 조사 — 손품분석에서는 이 카드의 네이버 매물조사만 시세조사 탭 아래(#sonNaverSlot)로 옮겨 보인다 -->
+        <Teleport defer to="#sonNaverSlot" :disabled="!sonpumMode">
+        <section class="adp-card">
+          <header v-if="!sonpumMode" class="adp-card-head adp-survey-head" @click="toggleSection('survPrice')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>시세분석</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survPrice') }]" alt="" />
+          </header>
+          <div v-if="sonpumMode || !isCollapsed('survPrice')" :class="['adp-mkt-body', { 'app-price': appPrice || sonApp }]">
+            <!-- 앱 — 웹 시세분석 그대로(기간 조회 · 매도가 예상 · 지도(접힘) · 거르기 · 근거 유사물건) -->
+            <SonpumPricePage v-if="appPrice && auction" :key="auction.id" :auction="auction" :kind="priceKind" app />
+            <div :id="appPrice ? 'appUnitSlot' : undefined" :class="{ 'app-unit': appPrice }">
             <!-- 선정물건 호실 예상가 — 시세분석 탭(#sonUnitSlot)으로 옮겨 그린다(2026-11-11 사용자 시안). 기준가 = 시세분석 예상가, × (1 + 개별성 보정) + 수리 금액 -->
-            <Teleport v-if="webEmbed && sonpumMode" defer to="#sonUnitSlot">
+            <!-- 앱 — 이 자리(시세분석 카드 안 #appUnitSlot)에 그대로 그린다, 웹과 같은 내용 · 같은 계산(2026-11-13 사용자). 웹은 시세분석 탭(#sonUnitSlot)으로 옮긴다 -->
+            <Teleport v-if="(webEmbed && sonpumMode) || appPrice" defer to="#sonUnitSlot" :disabled="appPrice">
             <section class="adp-dm-block boxed cmp-box o-unit">
               <div class="cmp-est-h unit-h"><span class="unit-tag">보정</span><h3>선정물건 호실 예상가<span v-if="cmpMineRow" class="cmp-scope-chip">{{ cmpArea(cmpMineRow.supply, cmpMineRow.area) }}</span></h3><small class="cmp-q">{{ isApartment ? '같은 단지 안에서 내 호실의 가치는?' : '비슷한 빌라들 사이에서 내 호실의 가치는?' }}</small></div>
               <div :class="['cmp-bases', { one: !cmpBase.med }]" role="radiogroup" aria-label="예상가 기준"><button type="button" role="radio" :aria-checked="unitBasePick === 'avg'" :class="['cmp-base', { on: unitBasePick === 'avg' }]" @click="pickUnitBase('avg')"><span class="k">{{ cmpBase.label }}</span><span class="v">{{ cmpEok(cmpBase.value) }}</span><small v-if="cmpBase.note">{{ cmpBase.note }}</small><small v-if="cmpBase.formula" class="cmp-base-f">{{ cmpBase.formula }}</small></button>
@@ -10096,20 +10115,7 @@ const goBack = () => router.back();
               </div>
             </section>
             </Teleport>
-          </div>
-        </section>
-
-        <!-- 손품분석에서는 여기까지(본건사진 · 수요분석 · 입지/개별성) — 아래 카드들은 손품조사에서만 -->
-        <!-- 실거래가 조사 — 손품분석에서는 이 카드의 네이버 매물조사만 시세조사 탭 아래(#sonNaverSlot)로 옮겨 보인다 -->
-        <Teleport defer to="#sonNaverSlot" :disabled="!sonpumMode">
-        <section class="adp-card">
-          <header v-if="!sonpumMode" class="adp-card-head adp-survey-head" @click="toggleSection('survPrice')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>시세분석</h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survPrice') }]" alt="" />
-          </header>
-          <div v-if="sonpumMode || !isCollapsed('survPrice')" :class="['adp-mkt-body', { 'app-price': appPrice || sonApp }]">
-            <!-- 앱 — 웹 시세분석 그대로(기간 조회 · 매도가 예상 · 지도(접힘) · 거르기 · 근거 유사물건) -->
-            <SonpumPricePage v-if="appPrice && auction" :key="auction.id" :auction="auction" :kind="priceKind" app />
+            </div>
             <template v-if="!sonpumMode && !appPrice">
             <div class="adp-dm-head">
               <strong class="adp-dm-title">1. 실거래가 조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('deal', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('deal', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'deal'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용</span></span></strong>
@@ -12882,11 +12888,16 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .o-unit .cmp-two.solo > .cmp-ind-note { grid-column: 1 / -1; }   /* 이 단지 거래가 있으면 단지 내 개별성만 */
 .cmp-zone-off { display: flex; gap: 10px; align-items: baseline; margin-bottom: 12px; padding: 10px 14px; border: 1px dashed #cbd5e1; border-radius: 8px; background: #fafbfc; font-size: 12px; color: #6b7280; }   /* 구역 내 개별성 접힘 — 이 단지 거래만 쓸 때 */
 /* 시세분석 탭에 옮겨 그린 호실 예상가 — 위 시세분석 흰 상자(.pa)와 같은 테두리 · 둥글기 · 여백 · 제목 꼴(2026-11-11 사용자 '박스 라인 맞추고') */
-#sonUnitSlot .o-unit { margin: 10px 0 0 !important; padding: 18px 22px 24px !important; background: #fff !important; border: 1px solid #e8ecf3 !important; border-radius: 12px !important; box-shadow: none !important; display: grid; gap: 14px; }
-#sonUnitSlot .o-unit > * { margin-top: 0 !important; margin-bottom: 0 !important; }
-#sonUnitSlot .unit-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-#sonUnitSlot .unit-h h3 { margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
-#sonUnitSlot .unit-tag { font-size: 13px; font-weight: 700; color: #2b4fd8; background: #eef2ff; border-radius: 5px; padding: 3px 8px; }   /* 시세분석 '결론 · 입력' 표와 같은 꼴 */
+:is(#sonUnitSlot, #appUnitSlot) .o-unit { margin: 10px 0 0 !important; padding: 18px 22px 24px !important; background: #fff !important; border: 1px solid #e8ecf3 !important; border-radius: 12px !important; box-shadow: none !important; display: grid; gap: 14px; }
+:is(#sonUnitSlot, #appUnitSlot) .o-unit > * { margin-top: 0 !important; margin-bottom: 0 !important; }
+:is(#sonUnitSlot, #appUnitSlot) .unit-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+:is(#sonUnitSlot, #appUnitSlot) .unit-h h3 { margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
+:is(#sonUnitSlot, #appUnitSlot) .unit-tag { font-size: 13px; font-weight: 700; color: #2b4fd8; background: #eef2ff; border-radius: 5px; padding: 3px 8px; }   /* 시세분석 '결론 · 입력' 표와 같은 꼴 */
+/* 앱 — 폰 폭: 상자 안쪽 여백 줄이고, 개별성 표는 옆으로 밀어 본다(고르는 단추가 잘리지 않게) */
+#appUnitSlot .o-unit { padding: 14px 12px 16px !important; }
+#appUnitSlot .sup-tbl .adm-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+#appUnitSlot .sup-tbl .adm-table { min-width: 520px; }
+#appUnitSlot .cmp-two { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .cmp-zone-match { display: block; font-size: 12px; color: #9ca3af; }   /* 보정 0 — 시세분석에서 이미 같은 조건으로 걸렀다 */
 .cmp-th-hint { display: block; font-weight: 400; font-size: 12px; color: #2563eb; white-space: normal; }   /* '내용' 아래 줄 — 옆 칸과 겹치지 않게 */   /* 내용 머리 옆 파란 안내(2026-11-11 사용자) */
 .cmp-zone-off.warn { border-color: #f59e0b; background: #fffbeb; color: #92400e; }

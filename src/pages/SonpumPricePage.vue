@@ -938,7 +938,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
     <div class="zone">
       <!-- 앱 — 지도는 한 줄로 접어 두고 누르면 편다 -->
       <!-- 앱 — 근거 유사물건 아래 지도 · 필터는 뺐다. 이름 줄 · 지번 · 거래 수 · 리스트만(2026-11-13 사용자) -->
-      <div v-if="props.app || sonApp" class="map-title static"><span class="pa-tag">근거</span><b>유사물건</b>
+      <div v-if="props.app || sonApp" class="map-title static"><span class="pa-tag">근거</span><b>유사물건</b><span v-if="props.app" class="mt-count pa-num">지번 {{ listPlaces }}곳 · 거래 {{ shownRows.length }}건</span>
         <!-- 앱 — 지도 대신 이 줄 오른쪽 단추로 임장경로에 넣는다. 고르기 창 · 저장 자리는 웹 지도의 '임장경로에 추가'와 같다(2026-11-13 사용자) -->
         <button v-if="props.app && !loose && (addList.length || savedCompare?.items.length)" type="button" :class="['add-btn app', { done: savedCompare?.items.length }]" :aria-expanded="addOpen" @click="toggleAdd">
           <template v-if="savedCompare?.items.length">✓ 임장경로에 {{ savedCompare.items.length }}곳</template><template v-else>＋ 임장경로에 추가</template>
@@ -1070,7 +1070,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         </div>
       </div>
 
-      <div class="list-tools">
+      <!-- 앱 — 지번 · 거래 수는 위 '유사물건' 옆으로 옮겼다(2026-11-13 사용자) -->
+      <div v-if="!props.app" class="list-tools">
         <span v-if="webEmbed" class="lt-count pa-num">지번 {{ listPlaces }}곳 · 거래 {{ shownRows.length }}건</span>
         <!-- 앱 — 공시가 · 전세가율 글은 뺐다(공시가 칸이 없다, 2026-11-13 사용자) -->
         <div v-if="!props.app" class="warn-box" role="note">
@@ -1195,7 +1196,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       </div>
       <!-- 앱 — 제외 · 공시가 칸이 없어 그 설명은 뺀다 -->
       <p v-if="props.app" class="list-foot">※ 맨 위 빨간 줄은 {{ meName }}입니다(비교 기준이라 계산에 넣지 않습니다).<br>※ 위치를 찾은 거래만 나옵니다. 주소 앞 번호는 비교 임장 순서입니다.</p>
-      <p v-else class="list-foot">※ 맨 위 빨간 줄은 {{ meName }}입니다(비교 기준이라 계산에 넣지 않습니다).<br>※ 공시가는 공동주택가격입니다. 매매가율 = 실거래가 ÷ 공시가, 전세 = 공시가 × 126%(보증보험 한도, 지역 · 평형 보정 없음), 갭 = 실거래가 − 전세.<br>※ 위치를 찾은 거래만 나옵니다. 같은 건물 → 임장 순서(지도 번호, 현장에서 가까운 곳부터 도는 동선). <template v-if="webEmbed">제외 칸에 체크한 거래는 실거래가 예상 · 평균 · 건수에서 빠집니다(체크는 물건에 남습니다).</template><template v-else>머리글 ▾로 값을 빼면 그 거래는 표 · 지도 · 실거래가 예상에서 빠집니다(물건에 남습니다).</template></p>
+      <p v-else class="list-foot">※ 맨 위 빨간 줄은 {{ meName }}입니다(비교 기준이라 계산에 넣지 않습니다).<br>※ 공시가는 공동주택가격입니다. 매매가율 = 실거래가 ÷ 공시가, 전세 = 공시가 × 126%(보증보험 한도, 지역 · 평형 보정 없음), 갭 = 실거래가 − 전세.<br>※ 위치를 찾은 거래만 나옵니다. 주소 앞 번호는 비교 임장 순서입니다.<br>※ <template v-if="webEmbed">제외 칸에 체크한 거래는 실거래가 예상 · 평균 · 건수에서 빠집니다(체크는 물건에 남습니다).</template><template v-else>머리글 ▾로 값을 빼면 그 거래는 표 · 지도 · 실거래가 예상에서 빠집니다(물건에 남습니다).</template></p>
     </div>
 
     <ColumnFilterPanel :ctl="colFilter" />
@@ -1715,8 +1716,8 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 .pa-wrap.app .map-title.static { margin: 0; padding: 0; min-height: 25px; }
 .pa-wrap.app .pa > .zone + .zone { margin-top: 4px; padding-top: 16px; border-top: 1px solid var(--line); }
 /* 앱 — 임장경로에 추가 단추(근거 줄 오른쪽) · 아래에서 올라오는 고르기 창(2026-11-13) */
-.pa-wrap.app .map-title.static { display: flex; align-items: center; gap: 8px; }
-.add-btn.app { position: static; margin-left: auto; height: 30px; padding: 0 12px; font-size: 12.5px; }
+.pa-wrap.app .map-title.static { display: flex; align-items: center; gap: 8px; z-index: auto; }   /* 지도 위 층 번호(500)를 지운다 — 그리드 칸이라 그대로 두면 스크롤할 때 위 머리 위로 올라왔다 */
+.add-btn.app { position: static; z-index: auto; margin-left: auto; height: 30px; padding: 0 12px; font-size: 12.5px; }
 .add-msg.app { position: static; margin: 0; max-width: none; font-size: 12px; }
 .add-dim { position: fixed; inset: 0; z-index: 2900; background: rgba(17, 24, 39, .45); }
 .add-pop.app { position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 2901; width: auto; max-height: 75vh; display: flex; flex-direction: column; gap: 10px; padding: 10px 16px calc(16px + env(safe-area-inset-bottom, 0px)); border: 0; border-radius: 18px 18px 0 0; box-shadow: 0 -8px 24px rgba(0, 0, 0, .18); }
@@ -1727,4 +1728,7 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 .add-pop.app .add-items label:last-child { border-bottom: 0; }
 .add-pop.app .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 .add-pop.app .ok { flex: none; height: 44px; font-size: 15px; }
+.pa-wrap.app .map-title.static .mt-count { font-size: 12px; font-weight: 400; color: var(--sub); white-space: nowrap; }
+.pa-wrap.app .map-title.static b { white-space: nowrap; }
+.add-btn.app { white-space: nowrap; padding: 0 10px; }
 </style>
