@@ -941,7 +941,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <div v-if="props.app || sonApp" class="map-title static"><span class="pa-tag">근거</span><b>유사물건</b><span v-if="props.app" class="mt-count pa-num">지번 {{ listPlaces }}곳 · 거래 {{ shownRows.length }}건</span>
         <!-- 앱 — 지도 대신 이 줄 오른쪽 단추로 임장경로에 넣는다. 고르기 창 · 저장 자리는 웹 지도의 '임장경로에 추가'와 같다(2026-11-13 사용자) -->
         <button v-if="props.app && !loose && (addList.length || savedCompare?.items.length)" type="button" :class="['add-btn app', { done: savedCompare?.items.length }]" :aria-expanded="addOpen" @click="toggleAdd">
-          <template v-if="savedCompare?.items.length">✓ 임장경로에 {{ savedCompare.items.length }}곳</template><template v-else>＋ 임장경로에 추가</template>
+          <template v-if="savedCompare?.items.length">✓ 비교 임장경로 {{ savedCompare.items.length }}곳</template><template v-else>＋ 비교 임장경로에 추가</template>
         </button>
       </div>
       <p v-if="props.app && addMsg" class="add-msg app">{{ addMsg }}</p>
@@ -974,7 +974,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <button type="button" class="ok" :disabled="!addPick.length" @click="saveCompare">{{ addPick.length }}곳 넣기</button>
         </div>
         <button v-if="!loose && (addList.length || savedCompare?.items.length)" type="button" :class="['add-btn', { done: savedCompare?.items.length && !addOpen }]" :aria-expanded="addOpen" @click="toggleAdd">
-          <template v-if="savedCompare?.items.length && !addOpen">✓ 임장경로에 {{ savedCompare.items.length }}곳</template><template v-else>＋ 임장경로에 추가</template>
+          <template v-if="savedCompare?.items.length && !addOpen">✓ 비교 임장경로 {{ savedCompare.items.length }}곳</template><template v-else>＋ 비교 임장경로에 추가</template>
         </button>
         <p v-if="addMsg" class="add-msg">{{ addMsg }}</p>
         <div class="legend"><span><i style="background:#e03e3e" />{{ meName }}</span><span><i style="background:#2b4fd8" />유사물건</span></div>
@@ -1731,4 +1731,10 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 .pa-wrap.app .map-title.static .mt-count { font-size: 12px; font-weight: 400; color: var(--sub); white-space: nowrap; }
 .pa-wrap.app .map-title.static b { white-space: nowrap; }
 .add-btn.app { white-space: nowrap; padding: 0 10px; }
+/* 밤 — 상자 · 표 · 필터 선이 낮 색(#e5e7eb)으로 하얗게 떴다(2026-11-13 사용자). 웹 밤 선 색으로 */
+:root[data-theme="dark"] .pa { --line: #2a3449; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pa { --line: #2a3449; } }
+/* 밤 — 선정물건 줄: 낮 연분홍 선(#f3c9c9)이 하얀 줄로 보였다. 매각분석 · 매매수요 내 물건 줄과 같은 색 */
+:root[data-theme="dark"] .pa-list tbody tr.mine { background: rgba(224, 62, 62, .1); box-shadow: inset 0 -2px 0 rgba(224, 62, 62, .35); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pa-list tbody tr.mine { background: rgba(224, 62, 62, .1); box-shadow: inset 0 -2px 0 rgba(224, 62, 62, .35); } }
 </style>

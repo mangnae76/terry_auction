@@ -1665,7 +1665,7 @@ watch(() => authStore.uid, (newUid) => {
     </div>
 
     <div v-if="!settingsCollapsed" class="ftp-settings">
-      <!-- 내비 단추 — 회사 로고 대신 우리 선 아이콘(내비 화살표) + 회사 색 점 하나(2026-11-13 사용자). 이름 글은 그대로 -->
+      <!-- 내비 단추 — 회사 로고 대신 우리 선 아이콘(내비 화살표), 이름 글로 가른다(2026-11-13 사용자) -->
       <div class="ftp-nav-launch-row">
         <button
           type="button"
@@ -2257,12 +2257,7 @@ watch(() => authStore.uid, (newUid) => {
 .ftp-nav-launch-btn.active {
   border-color: #2b6df3; background: #e9f0ff; color: #1f53d6;
 }
-.ftp-nav-ico { position: relative; flex-shrink: 0; display: inline-grid; place-items: center; width: 22px; height: 22px; color: currentColor; --ring: #fff; }
-.ftp-nav-launch-btn.active .ftp-nav-ico { --ring: #e9f0ff; }
-.ftp-nav-ico::after { content: ''; position: absolute; right: -1px; bottom: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 2px var(--ring); }
-.ftp-nav-ico.n { --dot: #03c75a; }   /* 네이버 초록 */
-.ftp-nav-ico.t { --dot: #7b3fe4; }   /* 티맵 보라 */
-.ftp-nav-ico.k { --dot: #f5c800; }   /* 카카오 노랑 — 흰 바탕에서 보이게 조금 진하게 */
+.ftp-nav-ico { flex-shrink: 0; display: inline-grid; place-items: center; width: 22px; height: 22px; color: currentColor; }   /* 회사 색 점은 뺐다(2026-11-13 사용자) */
 .ftp-section-title-main {
   display: inline-flex; align-items: baseline; gap: 6px; min-width: 0;
   flex: 1 1 auto;

@@ -121,7 +121,7 @@ const stName = (c: CompareItem) => (c.check?.vs ? `✓ ${c.check.vs}` : c.check?
           </div>
           <button type="button" class="fcs-x" aria-label="닫기" @click="emit('close')">✕</button>
         </header>
-        <p v-if="!items.length" class="fcs-empty">비교 물건이 없습니다. 손품조사 › 시세분석 지도에서 「임장경로에 추가」로 넣어 주세요.</p>
+        <p v-if="!items.length" class="fcs-empty">비교 물건이 없습니다. 손품조사 › 시세분석에서 「비교 임장경로에 추가」로 넣어 주세요.</p>
         <div class="fcs-list">
           <button v-for="(c, i) in items" :key="c.jibun" type="button" class="fcs-ci" @click="cur = i">
             <span :class="['fcs-n', { 'fcs-ok': c.check?.at }]">{{ c.no }}</span>
