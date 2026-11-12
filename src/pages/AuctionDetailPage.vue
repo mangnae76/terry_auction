@@ -6001,11 +6001,6 @@ const cmpRows = computed<CmpRow[]>(() => {
   });
 });
 /** 줄 · 점 고르기 — 같은 것을 다시 누르면 풀린다(풀리면 칸 줄 · 상세는 선정물건으로, 고른 표시는 없다, 2026-11-11) */
-/** 리스트 자리 — 필터로 줄이 줄어도 자리는 줄이지 않는다(이 물건에서 가장 길었던 높이). 줄면 페이지가 짧아져 화면이 통째로 내려앉아 필터 · 지도가 움직였다(2026-11-12 사용자 '어지러워서 어떻게 보냐') */
-const cmpTblEl = ref<HTMLElement | null>(null);
-const cmpTblMinH = ref(0);
-watch(() => auction.value?.id, () => { cmpTblMinH.value = 0; });
-watch(() => cmpRows.value.length, async () => { await nextTick(); const h = cmpTblEl.value?.offsetHeight ?? 0; if (h > cmpTblMinH.value) cmpTblMinH.value = h; });
 /** 선정물건 칩 — 그 줄이 우리 물건 평형(전용)일 때만. 같은 건물이라도 다른 평형 거래로 채운 줄은 선정물건이 아니다(2026-11-12 사용자) */
 const cmpIsMyUnit = (r: { mine: boolean; area: number }) => r.mine && Math.abs((r.area || 0) - supMyArea.value) < 0.05;
 const cmpToggle = (key: string) => { cmpPick.value = cmpPick.value === key ? '' : key; };
@@ -9921,7 +9916,7 @@ const goBack = () => router.back();
               <p v-if="!cmpConds.length" class="cmp-noroom">매매수요 조사 맨 위에서 <b>룸수</b>를 고르면 세대구성에 맞는 입지조건과 {{ cmpN }}별 입지등수가 나옵니다.</p>
               <!-- 검색 거르기 — 지도와 빌라 · 단지 리스트 사이(2026-11-12 사용자). 부품 하나(components/SearchFilterBar, '필터 기본 부품 세트' 2026-11-12). 다른 화면은 이 부품을 그대로 끼우고 hide 로 뺄 항목만 끈다 -->
               <SearchFilterBar v-model:draft="cmpDraft" :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :loading="cmpLoading" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" :saved-day="cmpSnapDay" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
-              <div ref="cmpTblEl" class="son-demand sup-tbl cmp-tbl-box" :style="cmpTblMinH ? { minHeight: `${cmpTblMinH}px` } : undefined">
+              <div class="son-demand sup-tbl">
                 <div class="adm-table-wrap">
                   <table class="adm-table cmp-tbl">
                     <colgroup><col style="width: 200px" /></colgroup>
@@ -12793,8 +12788,6 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-kind.m { background: #eef7f1; color: #22a55a; }
 /* 입지 창 — 비율(노선 · 학원 수)은 시설 이름 밑 작은 줄(점수 칸을 넘지 않게, 2026-11-12 사용자) */
 .cmp-place .cmp-ratio { display: block; margin-top: 1px; font-size: 12px; font-weight: 400; color: #6b7280; }
-/* 리스트 자리 — 줄이 바뀌어도 브라우저가 스크롤을 옮기지 않게(스크롤 고정점 끔) */
-.cmp-tbl-box { overflow-anchor: none; }
 .cmp-tbl th[aria-sort], .cmp-tbl th:has(> .sdir) { cursor: pointer; white-space: nowrap; }
 .cmp-tbl .sdir { margin-left: 3px; font-style: normal; font-size: 10px; color: #c3c9d4; }   /* 정렬 삼각형 — 시세분석 표와 같은 꼴 */
 .cmp-tbl .sdir.on { color: #2b4fd8; }
