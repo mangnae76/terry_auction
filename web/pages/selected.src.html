@@ -1163,6 +1163,9 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-wait > b { color: var(--text); font-size: 16px; }
 /* 분석결과 — 감정가를 적으면 예상 입찰가 두 칸이 바로 바뀐다 */
 .sx-hero { padding: 16px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+/* 매각분석 위 '○○동 · 연립다세대' 상자(감정가 · 예상 입찰가)는 내비게이터 — 내려도 위에 붙어 있다(사건 고정카드 바로 아래, 2026-11-12 사용자 '틀 고정') */
+.sx-results > .sx-hero { position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px) + 8px); z-index: 19; box-shadow: 0 6px 16px rgba(17, 24, 39, .08); }
+.sx-results > .sx-card:not(.sx-hero) { position: relative; z-index: 0; }   /* 지도 도구 · 핀이 붙박이 상자 위로 올라오지 않게 */
 .sx-where { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .sx-where h2 { margin: 0; font-size: 18px; font-weight: 800; text-wrap: balance; }
 .sx-where span { font-size: 13px; color: var(--muted); }
@@ -1268,6 +1271,13 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-acts .sx-save { flex: 1; min-width: 0; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.2; padding: 0 10px; border: 0; background: #1f3a72; color: #fff; font-weight: 700; transition: background .15s, border-color .15s; }
 /* 매각분석 표 경매물건 줄 평당가 — 실제가 아니라 평균 매각평당가라 빨강(시세분석 '매매 예상'과 같은 뜻, 2026-11-12 사용자) */
 .sx-tbl tr.me td.sx-est, tr.me td.sx-est { color: #e03e3e; }
+/* PDF 인근 매각사례 통계 상자 — 인근 유사 매각사례 표 바로 아래(2026-11-12) */
+.sx-pdfnear-box { margin-top: 16px; }
+.sx-pdfnear table { width: 100%; }
+.sx-pdfnear th, .sx-pdfnear td.c { text-align: center; }
+.sx-pdfnear td small { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.sx-pdfnear td small.b { color: var(--blue); font-weight: 700; }
+.sx-pdfnear-none { margin: 8px 0 0; padding: 12px; border: 1px dashed var(--line); border-radius: 8px; font-size: 13px; color: var(--muted); text-align: center; }
 .sx-acts .sx-save.dirty { background: #2b6df3; border: 1px solid #2b6df3; }   /* 웹 저장 단추 통일(2026-11-12 사용자) — 저장할 게 있으면 파랑 '저장하기', 저장됐으면 회색 '저장됨'(매매수요 · 시세분석과 같다) */
 .sx-acts .sx-save.dirty:hover { background: #1f5ad6; border-color: #1f5ad6; }
 .sx-acts .sx-save.saved { background: #fff; color: #9ca3af; border: 1px solid #d5dbe6; font-weight: 700; }
@@ -7769,7 +7779,19 @@ span.cal-day.has { cursor: help; }
       /* 지역으로 · 기준 고르기 전 — 건수 옆에 세로 막대와 안내(2026-11-08) */
       + (S.route === 'market' && saleMode === 'region' && !sxRef ? '<i class="sx-lsep" aria-hidden="true"></i><span class="sx-pickhint">기준을 선택하세요 — 표의 줄이나 지도 핀을 누르면 그 물건을 기준으로 비슷한 사례를 찾습니다</span>' : '')
       + `<span class="sx-grow"></span><label class="sx-qbox"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" class="sx-q" id="sxQ" placeholder="주소 · 사건번호 검색" autocomplete="off" aria-label="인근 유사 매각사례에서 찾기" value="${esc(SX.q || '')}"></label></div>`
-      + `<div class="sx-tbl"><table><colgroup>${SX_COL_W.map((w, i) => (w ? `<col style="width:${i === 10 && sxAptKind() ? 96 : w}px">` : '<col>')).join('')}</colgroup><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div></div>`;
+      + `<div class="sx-tbl"><table><colgroup>${SX_COL_W.map((w, i) => (w ? `<col style="width:${i === 10 && sxAptKind() ? 96 : w}px">` : '<col>')).join('')}</colgroup><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div></div>`
+      + (me && !me.__ref ? sxPdfNearHtml(me) : '');
+  }
+  /* PDF 인근 매각사례 — 물건 등록 때 읽은 PDF 의 인근 매각 통계(1 · 3 · 6 · 12개월). 앱 물건정보에서 뺀 상자를 매각분석 인근 유사 매각사례 아래로(2026-11-12 사용자) */
+  function sxPdfNearHtml(me) {
+    const d = detailOf(me) || {}; const raw = ((d.excelAnalysis || {}).nearBidRows) || [];
+    const ord = (t) => { const m = /(\d+)\s*개월/.exec(String(t || '')); return m ? Number(m[1]) : 99; };
+    const rows = raw.filter((r) => [r.saleInfo, r.appraisal, r.minimum, r.winning, r.rate, r.expectedWinning].some((v) => String(v ?? '').trim())).sort((a, b) => ord(a.saleInfo) - ord(b.saleInfo));
+    const two = (a, b, cls = '') => `<td class="c">${esc(String(a || '-'))}${b ? `<small class="${cls}">${esc(String(b))}</small>` : ''}</td>`;
+    const body = rows.length
+      ? `<div class="sx-tbl sx-pdfnear"><table><thead><tr><th>구분</th><th>평균감정가<br>평균매각가</th><th>입찰인원<br>매각가율</th><th>예상매각가</th></tr></thead><tbody>${rows.map((r) => `<tr><td class="c">${esc(String(r.saleInfo || '-'))}</td>${two(r.appraisal, r.minimum)}${two(r.winning, r.rate, 'b')}<td class="c"><b>${esc(String(r.expectedWinning || '-'))}</b></td></tr>`).join('')}</tbody></table></div>`
+      : '<p class="sx-pdfnear-none">물건 등록 때 읽은 PDF 에 인근 매각 통계가 없습니다.</p>';
+    return `<div class="sx-pdfnear-box"><div class="sx-list-h"><span class="sx-ptag">PDF</span><h3 class="sx-sec">인근 매각사례 통계</h3><span class="sx-count">물건 등록 때 읽은 PDF</span></div>${body}</div>`;
   }
   function sxPaintList() {
     const rows = sxRows(); const el = $('sxList'); if (!rows || !el) return;
