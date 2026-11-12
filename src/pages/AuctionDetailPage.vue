@@ -9749,10 +9749,13 @@ const goBack = () => router.back();
                 <span class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층"><button type="button" role="radio" :class="{ on: cmpFloorD !== 'same' }" :aria-checked="cmpFloorD !== 'same'" data-t="전체" @click="cmpFloorD = null">전체</button><button type="button" role="radio" :class="{ on: cmpFloorD === 'same' }" :aria-checked="cmpFloorD === 'same'" data-t="같은 층" @click="cmpFloorD = 'same'">같은 층</button></span></span>
               </div>
               <!-- 면적 · 건축 막대 — 거르기 줄 밑 한 줄, 두 상자가 위 줄 폭에 맞게 반씩(2026-11-12 사용자) -->
+              <!-- 면적 · 건축은 한 상자, 조회하기 · 저장하기는 상자 밖 — 단추는 위 거르기까지 다 같이 쓴다(2026-11-12 사용자) -->
+              <div class="cmp-bars-row">
               <div class="cmp-bars">
                   <DualRangeBar label="면적 ㎡" :min="20" :max="cmpAreaBarMax" :lo="cmpAreaD[0]" :hi="cmpAreaD[1]" :base="supMyArea" :lo-text="String(cmpAreaD[0])" :base-text="String(Number((Math.floor(supMyArea * 100 + 1e-6) / 100).toFixed(2)))" :hi-text="String(cmpAreaD[1])" :sub="cmpPyTx(cmpAreaD[0], cmpAreaD[1])" :tvg-w="136" @update="(lo, hi) => (cmpAreaD = [lo, hi])" />
                   <DualRangeBar label="건축" :min="CMP_YEAR_MIN" :max="cmpYearMax" :lo="cmpYearD[0]" :hi="cmpYearD[1]" :base="cmpMyYear" :lo-text="String(cmpYearD[0])" :base-text="String(cmpMyYear || '')" :hi-text="String(cmpYearD[1])" :sub="`${cmpYearMax - cmpYearD[1] + 1}~${cmpYearMax - cmpYearD[0] + 1}년차`" :tvg-w="140" @update="(lo, hi) => (cmpYearD = [lo, hi])" />
-                <span class="cmp-acts">
+              </div>
+              <span class="cmp-acts">
                   <button type="button" :class="['cmp-go', { dirty: cmpDirty || cmpWaiting }]" @click="cmpApply">조회하기</button>
                   <button type="button" :class="['cmp-save', { ready: cmpLiveReady }]" :disabled="!cmpLiveReady || cmpSaving" :title="cmpSnapOn ? '저장된 리스트입니다' : cmpLiveReady ? '지금 리스트를 저장합니다' : '조회하기로 불러온 뒤 저장할 수 있습니다'" @click="cmpSave">{{ cmpSnapOn ? '저장됨' : '저장하기' }}</button>
                 </span>
@@ -12582,11 +12585,12 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-conds > .pa-lab > .pa-seg { flex: 1 1 auto; justify-content: space-between; }
 .cmp-conds > .pa-lab > .pa-seg > button { flex: 1 1 auto; padding: 0 8px; }
 @media (max-width: 1180px) { .cmp-conds { flex-wrap: wrap; } }
-.cmp-bars { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: center; column-gap: 32px; margin: -2px 0 12px; padding: 16px 20px 14px; background: #fff; border: 1px solid #dde3ee; border-radius: 10px; }   /* 면적 · 건축 막대 — 시세분석 직접범위 상자와 같은 꼴 */
+.cmp-bars-row { display: flex; align-items: stretch; gap: 8px; margin: -2px 0 12px; }
+.cmp-bars { flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; column-gap: 32px; margin: 0; padding: 16px 20px 14px; background: #fff; border: 1px solid #dde3ee; border-radius: 10px; }   /* 면적 · 건축 막대 — 시세분석 직접범위 상자와 같은 꼴 */
 :root[data-theme="dark"] .cmp-bars { background: #182031; border-color: #2a3449; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-bars { background: #182031; border-color: #2a3449; } }
-@media (max-width: 760px) { .cmp-bars { grid-template-columns: minmax(0, 1fr); row-gap: 14px; } }
-.cmp-acts { display: flex; gap: 8px; }   /* 면적 · 건축 옆 — 조회하기 · 저장하기(2026-11-12 사용자) */
+@media (max-width: 760px) { .cmp-bars { grid-template-columns: minmax(0, 1fr); row-gap: 14px; } .cmp-bars-row { flex-wrap: wrap; } }
+.cmp-acts { display: flex; align-items: center; gap: 8px; }   /* 면적 · 건축 옆 — 조회하기 · 저장하기(2026-11-12 사용자) */
 .cmp-go { height: 42px; padding: 0 22px; border: 1px solid #2b6df3; border-radius: 8px; background: #fff; color: #2b6df3; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }   /* 조회하기 — 고른 거르기가 지금과 다르면 파랗게 채운다 */
 .cmp-go.dirty { background: #2b6df3; color: #fff; }
 .cmp-save { height: 42px; min-width: 96px; padding: 0 18px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #9ca3af; font: inherit; font-size: 14px; font-weight: 700; cursor: default; }   /* 저장하기 — 조회 결과가 다 오면 초록으로 */
