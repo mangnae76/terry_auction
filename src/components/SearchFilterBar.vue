@@ -10,7 +10,8 @@ import SimRangeBox from './SimRangeBox.vue';
 export type SearchFilterKey = 'range' | 'kind' | 'period' | 'elev' | 'floor' | 'mode' | 'area' | 'year';
 export type SearchFilter = {
   range: string | number; months: number; kind: '매매' | '전세'; mode: 'sim' | 'range'; sim: number;
-  area: [number, number]; year: [number, number]; floor: 'same' | null; elev: 'yes' | 'no' | null;
+  /** 직접범위 칸 — 비우면 null(제한 없음). 유사도와 따로 움직인다 */
+  area: [number | null, number | null]; year: [number | null, number | null]; floor: 'same' | null; elev: 'yes' | 'no' | null;
 };
 
 const props = defineProps<{
@@ -34,6 +35,8 @@ const props = defineProps<{
   waiting: boolean;
   isDefault: boolean;
   canSave: boolean;
+  /** 조회 중 — 조회하기 단추에 '조회 중…'(점이 움직인다) */
+  loading?: boolean;
   saving: boolean;
   /** 저장본과 같다 — '저장됨' */
   saved: boolean;
@@ -52,12 +55,11 @@ const floorD = key('floor');
 const areaD = key('area');
 const yearD = key('year');
 /** 유사도 % — 바꾸면 면적 · 건축도 그 범위로 */
-const simD = computed<number>({ get: () => props.draft.sim, set: (v) => set({ sim: v, ...props.simRange(v) }) });
-/** 기준 — 직접범위로 가면 지금 유사도 범위에서 시작(시세분석과 같다), 유사도로 가면 유사도 범위로 */
-const modeD = computed<'sim' | 'range'>({
-  get: () => props.draft.mode,
-  set: (m) => set(m === 'sim' ? { mode: m, ...props.simRange(props.draft.sim) } : { mode: m }),
-});
+const simD = computed<number>({ get: () => props.draft.sim, set: (v) => set({ sim: v }) });
+/** 유사도 막대 옆 글 — 그 %로 정해지는 면적 · 건축 */
+const simText = computed(() => { const r = props.simRange(props.draft.sim); return `면적 ${r.area[0]}~${r.area[1]}㎡ · 건축 ${r.year[0]}~${r.year[1]}년`; });
+/** 기준 — 유사도 · 직접범위는 따로 움직인다(바꿔도 서로의 값을 옮기지 않는다, 2026-11-12 사용자) */
+const modeD = key('mode');
 const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 3.305785).toFixed(1)}평`;
 
 </script>
@@ -77,13 +79,13 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
     <div class="cmp-bars-row">
     <div class="cmp-bars">
         <span v-if="!off('mode')" class="pa-lab cmp-mode">기준<span class="pa-seg pa-out" role="radiogroup" aria-label="유사 조건 방식"><button v-for="[v, t] in ([['sim', '유사도'], ['range', '직접범위']] as const)" :key="v" type="button" role="radio" :class="{ on: modeD === v }" :aria-checked="modeD === v" :data-t="t" @click="modeD = v">{{ t }}</button></span></span>
-        <span v-if="modeD === 'sim'" class="cmp-sim" :style="{ '--p': `${((simD - 60) / 35) * 100}%` }"><SimRangeBox :sim="simD" :text="`면적 ${draft.area[0]}~${draft.area[1]}㎡ · 건축 ${draft.year[0]}~${draft.year[1]}년`" @update="(v) => (simD = v)" /></span>
-        <RangeInputBox v-if="modeD === 'range' && !off('area')" label="면적 ㎡" :min="20" :max="areaMax" :lo="areaD[0]" :hi="areaD[1]" :base="baseArea" :lo-text="String(areaD[0])" :base-text="String(Number((Math.floor(baseArea * 100 + 1e-6) / 100).toFixed(2)))" :hi-text="String(areaD[1])" :sub="pyTx(areaD[0], areaD[1])" @update="(lo, hi) => (areaD = [lo, hi])" />
-        <RangeInputBox v-if="modeD === 'range' && !off('year')" label="건축" :min="yearMin" :max="yearMax" :lo="yearD[0]" :hi="yearD[1]" :base="baseYear" :lo-text="String(yearD[0])" :base-text="String(baseYear || '')" :hi-text="String(yearD[1])" :sub="`${yearMax - yearD[1] + 1}~${yearMax - yearD[0] + 1}년차`" @update="(lo, hi) => (yearD = [lo, hi])" />
+        <span v-if="modeD === 'sim'" class="cmp-sim" :style="{ '--p': `${((simD - 60) / 35) * 100}%` }"><SimRangeBox :sim="simD" :text="simText" @update="(v) => (simD = v)" /></span>
+        <RangeInputBox v-if="modeD === 'range' && !off('area')" label="면적 ㎡" :min="20" :max="areaMax" :lo="areaD[0]" :hi="areaD[1]" :base="baseArea" :lo-text="areaD[0] == null ? '' : String(areaD[0])" :base-text="String(Number((Math.floor(baseArea * 100 + 1e-6) / 100).toFixed(2)))" :hi-text="areaD[1] == null ? '' : String(areaD[1])" :sub="areaD[0] != null && areaD[1] != null ? pyTx(areaD[0], areaD[1]) : ''" allow-blank @update="(lo, hi) => (areaD = [lo, hi])" />
+        <RangeInputBox v-if="modeD === 'range' && !off('year')" label="건축" :min="yearMin" :max="yearMax" :lo="yearD[0]" :hi="yearD[1]" :base="baseYear" :lo-text="yearD[0] == null ? '' : String(yearD[0])" :base-text="String(baseYear || '')" :hi-text="yearD[1] == null ? '' : String(yearD[1])" :sub="yearD[0] != null && yearD[1] != null ? `${yearMax - yearD[1] + 1}~${yearMax - yearD[0] + 1}년차` : ''" allow-blank @update="(lo, hi) => (yearD = [lo, hi])" />
     </div>
     <span class="cmp-qbtns">
-        <button type="button" class="cmp-reset" :disabled="isDefault" title="거르기를 기본값(반경 1km · 6개월 · 매매 · 면적 ±3㎡ …)으로 — 조회하기를 눌러야 적용" @click="emit('reset')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button>
-          <button type="button" :class="['cmp-go', { dirty: dirty || waiting }]" @click="emit('apply')">조회하기</button>
+        <button type="button" class="cmp-reset" :disabled="isDefault" title="필터를 기본값(반경 500m · 매매 · 3개월 · 엘베 · 층 전체 · 유사도 80%)으로 — 조회하기를 눌러야 적용" @click="emit('reset')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button>
+          <button type="button" :class="['cmp-go', { dirty: dirty || waiting, busy: loading }]" :aria-busy="loading" @click="emit('apply')"><template v-if="loading">조회 중<span class="dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></template><template v-else>조회하기</template></button>
         <button type="button" :class="['cmp-save', { ready: canSave }]" :disabled="!canSave || saving" :title="saved ? '저장된 리스트입니다' : dirty ? '조회하기를 누른 뒤 저장할 수 있습니다' : canSave ? '지금 리스트를 저장합니다' : '조회하기로 불러온 뒤 저장할 수 있습니다'" @click="emit('save')">{{ saved ? '저장됨' : '저장하기' }}</button>
       </span>
     </div>
@@ -151,4 +153,11 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-conds .kindF button[data-k="전세"] { background: #fdf3e1; color: #b7791f; }
 .cmp-conds .kindF button.on[data-k="매매"] { background: #2b3a67; color: #fff; }
 .cmp-conds .kindF button.on[data-k="전세"] { background: #b7791f; color: #fff; }
+.cmp-go.busy { background: #2b6df3; color: #fff; }
+/* 조회 중 점 셋이 차례로 떠오른다 — 폭은 고정(글이 흔들리지 않게) */
+.dots { display: inline-flex; width: 1.2em; justify-content: flex-start; }
+.dots i { font-style: normal; animation: sfb-dot 1.2s infinite both; }
+.dots i:nth-child(2) { animation-delay: .2s; } .dots i:nth-child(3) { animation-delay: .4s; }
+@keyframes sfb-dot { 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .dots i { animation: none; opacity: 1; } }
 </style>

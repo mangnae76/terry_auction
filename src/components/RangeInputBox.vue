@@ -8,29 +8,35 @@ const props = defineProps<{
   sub?: string;
   min: number;
   max: number;
-  lo: number;
-  hi: number;
+  /** 비어 있으면 null — '입력' 칸으로 보인다(직접범위는 유사도와 따로 움직인다, 2026-11-12 사용자) */
+  lo: number | null;
+  hi: number | null;
+  /** 칸을 비워 두는 것을 허락 — 비우면 그 쪽은 제한 없음 */
+  allowBlank?: boolean;
   /** 기준 — 내 물건 값(없으면 0, 막지 않는다) */
   base: number;
   loText: string;
   baseText: string;
   hiText: string;
 }>();
-const emit = defineEmits<{ update: [lo: number, hi: number] }>();
+const emit = defineEmits<{ update: [lo: number | null, hi: number | null] }>();
 const typeIn = (el: HTMLInputElement, moved: 'lo' | 'hi') => {
   const raw = String(el.value).replace(/[^\d.]/g, '');
   const n = Number(raw);
-  if (!raw || !Number.isFinite(n)) { el.value = moved === 'lo' ? props.loText : props.hiText; return; }
+  if (!raw || !Number.isFinite(n)) {
+    if (props.allowBlank && !raw) { el.value = ''; emit('update', moved === 'lo' ? null : props.lo, moved === 'hi' ? null : props.hi); return; }
+    el.value = moved === 'lo' ? props.loText : props.hiText; return;
+  }
   // 적은 값은 그대로 쓴다(2026-11-12 사용자 — 56 을 적었는데 55.14 로 바꾸지 않는다). 내 값을 넘으면 내 값의 정수 쪽(최소 55 · 최대 56)으로만
   let v = Math.min(props.max, Math.max(props.min, n));
   if (props.base > 0) {
     if (moved === 'lo' && v > props.base) v = Math.floor(props.base);
     if (moved === 'hi' && v < props.base) v = Math.ceil(props.base);
   }
-  const a = moved === 'lo' ? Math.min(v, props.hi) : props.lo;
-  const b = moved === 'hi' ? Math.max(v, props.lo) : props.hi;
+  const a = moved === 'lo' ? (props.hi == null ? v : Math.min(v, props.hi)) : props.lo;
+  const b = moved === 'hi' ? (props.lo == null ? v : Math.max(v, props.lo)) : props.hi;
   emit('update', a, b);
-  el.value = String(moved === 'lo' ? a : b);
+  el.value = String((moved === 'lo' ? a : b) ?? '');
 };
 </script>
 
@@ -38,9 +44,9 @@ const typeIn = (el: HTMLInputElement, moved: 'lo' | 'hi') => {
   <span class="rib">
     <span class="dn">{{ label }}<small v-if="sub">{{ sub }}</small></span>
     <span class="vals">
-      <input class="in" :value="loText" inputmode="decimal" :aria-label="`${label} 최소`" @change="typeIn($event.target as HTMLInputElement, 'lo')" @keydown.enter="($event.target as HTMLInputElement).blur()">
+      <input class="in" :value="loText" placeholder="입력" inputmode="decimal" :aria-label="`${label} 최소`" @change="typeIn($event.target as HTMLInputElement, 'lo')" @keydown.enter="($event.target as HTMLInputElement).blur()">
       <i v-if="base" class="me" :title="`기준 — 내 물건 ${baseText}`">{{ baseText }}</i>
-      <input class="in" :value="hiText" inputmode="decimal" :aria-label="`${label} 최대`" @change="typeIn($event.target as HTMLInputElement, 'hi')" @keydown.enter="($event.target as HTMLInputElement).blur()">
+      <input class="in" :value="hiText" placeholder="입력" inputmode="decimal" :aria-label="`${label} 최대`" @change="typeIn($event.target as HTMLInputElement, 'hi')" @keydown.enter="($event.target as HTMLInputElement).blur()">
     </span>
   </span>
 </template>
@@ -54,6 +60,7 @@ const typeIn = (el: HTMLInputElement, moved: 'lo' | 'hi') => {
 .me { font-style: normal; font-size: 14px; font-weight: 800; color: #e03e3e; font-variant-numeric: tabular-nums; padding: 0 2px; }
 /* 적는 칸 — 웹 .app-detail 입력칸 16px !important 를 이긴다(선택자를 좁게) */
 .rib .vals input.in.in { width: 64px; height: 26px !important; min-height: 0 !important; padding: 0 6px !important; box-sizing: border-box; border: 1px solid #2b6df3; border-radius: 5px; background: #fff; text-align: center; font-family: inherit; font-size: 14px !important; font-weight: 700; color: #2b6df3; font-variant-numeric: tabular-nums; box-shadow: none !important; }
+.rib .vals input.in.in::placeholder { color: #9db8f5; font-weight: 400; }
 .rib .vals input.in.in:focus { outline: none; box-shadow: 0 0 0 2px rgba(43, 109, 243, .2) !important; }
 :root[data-theme="dark"] .rib { background: #182031; border-color: #2a3449; }
 :root[data-theme="dark"] .dn { color: #9aa3b5; }
