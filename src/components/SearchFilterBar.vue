@@ -234,7 +234,9 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-conds .pa-seg.pa-out button::after { content: attr(data-t); height: 0; overflow: hidden; visibility: hidden; font-weight: 700; pointer-events: none; }
 .cmp-conds .pa-seg.pa-out button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
 .cmp-conds .kindF button { font-weight: 700; }
-.cmp-conds .kindF button { min-width: 84px; }   /* '전세 1,234'까지 들어가게 — 건수 자릿수가 바뀌어도 상자 폭이 그대로(2026-11-12) */
+.cmp-conds .kindF button { min-width: 84px; }
+/* 거래 단추는 늘 같은 폭으로 나눈다 — 건수(매매 29 · 전세 7)가 바뀔 때마다 단추 폭이 달라져 거래 칸이 꿈틀했다(2026-11-12 사용자). 숫자는 고정폭 숫자 */
+.cmp-conds .kindF > button { flex: 1 1 0 !important; font-variant-numeric: tabular-nums; }   /* '전세 1,234'까지 들어가게 — 건수 자릿수가 바뀌어도 상자 폭이 그대로(2026-11-12) */
 .cmp-conds .kindF button[data-k="매매"] { background: #eef2ff; color: #2b3a67; }
 .cmp-conds .kindF button[data-k="전세"] { background: #fdf3e1; color: #b7791f; }
 .cmp-conds .kindF button.on[data-k="매매"] { background: #2b3a67; color: #fff; }

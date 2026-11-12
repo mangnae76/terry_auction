@@ -1047,7 +1047,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td v-if="pubMissing" class="r two"><input class="pubin pa-num" placeholder="입력" inputmode="numeric" aria-label="선정물건 공시가" :value="typedPub ? n0(typedPub) : ''" @change="onPubInput"><small v-if="typedPub && view && kindF !== '월세'">{{ pct(view.est, typedPub) }}</small></td>
               <td v-else class="r pa-num two">{{ n0(curPub) }}<small>{{ view && kindF !== '월세' ? pct(view.est, curPub) : '-' }}</small></td>
               <td v-if="!curPub || kindF === '월세'" class="r two">{{ curPub ? n0(hug) : '-' }}</td>
-              <td v-else-if="kindF === '전세'" class="r pa-num two">{{ n0(hug) }}<small :class="{ neg: view && view.est > hug }">{{ !view ? '-' : view.est > hug ? `한도초과 ${n0(view.est - hug)}` : '한도 안' }}</small></td>
+              <td v-else-if="kindF === '전세'" class="r pa-num two">{{ n0(hug) }}<small :class="{ neg: view && view.est > hug }">{{ !view ? '-' : view.est > hug ? `초과 ${n0(view.est - hug)}` : '한도 안' }}</small></td>
               <td v-else class="r pa-num two">{{ n0(hug) }}<small :class="{ neg: view && view.est - hug < 0 }">{{ view ? `갭 ${n0(view.est - hug)}` : '-' }}</small></td>
               <td v-if="isAptKind" class="r pa-num two">{{ areaLines(aptMyArea)[0] }}<small v-if="areaLines(aptMyArea)[1]">{{ areaLines(aptMyArea)[1] }}</small></td>
               <td v-else class="r pa-num two">{{ me.areaM2.toFixed(2) }}㎡<small>{{ myPy.toFixed(2) }}평</small></td>
@@ -1078,7 +1078,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
                 <td v-if="!r.pub" class="r"><span class="ph2">{{ units[r.jibun] ? '공시가 없음' : '조회 중' }}</span></td>
                 <td v-else class="r pa-num two">{{ n0(r.pub) }}<small>{{ pct(r.price, r.pub) }}</small></td>
                 <td v-if="!r.pub" class="r two">-</td>
-                <td v-else-if="r.group === '전세'" class="r pa-num two">{{ n0(r.pub * HUG_RATE) }}<small :class="{ neg: r.price > r.pub * HUG_RATE }">{{ r.price > r.pub * HUG_RATE ? `한도초과 ${n0(r.price - r.pub * HUG_RATE)}` : '한도 안' }}</small></td>
+                <td v-else-if="r.group === '전세'" class="r pa-num two">{{ n0(r.pub * HUG_RATE) }}<small :class="{ neg: r.price > r.pub * HUG_RATE }">{{ r.price > r.pub * HUG_RATE ? `초과 ${n0(r.price - r.pub * HUG_RATE)}` : '한도 안' }}</small></td>
                 <td v-else class="r pa-num two">{{ n0(r.pub * HUG_RATE) }}<small :class="{ neg: r.price - r.pub * HUG_RATE < 0 }">갭 {{ n0(r.price - r.pub * HUG_RATE) }}</small></td>
               </template>
               <td v-if="isAptKind" class="r pa-num two">{{ areaLines(aptRowArea(r.areaM2, !!r.same, r))[0] }}<small v-if="areaLines(aptRowArea(r.areaM2, !!r.same, r))[1]">{{ areaLines(aptRowArea(r.areaM2, !!r.same, r))[1] }}</small></td>
