@@ -5685,7 +5685,7 @@ const cmpF = useFilterDraft<CmpFilter>(
     cmpModeR.value = v.mode; cmpSimR.value = v.sim;
     cmpAreaR.value = v.mode === 'sim' || cmpSame2(v.area, cmpAreaDef()) ? null : v.area; cmpYearR.value = v.mode === 'sim' || cmpYearAll(v.year) ? null : v.year;
     cmpFloorR.value = v.floor; cmpElevR.value = v.elev;
-    cmpQueried.value = true;
+    cmpQueried.value = true; cmpForce.value = true;
   },
   cmpDefaults,
 );
@@ -5776,7 +5776,10 @@ const cmpMePt = computed(() => (supRegion.value?.lat ? { lat: supRegion.value.la
  *  필터가 저장본과 같으면 새로 계산하지 않고 저장본(실거래 · 좌표 · 시설 거리)으로 그린다. 필터를 바꾸면 새로 계산하고, 다 받으면 자동으로 다시 저장한다. ===== */
 // 비교 건물이 하나도 없는 저장본은 쓰지 않는다 — 실거래를 못 받았을 때 빈 리스트가 굳어 버리지 않게
 const cmpSnap = computed<DemandSnap | null>(() => { const sn = auction.value?.demandSnap; return sn?.v === 1 && sn.rows.some((r) => !r.mine) ? sn : null; });
-const cmpSnapOn = computed(() => { const s = cmpSnap.value; return !!s && s.filter.range === cmpRange.value && s.filter.months === cmpMonths.value && s.filter.kind === cmpKind.value
+/** 조회하기를 누르면 저장본이 있어도 새로 받는다 — 같은 조건으로 눌러도 '조회가 안 된다'고 느끼지 않게(2026-11-12). 저장하기 · 다른 물건이면 풀린다 */
+const cmpForce = ref(false);
+watch(() => auction.value?.id, () => { cmpForce.value = false; });
+const cmpSnapOn = computed(() => { const s = cmpSnap.value; return !cmpForce.value && !!s && s.filter.range === cmpRange.value && s.filter.months === cmpMonths.value && s.filter.kind === cmpKind.value
   && JSON.stringify(s.filter.area ?? null) === JSON.stringify(cmpAreaR.value) && JSON.stringify(s.filter.year ?? null) === JSON.stringify(cmpYearR.value)
   && (s.filter.floor ?? null) === cmpFloorR.value && (s.filter.elev ?? null) === cmpElevR.value
   && (s.filter.mode ?? 'range') === cmpModeR.value && (cmpModeR.value !== 'sim' || (s.filter.sim ?? 80) === cmpSimR.value); });
@@ -6013,7 +6016,7 @@ const cmpPool = async <T,>(items: T[], n: number, run: number, fn: (x: T) => Pro
   let i = 0;
   await Promise.all(Array.from({ length: n }, async () => { while (i < items.length && run === cmpRun) { const x = items[i]; i += 1; await fn(x).catch(() => undefined); } }));
 };
-watch(() => `${cmpQueried.value}|${cmpElevR.value}|${cmpRange.value}|${cmpCandidates.value.filter((c) => !c.mine).map((c) => cmpKeyOf(c)).join(',')}`, async () => {
+watch(() => `${cmpSnapOn.value}|${cmpQueried.value}|${cmpElevR.value}|${cmpRange.value}|${cmpCandidates.value.filter((c) => !c.mine).map((c) => cmpKeyOf(c)).join(',')}`, async () => {
   const run = ++cmpRun;
   if (cmpSnapOn.value || !cmpQueried.value) return;   // 저장본으로 그린다 · 조회하기 전엔 받지 않는다
   if (!cmpCandidates.value.some((c) => !c.mine)) return;
@@ -6214,7 +6217,7 @@ const cmpSave = async () => {
   cmpSaving.value = true;
   try {
     const snap = cmpSnapBuild();
-    a.demandSnap = snap; a.demandFilter = { ...snap.filter };
+    a.demandSnap = snap; a.demandFilter = { ...snap.filter }; cmpForce.value = false;
     await store.saveAuction(a, { silent: true });
     flashToast('매매수요 리스트를 저장했습니다.', 'success');
   } catch { flashToast('저장하지 못했습니다. 잠시 뒤 다시 눌러 주세요.', 'error'); } finally { cmpSaving.value = false; }

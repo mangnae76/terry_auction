@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { clampAroundBase } from '../services/rangeClamp';
 // 범위 적는 상자 하나 — 면적 · 건축(2026-11-12 사용자: 막대를 빼고 반경 · 기간 상자와 같은 꼴로).
 // [이름 / 아래 작은 글]  [최소] 내 값(빨강) [최대]. 최소 · 최대는 적는 칸, 가운데 빨간 값은 기준(내 물건).
-// 손품조사 시세분석 · 매매수요 입지비교가 같이 쓴다. 범위 규칙은 services/rangeClamp 한 곳 — 내 값을 넘지 못하고, 칸을 벗어나면 끝 값으로.
+// 손품조사 시세분석 · 매매수요 입지비교가 같이 쓴다. 적은 숫자는 그대로 — 내 값을 넘을 때만 내 값의 정수 쪽으로, 칸을 벗어나면 끝 값으로.
 const props = defineProps<{
   label: string;
   /** 이름 아래 작은 글('15.7~17.8평' · '1~47년차') */
@@ -22,10 +21,16 @@ const typeIn = (el: HTMLInputElement, moved: 'lo' | 'hi') => {
   const raw = String(el.value).replace(/[^\d.]/g, '');
   const n = Number(raw);
   if (!raw || !Number.isFinite(n)) { el.value = moved === 'lo' ? props.loText : props.hiText; return; }
-  const v = Math.min(props.max, Math.max(props.min, n));
-  const [a, b] = clampAroundBase(moved === 'lo' ? v : props.lo, moved === 'hi' ? v : props.hi, props.base, moved);
+  // 적은 값은 그대로 쓴다(2026-11-12 사용자 — 56 을 적었는데 55.14 로 바꾸지 않는다). 내 값을 넘으면 내 값의 정수 쪽(최소 55 · 최대 56)으로만
+  let v = Math.min(props.max, Math.max(props.min, n));
+  if (props.base > 0) {
+    if (moved === 'lo' && v > props.base) v = Math.floor(props.base);
+    if (moved === 'hi' && v < props.base) v = Math.ceil(props.base);
+  }
+  const a = moved === 'lo' ? Math.min(v, props.hi) : props.lo;
+  const b = moved === 'hi' ? Math.max(v, props.lo) : props.hi;
   emit('update', a, b);
-  el.value = moved === 'lo' ? String(a) : String(b);
+  el.value = String(moved === 'lo' ? a : b);
 };
 </script>
 
