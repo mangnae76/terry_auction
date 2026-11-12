@@ -7948,7 +7948,12 @@ span.cal-day.has { cursor: help; }
   }
   function sxFiltChange(v) {
     const per = `${v.months}개월`; const cur = (saleApplied && saleApplied.period) || saleSeg.period;
-    if (per !== cur) { saleSeg.period = per; saleSave(); if (saleApplied) saleApply({ ...saleApplied, period: per }); renderMarket(); return; }   /* 매각기간 — 바로 다시 계산(예전 단추와 같다) */
+    if (per !== cur) {   /* 매각기간 — 바로 다시 계산(예전 단추와 같다). 다시 그린 뒤에도 보던 자리 그대로(필터 위치를 재 두었다 되돌린다) */
+      const y0 = SXF.host && SXF.host.isConnected ? SXF.host.getBoundingClientRect().top : null;
+      saleSeg.period = per; saleSave(); if (saleApplied) saleApply({ ...saleApplied, period: per }); renderMarket();
+      if (y0 != null) { const fix = () => { if (SXF.host && SXF.host.isConnected) { const dy = SXF.host.getBoundingClientRect().top - y0; if (Math.abs(dy) > 1) window.scrollBy(0, dy); } }; fix(); requestAnimationFrame(() => { fix(); requestAnimationFrame(fix); }); }
+      return;
+    }
     const toRange = v.mode === 'range' && SXM.basis !== 'range';
     Object.assign(SXM, { radius: Number(v.range), elev: v.elev || '', floor: v.floor === 'same' ? '0' : '', sim: Number(v.sim) });
     if (toRange) sxRcFromSim();   /* 직접범위로 가면 유사도 범위에서 시작 */
@@ -8326,7 +8331,15 @@ span.cal-day.has { cursor: help; }
     el.outerHTML = agPanelHtml();
     const ni = fid && $(fid); if (ni) { ni.focus(); try { ni.setSelectionRange(qs, qs); } catch (e) { /* 그만 */ } }
   }
-  function agPaintTable(force = false) { const el = $('sxResults'); if (el && agSaleOpen()) { if (!force && sxHoldPick(el, () => agPaintTable())) return; el.outerHTML = sxResultsHtml(); sxMountMap(); } }
+  /* 결과를 다시 그릴 때 보던 자리를 지킨다 — 필터(막대 · 단추)를 만지면 위 상자(예상 입찰가 · 지표 · 분포)의 높이가 바뀌어 화면이 다른 데로 밀렸다(2026-11-12 사용자).
+     필터 부품의 화면 위치를 재 두었다가 다시 그린 뒤 그만큼 스크롤을 되돌린다 */
+  function agPaintTable(force = false) {
+    const el = $('sxResults'); if (!el || !agSaleOpen()) return;
+    if (!force && sxHoldPick(el, () => agPaintTable())) return;
+    const anchor = SXF.host && SXF.host.isConnected && !SXG.fs ? SXF.host : null; const y0 = anchor ? anchor.getBoundingClientRect().top : 0;
+    el.outerHTML = sxResultsHtml(); sxMountMap();
+    if (anchor && anchor.isConnected) { const dy = anchor.getBoundingClientRect().top - y0; if (Math.abs(dy) > 1) window.scrollBy(0, dy); }
+  }
   /* 모은 매각물건 — 이 브라우저(IndexedDB)에 판 번호와 함께 떠 둔다(2026-11-08). 새로고침마다 서버에서 조각 문서를 다 받고 나서야
      결과 · 지도가 그려져 오래 하얗게 있었다. 판 번호가 같으면 떠 둔 것을 바로 쓰고, 바뀌었을 때만 새로 받는다 */
   const saleIdb = () => new Promise((ok) => { try { const r = indexedDB.open('ta-web', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); } catch (e) { ok(null); } });
