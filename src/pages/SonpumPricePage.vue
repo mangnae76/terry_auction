@@ -722,6 +722,8 @@ const askSlotRef = (el: unknown) => { if (sonAskReady) sonAskReady.value = !!el;
 const tableEl = ref<HTMLTableElement | null>(null);
 /* 웹 — 칸 폭은 창 폭 · 거래 종류 · 새 조회 때만 다시 잰다. 유사도 ↔ 직접범위 · 반경 · 제외처럼 줄만 바뀔 때마다 재면 칸이 좌우로 '딸깍' 움직였다 */
 let colsKey = '';
+/** 웹 — 칸 폭(px). 템플릿 colgroup 이 그린다 */
+const colWidths = ref<number[]>([]);
 const evenCols = () => {
   const t = tableEl.value;
   if (!t || !t.parentElement?.clientWidth) return;
@@ -730,9 +732,8 @@ const evenCols = () => {
     // 남는 폭은 모든 칸에 똑같이 더하고, 모자라면 칸 안 여백을 줄인 뒤 주소 칸만 줄인다(… 으로 잘리고 말풍선으로 전체)
     const cw = t.parentElement.clientWidth;
     const key = `even|${cw}|${isAptKind}`;   // 거래 종류(매매 · 전세 · 월세)는 열쇠에서 뺐다 — 탭을 바꿔도 칸이 그대로(2026-11-12 사용자)
-    if (colsKey === key && t.querySelector('colgroup')) return;
+    if (colsKey === key && colWidths.value.length) return;
     colsKey = key;
-    t.querySelector('colgroup')?.remove();
     const ths = [...t.querySelectorAll('thead th')] as HTMLElement[];
     const ctx = document.createElement('canvas').getContext('2d');
     const cs = (el: Element | null) => (el ? getComputedStyle(el) : null);
@@ -781,9 +782,8 @@ const evenCols = () => {
       const sum = flex.reduce((a, b) => a + b, 0);
       if (sum > 0) { const k2 = Math.max(0.7, (sum - over - 1) / sum); flex.forEach((w, i) => { if (w) widths[i] = Math.floor(w * k2); }); }
     }
-    const cg = document.createElement('colgroup');
-    widths.forEach((w) => { const c = document.createElement('col'); c.style.width = `${w}px`; cg.appendChild(c); });
-    t.insertBefore(cg, t.firstChild);
+    // 칸 폭은 화면 틀(템플릿)의 colgroup 으로 — 손으로 끼운 colgroup 은 탭을 바꿔 표를 다시 그릴 때 잠깐 빠져 칸이 왼쪽으로 꿈틀했다(2026-11-12 사용자)
+    colWidths.value = widths;
     t.style.tableLayout = 'fixed';
     t.style.minWidth = '';
     if (t.parentElement) t.parentElement.scrollLeft = 0;
@@ -812,7 +812,7 @@ if (sonTab) watch(sonTab, (t) => { if (t === 'price') void nextTick(evenCols); }
 
 const onResize = () => { evenCols(); };
 // 웹 — 저장 등으로 표를 새로 그리면 칸 폭(colgroup)이 사라져 표가 오른쪽으로 삐져나왔다 — 다시 그려질 때 칸 폭이 없으면 바로 다시 잰다(2026-11-11 사용자)
-onUpdated(() => { const t = tableEl.value; if (webEmbed && t && !t.querySelector('colgroup')) { colsKey = ''; evenCols(); } });
+onUpdated(() => { const t = tableEl.value; if (webEmbed && t && !colWidths.value.length) { colsKey = ''; evenCols(); } });
 onMounted(() => { window.addEventListener('resize', onResize); void run(); });
 // ===== 웹 — 지도 전체화면(C안, 2026-11-05): 왼쪽 지도 · 오른쪽 고정 칸(결론 · 조건 · 유사물건 목록). 이 상자를 body 로 옮겨 화면을 채운다 =====
 /* 전체화면은 새로고침 · 다른 물건에서도 그대로(고른 보기는 남긴다) — 닫기를 눌러야 풀린다 */
@@ -1041,6 +1041,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 
       <div class="pa-list">
         <div class="tbl-wrap"><table ref="tableEl" class="even">
+          <colgroup v-if="webEmbed && colWidths.length"><col v-for="(w, i) in colWidths" :key="i" :style="{ width: `${w}px` }"></colgroup>
           <thead><tr>
             <th v-if="webEmbed" class="ck-th" title="체크하면 매도가 예상 · 평균 · 건수에서 빠집니다">제외</th>
             <th>구분</th>
