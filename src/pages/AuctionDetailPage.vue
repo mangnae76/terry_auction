@@ -9271,6 +9271,163 @@ const goBack = () => router.back();
                 </div>
               </div>
             <!-- 지역 수요분석(손품조사가 slot 으로 넣는다) — 순서를 정하려고 이 화면의 상자로 감싼다(slot 내용엔 이 화면 스타일이 닿지 않는다) -->
+            <!-- 앱 — 실사용자 + 입지등수를 매매수요 조사 맨 위 ① 로(웹 '① 실사용자 누구한테 팔까?'와 같은 이름, 2026-11-12 사용자) -->
+            <!-- ① 실사용자 + 입지등수 — 웹 · 아파트 손품조사에선 아래 단지 입지비교에 합쳤다(룸수 · 세대구성 · 등수 고치기, 2026-11-11 시안) -->
+            <!-- 빌라 손품조사(personaOn)는 입지등수 표를 뺐다 — 빌라 입지비교의 입지점수 · 순위가 대신한다(2026-11-12 사용자) -->
+            <div v-if="!cmpOn && !personaOn" class="adp-dm-block boxed o-rank">
+            <div class="adp-dm-sub"><template v-if="personaOn">입지등수</template><template v-else><span class="cmp-no">①</span>실사용자<small class="adp-ru-q">누구한테 팔까?</small></template> <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button></div>
+            <table :class="['adp-table adp-ruser-table', { tight: !webEmbed }]">
+              <!-- 웹 손품조사 — 면적 · 룸수 · 세대구성은 맨 위 '① 실사용자' 줄에 있어 여기선 입지조건 · 등수만(2026-11-12) -->
+              <colgroup v-if="webEmbed && personaOn">
+              <col style="width: 40%" /><col style="width: 30%" /><col style="width: 30%" />
+              </colgroup>
+              <colgroup v-else-if="webEmbed">
+              <col style="width: 24%" /><col style="width: 18%" /><col style="width: 24%" /><col style="width: 20%" /><col style="width: 14%" />
+              </colgroup>
+              <!-- 아파트는 '전용 59.98㎡ / 18.1평' 두 줄이 들어가게 첫 칸을 넓히고 세대구성을 줄인다(2026-11-10) -->
+              <!-- 폰 폭(표 327px)에서 '입지등수' · '등수평균' 머리와 면적 두 줄이 다 들어가게 잰 비율(2026-11-10). 칸 안쪽 여백은 2px -->
+              <colgroup v-else-if="isApartment">
+              <col style="width: 42%" /><col style="width: 19%" /><col style="width: 21%" /><col style="width: 18%" />
+              </colgroup>
+              <colgroup v-else>
+              <col style="width: 36%" /><col style="width: 23%" /><col style="width: 23%" /><col style="width: 18%" />
+              </colgroup>
+              <thead>
+              <tr>
+                <th v-if="!personaOn">{{ isApartment ? '면적 공급(전용)' : '전용면적' }}</th>
+                <th v-if="webEmbed && !personaOn">룸수</th>
+                <th v-if="!personaOn">세대구성</th>
+                <th>입지조건</th>
+                <th>입지등수</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr>
+                <td v-if="!personaOn" class="adp-ruser-cell vmid">
+                <!-- 아파트 — 고르지 않고 이 물건의 전용 · 공급면적을 위아래로 적는다(머리 '면적(전용/공급)', 2026-11-10). 입지조건은 전용 평수 구간으로 자동 -->
+                <!-- 아파트 면적 — '공급㎡ (전용)' 한 줄 + 아래 평(2026-11-11 규칙) -->
+                <div v-if="isApartment" class="adp-ruser-area">
+                  <span>{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2, 'm2') }}</span>
+                  <span>{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2, 'py') }}</span>
+                </div>
+                <div v-else class="adp-rcase-dd">
+                  <button type="button" class="adp-rcase-select adp-ruser-select" @click="bandOpen = !bandOpen">
+                    <span class="adp-ruser-pick">
+                      <span class="band">{{ selectedRealUserBand ? selectedRealUserBand.title : '면적 선택' }}</span>
+                      <span v-if="selectedRealUserBandM2" class="rooms">{{ selectedRealUserBandM2 }}</span>
+                    </span>
+                    <span class="adp-rcase-caret">{{ bandOpen ? '▴' : '▾' }}</span>
+                  </button>
+                  <template v-if="bandOpen">
+                    <div class="adp-rcase-backdrop" @click="bandOpen = false" />
+                    <ul class="adp-rcase-list adp-ruser-list">
+                      <li
+                        :class="['adp-rcase-item', { on: !pickedRealUserBand }]"
+                        @click="pickRealUserBand('')"
+                      >
+                        <strong>면적 선택</strong>
+                      </li>
+                      <li
+                        v-for="b in REAL_USER_BANDS"
+                        :key="b.id"
+                        :class="['adp-rcase-item', { on: b.id === pickedRealUserBand?.id }]"
+                        @click="pickRealUserBand(b.id)"
+                      >
+                        <strong>{{ b.title }}</strong><span class="adp-ruser-m2">{{ bandM2Of(b.title) }}</span>
+                      </li>
+                    </ul>
+                  </template>
+                </div>
+                <div v-if="!webEmbed" class="adp-rcase-dd adp-ruser-room">
+                  <button type="button" class="adp-rcase-select adp-ruser-select room" @click="roomOpen = !roomOpen">
+                    <span class="adp-ruser-pick">
+                      <span class="band">{{ selectedRoomType ? selectedRoomType.label : '룸수 선택' }}</span>
+                    </span>
+                    <span class="adp-rcase-caret">{{ roomOpen ? '▴' : '▾' }}</span>
+                  </button>
+                  <template v-if="roomOpen">
+                    <div class="adp-rcase-backdrop" @click="roomOpen = false" />
+                    <ul class="adp-rcase-list adp-ruser-list">
+                      <li
+                        :class="['adp-rcase-item', { on: !selectedRoomType }]"
+                        @click="pickRoomType('')"
+                      >
+                        <strong>룸수 선택</strong>
+                      </li>
+                      <li
+                        v-for="r in ROOM_TYPES"
+                        :key="r.id"
+                        :class="['adp-rcase-item', { on: r.id === selectedRoomType?.id }]"
+                        @click="pickRoomType(r.id)"
+                      >
+                        <strong>{{ r.label }}</strong>
+                        <small>{{ r.details.map((d) => d.who).join(' · ') }}</small>
+                      </li>
+                    </ul>
+                  </template>
+                </div>
+                </td>
+                <!-- 웹 — 룸수는 제 칸에 (전용면적 바로 옆) -->
+                <td v-if="webEmbed && !personaOn" class="adp-ruser-cell vmid">
+                <div class="adp-rcase-dd adp-ruser-room">
+                  <button type="button" class="adp-rcase-select adp-ruser-select room" @click="roomOpen = !roomOpen">
+                    <span class="adp-ruser-pick">
+                      <span class="band">{{ selectedRoomType ? selectedRoomType.label : '룸수 선택' }}</span>
+                    </span>
+                    <span class="adp-rcase-caret">{{ roomOpen ? '▴' : '▾' }}</span>
+                  </button>
+                  <template v-if="roomOpen">
+                    <div class="adp-rcase-backdrop" @click="roomOpen = false" />
+                    <ul class="adp-rcase-list adp-ruser-list">
+                      <li
+                        :class="['adp-rcase-item', { on: !selectedRoomType }]"
+                        @click="pickRoomType('')"
+                      >
+                        <strong>룸수 선택</strong>
+                      </li>
+                      <li
+                        v-for="r in ROOM_TYPES"
+                        :key="r.id"
+                        :class="['adp-rcase-item', { on: r.id === selectedRoomType?.id }]"
+                        @click="pickRoomType(r.id)"
+                      >
+                        <strong>{{ r.label }}</strong>
+                        <small>{{ r.details.map((d) => d.who).join(' · ') }}</small>
+                      </li>
+                    </ul>
+                  </template>
+                </div>
+                </td>
+                <td v-if="!personaOn" class="adp-ruser-cell">
+                <div v-for="d in selectedRoomType?.details ?? []" :key="d.who" class="adp-ruser-line">
+                  <strong>{{ d.who }}</strong>
+                  <span v-for="k in d.kinds" :key="k" class="kind">{{ k }}</span>
+                </div>
+                </td>
+                <!-- 입지조건 이름과 등수 입력을 열로 나눠 줄을 맞춘다 -->
+                <td class="adp-ruser-cell">
+                <div v-for="c in rankConditions" :key="c" class="adp-ruser-cond-row">
+                  <span class="adp-ruser-cond-name">{{ c }}</span>
+                </div>
+                </td>
+                <td class="adp-ruser-cell center">
+                <div v-for="c in rankConditions" :key="c" class="adp-ruser-cond-row center">
+                  <input
+                    :class="['adp-ruser-rank', { typed: !!rankOf(c) }]"
+                    inputmode="numeric"
+                    placeholder="입력"
+                    :title="autoRankNote(c)"
+                    :value="rankValue(c)"
+                    @input="setRank(c, ($event.target as HTMLInputElement).value)"
+                  />
+                </div>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+
+            </div>
+
             <div v-if="sonpumMode" class="o-demand"><slot name="son-demand" /></div>
             <template v-if="!sonpumMode">
             <div class="adp-dm-head">
@@ -9536,169 +9693,6 @@ const goBack = () => router.back();
               <strong class="adp-dm-title">{{ personaOn ? '개별성' : `${sonpumMode ? '' : '2. '}입지/개별성` }}<small v-if="!personaOn">(구역내등수)</small></strong>
             </div>
 
-
-            <!-- ① 실사용자 + 입지등수 — 웹 · 아파트 손품조사에선 아래 단지 입지비교에 합쳤다(룸수 · 세대구성 · 등수 고치기, 2026-11-11 시안) -->
-            <!-- 빌라 손품조사(personaOn)는 입지등수 표를 뺐다 — 빌라 입지비교의 입지점수 · 순위가 대신한다(2026-11-12 사용자) -->
-            <div v-if="!cmpOn && !personaOn" class="adp-dm-block boxed o-rank">
-            <div class="adp-dm-sub">{{ personaOn ? '입지등수' : '① 실사용자 + 입지등수' }} <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button></div>
-            <table :class="['adp-table adp-ruser-table', { tight: !webEmbed }]">
-              <!-- 웹 손품조사 — 면적 · 룸수 · 세대구성은 맨 위 '① 실사용자' 줄에 있어 여기선 입지조건 · 등수만(2026-11-12) -->
-              <colgroup v-if="webEmbed && personaOn">
-              <col style="width: 40%" /><col style="width: 30%" /><col style="width: 30%" />
-              </colgroup>
-              <colgroup v-else-if="webEmbed">
-              <col style="width: 20%" /><col style="width: 15%" /><col style="width: 21%" /><col style="width: 17%" /><col style="width: 12%" /><col style="width: 15%" />
-              </colgroup>
-              <!-- 아파트는 '전용 59.98㎡ / 18.1평' 두 줄이 들어가게 첫 칸을 넓히고 세대구성을 줄인다(2026-11-10) -->
-              <!-- 폰 폭(표 327px)에서 '입지등수' · '등수평균' 머리와 면적 두 줄이 다 들어가게 잰 비율(2026-11-10). 칸 안쪽 여백은 2px -->
-              <colgroup v-else-if="isApartment">
-              <col style="width: 37.5%" /><col style="width: 15%" /><col style="width: 17.5%" /><col style="width: 14.5%" /><col style="width: 15.5%" />
-              </colgroup>
-              <colgroup v-else>
-              <col style="width: 31%" /><col style="width: 19%" /><col style="width: 18%" /><col style="width: 15%" /><col style="width: 17%" />
-              </colgroup>
-              <thead>
-              <tr>
-                <th v-if="!personaOn">{{ isApartment ? '면적 공급(전용)' : '전용면적' }}</th>
-                <th v-if="webEmbed && !personaOn">룸수</th>
-                <th v-if="!personaOn">세대구성</th>
-                <th>입지조건</th>
-                <th>입지등수</th>
-                <th>등수평균</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr>
-                <td v-if="!personaOn" class="adp-ruser-cell vmid">
-                <!-- 아파트 — 고르지 않고 이 물건의 전용 · 공급면적을 위아래로 적는다(머리 '면적(전용/공급)', 2026-11-10). 입지조건은 전용 평수 구간으로 자동 -->
-                <!-- 아파트 면적 — '공급㎡ (전용)' 한 줄 + 아래 평(2026-11-11 규칙) -->
-                <div v-if="isApartment" class="adp-ruser-area">
-                  <span>{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2, 'm2') }}</span>
-                  <span>{{ areaPair(mySupplyM2 ? { lo: mySupplyM2, hi: mySupplyM2 } : null, aptExclusiveM2, 'py') }}</span>
-                </div>
-                <div v-else class="adp-rcase-dd">
-                  <button type="button" class="adp-rcase-select adp-ruser-select" @click="bandOpen = !bandOpen">
-                    <span class="adp-ruser-pick">
-                      <span class="band">{{ selectedRealUserBand ? selectedRealUserBand.title : '면적 선택' }}</span>
-                      <span v-if="selectedRealUserBandM2" class="rooms">{{ selectedRealUserBandM2 }}</span>
-                    </span>
-                    <span class="adp-rcase-caret">{{ bandOpen ? '▴' : '▾' }}</span>
-                  </button>
-                  <template v-if="bandOpen">
-                    <div class="adp-rcase-backdrop" @click="bandOpen = false" />
-                    <ul class="adp-rcase-list adp-ruser-list">
-                      <li
-                        :class="['adp-rcase-item', { on: !pickedRealUserBand }]"
-                        @click="pickRealUserBand('')"
-                      >
-                        <strong>면적 선택</strong>
-                      </li>
-                      <li
-                        v-for="b in REAL_USER_BANDS"
-                        :key="b.id"
-                        :class="['adp-rcase-item', { on: b.id === pickedRealUserBand?.id }]"
-                        @click="pickRealUserBand(b.id)"
-                      >
-                        <strong>{{ b.title }}</strong><span class="adp-ruser-m2">{{ bandM2Of(b.title) }}</span>
-                      </li>
-                    </ul>
-                  </template>
-                </div>
-                <div v-if="!webEmbed" class="adp-rcase-dd adp-ruser-room">
-                  <button type="button" class="adp-rcase-select adp-ruser-select room" @click="roomOpen = !roomOpen">
-                    <span class="adp-ruser-pick">
-                      <span class="band">{{ selectedRoomType ? selectedRoomType.label : '룸수 선택' }}</span>
-                    </span>
-                    <span class="adp-rcase-caret">{{ roomOpen ? '▴' : '▾' }}</span>
-                  </button>
-                  <template v-if="roomOpen">
-                    <div class="adp-rcase-backdrop" @click="roomOpen = false" />
-                    <ul class="adp-rcase-list adp-ruser-list">
-                      <li
-                        :class="['adp-rcase-item', { on: !selectedRoomType }]"
-                        @click="pickRoomType('')"
-                      >
-                        <strong>룸수 선택</strong>
-                      </li>
-                      <li
-                        v-for="r in ROOM_TYPES"
-                        :key="r.id"
-                        :class="['adp-rcase-item', { on: r.id === selectedRoomType?.id }]"
-                        @click="pickRoomType(r.id)"
-                      >
-                        <strong>{{ r.label }}</strong>
-                        <small>{{ r.details.map((d) => d.who).join(' · ') }}</small>
-                      </li>
-                    </ul>
-                  </template>
-                </div>
-                </td>
-                <!-- 웹 — 룸수는 제 칸에 (전용면적 바로 옆) -->
-                <td v-if="webEmbed && !personaOn" class="adp-ruser-cell vmid">
-                <div class="adp-rcase-dd adp-ruser-room">
-                  <button type="button" class="adp-rcase-select adp-ruser-select room" @click="roomOpen = !roomOpen">
-                    <span class="adp-ruser-pick">
-                      <span class="band">{{ selectedRoomType ? selectedRoomType.label : '룸수 선택' }}</span>
-                    </span>
-                    <span class="adp-rcase-caret">{{ roomOpen ? '▴' : '▾' }}</span>
-                  </button>
-                  <template v-if="roomOpen">
-                    <div class="adp-rcase-backdrop" @click="roomOpen = false" />
-                    <ul class="adp-rcase-list adp-ruser-list">
-                      <li
-                        :class="['adp-rcase-item', { on: !selectedRoomType }]"
-                        @click="pickRoomType('')"
-                      >
-                        <strong>룸수 선택</strong>
-                      </li>
-                      <li
-                        v-for="r in ROOM_TYPES"
-                        :key="r.id"
-                        :class="['adp-rcase-item', { on: r.id === selectedRoomType?.id }]"
-                        @click="pickRoomType(r.id)"
-                      >
-                        <strong>{{ r.label }}</strong>
-                        <small>{{ r.details.map((d) => d.who).join(' · ') }}</small>
-                      </li>
-                    </ul>
-                  </template>
-                </div>
-                </td>
-                <td v-if="!personaOn" class="adp-ruser-cell">
-                <div v-for="d in selectedRoomType?.details ?? []" :key="d.who" class="adp-ruser-line">
-                  <strong>{{ d.who }}</strong>
-                  <span v-for="k in d.kinds" :key="k" class="kind">{{ k }}</span>
-                </div>
-                </td>
-                <!-- 입지조건 이름과 등수 입력을 열로 나눠 줄을 맞춘다 -->
-                <td class="adp-ruser-cell">
-                <div v-for="c in rankConditions" :key="c" class="adp-ruser-cond-row">
-                  <span class="adp-ruser-cond-name">{{ c }}</span>
-                </div>
-                </td>
-                <td class="adp-ruser-cell center">
-                <div v-for="c in rankConditions" :key="c" class="adp-ruser-cond-row center">
-                  <input
-                    :class="['adp-ruser-rank', { typed: !!rankOf(c) }]"
-                    inputmode="numeric"
-                    placeholder="입력"
-                    :title="autoRankNote(c)"
-                    :value="rankValue(c)"
-                    @input="setRank(c, ($event.target as HTMLInputElement).value)"
-                  />
-                </div>
-                </td>
-                <td class="adp-ruser-cell center vmid">
-                <template v-if="realUserRankSummary.filled > 0">
-                  <strong class="adp-ruser-sum">{{ realUserRankSummary.avg }}</strong>
-                </template>
-                <span v-else class="adp-na">-</span>
-                </td>
-              </tr>
-              </tbody>
-            </table>
-
-            </div>
 
             <!-- ② 개별성 분석 (웹 · 아파트 손품조사는 ①) -->
             <!-- 아파트 손품조사는 입력을 단지 입지비교 · 호실 예상가 표와 점수 팝업으로 옮겨 이 카드를 없앤다(2026-11-11 시안) -->
@@ -12945,7 +12939,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-steps button { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: #f3f5f9; font: inherit; font-size: 13px; color: #374151; cursor: pointer; }
 .cmp-steps button b { color: #2b6df3; font-weight: 800; }
 .cmp-steps button:hover { background: #eef2ff; }
-.cmp-no { margin-right: 4px; color: #111827; }   /* 상자 제목 번호 — 제목과 같은 검정(2026-11-11 사용자) */
+.cmp-no { margin-right: 4px; color: #111827; }
+.adp-ru-q { margin-left: 6px; font-size: 12.5px; font-weight: 400; color: #6b7280; }   /* 앱 ① 실사용자 옆 물음 — 웹 '누구한테 팔까?'와 같은 꼴 */   /* 상자 제목 번호 — 제목과 같은 검정(2026-11-11 사용자) */
 .adp-card-head > h2:has(+ .cmp-steps) { flex-grow: 0; }   /* 제목이 늘어나 단계 단추를 오른쪽 끝으로 밀던 것 — 제목 바로 옆에 */
 /* 평가표 점수 — 누르면 팝업 */
 .cmp-sc { border: 0; background: none; padding: 2px 6px; border-radius: 5px; font: inherit; font-size: 13px; color: #111827; cursor: pointer; text-decoration: underline dotted #9ca3af; text-underline-offset: 3px; }
