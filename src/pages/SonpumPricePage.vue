@@ -366,7 +366,7 @@ const medOf = (rs: Array<{ perPy: number; name?: string; jibun: string }>) => {
   if (!srt.length || !(myPy.value > 0)) return {};
   const odd = srt.length % 2 === 1; const mid = srt[(srt.length - 1) >> 1];
   const medPy = odd ? mid.perPy : (srt[srt.length / 2 - 1].perPy + srt[srt.length / 2].perPy) / 2;
-  return { med: Math.round(medPy * myPy.value / 1e4) * 1e4, medPy, medName: odd ? (mid.name || mid.jibun) : '' };
+  return { med: Math.round(medPy * myPy.value / 1e4) * 1e4, medPy, medName: odd ? (mid.name || mid.jibun) : '', medPair: odd ? '' : [srt[srt.length / 2 - 1], srt[srt.length / 2]].map((r) => r.name || r.jibun).join(' · ') };
 };
 if (sonPriceOut) {
   watch([view, kindF, () => rangeCond.value.floor, cond], () => {

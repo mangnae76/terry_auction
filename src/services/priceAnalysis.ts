@@ -21,6 +21,8 @@ export type SonPriceOut = {
   med?: number;
   medPy?: number;
   medName?: string;
+  /** 짝수일 때 가운데 두 건 이름('A · B') */
+  medPair?: string;
   /** 층 단추 '같은 층' — 층은 이미 기준가에 담겨 단지 내 개별성의 층 보정을 0 으로 */
   sameFloor: boolean;
   /** 다른 단지 거래가 섞였나 — 섞이면 구역 내 개별성을 열어 보정 */

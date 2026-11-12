@@ -6436,7 +6436,7 @@ const cmpBase = computed(() => {
   const formula = o.avgPy && o.myPy ? `${who} ${o.n > 1 ? `평균 ${per}` : per} ${Math.round(o.avgPy / 1e4).toLocaleString('ko-KR')}만 × 전용 ${o.myPy.toFixed(2)}평 = ${cmpEok(o.est)}` : '';
   // 중간값 — 고른 거래가 2건 이상일 때 옆 칸에(평균을 한 건이 끌어내리는지 보이게, 2026-11-12 사용자)
   const med = o.n >= 2 && o.med ? o.med : 0;
-  const medFormula = med && o.medPy && o.myPy ? `${o.medName ? `${o.medName} ${per}` : `가운데 2건 평균 ${per}`} ${Math.round(o.medPy / 1e4).toLocaleString('ko-KR')}만 × 전용 ${o.myPy.toFixed(2)}평 = ${cmpEok(med)}` : '';
+  const medFormula = med && o.medPy && o.myPy ? `${o.medName ? `${o.medName} ${per}` : `가운데 2건(${o.medPair || ''}) 평균 ${per}`} ${Math.round(o.medPy / 1e4).toLocaleString('ko-KR')}만 × 전용 ${o.myPy.toFixed(2)}평 = ${cmpEok(med)}` : '';
   return { label: `시세분석 예상 ${o.kind}가`, value: o.est, note: '', formula, med, medFormula };
 });
 const cmpUnitBase = computed(() => cmpBase.value.value);
