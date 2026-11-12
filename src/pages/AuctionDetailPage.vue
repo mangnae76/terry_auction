@@ -6077,18 +6077,26 @@ const cmpDraw = () => {
       z: on ? 1000 : r.mine ? 500 : 10,
     });
   });
+  // 조회 전(리스트 없음) — 선정물건 말풍선만 두고 반경(읍면동이면 1km)에 맞춘다
+  if (me && !rows.some((r) => r.mine)) {
+    const nm = cmpEsc(supName.value || '선정물건');
+    mv.pin(me, { className: 'cmp-bub me', html: `<div class="cb"><b><span class="nm" title="${nm}">${nm}</span></b><span>선정물건</span></div>`, z: 500, interactive: false });
+    const k0 = `me|${cmpRange.value}`;
+    if (!rows.length && k0 !== cmpFitted) { cmpFitted = k0; mv.fitRadius(me, cmpRange.value === 'dong' ? 1000 : cmpRange.value); }
+  }
   const key = rows.map((r) => cmpKeyOf(r)).join(',');
   if (key && key !== cmpFitted) { cmpFitted = key; mv.fitPoints(rows.map((r) => r.point!), 40, 17, false); }
 };
 const cmpEnsureMap = async () => {
   await nextTick();
-  if (!cmpMvP && cmpMapEl.value && cmpRows.value.some((r) => r.point)) {
+  // 조회하기 전에도 지도는 먼저 — 선정물건 좌표만 알면 그린다(2026-11-12 사용자)
+  if (!cmpMvP && cmpMapEl.value && (cmpRows.value.some((r) => r.point) || cmpMePt.value)) {
     const el = cmpMapEl.value;
     cmpMvP = createMapView(el, { zoomControl: 'topright', kakaoTools: true, leaflet: { scrollWheelZoom: true, wheelPxPerZoomLevel: 120, zoomSnap: 0.25 } }).then((v) => { cmpMv = v; if (v.native) cmpTools.value = markRaw(v.native); });
   }
   if (cmpMvP) { await cmpMvP; cmpDraw(); }
 };
-watch(() => `${cmpRange.value}|${cmpKind.value}|${cmpPick.value}|${cmpPicked.value ? cmpKeyOf(cmpPicked.value) : ''}|${cmpRows.value.map((r) => `${cmpKeyOf(r)}:${r.point ? 1 : 0}:${r.tot === null ? '' : Math.round(r.tot)}`).join(',')}`, () => { void cmpEnsureMap(); });
+watch(() => `${cmpMePt.value ? 1 : 0}|${cmpRange.value}|${cmpKind.value}|${cmpPick.value}|${cmpPicked.value ? cmpKeyOf(cmpPicked.value) : ''}|${cmpRows.value.map((r) => `${cmpKeyOf(r)}:${r.point ? 1 : 0}:${r.tot === null ? '' : Math.round(r.tot)}`).join(',')}`, () => { void cmpEnsureMap(); });
 if (sonpumTab) watch(sonpumTab, (t) => { if (t === 'demand') void nextTick(() => { cmpMv?.relayout(); cmpFitted = ''; cmpDraw(); }); });
 /** 지도 도구 막대(시세분석 지도와 같은 것 — 주변 · 로드뷰 · 거리재기 …) */
 const cmpTools = shallowRef<{ k: unknown; map: unknown } | null>(null);
