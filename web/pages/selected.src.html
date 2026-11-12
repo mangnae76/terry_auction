@@ -6773,6 +6773,14 @@ span.cal-day.has { cursor: help; }
         ...(T.hasBuildingName(a.address || '') ? [] : [['건물명', sv('sum.buildingName') ? `<b class="it-name">${esc(sv('sum.buildingName'))}</b>` : '-']]),
         ['동/호', `${sv('sum.dong') ? `${hi(`${esc(sv('sum.dong'))}동`)} / ` : ''}${hi(sv('sum.ho') ? `${esc(sv('sum.ho'))}호` : '-호')}`],
         ['층', T.summaryFloorPairOf(sv('sum.floorCurrent'), sv('sum.floorTotal'))],
+        /* 빌라 — 엘베(건축물대장 승강기, 없으면 개별성 칸 O/X). 아파트는 늘 있어 뺀다(2026-11-12 사용자) */
+        ...(isApt ? [] : [['엘베', (() => {
+          const raw = String((a.buildingHeader && a.buildingHeader.elevator) || '');
+          const ns = raw.match(/\d+/g); const n = ns ? ns.reduce((x, y) => x + Number(y), 0) : null;
+          const ox = ((a.surveyForm || {}).indivValues || {})['ind.elevator'] || '';
+          if (n !== null) return n > 0 ? hi(`있음 ${n}대`) : hi('없음');
+          return ox === 'O' ? hi('있음') : ox === 'X' ? hi('없음') : '-';
+        })()]]),
         /* 아파트는 '총 / 해당면적' 세대수를 한 줄에, 그 아래 공동주택가격 · 맨 아래 체납(2026-11-10) */
         isApt ? ['세대수(총/해당면적)', `${sv('sum.units') ? `${Number(sv('sum.units')).toLocaleString('ko-KR')}세대` : '-'} / ${areaUnits ? `${Number(areaUnits).toLocaleString('ko-KR')}세대` : '-'}`]
           : ['세대수', sv('sum.units') ? `${Number(sv('sum.units')).toLocaleString('ko-KR')}세대` : '-'],
