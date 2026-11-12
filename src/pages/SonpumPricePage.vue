@@ -938,7 +938,28 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
     <div class="zone">
       <!-- 앱 — 지도는 한 줄로 접어 두고 누르면 편다 -->
       <!-- 앱 — 근거 유사물건 아래 지도 · 필터는 뺐다. 이름 줄 · 지번 · 거래 수 · 리스트만(2026-11-13 사용자) -->
-      <div v-if="props.app || sonApp" class="map-title static"><span class="pa-tag">근거</span><b>유사물건</b></div>
+      <div v-if="props.app || sonApp" class="map-title static"><span class="pa-tag">근거</span><b>유사물건</b>
+        <!-- 앱 — 지도 대신 이 줄 오른쪽 단추로 임장경로에 넣는다. 고르기 창 · 저장 자리는 웹 지도의 '임장경로에 추가'와 같다(2026-11-13 사용자) -->
+        <button v-if="props.app && !loose && (addList.length || savedCompare?.items.length)" type="button" :class="['add-btn app', { done: savedCompare?.items.length }]" :aria-expanded="addOpen" @click="toggleAdd">
+          <template v-if="savedCompare?.items.length">✓ 임장경로에 {{ savedCompare.items.length }}곳</template><template v-else>＋ 임장경로에 추가</template>
+        </button>
+      </div>
+      <p v-if="props.app && addMsg" class="add-msg app">{{ addMsg }}</p>
+      <Teleport to="body">
+        <template v-if="props.app && addOpen && !loose">
+          <div class="add-dim" @click="addOpen = false" />
+          <div class="add-pop app" role="dialog" aria-label="임장경로에 비교 물건 넣기">
+            <i class="grab" aria-hidden="true" />
+            <b>임장경로에 비교 물건 넣기</b>
+            <small>이 물건의 임장경로 정류장에 「현장 기록」으로 붙습니다. 기본은 500m 안 가까운 5곳.</small>
+            <div class="add-items">
+              <label v-for="g in addList" :key="g.jibun"><input v-model="addPick" type="checkbox" :value="g.jibun"><i class="n">{{ orderOf[g.jibun] }}</i><span class="nm">{{ g.name }}</span><span :class="['d', { far: g.dist > 500 }]">{{ g.dist }}m</span></label>
+            </div>
+            <p v-if="!addList.length" class="none">넣을 유사물건이 없습니다.</p>
+            <button type="button" class="ok" :disabled="!addPick.length" @click="saveCompare">{{ addPick.length }}곳 넣기</button>
+          </div>
+        </template>
+      </Teleport>
       <div v-if="!sonApp && !props.app" class="map">
         <div ref="mapEl" class="map-in" />
         <KakaoMapTools v-if="kTools" :k="kTools.k" :map="kTools.map" :near="webEmbed ? mySpot : null" />
@@ -1173,7 +1194,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <button v-if="shownRows.length > MORE_AT" type="button" class="more" @click="showAll = !showAll">{{ showAll ? '접기' : `더 보기 (${shownRows.length - MORE_AT}건)` }}</button>
       </div>
       <!-- 앱 — 제외 · 공시가 칸이 없어 그 설명은 뺀다 -->
-      <p v-if="props.app" class="list-foot">※ 맨 위 빨간 줄은 {{ meName }}입니다(비교 기준이라 계산에 넣지 않습니다).<br>※ 위치를 찾은 거래만 나옵니다. 주소 앞 번호는 비교 임장 순서입니다. 주소를 누르면 전체 주소가 보입니다.</p>
+      <p v-if="props.app" class="list-foot">※ 맨 위 빨간 줄은 {{ meName }}입니다(비교 기준이라 계산에 넣지 않습니다).<br>※ 위치를 찾은 거래만 나옵니다. 주소 앞 번호는 비교 임장 순서입니다.</p>
       <p v-else class="list-foot">※ 맨 위 빨간 줄은 {{ meName }}입니다(비교 기준이라 계산에 넣지 않습니다).<br>※ 공시가는 공동주택가격입니다. 매매가율 = 실거래가 ÷ 공시가, 전세 = 공시가 × 126%(보증보험 한도, 지역 · 평형 보정 없음), 갭 = 실거래가 − 전세.<br>※ 위치를 찾은 거래만 나옵니다. 같은 건물 → 임장 순서(지도 번호, 현장에서 가까운 곳부터 도는 동선). <template v-if="webEmbed">제외 칸에 체크한 거래는 실거래가 예상 · 평균 · 건수에서 빠집니다(체크는 물건에 남습니다).</template><template v-else>머리글 ▾로 값을 빼면 그 거래는 표 · 지도 · 실거래가 예상에서 빠집니다(물건에 남습니다).</template></p>
     </div>
 
@@ -1693,4 +1714,17 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 /* 앱 — 결론 · 근거: 꼬리표 왼쪽 끝 같은 x, 제목 줄 아래 10, 두 단락 사이 가로 구분선(위 16 · 아래 16)(2026-11-13 사용자) */
 .pa-wrap.app .map-title.static { margin: 0; padding: 0; min-height: 25px; }
 .pa-wrap.app .pa > .zone + .zone { margin-top: 4px; padding-top: 16px; border-top: 1px solid var(--line); }
+/* 앱 — 임장경로에 추가 단추(근거 줄 오른쪽) · 아래에서 올라오는 고르기 창(2026-11-13) */
+.pa-wrap.app .map-title.static { display: flex; align-items: center; gap: 8px; }
+.add-btn.app { position: static; margin-left: auto; height: 30px; padding: 0 12px; font-size: 12.5px; }
+.add-msg.app { position: static; margin: 0; max-width: none; font-size: 12px; }
+.add-dim { position: fixed; inset: 0; z-index: 2900; background: rgba(17, 24, 39, .45); }
+.add-pop.app { position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 2901; width: auto; max-height: 75vh; display: flex; flex-direction: column; gap: 10px; padding: 10px 16px calc(16px + env(safe-area-inset-bottom, 0px)); border: 0; border-radius: 18px 18px 0 0; box-shadow: 0 -8px 24px rgba(0, 0, 0, .18); }
+.add-pop.app .grab { align-self: center; width: 40px; height: 4px; border-radius: 2px; background: #dde3ee; }
+.add-pop.app > b { font-size: 15px; font-weight: 800; }
+.add-pop.app .add-items { overflow: auto; border: 1px solid var(--line); border-radius: 10px; }
+.add-pop.app .add-items label { padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.add-pop.app .add-items label:last-child { border-bottom: 0; }
+.add-pop.app .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.add-pop.app .ok { flex: none; height: 44px; font-size: 15px; }
 </style>
