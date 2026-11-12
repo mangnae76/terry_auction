@@ -759,7 +759,7 @@ const evenCols = () => {
       pub: ['9,999,999,999', '999.9%', '공시가 없음'],
       gap: ['9,999,999,999', '▲ 9,999,999,999', '한도 안', '갭 -9,999,999,999'],
       area: isAptKind ? ['999.99㎡ (999.99)'] : ['999.99㎡', '999.99평'],
-      elev: ['조회 중', '9대있음'],
+      elev: ['조회 중', '99대있음'],   // 아파트는 30대도 있다 — 9대로 잡아 '30대 있음'이 두 줄로 꺾였다
       year: ['2026년'],
       dist: ['9,999m'],
       floor: ['99층'],
@@ -1122,7 +1122,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
                 <button type="button" :class="['ab', { ok: okKey === `${r.id}C` }]" title="주소 복사" aria-label="주소 복사" @click="copy(fullAddr(r), `${r.id}C`)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg></button>
               </span></td>
             </tr>
-            <tr v-if="!shownRows.length && res && !loading" class="nohover"><td :colspan="webEmbed ? 15 : 14" class="pa-empty">반경 {{ radText(radius) }} 안에 조건에 맞는 거래가 없습니다. 조건을 넓혀 보세요.
+            <tr v-if="!listRows.length && res && !loading" class="nohover"><td :colspan="COLS.length + (webEmbed ? 3 : 2)" class="pa-empty">반경 {{ radText(radius) }} 안에 조건에 맞는 거래가 없습니다. 조건을 넓혀 보세요.
               <div class="btns">
                 <button v-if="radius < RADII[RADII.length - 1]" type="button" @click="widen('r')">반경 {{ radText(RADII.find((v) => v > radius) ?? 1000) }}로</button>
                 <button type="button" @click="widen('s')">유사도 낮추기</button>
