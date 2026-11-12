@@ -2812,17 +2812,17 @@ const INDIV_GROUPS: IndivGroup[] = [
   {
     title: '빌라 개별성',
     items: [
-      { id: 'ind.age', label: '년식', yearMonth: true, rate: '-15%' },
-      { id: 'ind.parking', label: '주차수', text: true, half: true, rate: '5%' },
+      { id: 'ind.age', label: '연식', yearMonth: true, rate: '-15%' },
+      { id: 'ind.parking', label: '주차', text: true, half: true, rate: '5%' },
       { id: 'ind.elevator', label: '엘베', options: ['O', 'X'], rate: '10%' },
       { id: 'ind.corridor', label: '현관구조', options: ['계단식', '복도식'], rate: '10%' },
       { id: 'ind.slope', label: '경사', survey: true, options: ['O', 'X'], rate: '-5%' },
       {
-        id: 'ind.mgmt', label: '건물외부', survey: true, multi: true,
+        id: 'ind.mgmt', label: '건물외관', survey: true, multi: true,
         options: ['좋음', '양호', '나쁨', '지정주차', '곰팡이', '누수', '결로'], rate: '-5%',
       },
       {
-        id: 'ind.inside', label: '건물내부', survey: true, multi: true,
+        id: 'ind.inside', label: '공용부', survey: true, multi: true,
         options: ['좋음', '양호', '나쁨', '청결', '계단청소', '보안'], rate: '5%',
       },
     ],
@@ -2928,11 +2928,11 @@ const indivDongText = computed(() => {
 });
 const indivParkingText = computed(() => {
   // 가구당 몇 대인지가 판단에 쓰이는 값이라 그것만 적는다
-  if (indivParkingPerHome.value) return indivParkingPerHome.value;
+  if (indivParkingPerHome.value) return `세대당 ${indivParkingPerHome.value}`;   // 무엇의 대수인지 글로(2026-11-13)
   const raw = indivValue('ind.parking');
   if (!raw) return '-';
   const count = Number(raw.replace(/[^\d.]/g, ''));
-  return count > 0 ? `${count.toLocaleString('ko-KR')}대` : raw;
+  return count > 0 ? `총 ${count.toLocaleString('ko-KR')}대` : raw;
 });
 
 // 층 가격율 — 아파트/빌라와 층수에 따라 기본값이 달라진다
@@ -2958,6 +2958,9 @@ const indivFloorRate = () => {
 };
 // 가격율 — 저장·입력은 숫자만, 표시는 뒤에 %를 붙인다 (indivValues에 '<id>.rate'로 저장)
 // 세대수·주차수처럼 숫자만 들어가는 값은 천단위 콤마로 보여 준다
+/** 개별성 고르기 · 자동값 보이는 글 — 저장 값은 그대로 두고(O · X), 보이는 글만 '있음 · 없음'(2026-11-13 사용자 '빌라 개별성 글 정리') */
+const OX_ITEMS = new Set(['ind.elevator', 'ind.slope']);
+const optText = (id: string, opt: string) => (OX_ITEMS.has(id) ? (opt === 'O' ? '있음' : opt === 'X' ? '없음' : opt) : opt);
 const indivDisplay = (item: IndivItem) => {
   // 용적률 — 손으로 적은 값이 없으면 정보요약 값(표제부 · 단지정보)
   const raw = indivValue(item.id) || (item.id === 'ind.far' ? summaryFarText.value.replace(/[^\d.]/g, '') : '');
@@ -2967,7 +2970,7 @@ const indivDisplay = (item: IndivItem) => {
     return num ? `${num}${item.suffix}` : '-';
   }
   if (/^\d+$/.test(raw)) return Number(raw).toLocaleString('ko-KR');
-  return raw;
+  return optText(item.id, raw);
 };
 // 가격율 기본값은 0 — 항목마다 정해 둔 비율은 참고용이고, 직접 적은 값만 쓴다.
 // (층은 아파트/빌라 규칙으로 자동 계산되는 값이 있으면 그것을 쓴다)
@@ -10118,7 +10121,7 @@ const goBack = () => router.back();
                     <tr v-for="item in ZONE_UNIT_ITEMS" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
                       <td class="lft cmp-ind-ct">
                         <template v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
-                        <span v-else-if="item.options" class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span>
+                        <span v-else-if="item.options" class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="optText(item.id, opt)" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ optText(item.id, opt) }}</button></span>
                         <b v-else>{{ indivAutoText(item) }}</b>
                       </td>
                       <td v-if="zoneApplied" class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
@@ -10135,9 +10138,9 @@ const goBack = () => router.back();
                         <td class="lft cmp-ind-ct">
                           <!-- 자동 칸은 공식 자료 값 그대로(고치지 않는다). 자료에 없어 비었을 때만 직접 넣는다(2026-11-11 사용자) -->
                           <template v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
-                          <template v-else-if="INDIV_AUTO.has(item.id)"><span v-if="item.id === 'ind.floorNum'" class="cmp-ind-in"><input inputmode="numeric" :value="sumVal('sum.floorTotal')" placeholder="전체" aria-label="전체 층" @input="setSumVal('sum.floorTotal', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층 중<input inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" aria-label="해당 층" @input="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층</span><span v-else-if="item.options" class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span><span v-else class="cmp-ind-in"><input :inputmode="item.yearMonth ? 'text' : 'decimal'" :value="indivValue(item.id)" :placeholder="item.yearMonth ? '2004-05' : item.id === 'ind.parking' ? '총 주차대수' : '0'" :aria-label="item.label" @input="indivPickText(item.id, ($event.target as HTMLInputElement).value, !!item.yearMonth)" />{{ item.yearMonth ? '' : item.id === 'ind.parking' ? '대' : item.suffix ?? '' }}</span><small class="cmp-auto">자료에 없어 직접 넣습니다</small></template>
+                          <template v-else-if="INDIV_AUTO.has(item.id)"><span v-if="item.id === 'ind.floorNum'" class="cmp-ind-in"><input inputmode="numeric" :value="sumVal('sum.floorTotal')" placeholder="전체" aria-label="전체 층" @input="setSumVal('sum.floorTotal', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층 중<input inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" aria-label="해당 층" @input="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층</span><span v-else-if="item.options" class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="optText(item.id, opt)" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ optText(item.id, opt) }}</button></span><span v-else class="cmp-ind-in"><input :inputmode="item.yearMonth ? 'text' : 'decimal'" :value="indivValue(item.id)" :placeholder="item.yearMonth ? '2004-05' : item.id === 'ind.parking' ? '총 주차대수' : '0'" :aria-label="item.label" @input="indivPickText(item.id, ($event.target as HTMLInputElement).value, !!item.yearMonth)" />{{ item.yearMonth ? '' : item.id === 'ind.parking' ? '대' : item.suffix ?? '' }}</span><small class="cmp-auto">자료에 없어 직접 넣습니다</small></template>
                           <span v-else-if="unitPickGroups[item.id]" class="cmp-type-pick"><span v-for="grp in unitPickGroups[item.id]" :key="grp.label" class="cmp-ind-seg" role="radiogroup" :aria-label="grp.label"><button v-for="opt in grp.opts" :key="opt" type="button" role="radio" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-checked="indivPicked(item, opt)" @click="indivPickOne(item.id, opt, grp.opts)">{{ opt }}</button></span></span>
-                          <span v-else class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span>
+                          <span v-else class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="optText(item.id, opt)" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ optText(item.id, opt) }}</button></span>
                         </td>
                         <!-- 수리는 금액(만 원) — 고른 수리에 따른 기본 금액, 적으면 그 금액 -->
                         <td v-if="item.id === 'ind.repair'" class="n"><span class="cmp-rate-in"><input inputmode="numeric" :class="{ typed: !!indivValue('ind.repair.amt') }" :value="indivValue('ind.repair.amt') ? Number(indivValue('ind.repair.amt')).toLocaleString('ko-KR') : ''" :placeholder="repairDefaultMan().toLocaleString('ko-KR')" aria-label="수리 금액" @input="indivPickText('ind.repair.amt', ($event.target as HTMLInputElement).value)" />만</span></td>
