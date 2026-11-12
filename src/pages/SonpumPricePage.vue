@@ -896,7 +896,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <span :class="['bar-desc', { hi: webEmbed }]"><svg v-if="webEmbed" class="flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ regionText || '지역 확인 중' }}{{ webEmbed ? ` · 반경 ${radText(radius)} · ${periodText(loadedMonths)}` : '' }} · {{ KIND_LABEL[kind] }} 실거래</span>
         <span class="pa-load-r">
           <span v-if="progress.total && progress.done < progress.total" class="prog">위치 찾는 중 {{ progress.done }} / {{ progress.total }}</span>
-          <template v-if="!props.months">
+          <!-- 앱 — 기간 단추 · 조회는 뺐다(저장된 기간 그대로, 2026-11-13 사용자) -->
+          <template v-if="!props.months && !props.app">
           <span class="pa-seg pa-out" role="radiogroup" aria-label="조회기간">
             <button v-for="m in PERIODS" :key="m" type="button" role="radio" :class="{ on: months === m }" :aria-checked="months === m" @click="months = m" :data-t="periodText(m)">{{ periodText(m) }}</button>
           </span>
@@ -909,9 +910,6 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <!-- 웹 — 중간값 · 최저 · 최고는 뺐다. 거래가를 내 평수로 바꿔 만든 값이라 실제로 거래된 값이 아니다(2026-11-11 사용자) -->
         <div :class="['tiles', { four: !props.app }]">
           <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? '매도가 예상' : '실거래가 예상' }}({{ kindF }})</InfoTip></span><span class="v pa-num">{{ view ? vfmt(view.est) : '-' }}</span><!-- 웹 — 0건이 돼도 아래 두 줄 자리를 그대로(칸 높이가 줄면 아래 필터 · 표가 통째로 올라갔다 내려왔다, 2026-11-12 사용자 '엘베 누르면 흔들려') --><span v-if="webEmbed || view?.capped" class="cap" :style="{ visibility: view?.capped ? 'visible' : 'hidden' }">보증보험 한도 적용</span><span v-if="webEmbed || view" class="s rad">반경 {{ radText(radius) }} · {{ periodText(loadedMonths) }} · {{ (view?.n ?? 0).toLocaleString('ko-KR') }}건</span></div>
-          <div v-if="props.app" class="tile"><span class="k">중간값</span><span class="v pa-num">{{ view ? vfmt(view.med) : '-' }}</span></div>
-          <div v-if="props.app" class="tile"><span class="k">최저가</span><span class="v pa-num">{{ view ? vfmt(view.min) : '-' }}</span></div>
-          <div v-if="props.app" class="tile"><span class="k">최고가</span><span class="v pa-num">{{ view ? vfmt(view.max) : '-' }}</span></div>
           <div class="tile"><span class="k">{{ kindF === '월세' ? '평균 평당 월세' : '평균 평당가' }}</span><span class="v pa-num">{{ view ? vPy(view.avgPy) : '-' }}</span></div>
           <!-- 선정물건 정보 — 유사 거래를 찾는 가운데 기준(실제 범위는 아래 「계산 조건」 줄) -->
           <div v-if="isAptKind" class="tile"><span class="k">면적 공급(전용) / 연식</span><span class="v pa-num sm">{{ aptMyArea }}</span><span class="s">{{ me.year ? `${me.year}년식` : '-' }}</span></div>
@@ -1628,4 +1626,10 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 .pa-wrap:is(.app, .phone) .pa-list table.even th, .pa-wrap:is(.app, .phone) .pa-list table.even td { padding-left: 6px; padding-right: 6px; }
 .pa-wrap:is(.app, .phone) .pa-list table.even td.l { white-space: nowrap; }
 .pa-wrap:is(.app, .phone) .list-foot { font-size: 11px; }
+/* 앱 — 초록 칸: 위 줄 이름 · 반경 기간 건수, 아래 줄 금액(한 줄에 몰아 '1.…'로 잘리던 것, 2026-11-13). 보증보험 딱지는 금액 줄 오른쪽 */
+.pa-wrap.app .tile.key { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; row-gap: 2px; text-align: left; }
+.pa-wrap.app .tile.key > .k { grid-area: 1 / 1; }
+.pa-wrap.app .tile.key > .s { grid-area: 1 / 2; }
+.pa-wrap.app .tile.key > .v { grid-area: 2 / 1; font-size: 26px; line-height: 1.2; overflow: visible; text-overflow: clip; }
+.pa-wrap.app .tile.key > .cap { grid-area: 2 / 2; justify-self: end; position: static; transform: none; }
 </style>

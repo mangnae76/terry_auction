@@ -9383,7 +9383,7 @@ const goBack = () => router.back();
             <!-- 앱 ② 빌라 · 단지 입지비교 — 웹 매매수요 빌라 · 단지 리스트(웹에서 저장한 값)에서 이름 · 입지점수 · 순위 · 평균 매매가 네 칸만.
                  필터는 앱에 두지 않고 웹에서 정한 값 그대로 — 룸수(입지조건)는 위 ① 과 같이 움직인다(2026-11-13 사용자) -->
             <div v-if="!webEmbed && !sonpumMode" class="adp-dm-block boxed o-loc">
-              <div class="adp-dm-sub o-loc-h"><span class="cmp-no">②</span><span class="o-loc-t">{{ cmpN }} 입지비교</span><small class="o-loc-q">{{ isApartment ? '내가 선정한 아파트 단지는 몇 등일까?' : '내가 선정한 빌라는 주변 유사 빌라 중 몇 등일까?' }}</small><span class="adp-dm-area">{{ surveyAreaLabel }}</span></div>
+              <div class="adp-dm-sub o-loc-h"><span class="cmp-no">②</span><span class="o-loc-t">{{ cmpN }} 입지비교</span><span class="adp-dm-area">{{ surveyAreaLabel }}</span><small class="adp-ru-q o-loc-q">{{ isApartment ? '내가 선정한 아파트 단지는 몇 등일까?' : '내가 선정한 빌라는 주변 유사 빌라 중 몇 등일까?' }}</small></div>
               <div v-if="cmpSnapOn && cmpRows.length" class="son-demand sup-tbl">
                 <div class="adm-table-wrap">
                   <table class="adm-table cmp-tbl app-loc">
@@ -12562,9 +12562,9 @@ tr.tone-take { background: #fff5f5; }
 .sup-opinion.dm-app-opinion > span { font-size: 12.5px; line-height: 1.55; color: #111827; }
 .sup-opinion.dm-app-opinion .wait { color: #9ca3af; }
 .o-loc .sup-tbl { margin-top: 8px; }
-.adp-dm-sub.o-loc-h { flex-wrap: nowrap; white-space: nowrap; }
+/* ② 제목 — 이름 · 동 이름(파랑) · 물음 순. 물음은 ① '누구한테 팔까?'와 같은 꼴(adp-ru-q, 12.5)(2026-11-13 사용자) */
 .o-loc-h .o-loc-t, .o-loc-h .adp-dm-area { flex: none; }
-.o-loc-q { min-width: 0; font-size: 11px; font-weight: 400; color: #6b7280; letter-spacing: -0.6px; white-space: nowrap; }   /* 물음 — 동 이름 왼쪽, 제목과 한 줄(2026-11-13 사용자) */
+.o-loc-h .o-loc-q { margin-left: 0; }
 .o-loc .app-loc :is(th, td) { padding-left: 4px; padding-right: 4px; }   /* 폰 폭 네 칸 */
 .adp-dm-q { min-width: 0; font-size: 12.5px; font-weight: 400; color: #6b7280; white-space: nowrap; letter-spacing: -0.4px; }   /* 물음 — 검암동 바로 옆 한 줄(2026-11-12 사용자) */
 :is(.o-rank:first-child, .o-loc) + .adp-dm-head:has(.adp-dm-q) { flex-wrap: nowrap; gap: 6px; }
