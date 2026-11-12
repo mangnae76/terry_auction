@@ -427,3 +427,5 @@ export const mountAppPage = (el, key, tab, hooks = {}) => {
 
 /* 아파트 면적 단위(㎡ · 평) — 고정카드 단추 하나로 모든 탭이 같이 바뀐다(2026-11-11) */
 export { toggleAreaUnit, getAreaUnit, aptAreaText } from '../../src/services/areaUnit';
+// 면적 · 건축 양끝 막대 범위 규칙 — 앱 시세분석 · 입지비교(DualRangeBar)와 한 곳(2026-11-12)
+export { clampAroundBase } from '../../src/services/rangeClamp';

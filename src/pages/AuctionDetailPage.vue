@@ -12598,7 +12598,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 :root[data-theme="dark"] .cmp-bars { background: #182031; border-color: #2a3449; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-bars { background: #182031; border-color: #2a3449; } }
 @media (max-width: 760px) { .cmp-bars { grid-template-columns: minmax(0, 1fr); row-gap: 14px; } .cmp-bars-row { flex-wrap: wrap; } }
-.cmp-acts { display: flex; align-items: center; gap: 8px; }   /* 면적 · 건축 옆 — 조회하기 · 저장하기(2026-11-12 사용자) */
+.cmp-acts { display: flex; align-items: stretch; gap: 8px; }
+.cmp-acts > button { height: auto; min-width: 110px; }   /* 면적 · 건축 상자와 같은 높이(2026-11-12 사용자) */   /* 면적 · 건축 옆 — 조회하기 · 저장하기(2026-11-12 사용자) */
 .cmp-go { height: 42px; padding: 0 22px; border: 1px solid #2b6df3; border-radius: 8px; background: #fff; color: #2b6df3; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }   /* 조회하기 — 고른 거르기가 지금과 다르면 파랗게 채운다 */
 .cmp-go.dirty { background: #2b6df3; color: #fff; }
 .cmp-save { height: 42px; min-width: 96px; padding: 0 18px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #9ca3af; font: inherit; font-size: 14px; font-weight: 700; cursor: default; }   /* 저장하기 — 조회 결과가 다 오면 초록으로 */

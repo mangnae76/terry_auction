@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { clampAroundBase } from '../services/rangeClamp';
 // 양끝 슬라이더 한 줄 — 손품조사 시세분석 '직접범위'의 면적 · 건축 막대와 같은 꼴(2026-11-12 사용자 '그대로 갖고 와').
 // 왼쪽 이름(아래 평 · 연차 범위), 오른쪽 막대. 막대 위 숫자 셋은 빨간 줄(내 물건) 자리에 고정 — 가운데 내 값(빨강), 왼쪽 최소 · 오른쪽 최대(파랑).
 // 동그라미를 움직이면 숫자만 바뀐다. 값은 부모가 들고, 바뀌면 update(lo, hi).
@@ -22,8 +23,16 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ update: [lo: number, hi: number] }>();
 const pct = (v: number) => `${Math.min(100, Math.max(0, ((v - props.min) / (props.max - props.min)) * 100))}%`;
-const setLo = (el: HTMLInputElement) => { const v = Math.min(Number(el.value), props.hi); el.value = String(v); emit('update', v, props.hi); };
-const setHi = (el: HTMLInputElement) => { const v = Math.max(Number(el.value), props.lo); el.value = String(v); emit('update', props.lo, v); };
+// 범위 규칙은 services/rangeClamp 한 곳 — 내 값(빨간 줄)을 넘지 못하고, 끝까지 밀면 정확히 내 값에서 멈춘다
+const set = (el: HTMLInputElement, moved: 'lo' | 'hi') => {
+  const v = Number(el.value);
+  const [a, b] = clampAroundBase(moved === 'lo' ? v : props.lo, moved === 'hi' ? v : props.hi, props.base, moved);
+  const now = moved === 'lo' ? a : b;
+  if (String(now) !== el.value) el.value = String(now);   // 막힌 자리로 동그라미도 되돌린다
+  emit('update', a, b);
+};
+const setLo = (el: HTMLInputElement) => set(el, 'lo');
+const setHi = (el: HTMLInputElement) => set(el, 'hi');
 </script>
 
 <template>
@@ -43,15 +52,15 @@ const setHi = (el: HTMLInputElement) => { const v = Math.max(Number(el.value), p
 .dl { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 0 12px; min-width: 0; }
 .dn { display: grid; justify-items: start; gap: 2px; font-size: 14px; font-weight: 800; color: #111827; white-space: nowrap; }
 .dn small { font-size: 12px; font-weight: 400; color: #6b7280; }
-.dual { position: relative; min-width: 80px; height: 24px; margin-top: 18px; }
-.track { position: absolute; left: 8px; right: 8px; top: 50%; height: 4px; transform: translateY(-50%); background: #dde3ee; border-radius: 2px; }
+.dual { position: relative; min-width: 80px; height: 42px; }   /* 숫자 줄(위 16px) + 막대(아래 26px) 한 덩어리 — 왼쪽 이름과 세로 가운데로 맞춘다(2026-11-12 사용자) */
+.track { position: absolute; left: 8px; right: 8px; top: 29px; height: 4px; transform: translateY(-50%); background: #dde3ee; border-radius: 2px; }
 .fill { position: absolute; top: 0; bottom: 0; background: #2b6df3; border-radius: 2px; }
 .base { position: absolute; top: -5px; width: 2px; height: 14px; background: #e03e3e; transform: translateX(-1px); }
-.tvg { position: absolute; bottom: 22px; transform: translateX(-50%); display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; font-size: 13px; line-height: 1; font-weight: 800; color: #2b6df3; white-space: nowrap; font-variant-numeric: tabular-nums; pointer-events: none; }
+.tvg { position: absolute; top: 0; transform: translateX(-50%); display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; font-size: 13px; line-height: 1; font-weight: 800; color: #2b6df3; white-space: nowrap; font-variant-numeric: tabular-nums; pointer-events: none; }
 .tvg i { font-style: normal; }
 .tvg i:first-child { text-align: right; }
 .tvg i.me { color: #e03e3e; }
-input[type="range"] { position: absolute; inset: 0; width: 100%; margin: 0; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
+input[type="range"] { position: absolute; left: 0; right: 0; top: 17px; height: 24px; width: 100%; margin: 0; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
 input[type="range"]::-webkit-slider-runnable-track { background: none; }
 input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 16px; height: 16px; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(17, 24, 39, .3); cursor: grab; }
 input[type="range"]::-moz-range-thumb { pointer-events: auto; width: 14px; height: 14px; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; cursor: grab; }

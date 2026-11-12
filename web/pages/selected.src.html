@@ -7312,15 +7312,12 @@ span.cal-day.has { cursor: help; }
   if (!sxRcOk(SXM.rc)) SXM.rc = { mMin: SX_AREA[0], mMax: SX_AREA[1], yMin: SX_YEAR[0], yMax: SX_YEAR[1] };
   const sxSaveM = () => { try { localStorage.setItem(SXM_KEY, JSON.stringify(SXM)); } catch (e) { /* 그만 */ } };
   /* 막대 범위를 경매물건(빨간 줄)을 품게 · 최소 ≤ 최대로 */
-  function sxRcFix(c, subj) {
-    const r = { mMin: Number(c.mMin), mMax: Number(c.mMax), yMin: Number(c.yMin), yMax: Number(c.yMax) };
-    /* 끝까지 밀면 정확히 경매물건 전용(84.39 ~ 84.39)에서 멈춘다 — 84 · 85 에서 멈춰 같은 면적만 고를 수 없었다(시세분석과 같게, 2026-11-11).
-       경매물건 자리로 먼저 막고 그다음 최소 ≤ 최대 — 거꾸로 하면 최대를 왼쪽으로 끌 때 최소까지 같이 밀려 내려갔다 */
-    if (subj && subj.areaM2 > 0) { const a2 = Math.floor(subj.areaM2 * 100 + 1e-6) / 100; r.mMin = Math.min(r.mMin, a2); r.mMax = Math.max(r.mMax, a2); }
-    if (subj && subj.year > 0) { r.yMin = Math.min(r.yMin, subj.year); r.yMax = Math.max(r.yMax, subj.year); }
-    if (r.mMin > r.mMax) r.mMin = r.mMax;
-    if (r.yMin > r.yMax) r.yMin = r.yMax;
-    return r;
+  /* 범위 규칙은 앱 services/rangeClamp 한 곳(손품조사 시세분석 · 입지비교와 같다, 2026-11-12) — 경매물건(빨간 줄)을 품고, 끝까지 밀면 정확히 84.39 에서 멈춘다 */
+  function sxRcFix(c, subj, moved) {
+    const T = CLOUD.T; const mk = moved && /Min$/.test(moved) ? 'lo' : moved ? 'hi' : undefined;
+    const [mMin, mMax] = T.clampAroundBase(Number(c.mMin), Number(c.mMax), (subj && subj.areaM2) || 0, moved && moved[0] === 'm' ? mk : undefined);
+    const [yMin, yMax] = T.clampAroundBase(Number(c.yMin), Number(c.yMax), (subj && subj.year) || 0, moved && moved[0] === 'y' ? mk : undefined);
+    return { mMin, mMax, yMin, yMax };
   }
   /* 직접범위로 들어갈 때 — 지금 유사도 범위에서 시작(손품조사와 같다). 경매물건이 없으면 지금 막대 그대로 */
   function sxRcFromSim() {
@@ -7853,10 +7850,8 @@ span.cal-day.has { cursor: help; }
   /* 막대를 끄는 동안 — 다시 그리지 않고 숫자 · 파란 칸만 고친다(놓으면 표 · 지도를 다시 계산) */
   function sxRangeInput(el) {
     const k = el.dataset.rk; const subj = sxMeSubject(sxMe());
-    let v = Number(el.value);
-    /* 막대는 1㎡ 칸이라 놓는 순간(change) 84.39 가 84 로 읽혔다 — 경매물건 면적 칸(84 · 85)에 닿으면 정확히 84.39 로 */
-    if (subj && subj.areaM2 > 0) { const a2 = Math.floor(subj.areaM2 * 100 + 1e-6) / 100; if (k === 'mMin' && v >= Math.floor(a2)) v = a2; if (k === 'mMax' && v <= Math.ceil(a2)) v = a2; }
-    SXM.rc = sxRcFix({ ...SXM.rc, [k]: v }, subj);
+    const v = Number(el.value);
+    SXM.rc = sxRcFix({ ...SXM.rc, [k]: v }, subj, k);   /* 내 값 칸에 닿으면 정확히 84.39 — 규칙은 rangeClamp */
     if (String(SXM.rc[k]) !== el.value) el.value = String(SXM.rc[k]);
     const B = sxRangeBits();
     ['m', 'y'].forEach((g) => {

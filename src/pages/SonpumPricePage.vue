@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { clampAroundBase } from '../services/rangeClamp';
+import DualRangeBar from '../components/DualRangeBar.vue';
 import { userMessage } from '../services/userMessage';
 // 손품조사 › 시세분석 — 선정물건 둘레(반경) · 비슷한 조건(유사도)의 실거래로 「실거래가 예상」을 낸다.
 // 위→아래: ⓪ 조회 줄 → Ⓐ 실거래가 예상 띠 → Ⓑ 지도 · 조건 줄 · 유사물건 표 → Ⓒ 시세종합 → Ⓓ 호가 입력.
@@ -403,18 +405,10 @@ const yearMax = new Date().getFullYear();
 const YEAR_MIN = 1980;
 const setRange = (k: keyof PriceCond, v: number, el?: HTMLInputElement) => {
   const c = { ...rangeCond.value, [k]: v };
-  if (k === 'mMin' && v > c.mMax) c.mMin = c.mMax;
-  if (k === 'mMax' && v < c.mMin) c.mMax = c.mMin;
-  if (k === 'yMin' && v > c.yMax) c.yMin = c.yMax;
-  if (k === 'yMax' && v < c.yMin) c.yMax = c.yMin;
-  // 웹 — 범위는 늘 내 물건(빨간 줄)을 품는다: 왼쪽 동그라미는 빨간 줄을 넘어 오른쪽으로, 오른쪽 동그라미는 왼쪽으로 못 간다(2026-11-07)
-  if (webEmbed) {
-    const a = me.value.areaM2; const y = me.value.year;
-    // 동그라미를 내 면적까지 끝까지 밀면 정확히 내 면적(84.39 ~ 84.39)에서 멈춘다 — 84 · 85 에서 멈춰 같은 면적만 고를 수 없었다(2026-11-11 사용자)
-    const a2 = Math.floor(a * 100 + 1e-6) / 100;   // 화면과 같은 소수 둘째 자리(84.39)
-    if (a > 0) { c.mMin = Math.min(c.mMin, a2); c.mMax = Math.max(c.mMax, a2); }
-    if (y > 0) { c.yMin = Math.min(c.yMin, y); c.yMax = Math.max(c.yMax, y); }
-  }
+  // 범위 규칙은 services/rangeClamp 한 곳(입지비교 · 매각분석과 같다) — 웹은 늘 내 물건(빨간 줄)을 품는다, 앱은 최소 ≤ 최대만
+  const mv = k === 'mMin' || k === 'yMin' ? 'lo' : 'hi';
+  if (k === 'mMin' || k === 'mMax') [c.mMin, c.mMax] = clampAroundBase(c.mMin, c.mMax, webEmbed ? me.value.areaM2 : 0, mv);
+  if (k === 'yMin' || k === 'yMax') [c.yMin, c.yMax] = clampAroundBase(c.yMin, c.yMax, webEmbed ? me.value.year : 0, mv);
   rangeCond.value = c;
   if (el && el.value !== String(c[k])) el.value = String(c[k]);   // 막힌 자리로 동그라미도 되돌린다(값이 그대로면 화면이 다시 그려지지 않는다)
 };
@@ -936,22 +930,29 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <div class="ticks" aria-hidden="true"><span v-for="s in SIM_STEPS" :key="s">{{ s }}%</span></div>
           </div>
           <div v-else class="simB">
-            <div :class="['dl', { one: webEmbed && !fs }]"><span class="dn">{{ webEmbed && !fs ? '면적 ㎡' : '면적' }}<small v-if="webEmbed && !fs" class="pa-num">{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</small></span>
-              <div class="dual">
-                <div class="track"><i class="fill" :style="fillStyle(rangeCond.mMin, rangeCond.mMax, AREA_MIN, AREA_MAX)" /><i class="base" :data-label="webEmbed && !fs ? '' : `${me.areaM2.toFixed(2)}㎡`" :style="{ left: baseLeft(me.areaM2, AREA_MIN, AREA_MAX) }" /><span v-if="webEmbed && !fs" class="tvg m pa-num" :style="{ left: baseLeft(me.areaM2, AREA_MIN, AREA_MAX) }"><i>{{ areaTx(rangeCond.mMin) }}</i><i class="me">{{ areaTx(me.areaM2) }}</i><i>{{ areaTx(rangeCond.mMax) }}</i></span></div>
-                <input type="range" :min="AREA_MIN" :max="AREA_MAX" step="1" :value="rangeCond.mMin" aria-label="면적 최소(㎡)" @input="setRange('mMin', Number(($event.target as HTMLInputElement).value), $event.target as HTMLInputElement)">
-                <input type="range" :min="AREA_MIN" :max="AREA_MAX" step="1" :value="rangeCond.mMax" aria-label="면적 최대(㎡)" @input="setRange('mMax', Number(($event.target as HTMLInputElement).value), $event.target as HTMLInputElement)">
+            <!-- 웹(전체화면 아님) — 면적 · 건축 막대는 부품 하나(DualRangeBar, 매매수요 입지비교와 같다). 범위 규칙은 services/rangeClamp -->
+            <template v-if="webEmbed && !fs">
+              <DualRangeBar class="one" label="면적 ㎡" :min="AREA_MIN" :max="AREA_MAX" :lo="rangeCond.mMin" :hi="rangeCond.mMax" :base="me.areaM2" :lo-text="areaTx(rangeCond.mMin)" :base-text="areaTx(me.areaM2)" :hi-text="areaTx(rangeCond.mMax)" :sub="`${(rangeCond.mMin / PY).toFixed(1)}~${(rangeCond.mMax / PY).toFixed(1)}평`" :tvg-w="136" @update="(lo, hi) => (rangeCond = { ...rangeCond, mMin: lo, mMax: hi })" />
+              <DualRangeBar class="one" label="건축" :min="YEAR_MIN" :max="yearMax" :lo="rangeCond.yMin" :hi="rangeCond.yMax" :base="me.year" :lo-text="String(rangeCond.yMin)" :base-text="String(me.year)" :hi-text="String(rangeCond.yMax)" :sub="`${yearMax - rangeCond.yMax + 1}~${yearMax - rangeCond.yMin + 1}년차`" :tvg-w="140" @update="(lo, hi) => (rangeCond = { ...rangeCond, yMin: lo, yMax: hi })" />
+            </template>
+            <template v-else>
+              <div :class="['dl', { one: webEmbed && !fs }]"><span class="dn">{{ webEmbed && !fs ? '면적 ㎡' : '면적' }}<small v-if="webEmbed && !fs" class="pa-num">{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</small></span>
+                <div class="dual">
+                  <div class="track"><i class="fill" :style="fillStyle(rangeCond.mMin, rangeCond.mMax, AREA_MIN, AREA_MAX)" /><i class="base" :data-label="webEmbed && !fs ? '' : `${me.areaM2.toFixed(2)}㎡`" :style="{ left: baseLeft(me.areaM2, AREA_MIN, AREA_MAX) }" /><span v-if="webEmbed && !fs" class="tvg m pa-num" :style="{ left: baseLeft(me.areaM2, AREA_MIN, AREA_MAX) }"><i>{{ areaTx(rangeCond.mMin) }}</i><i class="me">{{ areaTx(me.areaM2) }}</i><i>{{ areaTx(rangeCond.mMax) }}</i></span></div>
+                  <input type="range" :min="AREA_MIN" :max="AREA_MAX" step="1" :value="rangeCond.mMin" aria-label="면적 최소(㎡)" @input="setRange('mMin', Number(($event.target as HTMLInputElement).value), $event.target as HTMLInputElement)">
+                  <input type="range" :min="AREA_MIN" :max="AREA_MAX" step="1" :value="rangeCond.mMax" aria-label="면적 최대(㎡)" @input="setRange('mMax', Number(($event.target as HTMLInputElement).value), $event.target as HTMLInputElement)">
+                </div>
+                <b v-if="!(webEmbed && !fs)">{{ areaTx(rangeCond.mMin) }}~{{ areaTx(rangeCond.mMax) }}㎡<small>{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</small></b>
               </div>
-              <b v-if="!(webEmbed && !fs)">{{ areaTx(rangeCond.mMin) }}~{{ areaTx(rangeCond.mMax) }}㎡<small>{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</small></b>
-            </div>
-            <div :class="['dl', { one: webEmbed && !fs }]"><span class="dn">건축<small v-if="webEmbed && !fs" class="pa-num">{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</small></span>
-              <div class="dual">
-                <div class="track"><i class="fill" :style="fillStyle(rangeCond.yMin, rangeCond.yMax, YEAR_MIN, yearMax)" /><i class="base" :data-label="webEmbed && !fs ? '' : `${me.year}년`" :style="{ left: baseLeft(me.year, YEAR_MIN, yearMax) }" /><span v-if="webEmbed && !fs" class="tvg y pa-num" :style="{ left: baseLeft(me.year, YEAR_MIN, yearMax) }"><i>{{ rangeCond.yMin }}</i><i class="me">{{ me.year }}</i><i>{{ rangeCond.yMax }}</i></span></div>
-                <input type="range" :min="YEAR_MIN" :max="yearMax" step="1" :value="rangeCond.yMin" aria-label="건축 최소(년)" @input="setRange('yMin', Number(($event.target as HTMLInputElement).value), $event.target as HTMLInputElement)">
-                <input type="range" :min="YEAR_MIN" :max="yearMax" step="1" :value="rangeCond.yMax" aria-label="건축 최대(년)" @input="setRange('yMax', Number(($event.target as HTMLInputElement).value), $event.target as HTMLInputElement)">
+              <div :class="['dl', { one: webEmbed && !fs }]"><span class="dn">건축<small v-if="webEmbed && !fs" class="pa-num">{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</small></span>
+                <div class="dual">
+                  <div class="track"><i class="fill" :style="fillStyle(rangeCond.yMin, rangeCond.yMax, YEAR_MIN, yearMax)" /><i class="base" :data-label="webEmbed && !fs ? '' : `${me.year}년`" :style="{ left: baseLeft(me.year, YEAR_MIN, yearMax) }" /><span v-if="webEmbed && !fs" class="tvg y pa-num" :style="{ left: baseLeft(me.year, YEAR_MIN, yearMax) }"><i>{{ rangeCond.yMin }}</i><i class="me">{{ me.year }}</i><i>{{ rangeCond.yMax }}</i></span></div>
+                  <input type="range" :min="YEAR_MIN" :max="yearMax" step="1" :value="rangeCond.yMin" aria-label="건축 최소(년)" @input="setRange('yMin', Number(($event.target as HTMLInputElement).value), $event.target as HTMLInputElement)">
+                  <input type="range" :min="YEAR_MIN" :max="yearMax" step="1" :value="rangeCond.yMax" aria-label="건축 최대(년)" @input="setRange('yMax', Number(($event.target as HTMLInputElement).value), $event.target as HTMLInputElement)">
+                </div>
+                <b v-if="!(webEmbed && !fs)">{{ rangeCond.yMin }}~{{ rangeCond.yMax }}년<small>{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</small></b>
               </div>
-              <b v-if="!(webEmbed && !fs)">{{ rangeCond.yMin }}~{{ rangeCond.yMax }}년<small>{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</small></b>
-            </div>
+            </template>
             <span v-if="!webEmbed" class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층">
               <button type="button" role="radio" :class="{ on: rangeCond.floor !== 0 }" :aria-checked="rangeCond.floor !== 0" @click="rangeCond = { ...rangeCond, floor: null }" data-t="전체">전체</button>
               <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }" data-t="같은 층">같은 층</button>
