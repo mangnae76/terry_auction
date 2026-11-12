@@ -729,7 +729,7 @@ const evenCols = () => {
     // 웹 — 칸 폭은 지금 줄의 값이 아니라 칸마다 정해 둔 '가장 긴 글'(머리말 · 값)로 잰다 → 거래 종류(매매 · 전세 · 월세)와 창 폭이 같으면 줄이 바뀌어도 칸이 한 픽셀도 안 움직인다(2026-11-12 사용자 '표 흔들리지 않게 내용과 말머리 정확하게').
     // 남는 폭은 모든 칸에 똑같이 더하고, 모자라면 칸 안 여백을 줄인 뒤 주소 칸만 줄인다(… 으로 잘리고 말풍선으로 전체)
     const cw = t.parentElement.clientWidth;
-    const key = `even|${cw}|${kindF.value}|${isAptKind}`;
+    const key = `even|${cw}|${isAptKind}`;   // 거래 종류(매매 · 전세 · 월세)는 열쇠에서 뺐다 — 탭을 바꿔도 칸이 그대로(2026-11-12 사용자)
     if (colsKey === key && t.querySelector('colgroup')) return;
     colsKey = key;
     t.querySelector('colgroup')?.remove();
@@ -739,14 +739,13 @@ const evenCols = () => {
     const thCs = cs(ths.find((th) => th.dataset.k) ?? ths[0]); const tdCs = cs(t.querySelector('tbody td:not(.ck-td)'));
     const fontOf = (c: CSSStyleDeclaration | null, weight?: string, size?: string) => (c ? `${weight ?? c.fontWeight} ${size ?? c.fontSize} ${c.fontFamily}` : '13px sans-serif');
     const tw = (txt: string, font: string) => { if (!ctx) return txt.length * 8; ctx.font = font; return ctx.measureText(txt).width; };
-    const k = kindF.value;
-    // 칸마다 들어갈 수 있는 가장 긴 값(숫자는 자릿수가 가장 많은 꼴) — 바뀌면 여기만
+    // 칸마다 들어갈 수 있는 가장 긴 값(숫자는 자릿수가 가장 많은 꼴) — 매매 · 전세 · 월세를 다 합친 것이라 탭을 바꿔도 칸 폭이 같다. 바뀌면 여기만
     const SAMPLE: Record<string, string[]> = {
-      date: ['2026.12.31', `${k} 예상`],
-      won: k === '월세' ? ['10,000,000', '9,999,999,999'] : ['9,999,999,999'],
+      date: ['2026.12.31', '매매 예상', '전세 예상', '월세 예상'],
+      won: ['9,999,999,999'],
       perPy: ['99,999,999'],
       pub: ['9,999,999,999', '999.9%', '공시가 없음'],
-      gap: k === '전세' ? ['9,999,999,999', '초과 9,999,999,999', '한도 안'] : ['9,999,999,999', '갭 -9,999,999,999'],
+      gap: ['9,999,999,999', '▲ 9,999,999,999', '한도 안', '갭 -9,999,999,999'],
       area: isAptKind ? ['999.99㎡ (999.99)'] : ['999.99㎡', '999.99평'],
       elev: ['조회 중', '9대있음'],
       year: ['2026년'],
@@ -1064,7 +1063,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td v-if="pubMissing" class="r two"><input class="pubin pa-num" placeholder="입력" inputmode="numeric" aria-label="선정물건 공시가" :value="typedPub ? n0(typedPub) : ''" @change="onPubInput"><small v-if="typedPub && view && kindF !== '월세'">{{ pct(view.est, typedPub) }}</small></td>
               <td v-else class="r pa-num two">{{ n0(curPub) }}<small>{{ view && kindF !== '월세' ? pct(view.est, curPub) : '-' }}</small></td>
               <td v-if="!curPub || kindF === '월세'" class="r two">{{ curPub ? n0(hug) : '-' }}</td>
-              <td v-else-if="kindF === '전세'" class="r pa-num two">{{ n0(hug) }}<small :class="{ neg: view && view.est > hug }">{{ !view ? '-' : view.est > hug ? `초과 ${n0(view.est - hug)}` : '한도 안' }}</small></td>
+              <td v-else-if="kindF === '전세'" class="r pa-num two">{{ n0(hug) }}<small :class="{ neg: view && view.est > hug }">{{ !view ? '-' : view.est > hug ? `▲ ${n0(view.est - hug)}` : '한도 안' }}</small></td>
               <td v-else class="r pa-num two">{{ n0(hug) }}<small :class="{ neg: view && view.est - hug < 0 }">{{ view ? `갭 ${n0(view.est - hug)}` : '-' }}</small></td>
               <td v-if="isAptKind" class="r pa-num two">{{ areaLines(aptMyArea)[0] }}<small v-if="areaLines(aptMyArea)[1]">{{ areaLines(aptMyArea)[1] }}</small></td>
               <td v-else class="r pa-num two">{{ me.areaM2.toFixed(2) }}㎡<small>{{ myPy.toFixed(2) }}평</small></td>
@@ -1095,7 +1094,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
                 <td v-if="!r.pub" class="r"><span class="ph2">{{ units[r.jibun] ? '공시가 없음' : '조회 중' }}</span></td>
                 <td v-else class="r pa-num two">{{ n0(r.pub) }}<small>{{ pct(r.price, r.pub) }}</small></td>
                 <td v-if="!r.pub" class="r two">-</td>
-                <td v-else-if="r.group === '전세'" class="r pa-num two">{{ n0(r.pub * HUG_RATE) }}<small :class="{ neg: r.price > r.pub * HUG_RATE }">{{ r.price > r.pub * HUG_RATE ? `초과 ${n0(r.price - r.pub * HUG_RATE)}` : '한도 안' }}</small></td>
+                <td v-else-if="r.group === '전세'" class="r pa-num two">{{ n0(r.pub * HUG_RATE) }}<small :class="{ neg: r.price > r.pub * HUG_RATE }">{{ r.price > r.pub * HUG_RATE ? `▲ ${n0(r.price - r.pub * HUG_RATE)}` : '한도 안' }}</small></td>
                 <td v-else class="r pa-num two">{{ n0(r.pub * HUG_RATE) }}<small :class="{ neg: r.price - r.pub * HUG_RATE < 0 }">갭 {{ n0(r.price - r.pub * HUG_RATE) }}</small></td>
               </template>
               <td v-if="isAptKind" class="r pa-num two">{{ areaLines(aptRowArea(r.areaM2, !!r.same, r))[0] }}<small v-if="areaLines(aptRowArea(r.areaM2, !!r.same, r))[1]">{{ areaLines(aptRowArea(r.areaM2, !!r.same, r))[1] }}</small></td>
