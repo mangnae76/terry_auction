@@ -922,11 +922,9 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
     <!-- Ⓑ 근거 -->
     <div class="zone">
       <!-- 앱 — 지도는 한 줄로 접어 두고 누르면 편다 -->
-      <button v-if="props.app" type="button" class="map-fold" :aria-expanded="mapOpen" @click="mapOpen = !mapOpen">
-        <span class="pa-tag">근거</span><b class="mf-t">유사물건</b><small>반경 {{ radText(radius) }} · 유사물건 {{ mapGroups.length }}곳</small><i>{{ mapOpen ? '접기 ⌃' : '지도 보기 ⌄' }}</i>
-      </button>
-      <div v-if="sonApp" class="map-title static"><span class="pa-tag">근거</span><b>유사물건</b></div>
-      <div v-if="!sonApp" v-show="!props.app || mapOpen" class="map">
+      <!-- 앱 — 근거 유사물건 아래 지도 · 필터는 뺐다. 이름 줄 · 지번 · 거래 수 · 리스트만(2026-11-13 사용자) -->
+      <div v-if="props.app || sonApp" class="map-title static"><span class="pa-tag">근거</span><b>유사물건</b></div>
+      <div v-if="!sonApp && !props.app" class="map">
         <div ref="mapEl" class="map-in" />
         <KakaoMapTools v-if="kTools" :k="kTools.k" :map="kTools.map" :near="webEmbed ? mySpot : null" />
         <button v-if="webEmbed && !fs && !props.app" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="fs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
@@ -961,7 +959,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <SearchFilterBar v-if="webEmbed && !props.app" :draft="sfDraft" :compact="fs || sonApp" :hide="loose ? ['period', 'save'] : ['period']" :range-options="sfRadii" :period-options="[]" :kinds="KINDS" :kind-count="(k) => kindCount(k).toLocaleString('ko-KR')"
         :base-area="me.areaM2" :base-year="me.year" :area-max="AREA_MAX" :year-min="YEAR_MIN" :year-max="yearMax" :sim-range="sfSimRange"
         :is-default="false" :can-save="!loose" :saving="saving" :saved="!webDirty" :saved-day="savedAt ? new Date(savedAt).toLocaleDateString('sv-SE') : ''" @update:draft="sfSet" @reset="reset" @save="saveNow" />
-      <div v-else :class="['conds', { web: webEmbed }]">
+      <div v-else-if="!props.app" :class="['conds', { web: webEmbed }]">
         <span class="pa-lab">반경<span class="pa-seg pa-out" role="radiogroup" aria-label="반경">
           <button v-for="r in RADII" :key="r" type="button" role="radio" :class="{ on: radius === r }" :aria-checked="radius === r" @click="radius = r" :data-t="radText(r)">{{ radText(r) }}</button>
         </span></span>
