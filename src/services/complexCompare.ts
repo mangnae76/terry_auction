@@ -114,7 +114,8 @@ const squash = (s: string) => String(s ?? '').replace(/\s+/g, '');
 
 /** 실거래 → 단지 목록. 단지마다 내 전용면적과 가장 가까운 평형(±tol㎡ 안, 기본 5) 하나, 그 평형의 전세 · 매매가 한 건이라도 있어야 넣는다.
  *  fromYmd8 — 이 날짜(YYYYMMDD)부터의 거래만(조회일부터 12개월) */
-export const complexesOf = (rows: CaseTradeRow[], myArea: number, myJibun: string, fromYmd8: string, tol = 5, myUmd = ''): CompareComplex[] => {
+/** range — 전용 면적 범위(㎡)를 직접 주면 tol 대신 그 안에서 가장 가까운 평형(매매수요 면적 막대, 2026-11-12) */
+export const complexesOf = (rows: CaseTradeRow[], myArea: number, myJibun: string, fromYmd8: string, tol = 5, myUmd = '', range?: { lo: number; hi: number }): CompareComplex[] => {
   const by = new Map<string, CaseTradeRow[]>();
   rows.forEach((r) => {
     if (!r.jibun || !['매매', '직거래', '전세'].includes(r.kind)) return;
@@ -126,7 +127,7 @@ export const complexesOf = (rows: CaseTradeRow[], myArea: number, myJibun: strin
   by.forEach((list) => {
     // 평형은 전용면적 소수 둘째 자리까지(버림 — 화면 trunc2 와 같게) 같은 것끼리
     const areas = [...new Set(list.map((r) => t2(r.areaM2)))];
-    const near = areas.filter((a) => Math.abs(a - myArea) <= tol).sort((a, b) => Math.abs(a - myArea) - Math.abs(b - myArea))[0];
+    const near = areas.filter((a) => (range ? a >= range.lo - 1e-6 && a <= range.hi + 1e-6 : Math.abs(a - myArea) <= tol)).sort((a, b) => Math.abs(a - myArea) - Math.abs(b - myArea))[0];
     if (near === undefined) return;
     const same = list.filter((r) => t2(r.areaM2) === near).sort((a, b) => b.contractDate.localeCompare(a.contractDate));
     out.push({

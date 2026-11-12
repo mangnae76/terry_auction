@@ -628,7 +628,7 @@ export interface AuctionDetail {
   /** 입지조건별 등수 — 조건명이 키 */
   realUserRanks?: Record<string, string>;
   /** 손품조사 › 매매수요 단지 입지비교 거르기 — 고른 값을 물건마다 남긴다(처음엔 1km · 6개월 · 매매, 2026-11-11) */
-  demandFilter?: { range: 'dong' | 100 | 300 | 500 | 1000 | 2000; months: 6 | 12 | 24; kind: '매매' | '전세' };
+  demandFilter?: DemandFilter;
   /** 매매수요 입지비교 저장본 — 필터로 뽑은 그때의 리스트(실거래 · 좌표 · 시설 거리)를 통째로. 다시 열면 새로 계산하지 않고 이 값으로 그린다.
    *  필터를 바꾸면 새로 계산해 자동으로 다시 저장한다(2026-11-12 사용자 — 사용자가 뽑은 리스트는 바뀌면 안 된다) */
   demandSnap?: DemandSnap;
@@ -882,9 +882,11 @@ export type DemandSnapRow = {
 export type DemandSnap = {
   v: 1;
   at: string;
-  filter: { range: 'dong' | 100 | 300 | 500 | 1000 | 2000; months: 6 | 12 | 24; kind: '매매' | '전세' };
+  filter: DemandFilter;
   tol: number;
   rows: DemandSnapRow[];
   /** 위 칸 줄 동 전체(고르기 전) */
   all: { n: number; avg: number; perPy: number; complexes: number } | null;
 };
+/** 매매수요 입지비교 거르기 — area · year 가 없으면 기본(면적 내 물건 ±3㎡ · 건축 전체) */
+export type DemandFilter = { range: 'dong' | 100 | 300 | 500 | 1000 | 2000; months: 6 | 12 | 24; kind: '매매' | '전세'; area?: [number, number] | null; year?: [number, number] | null };

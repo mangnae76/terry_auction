@@ -85,6 +85,7 @@ import SonpumPricePage from './SonpumPricePage.vue';
 import type { CasePropertyType } from '../services/caseTradeAnalysis';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
 import { dongShapeOf, parcelShapeOf } from '../services/zoning';
+import DualRangeBar from '../components/DualRangeBar.vue';
 import { complexesOf, complexNearbyOf, complexPointOf, metersBetween, LOCATION_SOURCES, nearestPlaceOf, PLACE_ICON, rankFromMeters, walkMinOf, WALK_DETOUR, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
 import KakaoMapTools from '../components/KakaoMapTools.vue';
 import { areaUnit, aptAreaText } from '../services/areaUnit';
@@ -5637,13 +5638,35 @@ const cmpRangeD = ref<CmpRange>(1000);
 const cmpMonthsD = ref<6 | 12 | 24>(6);
 const cmpKindD = ref<'매매' | '전세'>('매매');
 watch([cmpRange, cmpMonths, cmpKind], ([r, m, k]) => { cmpRangeD.value = r; cmpMonthsD.value = m; cmpKindD.value = k; }, { immediate: true });
+/** 면적 · 건축 막대(2026-11-12 사용자) — null 이면 기본(면적 내 물건 ±3㎡ · 건축 전체) */
+const CMP_YEAR_MIN = 1980;
+const cmpYearMax = new Date().getFullYear();
+const cmpAreaR = ref<[number, number] | null>(null);
+const cmpYearR = ref<[number, number] | null>(null);
+const cmpAreaDef = (): [number, number] => { const m = supMyArea.value || 0; return m > 0 ? [Math.max(10, Math.floor(m - 3)), Math.ceil(m + 3)] : [20, 150]; };
+const cmpArea2 = computed<[number, number]>(() => cmpAreaR.value ?? cmpAreaDef());
+const cmpYear2 = computed<[number, number]>(() => cmpYearR.value ?? [CMP_YEAR_MIN, cmpYearMax]);
+const cmpAreaBarMax = computed(() => Math.max(150, Math.ceil((supMyArea.value || 0) * 2)));
+const cmpAreaD = ref<[number, number]>([0, 0]);
+const cmpYearD = ref<[number, number]>([CMP_YEAR_MIN, cmpYearMax]);
+watch([cmpArea2, cmpYear2], ([a, y]) => { cmpAreaD.value = [...a]; cmpYearD.value = [...y]; }, { immediate: true });
+const cmpPyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 3.305785).toFixed(1)}평`;
+const cmpMyYear = computed(() => Number(String(auction.value?.buildingHeader?.approvalDate || auction.value?.approvalDate || '').slice(0, 4)) || 0);
+const cmpYearAll = (y: [number, number]) => y[0] <= CMP_YEAR_MIN && y[1] >= cmpYearMax;
+/** 설명 글 — '전용 52~59㎡' · 건축을 좁혔으면 '· 건축 2005~2015년' */
+const cmpCondText = computed(() => `전용 ${cmpArea2.value[0]}~${cmpArea2.value[1]}㎡${cmpYearAll(cmpYear2.value) ? '' : ` · 건축 ${cmpYear2.value[0]}~${cmpYear2.value[1]}년`}`);
 /** 저장본도 없고 아직 조회하지 않았다 — 리스트가 비어 있고 조회하기를 기다린다 */
 const cmpWaiting = computed(() => !cmpQueried.value && !cmpSnapOn.value);
-const cmpDirty = computed(() => cmpRangeD.value !== cmpRange.value || cmpMonthsD.value !== cmpMonths.value || cmpKindD.value !== cmpKind.value);
+const cmpSame2 = (x: [number, number], y: [number, number]) => x[0] === y[0] && x[1] === y[1];
+const cmpDirty = computed(() => cmpRangeD.value !== cmpRange.value || cmpMonthsD.value !== cmpMonths.value || cmpKindD.value !== cmpKind.value || !cmpSame2(cmpAreaD.value, cmpArea2.value) || !cmpSame2(cmpYearD.value, cmpYear2.value));
 /** 조회하기를 눌렀나(이 물건 · 이 화면에서) — 누르기 전엔 아무것도 받지 않는다. 저장본이 있으면 저장본만 보여 준다(2026-11-12 사용자) */
 const cmpQueried = ref(false);
 watch(() => auction.value?.id, () => { cmpQueried.value = false; });
-const cmpApply = () => { cmpRange.value = cmpRangeD.value; cmpMonths.value = cmpMonthsD.value; cmpKind.value = cmpKindD.value; cmpQueried.value = true; };
+const cmpApply = () => {
+  cmpRange.value = cmpRangeD.value; cmpMonths.value = cmpMonthsD.value; cmpKind.value = cmpKindD.value;
+  cmpAreaR.value = cmpSame2(cmpAreaD.value, cmpAreaDef()) ? null : [...cmpAreaD.value]; cmpYearR.value = cmpYearAll(cmpYearD.value) ? null : [...cmpYearD.value];
+  cmpQueried.value = true;
+};
 /** 거래 단추 옆 건수 — 지금 리스트(범위 · 기간 · 유사평형)에 든 매매 · 전세 실거래 수(시세분석 '매매 3'과 같은 꼴, 2026-11-12 사용자) */
 const cmpKindCount = (k: '매매' | '전세') => cmpRows.value.reduce((n, r) => n + r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length, 0).toLocaleString('ko-KR');
 // 고른 거르기는 그 물건 문서(DB)에 남긴다 — 바꾸면 리스트 · 평균가가 달라져, 다시 열어도 같은 숫자를 보게(2026-11-11 사용자). 처음엔 위 기본값
@@ -5651,7 +5674,7 @@ watch(() => auction.value?.id, (id) => {
   if (!id) return;
   // 저장본이 있으면 저장본의 거르기로 연다(조회만 하고 저장하지 않은 거르기는 남기지 않는다, 2026-11-12 사용자)
   const f = auction.value?.demandSnap?.filter ?? auction.value?.demandFilter;
-  cmpRange.value = f?.range && CMP_RANGES.value.some(([v]) => v === f.range) ? f.range : 1000; cmpMonths.value = f?.months ?? 6; cmpKind.value = f?.kind ?? '매매';   // 종류에 없는 범위(빌라의 2km 등)는 1km
+  cmpRange.value = f?.range && CMP_RANGES.value.some(([v]) => v === f.range) ? f.range : 1000; cmpMonths.value = f?.months ?? 6; cmpKind.value = f?.kind ?? '매매'; cmpAreaR.value = f?.area ?? null; cmpYearR.value = f?.year ?? null;   // 종류에 없는 범위(빌라의 2km 등)는 1km
 }, { immediate: true });
 // 거르기는 '저장하기'를 눌러야 저장본과 같이 DB 에 들어간다(바꾸는 즉시 적던 것은 뺐다, 2026-11-12 사용자)
 /** 단지 열쇠 — 동 · 지번(반경 범위에선 다른 동의 같은 지번이 있다). 선정물건은 'mine' */
@@ -5703,10 +5726,14 @@ const cmpCandidatesNow = (range: CmpRange = cmpRange.value): CompareComplex[] =>
   const all = cmpMonths.value === 24 ? (cmpRows2y.value ?? []) : supAllRows.value;   // 6개월 · 1년은 1년치에서 기간으로 거른다
   const dong = cmpSquash(supRegion.value?.dong ?? '');
   const src = range === 'dong' ? (dong ? all.filter((r) => cmpSquash(r.umdNm) === dong) : supDongRows.value) : all;
-  const list = complexesOf(src, myArea, myJibun, cmpFrom.value, cmpTol.value, supRegion.value?.dong ?? '');
+  const [ylo, yhi] = cmpYear2.value;
+  const list = complexesOf(src, myArea, myJibun, cmpFrom.value, cmpTol.value, supRegion.value?.dong ?? '', { lo: cmpArea2.value[0], hi: cmpArea2.value[1] })
+    .filter((c) => c.mine || !c.buildYear || (c.buildYear >= ylo && c.buildYear <= yhi));   // 건축 막대 — 연도를 모르는 건물은 남긴다(시세분석과 같게)
   if (!list.some((c) => c.mine)) list.push({ jibun: myJibun, name: supName.value, umdNm: supRegion.value?.dong ?? '', area: myArea, jeonseAvg: 0, saleAvg: 0, deals: [], mine: true, buildYear: 0 });
   // 빌라 — 건물이 많아 주변시설을 다 찾으면 무거워진다. 거래가 많은 건물부터 50곳까지(선정물건은 늘)
-  const capped = isApartment.value ? list : [...list.filter((c) => c.mine), ...list.filter((c) => !c.mine).sort((a, b) => b.deals.length - a.deals.length).slice(0, 50)];
+  // 반경 범위에선 좌표만 먼저 받고 반경 안 건물만 주변시설을 받으니 300곳까지 — 50곳에서 자르면 면적을 넓혔을 때 반경 안 건물이 거래 많은 먼 건물에 밀려 빠졌다(2026-11-12)
+  const cap = range === 'dong' ? 50 : 300;
+  const capped = isApartment.value ? list : [...list.filter((c) => c.mine), ...list.filter((c) => !c.mine).sort((a, b) => b.deals.length - a.deals.length).slice(0, cap)];
   // 선정물건 — 기간 안에 거래가 없어도 연식은 사용승인일로 채운다(실거래에서만 연식을 받아 '-'로 비던 것, 2026-11-12 사용자)
   const a = auction.value;
   const myYear = Number(String(a?.buildingHeader?.approvalDate || a?.approvalDate || surveyForm.value?.buildYear || '').slice(0, 4)) || 0;
@@ -5718,7 +5745,8 @@ const cmpMePt = computed(() => (supRegion.value?.lat ? { lat: supRegion.value.la
  *  필터가 저장본과 같으면 새로 계산하지 않고 저장본(실거래 · 좌표 · 시설 거리)으로 그린다. 필터를 바꾸면 새로 계산하고, 다 받으면 자동으로 다시 저장한다. ===== */
 // 비교 건물이 하나도 없는 저장본은 쓰지 않는다 — 실거래를 못 받았을 때 빈 리스트가 굳어 버리지 않게
 const cmpSnap = computed<DemandSnap | null>(() => { const sn = auction.value?.demandSnap; return sn?.v === 1 && sn.rows.some((r) => !r.mine) ? sn : null; });
-const cmpSnapOn = computed(() => { const s = cmpSnap.value; return !!s && s.filter.range === cmpRange.value && s.filter.months === cmpMonths.value && s.filter.kind === cmpKind.value; });
+const cmpSnapOn = computed(() => { const s = cmpSnap.value; return !!s && s.filter.range === cmpRange.value && s.filter.months === cmpMonths.value && s.filter.kind === cmpKind.value
+  && JSON.stringify(s.filter.area ?? null) === JSON.stringify(cmpAreaR.value) && JSON.stringify(s.filter.year ?? null) === JSON.stringify(cmpYearR.value); });
 const cmpSnapRows = computed(() => { const m = new Map<string, DemandSnapRow>(); if (cmpSnapOn.value) cmpSnap.value!.rows.forEach((r) => m.set(cmpKeyOf(r), r)); return m; });
 const cmpList = computed<CompareComplex[]>(() => {
   const r = cmpRange.value; const me = cmpMePt.value;
@@ -6121,7 +6149,7 @@ const cmpSnapBuild = (): DemandSnap => {
       point: row?.point ?? null, supply: row?.supply ?? null, env: !!env, places, basisAll,
     };
   });
-  return JSON.parse(JSON.stringify({ v: 1, at: new Date().toISOString(), filter: { range: cmpRange.value, months: cmpMonths.value, kind: cmpKind.value }, tol: cmpTol.value, rows, all: cmpAll.value })) as DemandSnap;
+  return JSON.parse(JSON.stringify({ v: 1, at: new Date().toISOString(), filter: { range: cmpRange.value, months: cmpMonths.value, kind: cmpKind.value, area: cmpAreaR.value, year: cmpYearR.value }, tol: cmpTol.value, rows, all: cmpAll.value })) as DemandSnap;
 };
 /** 저장하기 — 지금 보이는 리스트(조회한 결과)와 거르기를 물건 DB 에. 다 받았을 때만 누를 수 있다(2026-11-12 사용자) */
 const cmpSaving = ref(false);
@@ -9681,13 +9709,15 @@ const goBack = () => router.back();
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
             <section v-if="webEmbed && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
               <div class="cmp-est-h"><h3><span class="cmp-no">②</span>{{ cmpN }} 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}<template v-if="cmpPick && cmpPicked"> · {{ cmpPicked.name || cmpPicked.jibun }}</template></span><span class="cmp-q">{{ isApartment ? '내가 선정한 아파트 단지는 몇 등일까?' : '내가 선정한 빌라는 주변 유사 빌라 중 몇 등일까?' }}</span></h3>
-                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">고정기준 · {{ cmpRangeText }} · 최근 {{ cmpPeriodText }} · 유사평형(전용 ±{{ cmpTol }}㎡) {{ cmpKind }} 실거래</span> · {{ cmpN }} {{ cmpRows.length }}곳 전체<template v-if="cmpSnapDay"> · {{ cmpSnapDay }} 저장</template></span>
+                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">고정기준 · {{ cmpRangeText }} · 최근 {{ cmpPeriodText }} · {{ cmpCondText }} {{ cmpKind }} 실거래</span> · {{ cmpN }} {{ cmpRows.length }}곳 전체<template v-if="cmpSnapDay"> · {{ cmpSnapDay }} 저장</template></span>
               </div>
               <!-- 거르기 — 제목 · 고정기준 줄 바로 밑(2026-11-12 사용자). 단추는 고르기만, 조회하기를 눌러야 리스트 · 지도 · 칸 줄이 바뀌고 저장된다. (예전: 지도 밑 · 표 바로 위, 2026-11-11) 시세분석 조건 줄과 같은 단추 · 순서(범위 → 거래 → 기간 → 평형). 표 · 지도 · 위 칸 줄이 같이 바뀐다 -->
               <div class="cmp-conds">
                 <span class="pa-lab">범위<span class="pa-seg pa-out" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRangeD === v }" :aria-checked="cmpRangeD === v" :data-t="t" @click="cmpRangeD = v">{{ t }}</button></span></span>
                 <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :data-k="k" :class="{ on: cmpKindD === k }" :aria-checked="cmpKindD === k" @click="cmpKindD = k">{{ k }} {{ cmpKindCount(k) }}</button></span></span>
                 <span class="pa-lab">기간<span class="pa-seg pa-out" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonthsD === m }" :aria-checked="cmpMonthsD === m" :data-t="t" @click="cmpMonthsD = m">{{ t }}</button></span></span>
+                <DualRangeBar label="면적" :min="10" :max="cmpAreaBarMax" :lo="cmpAreaD[0]" :hi="cmpAreaD[1]" :base="supMyArea" :text="`${cmpAreaD[0]}~${cmpAreaD[1]}㎡`" :sub="cmpPyTx(cmpAreaD[0], cmpAreaD[1])" @update="(lo, hi) => (cmpAreaD = [lo, hi])" />
+                <DualRangeBar label="건축" :min="CMP_YEAR_MIN" :max="cmpYearMax" :lo="cmpYearD[0]" :hi="cmpYearD[1]" :base="cmpMyYear" :text="`${cmpYearD[0]}~${cmpYearD[1]}년`" :sub="`${cmpYearMax - cmpYearD[1] + 1}~${cmpYearMax - cmpYearD[0] + 1}년차`" @update="(lo, hi) => (cmpYearD = [lo, hi])" />
                 <button type="button" :class="['cmp-go', { dirty: cmpDirty || cmpWaiting }]" @click="cmpApply">조회하기</button>
                 <button type="button" :class="['cmp-save', { ready: cmpLiveReady }]" :disabled="!cmpLiveReady || cmpSaving" :title="cmpSnapOn ? '저장된 리스트입니다' : cmpLiveReady ? '지금 리스트를 저장합니다' : '조회하기로 불러온 뒤 저장할 수 있습니다'" @click="cmpSave">{{ cmpSnapOn ? '저장됨' : '저장하기' }}</button>
               </div>
@@ -9705,7 +9735,7 @@ const goBack = () => router.back();
                   <div class="cmp-tile"><span class="k">{{ cmpKind }} 거래건수</span><span class="v">{{ cmpEst?.n ?? 0 }}건</span></div>
                   </template>
                   <template v-else>
-                  <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · {{ supRegion?.dong || '동 전체' }}</span><span class="v">{{ cmpAll ? cmpEok(cmpAll.avg) : '-' }}</span><span class="s">유사평형(전용 ±{{ cmpTol }}㎡)</span></div>
+                  <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · {{ supRegion?.dong || '동 전체' }}</span><span class="v">{{ cmpAll ? cmpEok(cmpAll.avg) : '-' }}</span><span class="s">{{ cmpCondText }}</span></div>
                   <div v-for="k in ['중간값', '최저가', '최고가']" :key="k" class="cmp-tile off"><span class="k">{{ k }}</span><span class="v sm">{{ cmpN }}를 누르면 보입니다</span></div>
                   <div class="cmp-tile"><span class="k">평균 평당가</span><span class="v">{{ cmpAll ? cmpPy(cmpAll.perPy) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">{{ cmpN }} 수</span><span class="v">{{ cmpAll?.complexes ?? 0 }}곳</span></div>
@@ -9713,7 +9743,7 @@ const goBack = () => router.back();
                   </template>
                 </div>
                 <!-- 근거 거래 한 줄 — 건물 · 단지를 고르면 칸 줄이 어느 거래로 계산됐는지. 고르기 전엔 안내만(자리를 늘 두어 지도가 위아래로 출렁이지 않게) -->
-                <p class="cmp-basis"><template v-if="cmpBasis"><b class="k">근거</b><template v-if="cmpBasis.n"><span v-for="(t, i) in cmpBasis.shown" :key="i" class="d"><i v-if="i" class="sep">|</i>{{ t }}</span><span v-if="cmpBasis.more" class="more">외 {{ cmpBasis.more }}건</span></template><span v-else class="d">기간 안 {{ cmpKind }} 거래 없음</span><span class="cmp-basis-nt">전용 ±{{ cmpTol }}㎡ 거래만 셌습니다{{ cmpBasis.out ? ` · 다른 평형 ${cmpBasis.out}건은 빠졌습니다` : '' }}</span></template><span v-else-if="cmpWaiting" class="hint">범위 · 거래 · 기간을 고르고 <b>조회하기</b>를 누르면 실거래를 불러옵니다 · 마음에 들면 <b>저장하기</b></span><span v-else class="hint">{{ cmpN }}를 누르면 평균이 어느 거래로 계산됐는지 보입니다</span></p>
+                <p class="cmp-basis"><template v-if="cmpBasis"><b class="k">근거</b><template v-if="cmpBasis.n"><span v-for="(t, i) in cmpBasis.shown" :key="i" class="d"><i v-if="i" class="sep">|</i>{{ t }}</span><span v-if="cmpBasis.more" class="more">외 {{ cmpBasis.more }}건</span></template><span v-else class="d">기간 안 {{ cmpKind }} 거래 없음</span><span class="cmp-basis-nt">{{ cmpCondText }} 거래만 셌습니다{{ cmpBasis.out ? ` · 다른 평형 ${cmpBasis.out}건은 빠졌습니다` : '' }}</span></template><span v-else-if="cmpWaiting" class="hint">범위 · 거래 · 기간을 고르고 <b>조회하기</b>를 누르면 실거래를 불러옵니다 · 마음에 들면 <b>저장하기</b></span><span v-else class="hint">{{ cmpN }}를 누르면 평균이 어느 거래로 계산됐는지 보입니다</span></p>
               </div>
                           <!-- 칸 줄과 지도 · 표는 한 상자(2026-11-11) -->
               <div class="cmp-gap" />
