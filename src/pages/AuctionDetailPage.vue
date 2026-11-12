@@ -10064,7 +10064,7 @@ const goBack = () => router.back();
                         <b v-else>{{ indivAutoText(item) }}</b>
                       </td>
                       <td v-if="zoneApplied" class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
-                      <td v-if="zoneApplied" :class="['n', 'adp-ind-adj', !zoneApplied || zoneSign(item.id) === 0 ? 'zero' : zoneSign(item.id) > 0 ? 'up' : 'down']">{{ !zoneApplied || zoneSign(item.id) === 0 ? '0%' : pctText(zoneAdj(item.id)) }}<small v-if="zoneMatched(item.id)" class="cmp-zone-match">시세분석 조건으로 맞춤</small></td></tr>
+                      <td v-if="zoneApplied" :class="['n', 'adp-ind-adj', !zoneApplied || zoneSign(item.id) === 0 ? 'zero' : zoneSign(item.id) > 0 ? 'up' : 'down']">{{ !zoneApplied || zoneSign(item.id) === 0 ? '0%' : pctText(zoneAdj(item.id)) }}<small v-if="isApartment && zoneMatched(item.id)" class="cmp-zone-match">시세분석 조건으로 맞춤</small></td></tr>
                     <tr v-if="!zoneApplied" class="cmp-zone-note"><td colspan="2">손품 체크리스트 — 이 단지 실거래가 · 전세가에 이미 담겨 있어 가격 보정은 하지 않습니다</td></tr>
                   </tbody>
                 </table></div></div>
@@ -12858,7 +12858,11 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .adp-ind-adj.zero { color: #9ca3af; }
 .sup-tbl .adm-table tbody tr.cmp-sum td { background: #f7f9fc; font-weight: 700; }
 .o-unit .cmp-two { margin-bottom: 12px; grid-template-columns: minmax(0, 1fr); }
-.o-unit .cmp-two.pair { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }   /* 구역 내 · 단지 내 나란히 */
+.o-unit .cmp-two.pair { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }   /* 구역 내 · 단지 내 나란히 */
+/* 나란한 두 표(빌라 개별성 · 호실 개별성) 아랫단을 맞춘다 — 짧은 쪽 표가 줄 높이를 나눠 늘어 아래 끝이 같다(2026-11-12 사용자) */
+.o-unit .cmp-two.pair > .sup-tbl { display: flex; flex-direction: column; }
+.o-unit .cmp-two.pair > .sup-tbl > .adm-table-wrap { flex: 1 1 auto; display: flex; }
+.o-unit .cmp-two.pair > .sup-tbl > .adm-table-wrap > table { flex: 1 1 auto; height: 100%; }
 .o-unit .cmp-two.pair > .cmp-ind-note { grid-column: 1 / -1; }
 .o-unit .cmp-two.solo > .cmp-ind-note { grid-column: 1 / -1; }   /* 이 단지 거래가 있으면 단지 내 개별성만 */
 .cmp-zone-off { display: flex; gap: 10px; align-items: baseline; margin-bottom: 12px; padding: 10px 14px; border: 1px dashed #cbd5e1; border-radius: 8px; background: #fafbfc; font-size: 12px; color: #6b7280; }   /* 구역 내 개별성 접힘 — 이 단지 거래만 쓸 때 */
