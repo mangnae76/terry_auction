@@ -3846,27 +3846,7 @@ const dmClearMonths = computed(() => (dmMonthly.value > 0 ? dmListings.value / d
 // (엑셀은 월 기준이었다. 한 해에 매물이 몇 번 소화되는지가 더 읽기 쉬워 연간으로 바꿨다)
 const dmAbsorb = computed(() => (dmListings.value > 0 ? (deal12mValue.value / dmListings.value) * 100 : 0));
 
-/** 등급 A~D. 값이 없으면 '-' */
-const levelTone = (level: string) => (
-  { A: 'good', B: 'ok2', C: 'ok' }[level] ?? 'none'
-);
-/** 엑셀 수식 그대로 — A·B·C 셋뿐이고, 기준 수치가 비면 빈칸('-') */
-const gradeOf = (ready: boolean, value: number, a: number, b: number, higherIsBetter: boolean) => {
-  if (!ready) return '-';
-  if (higherIsBetter) return value >= a ? 'A' : value >= b ? 'B' : 'C';
-  return value <= a ? 'A' : value <= b ? 'B' : 'C';
-};
-// I4 =IF(B4=0,"",IF(F4>=3%,"A",IF(F4>=1.5%,"B","C")))
-const dmTurnGrade = computed(() => gradeOf(dmUnits.value > 0, dmTurnover.value, 3, 1.5, true));
-// J4 =IF(B4=0,"",IF(G4<=3%,"A",IF(G4<=5%,"B","C")))
-const dmBurdenGrade = computed(() => gradeOf(dmUnits.value > 0 && dmListings.value > 0, dmBurden.value, 3, 5, false));
-// K4 =IF(B4=0,"",IF(H4<=6,"A",IF(H4<=12,"B","C")))
-const dmClearGrade = computed(() => gradeOf(dmUnits.value > 0 && dmListings.value > 0, dmClearMonths.value, 6, 12, false));
-// 월 기준 15%/10% 을 연 기준으로 환산 — 180%/120%
-const dmAbsorbGrade = computed(() => gradeOf(dmListings.value > 0, dmAbsorb.value, 180, 120, true));
-
-/** 보기용 적합 표시 — A·B는 적합, C·D는 부적합 */
-const dmFitText = (grade: string) => (grade === '-' ? '' : (grade === 'A' || grade === 'B' ? '적합' : '부적합'));
+/* 수요지표 등급(A~C · 적합/부적합)은 앱에서도 뺐다(2026-11-12 사용자) — 웹처럼 값만 */
 /* 종합등급(네 등급 평균)은 화면에서 뺐다 — 웹(2026-11-02) · 앱(2026-11-09) */
 /** 소진기간 표시 — 12개월을 넘으면 해로 환산한다. 연은 Y, 달은 M (대문자) */
 const dmClearParts = computed<Array<[string, string]>>(() => {
@@ -9395,6 +9375,8 @@ const goBack = () => router.back();
                 <div v-for="c in rankConditions" :key="c" class="adp-ruser-cond-row">
                   <span class="adp-ruser-cond-name">{{ c }}</span>
                 </div>
+                <!-- 입지조건은 많아야 네 줄 — 룸수를 바꿔도 표 높이가 그대로이게 빈 줄로 네 줄을 채운다(2026-11-12 사용자) -->
+                <div v-for="i in Math.max(0, 4 - rankConditions.length)" :key="`pad-${i}`" class="adp-ruser-cond-row" aria-hidden="true"><span class="adp-ruser-cond-name">&nbsp;</span></div>
                 </td>
                 <td class="adp-ruser-cell center">
                 <div v-for="c in rankConditions" :key="c" class="adp-ruser-cond-row center">
@@ -9407,6 +9389,7 @@ const goBack = () => router.back();
                     @input="setRank(c, ($event.target as HTMLInputElement).value)"
                   />
                 </div>
+                <div v-for="i in Math.max(0, 4 - rankConditions.length)" :key="`pad-${i}`" class="adp-ruser-cond-row center" aria-hidden="true"><input class="adp-ruser-rank" style="visibility: hidden" tabindex="-1" disabled /></div>
                 </td>
               </tr>
               </tbody>
@@ -9417,14 +9400,13 @@ const goBack = () => router.back();
             <div v-if="sonpumMode" class="o-demand"><slot name="son-demand" /></div>
             <template v-if="!sonpumMode">
             <div class="adp-dm-head">
-              <strong class="adp-dm-title">1. <span class="adp-dm-area">{{ surveyAreaLabel }}</span> 수요분석</strong>
+              <!-- 웹 '읍면동 수급분석 검암동 · 이 동네는 내놓으면 얼마나 빨리 팔릴까?'와 같은 이름(2026-11-12 사용자). 번호는 위 ① 실사용자 다음 -->
+              <strong class="adp-dm-title"><span class="cmp-no">②</span>읍면동 수급분석<span class="adp-dm-area adp-dm-area-gap">{{ surveyAreaLabel }}</span></strong>
+              <small class="adp-dm-q">이 동네는 내놓으면 얼마나 빨리 팔릴까?</small>
             </div>
 
             <!-- ① 기준수치 — 이름 칸에 대면 설명이 뜬다(칸이 작아 아이콘만으로는 누르기 어렵다) -->
             <div class="adp-dm-block">
-              <div class="adp-dm-block-head">
-                <span class="t">① 기초수치</span>
-              </div>
               <div class="adp-dm-rowwrap">
               <div class="adp-mkt-cells c3 adp-dm-table dm-input">
                 <div :class="['cell split', { lit: dmLit('deal') }]" @mouseenter="dmLitEnter('deal')" @mouseleave="dmLitLeave()" @click="dmLitTap('deal')">
@@ -9514,9 +9496,6 @@ const goBack = () => router.back();
 
             <!-- ② 지표 — 이름 칸에 대면 계산식이 뜬다 -->
             <div class="adp-dm-block">
-              <div class="adp-dm-block-head">
-                <span class="t">② 수요지표</span>
-              </div>
               <div class="adp-dm-rowwrap">
               <!-- 종합 칸은 뺐다 — 웹(2026-11-02) · 앱 머리 줄 종합(2026-11-09). 지표 4칸만 -->
               <div :class="['adp-mkt-cells', 'c4', 'adp-dm-table', 'dm-result']">
@@ -9540,10 +9519,6 @@ const goBack = () => router.back();
                   <div class="cell-body">
                     <strong class="hi-blue"><em class="adp-dm-pre">연</em><span class="num">{{ dmRateText(dmAbsorb) }}</span><em>%</em></strong>
                   </div>
-                  <div class="cell-grade">
-                    <strong :class="['adp-dm-grade', `g-${levelTone(dmAbsorbGrade)}`]">{{ dmAbsorbGrade }}</strong>
-                    <span v-if="dmAbsorbGrade !== '-'" :class="['adp-dm-fit', { bad: dmAbsorbGrade === 'C' }]">/ {{ dmFitText(dmAbsorbGrade) }}</span>
-                  </div>
                 </div>
                 <div :class="['cell split calc', { lit: dmLit('clear') }]" @mouseenter="dmLitEnter('clear')" @mouseleave="dmLitLeave()" @click="dmLitTap('clear')">
                   <div class="cell-head">
@@ -9564,10 +9539,6 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell-body">
                     <strong class="hi-blue adp-dm-clear"><template v-for="(part, pi) in dmClearParts" :key="pi"><span :class="['num', { 'adp-dm-slash': part[0] === '/', 'adp-dm-gap': pi > 0 && part[0] !== '/' && !!dmClearParts[pi - 1][1] }]">{{ part[0] }}</span><em v-if="part[1]">{{ part[1] }}</em></template></strong>
-                  </div>
-                  <div class="cell-grade">
-                    <strong :class="['adp-dm-grade', `g-${levelTone(dmClearGrade)}`]">{{ dmClearGrade }}</strong>
-                    <span v-if="dmClearGrade !== '-'" :class="['adp-dm-fit', { bad: dmClearGrade === 'C' }]">/ {{ dmFitText(dmClearGrade) }}</span>
                   </div>
                 </div>
                 <!-- 웹 — '종합' 을 표 오른쪽 한 칸으로. 값 줄과 등급 줄을 한 칸으로 합쳐 등급·적합여부를 크게 -->
@@ -9591,10 +9562,6 @@ const goBack = () => router.back();
                   <div class="cell-body">
                     <strong class="hi-blue"><em class="adp-dm-pre">연</em><span class="num">{{ dmRateText(dmTurnover) }}</span><em>%</em></strong>
                   </div>
-                  <div class="cell-grade">
-                    <strong :class="['adp-dm-grade', `g-${levelTone(dmTurnGrade)}`]">{{ dmTurnGrade }}</strong>
-                    <span v-if="dmTurnGrade !== '-'" :class="['adp-dm-fit', { bad: dmTurnGrade === 'C' }]">/ {{ dmFitText(dmTurnGrade) }}</span>
-                  </div>
                 </div>
                 <div :class="['cell split calc', { lit: dmLit('burden') }]" @mouseenter="dmLitEnter('burden')" @mouseleave="dmLitLeave()" @click="dmLitTap('burden')">
                   <div class="cell-head">
@@ -9615,10 +9582,6 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell-body">
                     <strong class="hi-blue"><span class="num">{{ dmRateText(dmBurden) }}</span><em>%</em></strong>
-                  </div>
-                  <div class="cell-grade">
-                    <strong :class="['adp-dm-grade', `g-${levelTone(dmBurdenGrade)}`]">{{ dmBurdenGrade }}</strong>
-                    <span v-if="dmBurdenGrade !== '-'" :class="['adp-dm-fit', { bad: dmBurdenGrade === 'C' }]">/ {{ dmFitText(dmBurdenGrade) }}</span>
                   </div>
                 </div>
               </div>
@@ -12578,6 +12541,8 @@ tr.tone-take { background: #fff5f5; }
 }
 /* 조사 대상 동 이름 — 제목 안에서 눈에 띄게 */
 .adp-dm-area { color: #2b6df3; }
+.adp-dm-area-gap { margin-left: 6px; }
+.adp-dm-q { flex: 0 0 100%; margin-top: -4px; font-size: 12.5px; font-weight: 400; color: #6b7280; }   /* 제목 아래 물음 한 줄 — 웹 수급분석 물음과 같은 꼴 */
 /* 제목 옆 주소 — 제목만큼 크면 어느 쪽이 제목인지 흐려진다.
    급매가 ① 블록 제목(13px)에 맞추고 굵기는 뺀다 */
 .adp-dm-addr { font-size: 13px; font-weight: 500; color: #2b6df3; }
@@ -12610,7 +12575,7 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-body > .adp-dm-head.sec2 { margin-top: 12px; }
 /* 앱 — 맨 위 ① 실사용자 상자는 혼자 온전한 상자, 그 아래 '1. 수요분석' 제목 줄이 새 단락의 위 테두리(2026-11-12) */
 .adp-dm-body > .adp-dm-block.boxed.o-rank:first-child { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 10px 12px; }
-.adp-dm-body > .o-rank:first-child + .adp-dm-head { margin-top: 12px; border: 1px solid #e5e7eb; border-bottom: 0; border-radius: 8px 8px 0 0; padding: 10px 10px 4px; background: #fff; }
+.adp-dm-body > .o-rank:first-child + .adp-dm-head { margin-top: 12px; border: 1px solid #e5e7eb; border-bottom: 0; border-radius: 8px 8px 0 0; padding: 10px 10px 4px 12px; background: #fff; }   /* 왼쪽 12 — 번호(②)가 위 ① 과 같은 x */
 .adp-dm-body > .adp-dm-block,
 .adp-dm-body > .adp-dm-block.boxed {
   border: 1px solid #e5e7eb; border-top: 0; border-bottom: 0; border-radius: 0;
