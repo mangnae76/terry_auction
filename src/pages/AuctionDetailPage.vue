@@ -85,7 +85,7 @@ import SonpumPricePage from './SonpumPricePage.vue';
 import type { CasePropertyType } from '../services/caseTradeAnalysis';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
 import { dongShapeOf, parcelShapeOf } from '../services/zoning';
-import DualRangeBar from '../components/DualRangeBar.vue';
+import RangeInputBox from '../components/RangeInputBox.vue';
 import { useFilterDraft } from '../composables/useFilterDraft';
 import { complexesOf, complexNearbyOf, complexPointOf, metersBetween, LOCATION_SOURCES, nearestPlaceOf, PLACE_ICON, rankFromMeters, walkMinOf, WALK_DETOUR, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
 import KakaoMapTools from '../components/KakaoMapTools.vue';
@@ -9776,13 +9776,13 @@ const goBack = () => router.back();
                 <span class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층"><button type="button" role="radio" :class="{ on: cmpFloorD !== 'same' }" :aria-checked="cmpFloorD !== 'same'" data-t="전체" @click="cmpFloorD = null">전체</button><button type="button" role="radio" :class="{ on: cmpFloorD === 'same' }" :aria-checked="cmpFloorD === 'same'" data-t="같은 층" @click="cmpFloorD = 'same'">같은 층</button></span></span>
               </div>
               <!-- 면적 · 건축 막대 — 거르기 줄 밑 한 줄, 두 상자가 위 줄 폭에 맞게 반씩(2026-11-12 사용자) -->
-              <!-- 면적 · 건축은 한 상자, 조회하기 · 저장하기는 상자 밖 — 단추는 위 거르기까지 다 같이 쓴다(2026-11-12 사용자) -->
+              <!-- 면적 · 건축 상자(적는 칸), 조회하기 · 저장하기는 오른쪽 — 단추는 위 거르기까지 다 같이 쓴다(2026-11-12 사용자) -->
               <div class="cmp-bars-row">
               <div class="cmp-bars">
-                  <DualRangeBar label="면적 ㎡" :min="20" :max="cmpAreaBarMax" :lo="cmpAreaD[0]" :hi="cmpAreaD[1]" :base="supMyArea" :lo-text="String(cmpAreaD[0])" :base-text="String(Number((Math.floor(supMyArea * 100 + 1e-6) / 100).toFixed(2)))" :hi-text="String(cmpAreaD[1])" :sub="cmpPyTx(cmpAreaD[0], cmpAreaD[1])" :tvg-w="136" @update="(lo, hi) => (cmpAreaD = [lo, hi])" />
-                  <DualRangeBar label="건축" :min="CMP_YEAR_MIN" :max="cmpYearMax" :lo="cmpYearD[0]" :hi="cmpYearD[1]" :base="cmpMyYear" :lo-text="String(cmpYearD[0])" :base-text="String(cmpMyYear || '')" :hi-text="String(cmpYearD[1])" :sub="`${cmpYearMax - cmpYearD[1] + 1}~${cmpYearMax - cmpYearD[0] + 1}년차`" :tvg-w="140" @update="(lo, hi) => (cmpYearD = [lo, hi])" />
+                  <RangeInputBox label="면적 ㎡" :min="20" :max="cmpAreaBarMax" :lo="cmpAreaD[0]" :hi="cmpAreaD[1]" :base="supMyArea" :lo-text="String(cmpAreaD[0])" :base-text="String(Number((Math.floor(supMyArea * 100 + 1e-6) / 100).toFixed(2)))" :hi-text="String(cmpAreaD[1])" :sub="cmpPyTx(cmpAreaD[0], cmpAreaD[1])" @update="(lo, hi) => (cmpAreaD = [lo, hi])" />
+                  <RangeInputBox label="건축" :min="CMP_YEAR_MIN" :max="cmpYearMax" :lo="cmpYearD[0]" :hi="cmpYearD[1]" :base="cmpMyYear" :lo-text="String(cmpYearD[0])" :base-text="String(cmpMyYear || '')" :hi-text="String(cmpYearD[1])" :sub="`${cmpYearMax - cmpYearD[1] + 1}~${cmpYearMax - cmpYearD[0] + 1}년차`" @update="(lo, hi) => (cmpYearD = [lo, hi])" />
               </div>
-              <span class="cmp-acts">
+              <span class="cmp-qbtns">
                   <button type="button" class="cmp-reset" :disabled="cmpIsDefault" title="거르기를 기본값(반경 1km · 6개월 · 매매 · 면적 ±3㎡ …)으로 — 조회하기를 눌러야 적용" @click="cmpReset"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button>
                     <button type="button" :class="['cmp-go', { dirty: cmpDirty || cmpWaiting }]" @click="cmpApply">조회하기</button>
                   <button type="button" :class="['cmp-save', { ready: cmpLiveReady }]" :disabled="!cmpLiveReady || cmpSaving" :title="cmpSnapOn && !cmpDirty ? '저장된 리스트입니다' : cmpDirty ? '조회하기를 누른 뒤 저장할 수 있습니다' : cmpLiveReady ? '지금 리스트를 저장합니다' : '조회하기로 불러온 뒤 저장할 수 있습니다'" @click="cmpSave">{{ cmpSnapOn && !cmpDirty ? '저장됨' : '저장하기' }}</button>
@@ -12614,17 +12614,15 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-conds > .pa-lab > .pa-seg > button { flex: 1 1 auto; padding: 0 8px; }
 @media (max-width: 1180px) { .cmp-conds { flex-wrap: wrap; } }
 .cmp-bars-row { display: flex; align-items: stretch; gap: 8px; margin: -2px 0 12px; }
-.cmp-bars { flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; column-gap: 32px; margin: 0; padding: 6px 20px 6px; background: #fff; border: 1px solid #dde3ee; border-radius: 10px; }   /* 면적 · 건축 막대 — 시세분석 직접범위 상자와 같은 꼴 */
-:root[data-theme="dark"] .cmp-bars { background: #182031; border-color: #2a3449; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-bars { background: #182031; border-color: #2a3449; } }
-@media (max-width: 760px) { .cmp-bars { grid-template-columns: minmax(0, 1fr); row-gap: 14px; } .cmp-bars-row { flex-wrap: wrap; } }
-.cmp-acts { display: flex; align-items: stretch; gap: 8px; }
-.cmp-acts > button { height: auto; min-width: 110px; }
+.cmp-bars { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }   /* 면적 · 건축 — 반경 · 기간과 같은 상자(막대 뺌, 2026-11-12 사용자) */
+@media (max-width: 760px) { .cmp-bars-row { flex-wrap: wrap; } }
+.cmp-qbtns { display: flex; align-items: stretch; gap: 8px; margin-left: auto; }
+.cmp-qbtns > button { height: auto; min-width: 110px; }
 .cmp-reset { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #4b5563; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
-.cmp-acts > .cmp-reset { min-width: 96px; }
+.cmp-qbtns > .cmp-reset { min-width: 96px; }
 .cmp-reset:disabled { color: #b8bfcc; cursor: default; }
 :root[data-theme="dark"] .cmp-reset { background: transparent; border-color: #34405a; color: #b5bfd0; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-reset { background: transparent; border-color: #34405a; color: #b5bfd0; } }   /* 면적 · 건축 상자와 같은 높이(2026-11-12 사용자) */   /* 면적 · 건축 옆 — 조회하기 · 저장하기(2026-11-12 사용자) */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-reset { background: transparent; border-color: #34405a; color: #b5bfd0; } }   /* 면적 · 건축 상자와 같은 높이(2026-11-12 사용자) */   /* 면적 · 건축 옆 — 필터초기화 · 조회하기 · 저장하기(2026-11-12 사용자). .cmp-acts 는 표 줄 바로가기 단추라 이름을 따로 */
 .cmp-go { height: 42px; padding: 0 22px; border: 1px solid #2b6df3; border-radius: 8px; background: #fff; color: #2b6df3; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }   /* 조회하기 — 고른 거르기가 지금과 다르면 파랗게 채운다 */
 .cmp-go.dirty { background: #2b6df3; color: #fff; }
 .cmp-save { height: 42px; min-width: 96px; padding: 0 18px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #9ca3af; font: inherit; font-size: 14px; font-weight: 700; cursor: default; }   /* 저장하기 — 조회 결과가 다 오면 초록으로 */

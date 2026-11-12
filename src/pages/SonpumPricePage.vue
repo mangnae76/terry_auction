@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { clampAroundBase } from '../services/rangeClamp';
-import DualRangeBar from '../components/DualRangeBar.vue';
+import RangeInputBox from '../components/RangeInputBox.vue';
 import { userMessage } from '../services/userMessage';
 // 손품조사 › 시세분석 — 선정물건 둘레(반경) · 비슷한 조건(유사도)의 실거래로 「실거래가 예상」을 낸다.
 // 위→아래: ⓪ 조회 줄 → Ⓐ 실거래가 예상 띠 → Ⓑ 지도 · 조건 줄 · 유사물건 표 → Ⓒ 시세종합 → Ⓓ 호가 입력.
@@ -930,10 +930,10 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <div class="ticks" aria-hidden="true"><span v-for="s in SIM_STEPS" :key="s">{{ s }}%</span></div>
           </div>
           <div v-else class="simB">
-            <!-- 웹(전체화면 아님) — 면적 · 건축 막대는 부품 하나(DualRangeBar, 매매수요 입지비교와 같다). 범위 규칙은 services/rangeClamp -->
+            <!-- 웹(전체화면 아님) — 면적 · 건축 막대는 부품 하나(RangeInputBox — 막대를 빼고 적는 칸, 매매수요 입지비교와 같다). 범위 규칙은 services/rangeClamp -->
             <template v-if="webEmbed && !fs">
-              <DualRangeBar class="one" label="면적 ㎡" :min="AREA_MIN" :max="AREA_MAX" :lo="rangeCond.mMin" :hi="rangeCond.mMax" :base="me.areaM2" :lo-text="areaTx(rangeCond.mMin)" :base-text="areaTx(me.areaM2)" :hi-text="areaTx(rangeCond.mMax)" :sub="`${(rangeCond.mMin / PY).toFixed(1)}~${(rangeCond.mMax / PY).toFixed(1)}평`" :tvg-w="136" @update="(lo, hi) => (rangeCond = { ...rangeCond, mMin: lo, mMax: hi })" />
-              <DualRangeBar class="one" label="건축" :min="YEAR_MIN" :max="yearMax" :lo="rangeCond.yMin" :hi="rangeCond.yMax" :base="me.year" :lo-text="String(rangeCond.yMin)" :base-text="String(me.year)" :hi-text="String(rangeCond.yMax)" :sub="`${yearMax - rangeCond.yMax + 1}~${yearMax - rangeCond.yMin + 1}년차`" :tvg-w="140" @update="(lo, hi) => (rangeCond = { ...rangeCond, yMin: lo, yMax: hi })" />
+              <RangeInputBox label="면적 ㎡" :min="AREA_MIN" :max="AREA_MAX" :lo="rangeCond.mMin" :hi="rangeCond.mMax" :base="me.areaM2" :lo-text="areaTx(rangeCond.mMin)" :base-text="areaTx(me.areaM2)" :hi-text="areaTx(rangeCond.mMax)" :sub="`${(rangeCond.mMin / PY).toFixed(1)}~${(rangeCond.mMax / PY).toFixed(1)}평`" @update="(lo, hi) => (rangeCond = { ...rangeCond, mMin: lo, mMax: hi })" />
+              <RangeInputBox label="건축" :min="YEAR_MIN" :max="yearMax" :lo="rangeCond.yMin" :hi="rangeCond.yMax" :base="me.year" :lo-text="String(rangeCond.yMin)" :base-text="String(me.year)" :hi-text="String(rangeCond.yMax)" :sub="`${yearMax - rangeCond.yMax + 1}~${yearMax - rangeCond.yMin + 1}년차`" @update="(lo, hi) => (rangeCond = { ...rangeCond, yMin: lo, yMax: hi })" />
             </template>
             <template v-else>
               <div :class="['dl', { one: webEmbed && !fs }]"><span class="dn">{{ webEmbed && !fs ? '면적 ㎡' : '면적' }}<small v-if="webEmbed && !fs" class="pa-num">{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</small></span>
