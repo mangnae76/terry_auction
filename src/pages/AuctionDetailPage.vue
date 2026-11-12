@@ -5703,8 +5703,10 @@ const cmpSimRanges = (sim: number) => ({ area: cmpSimArea(sim), year: cmpSimYear
 const cmpDealN = (r: { deals: Array<{ kind: string; price: number }> }, k: '매매' | '전세') => r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length;
 const cmpKindCount = (k: '매매' | '전세') => cmpListAll.value.reduce((n, r) => n + r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length, 0).toLocaleString('ko-KR');
 // 고른 거르기는 그 물건 문서(DB)에 남긴다 — 바꾸면 리스트 · 평균가가 달라져, 다시 열어도 같은 숫자를 보게(2026-11-11 사용자). 처음엔 위 기본값
-watch(() => auction.value?.id, (id) => {
+watch(() => `${auction.value?.id ?? ''}|${auction.value?.demandSnap?.at ?? ''}`, () => {
+  const id = auction.value?.id;
   if (!id) return;
+  // 물건 문서가 먼저 이 브라우저 저장분(예전 저장본)으로 왔다가 서버 것(새 저장본)으로 다시 오면 그 저장본의 거르기로 맞춘다 — 물건 id 만 보면 예전 거르기로 남아 새로 계산하느라 지도가 비었다(2026-11-12)
   // 저장본이 있으면 저장본의 거르기로 연다(조회만 하고 저장하지 않은 거르기는 남기지 않는다, 2026-11-12 사용자)
   const f = auction.value?.demandSnap?.filter ?? auction.value?.demandFilter;
   const n = cmpNormFilter(f);
@@ -6232,7 +6234,7 @@ const cmpBasis = computed(() => {
   const sq = (v: string) => String(v ?? '').replace(/\s+/g, '');
   const all = sr ? sr.basisAll : src.filter((d) => sq(d.jibun) === sq(r.jibun) && sq(d.umdNm) === sq(r.umdNm) && d.contractDate.replace(/\D/g, '') >= cmpFrom.value
     && (cmpKind.value === '전세' ? d.kind === '전세' : ['매매', '직거래'].includes(d.kind)) && d.price > 0).length;
-  return { out: Math.max(0, all - ds.length), n: ds.length, shown: ds.slice(0, 1).map((d) => [fmtD(d.contractDate), d.floor ? `${String(d.floor).replace(/층$/, '')}층` : '', `전용 ${ar(d.areaM2)}`, cmpMoney(d.price)].filter(Boolean).join(' · ')), more: Math.max(0, ds.length - 1) };
+  return { out: Math.max(0, all - ds.length), n: ds.length, shown: ds.slice(0, 1).map((d) => [fmtD(d.contractDate), d.floor ? `${String(d.floor).replace(/층$/, '')}층` : '', `전용 ${ar(d.areaM2)}${isApartment.value ? '' : ` / ${Number((d.areaM2 / 3.305785).toFixed(2))}평`}`, cmpMoney(d.price)]   /* 빌라는 전용 옆에 평(2026-11-12 사용자 규칙) */.filter(Boolean).join(' · ')), more: Math.max(0, ds.length - 1) };
 });
 /** 저장본 만들기 — 다 받았을 때(실거래 · 좌표 · 시설 · 공급면적) 지금 리스트를 통째로. 시설은 입지조건 전부(룸수를 바꿔도 다시 받지 않게) */
 const cmpFetched = computed(() => {
@@ -6257,7 +6259,13 @@ const cmpGiveUp = ref(false);
 let cmpGiveUpT = 0;
 watch(cmpLoading, (on) => { window.clearTimeout(cmpGiveUpT); cmpGiveUp.value = false; if (on) cmpGiveUpT = window.setTimeout(() => { cmpGiveUp.value = true; }, 30000); }, { immediate: true });
 const cmpHold = computed(() => cmpLoading.value && !cmpGiveUp.value);
-const cmpViewRows = computed(() => (cmpHold.value ? cmpRows.value.filter((r) => r.mine) : cmpRows.value));
+// 받는 동안엔 바로 전에 보여 준 리스트 · 말풍선을 그대로 둔다(지웠다 다시 그리지 않는다, 2026-11-12 사용자 '굳이 왜 지워야 되냐'). 처음이라 보여 준 게 없으면 선정물건만
+let cmpShown: CmpRow[] = [];
+watch(() => auction.value?.id, () => { cmpShown = []; });
+const cmpViewRows = computed(() => {
+  if (!cmpHold.value) { cmpShown = cmpRows.value; return cmpRows.value; }
+  return cmpShown.length ? cmpShown : cmpRows.value.filter((r) => r.mine);
+});
 /** 받는 진행 — 후보 건물 중 필요한 정보(좌표 · 반경 안이면 주변시설 · 빌라 엘베)를 다 받은 곳 수 */
 const cmpProg = computed(() => {
   const inList = new Set(cmpListBase.value.map((c) => cmpKeyOf(c)));
