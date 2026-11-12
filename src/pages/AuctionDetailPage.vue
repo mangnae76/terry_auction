@@ -13094,10 +13094,10 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-tbl td.nm .cmp-nm-line { justify-content: center; }
 .cmp-row { cursor: pointer; }
 .sup-tbl .adm-table tbody tr.cmp-row:hover td { background: #f7f9fc; }
-.sup-tbl .adm-table tbody tr.cmp-row.mine td { background: #fff5f5; box-shadow: inset 0 -2px 0 #efb7b7; }
+.sup-tbl .adm-table tbody tr.cmp-row.mine td { background: #fff5f5; box-shadow: inset 0 -2px 0 #f3c9c9; }
 .sup-tbl .adm-table tbody tr.cmp-row.on td { background: #eef2ff; box-shadow: none; }
 .sup-tbl .adm-table tbody tr.cmp-row.on td:first-child { box-shadow: inset 3px 0 0 #2b6df3; }
-.sup-tbl .adm-table tbody tr.cmp-row.mine.on td:first-child { box-shadow: inset 3px 0 0 #2b6df3, inset 0 -2px 0 #efb7b7; }   /* 선정물건을 고르면 첫 칸도 빨간 아래 줄 — 파란 막대가 덮어 첫 칸만 비었다(2026-11-12 사용자) */   /* 고른 줄 왼쪽 파란 막대 — 매각분석 표와 같게(2026-11-12) */   /* 고른 줄 연파랑 — 시세분석과 같게 */
+.sup-tbl .adm-table tbody tr.cmp-row.mine.on td:first-child { box-shadow: inset 3px 0 0 #2b6df3, inset 0 -2px 0 #f3c9c9; }   /* 선정물건을 고르면 첫 칸도 빨간 아래 줄 — 파란 막대가 덮어 첫 칸만 비었다(2026-11-12 사용자) */   /* 고른 줄 왼쪽 파란 막대 — 매각분석 표와 같게(2026-11-12) */   /* 고른 줄 연파랑 — 시세분석과 같게 */
 .cmp-tag { display: inline-block; flex: 0 0 auto; margin-left: 6px; padding: 1px 4px; border-radius: 3px; background: #e03e3e; color: #fff; font-size: 8.5px; font-weight: 400; vertical-align: 2px; }
 .cmp-basis { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 8px 0 0; padding: 8px 12px; border-radius: 8px; background: #eef2ff; font-size: 13px; color: #4b5563; min-height: 36px; box-sizing: border-box; }   /* 근거 거래 줄(2026-11-12 시안) */
 .cmp-basis .k { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 4px; background: #2b6df3; color: #fff; font-size: 12px; font-weight: 500; white-space: nowrap; }   /* 근거 칩(2026-11-12 사용자) */ .cmp-basis .d { font-variant-numeric: tabular-nums; } .cmp-basis .sep { font-style: normal; color: #9ca3af; margin-right: 10px; } .cmp-basis .more, .cmp-basis .hint { color: #6b7280; } .cmp-basis .cmp-basis-nt { margin-left: auto; font-size: 12px; color: #6b7280; }
