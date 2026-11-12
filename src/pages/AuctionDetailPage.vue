@@ -3755,6 +3755,8 @@ const DM_ROW3: DmTipKey[] = ['gTurn', 'gBurden', 'gClear', 'gAbsorb'];
 /** 말풍선 라벨 끝의 '!' 는 '사용자가 직접 해야 하는 일' 표시 — 초록으로 보여 준다 */
 const tipAct = (label: string) => label.endsWith('!');
 const tipLabel = (label: string) => label.replace(/!$/, '');
+/** 수요지표 ⓘ — 웹 읍면동 수급분석과 같은 글(합격선 '1.5% 이상 적합' 등, 2026-11-13 사용자). 등급 A~C 글은 뺐다 */
+const dmTipWhat = computed(() => (isApartment.value ? '아파트' : '연립·다세대'));
 const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, string]> }>>(() => ({
   deal: { arrow: '12%', rows: [
     ['출처', '국토부 실거래가 API · 자동 입력'],
@@ -3780,25 +3782,9 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
     ['공식', '12개월 거래량 ÷ 12'],
     ['의미', '1년 거래량을 나눈 한 달 평균 거래 건수'],
   ] },
-  turn: { arrow: '62%', rows: [
-    ['공식', '12개월 거래량 ÷ 총 세대수 × 100'],
-    ['의미', '연립·다세대 중 1년에 몇 %가 손바뀜되나'],
-    ['기준', 'A 3%↑ · B 1.5~3% · C 1.5%↓'],
-    ['적정', '3% 이상 ↑ (높을수록 좋다)'],
-  ] },
-  burden: { arrow: '87%', rows: [
-    ['공식', '총 매물수 ÷ 총 세대수 × 100'],
-    ['의미', '연립·다세대 중 몇 %가 매물로 나와 있나'],
-    ['기준', 'A 3%↓ · B 3~5% · C 5% 초과'],
-    ['적정', '3% 이하 ↓ (낮을수록 좋다)'],
-    ['위험', '5%가 넘으면 매물이 쌓였다 — 부적합'],
-  ] },
-  clear: { arrow: '37%', rows: [
-    ['공식', '총 매물수 ÷ 연평균 거래량 (×12 = 달 수)'],
-    ['의미', '총 누적 매물이 다 팔리는 데 걸리는 달 수'],
-    ['기준', 'A 6M↓ · B 6~12M · C 12M↑'],
-    ['적정', '6M 이하 ↓ (짧을수록 좋다)'],
-  ] },
+  turn: { arrow: '12%', rows: demandTip('turnover', dmTipWhat.value, isApartment.value) },
+  burden: { arrow: '37%', rows: demandTip('burden', dmTipWhat.value, isApartment.value) },
+  clear: { arrow: '87%', rows: demandTip('clear', dmTipWhat.value, isApartment.value) },
   total: { arrow: '72%', rows: [
     ['대상', '매물 소화율 · 매물 소화기간 · 거래 회전율 · 매물율'],
     ['공식', '네 등급을 A 3 · B 2 · C 1로 바꿔 평균을 낸다'],
@@ -3822,12 +3808,7 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
     ['기준', 'A 180%↑ · B 120~180% · C 120%↓'],
     ['의미', '12개월 거래량 ÷ 총 매물수'],
   ] },
-  absorb: { arrow: '12%', rows: [
-    ['공식', '12개월 거래량 ÷ 총 매물수 × 100'],
-    ['의미', '나와 있는 매물 중 한 해에 몇 %가 팔리나'],
-    ['기준', 'A 180%↑ · B 120~180% · C 120%↓'],
-    ['적정', '180% 이상 ↑ (높을수록 좋다)'],
-  ] },
+  absorb: { arrow: '62%', rows: demandTip('absorb', dmTipWhat.value, isApartment.value) },
 }));
 /** 12개월 거래량 · 총 세대수 — 국토부 실거래 · 건축물대장 자동값만 쓴다(손 입력 없음) */
 const deal12mValue = computed(() => deal12mAuto.value); // 국토부 실거래 자동값만(손 입력은 받지 않는다)
@@ -9397,11 +9378,36 @@ const goBack = () => router.back();
 
             </div>
 
+            <!-- 앱 ② 입지순위 — 웹 매매수요 빌라 · 단지 리스트(웹에서 저장한 값)에서 이름 · 입지점수 · 순위 · 평균 매매가 네 칸만.
+                 필터는 앱에 두지 않고 웹에서 정한 값 그대로 — 룸수(입지조건)는 위 ① 과 같이 움직인다(2026-11-13 사용자) -->
+            <div v-if="!webEmbed && !sonpumMode" class="adp-dm-block boxed o-loc">
+              <div class="adp-dm-sub"><span class="cmp-no">②</span>입지순위<small class="adp-ru-q">{{ isApartment ? '내가 선정한 아파트 단지는 몇 등일까?' : '내가 선정한 빌라는 주변 유사 빌라 중 몇 등일까?' }}</small></div>
+              <div v-if="cmpSnapOn && cmpRows.length" class="son-demand sup-tbl">
+                <div class="adm-table-wrap">
+                  <table class="adm-table cmp-tbl app-loc">
+                    <colgroup><col style="width: 40%" /><col style="width: 18%" /><col style="width: 14%" /><col style="width: 28%" /></colgroup>
+                    <thead><tr>
+                      <th>{{ cmpN }}<small>{{ isApartment ? '(공급(전용))' : '(전용 ㎡/평)' }}</small></th>
+                      <th>입지점수<small>100점</small></th><th>순위</th><th>평균 매매가</th>
+                    </tr></thead>
+                    <tbody>
+                      <tr v-for="r in cmpRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine }]">
+                        <td class="nm"><span class="cmp-nm-line"><span class="cmp-nm">{{ r.name || r.jibun }}</span><span v-if="cmpIsMyUnit(r)" class="cmp-tag">선정물건</span><span v-else-if="r.mine" class="cmp-tag same">{{ isApartment ? '동일단지' : '동일빌라' }}</span></span><small class="sup-tbl-sub">{{ cmpArea(r.supply, r.area) }}</small></td>
+                        <td class="n">{{ cmpScore(r.loc) }}</td>
+                        <td class="n"><span v-if="cmpRankOf.get(cmpKeyOf(r))" :class="['cmp-rk', { r1: cmpRankOf.get(cmpKeyOf(r)) === 1 }]">{{ cmpRankOf.get(cmpKeyOf(r)) }}</span><template v-else>-</template></td>
+                        <td class="n amt"><b>{{ cmpMoney(r.saleAvg) }}</b><small v-if="cmpDealN(r, '매매')" class="sup-tbl-sub">{{ cmpDealN(r, '매매') }}건</small></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <p v-else class="adp-sub-note">웹 손품조사 › 매매수요에서 리스트를 저장하면 여기에 같이 나옵니다.</p>
+            </div>
             <div v-if="sonpumMode" class="o-demand"><slot name="son-demand" /></div>
             <template v-if="!sonpumMode">
             <div class="adp-dm-head">
               <!-- 웹 '읍면동 수급분석 검암동 · 이 동네는 내놓으면 얼마나 빨리 팔릴까?'와 같은 이름(2026-11-12 사용자). 번호는 위 ① 실사용자 다음 -->
-              <strong class="adp-dm-title"><span class="cmp-no">②</span>읍면동 수급분석<span class="adp-dm-area adp-dm-area-gap">{{ surveyAreaLabel }}</span></strong>
+              <strong class="adp-dm-title"><span class="cmp-no">③</span>읍면동 수급분석<span class="adp-dm-area adp-dm-area-gap">{{ surveyAreaLabel }}</span></strong>
               <small class="adp-dm-q">이 동네는 내놓으면 얼마나 빨리 팔릴까?</small>
             </div>
 
@@ -9499,49 +9505,7 @@ const goBack = () => router.back();
               <div class="adp-dm-rowwrap">
               <!-- 종합 칸은 뺐다 — 웹(2026-11-02) · 앱 머리 줄 종합(2026-11-09). 지표 4칸만 -->
               <div :class="['adp-mkt-cells', 'c4', 'adp-dm-table', 'dm-result']">
-                <div :class="['cell split calc', { lit: dmLit('absorb') }]" @mouseenter="dmLitEnter('absorb')" @mouseleave="dmLitLeave()" @click="dmLitTap('absorb')">
-                  <div class="cell-head">
-                    <small>매물 소화율</small>
-                    <button
-                      type="button"
-                      class="adp-dm-info"
-                      aria-label="설명"
-                      @mouseenter="tipEnter('absorb')"
-                      @mouseleave="tipLeave()"
-                      @click.stop="dmTip = dmTip === 'absorb' ? '' : 'absorb'"
-                    >
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
-                      </svg>
-                    </button>
-                    <em v-if="webEmbed" class="adp-dm-plain">{{ DEMAND_PLAIN.absorb }}</em>
-                  </div>
-                  <div class="cell-body">
-                    <strong class="hi-blue"><em class="adp-dm-pre">연</em><span class="num">{{ dmRateText(dmAbsorb) }}</span><em>%</em></strong>
-                  </div>
-                </div>
-                <div :class="['cell split calc', { lit: dmLit('clear') }]" @mouseenter="dmLitEnter('clear')" @mouseleave="dmLitLeave()" @click="dmLitTap('clear')">
-                  <div class="cell-head">
-                    <small>매물 소화기간</small>
-                    <button
-                      type="button"
-                      class="adp-dm-info"
-                      aria-label="설명"
-                      @mouseenter="tipEnter('clear')"
-                      @mouseleave="tipLeave()"
-                      @click.stop="dmTip = dmTip === 'clear' ? '' : 'clear'"
-                    >
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
-                      </svg>
-                    </button>
-                    <em v-if="webEmbed" class="adp-dm-plain">{{ DEMAND_PLAIN.clear }}</em>
-                  </div>
-                  <div class="cell-body">
-                    <strong class="hi-blue adp-dm-clear"><template v-for="(part, pi) in dmClearParts" :key="pi"><span :class="['num', { 'adp-dm-slash': part[0] === '/', 'adp-dm-gap': pi > 0 && part[0] !== '/' && !!dmClearParts[pi - 1][1] }]">{{ part[0] }}</span><em v-if="part[1]">{{ part[1] }}</em></template></strong>
-                  </div>
-                </div>
-                <!-- 웹 — '종합' 을 표 오른쪽 한 칸으로. 값 줄과 등급 줄을 한 칸으로 합쳐 등급·적합여부를 크게 -->
+                <!-- 웹 읍면동 수급분석과 같은 순서 — 거래 회전율 · 매물율 · 매물 소화율 · 매물 소화기간(2026-11-13 사용자) -->
                 <div :class="['cell split calc', { lit: dmLit('turn') }]" @mouseenter="dmLitEnter('turn')" @mouseleave="dmLitLeave()" @click="dmLitTap('turn')">
                   <div class="cell-head">
                     <small>거래 회전율</small>
@@ -9582,6 +9546,48 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell-body">
                     <strong class="hi-blue"><span class="num">{{ dmRateText(dmBurden) }}</span><em>%</em></strong>
+                  </div>
+                </div>
+                <div :class="['cell split calc', { lit: dmLit('absorb') }]" @mouseenter="dmLitEnter('absorb')" @mouseleave="dmLitLeave()" @click="dmLitTap('absorb')">
+                  <div class="cell-head">
+                    <small>매물 소화율</small>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="tipEnter('absorb')"
+                      @mouseleave="tipLeave()"
+                      @click.stop="dmTip = dmTip === 'absorb' ? '' : 'absorb'"
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                    <em v-if="webEmbed" class="adp-dm-plain">{{ DEMAND_PLAIN.absorb }}</em>
+                  </div>
+                  <div class="cell-body">
+                    <strong class="hi-blue"><em class="adp-dm-pre">연</em><span class="num">{{ dmRateText(dmAbsorb) }}</span><em>%</em></strong>
+                  </div>
+                </div>
+                <div :class="['cell split calc', { lit: dmLit('clear') }]" @mouseenter="dmLitEnter('clear')" @mouseleave="dmLitLeave()" @click="dmLitTap('clear')">
+                  <div class="cell-head">
+                    <small>매물 소화기간</small>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="tipEnter('clear')"
+                      @mouseleave="tipLeave()"
+                      @click.stop="dmTip = dmTip === 'clear' ? '' : 'clear'"
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                    <em v-if="webEmbed" class="adp-dm-plain">{{ DEMAND_PLAIN.clear }}</em>
+                  </div>
+                  <div class="cell-body">
+                    <strong class="hi-blue adp-dm-clear"><template v-for="(part, pi) in dmClearParts" :key="pi"><span :class="['num', { 'adp-dm-slash': part[0] === '/', 'adp-dm-gap': pi > 0 && part[0] !== '/' && !!dmClearParts[pi - 1][1] }]">{{ part[0] }}</span><em v-if="part[1]">{{ part[1] }}</em></template></strong>
                   </div>
                 </div>
               </div>
@@ -12542,9 +12548,11 @@ tr.tone-take { background: #fff5f5; }
 /* 조사 대상 동 이름 — 제목 안에서 눈에 띄게 */
 .adp-dm-area { color: #2b6df3; }
 .adp-dm-area-gap { margin-left: 6px; }
+.o-loc .sup-tbl { margin-top: 8px; }
+.o-loc .app-loc :is(th, td) { padding-left: 4px; padding-right: 4px; }   /* 폰 폭 네 칸 */
 .adp-dm-q { min-width: 0; font-size: 11.5px; font-weight: 400; color: #6b7280; white-space: nowrap; letter-spacing: -0.4px; }   /* 물음 — 검암동 바로 옆 한 줄(2026-11-12 사용자) */
-.o-rank:first-child + .adp-dm-head:has(.adp-dm-q) { flex-wrap: nowrap; gap: 6px; }
-.o-rank:first-child + .adp-dm-head:has(.adp-dm-q) .adp-dm-title { flex: none; white-space: nowrap; }
+:is(.o-rank:first-child, .o-loc) + .adp-dm-head:has(.adp-dm-q) { flex-wrap: nowrap; gap: 6px; }
+:is(.o-rank:first-child, .o-loc) + .adp-dm-head:has(.adp-dm-q) .adp-dm-title { flex: none; white-space: nowrap; }
 /* 제목 옆 주소 — 제목만큼 크면 어느 쪽이 제목인지 흐려진다.
    급매가 ① 블록 제목(13px)에 맞추고 굵기는 뺀다 */
 .adp-dm-addr { font-size: 13px; font-weight: 500; color: #2b6df3; }
@@ -12576,8 +12584,9 @@ tr.tone-take { background: #fff5f5; }
 }
 .adp-dm-body > .adp-dm-head.sec2 { margin-top: 12px; }
 /* 앱 — 맨 위 ① 실사용자 상자는 혼자 온전한 상자, 그 아래 '1. 수요분석' 제목 줄이 새 단락의 위 테두리(2026-11-12) */
-.adp-dm-body > .adp-dm-block.boxed.o-rank:first-child { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 10px 12px; }
-.adp-dm-body > .o-rank:first-child + .adp-dm-head { margin-top: 12px; border: 1px solid #e5e7eb; border-bottom: 0; border-radius: 8px 8px 0 0; padding: 10px 10px 4px 12px; background: #fff; }   /* 왼쪽 12 — 번호(②)가 위 ① 과 같은 x */
+.adp-dm-body > .adp-dm-block.boxed.o-rank:first-child, .adp-dm-body > .adp-dm-block.boxed.o-loc { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 10px 12px; }
+.adp-dm-body > .adp-dm-block.boxed.o-rank + .adp-dm-block.boxed.o-loc { margin-top: 12px; }
+.adp-dm-body > :is(.o-rank:first-child, .o-loc) + .adp-dm-head { margin-top: 12px; border: 1px solid #e5e7eb; border-bottom: 0; border-radius: 8px 8px 0 0; padding: 10px 10px 4px 12px; background: #fff; }   /* 왼쪽 12 — 번호(②)가 위 ① 과 같은 x */
 .adp-dm-body > .adp-dm-block,
 .adp-dm-body > .adp-dm-block.boxed {
   border: 1px solid #e5e7eb; border-top: 0; border-bottom: 0; border-radius: 0;
