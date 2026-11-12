@@ -7791,7 +7791,7 @@ span.cal-day.has { cursor: help; }
     const body = rows.length
       ? `<div class="sx-tbl sx-pdfnear"><table><thead><tr><th>구분</th><th>평균감정가<br>평균매각가</th><th>입찰인원<br>매각가율</th><th>예상매각가</th></tr></thead><tbody>${rows.map((r) => `<tr><td class="c">${esc(String(r.saleInfo || '-'))}</td>${two(r.appraisal, r.minimum)}${two(r.winning, r.rate, 'b')}<td class="c"><b>${esc(String(r.expectedWinning || '-'))}</b></td></tr>`).join('')}</tbody></table></div>`
       : '<p class="sx-pdfnear-none">물건 등록 때 읽은 PDF 에 인근 매각 통계가 없습니다.</p>';
-    return `<div class="sx-pdfnear-box"><div class="sx-list-h"><h3 class="sx-sec">인근 매각사례 통계</h3><span class="sx-count">물건 등록 때 읽은 PDF</span></div>${body}</div>`;
+    return `<div class="sx-pdfnear-box"><div class="sx-list-h"><h3 class="sx-sec">인근 매각사례 통계</h3></div>${body}</div>`;
   }
   function sxPaintList() {
     const rows = sxRows(); const el = $('sxList'); if (!rows || !el) return;
