@@ -1137,8 +1137,8 @@ const downloadCsv = () => {
           <p>주소를 입력하여 공동주택가와 실거래가 데이터를 분석한다.</p>
         </div>
         <div class="adm-acts">
-          <button type="button" class="adm-csv" :disabled="!canSave || snapBusy" @click="askSave">저장</button>
-          <button v-if="snapId" type="button" class="adm-csv" :disabled="!canSave || snapBusy" @click="saveSnap(true)">덮어쓰기</button>
+          <button type="button" class="adm-csv adm-save" :disabled="!canSave || snapBusy" @click="askSave">저장하기</button>
+          <button v-if="snapId" type="button" class="adm-csv adm-save" :disabled="!canSave || snapBusy" @click="saveSnap(true)">덮어쓰기</button>
           <button type="button" class="adm-csv" @click="openSnapPanel">저장 목록</button>
           <button type="button" class="adm-csv" :disabled="tableRows.length === 0" @click="downloadCsv">엑셀 내려받기</button>
         </div>
@@ -1962,7 +1962,11 @@ tr.picked-jeonse .pick-v { stroke: #16a34a; }
   font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
 }
 .adm-save-ask .ghost { border: 1px solid #e3e8f0; background: #fff; color: #6b7280; }
-.adm-save-ask .go { border: 1px solid #1f3a72; background: #1f3a72; color: #fff; }
+.adm-save-ask .go { border: 1px solid #2b6df3; background: #2b6df3; color: #fff; }   /* 웹 저장 단추 통일 — 파랑(2026-11-12 사용자) */
+.adm-save-ask .go:hover:not(:disabled) { background: #1f5ad6; border-color: #1f5ad6; }
+.adm-acts .adm-csv.adm-save { border-color: #2b6df3; background: #2b6df3; color: #fff; }
+.adm-acts .adm-csv.adm-save:hover:not(:disabled) { background: #1f5ad6; border-color: #1f5ad6; }
+.adm-acts .adm-csv.adm-save:disabled { border-color: #d5dbe6; background: #fff; color: #9ca3af; cursor: default; }
 
 /* 인쇄 — 고르고 적는 자리는 빼고 숫자만 남긴다 */
 @media print {
