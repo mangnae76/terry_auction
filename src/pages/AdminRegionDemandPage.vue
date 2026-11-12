@@ -292,7 +292,9 @@ const tipScope = computed(() => `${dongFilter.value || dmArea.value} 전체 ${ki
 /** 제목 — '인천광역시 서해구' (읍면동을 고르면 '… 검암동') 뒤에 '수요분석' */
 const dmArea = computed(() => [loadedLabel.value, dongFilter.value].filter(Boolean).join(' '));
 /** 제목 칩 — 시 · 도는 빼고 시군구 · 동만('경기도 안산시 상록구 성포동' → '안산시 상록구 성포동', 2026-11-10) */
-const dmAreaShort = computed(() => dmArea.value.replace(/^\S+(특별자치시|특별자치도|특별시|광역시|도)\s+(?=\S)/, ''));
+/** 앱 손품조사(sonApp)는 동 이름만 — 좁은 폭에서 제목을 한 줄로(2026-11-12 사용자 '서해구는 안 넣어도 돼') */
+const sonApp = inject<boolean>('sonApp', false);
+const dmAreaShort = computed(() => (sonApp ? dmArea.value.trim().split(/\s+/).pop() ?? '' : dmArea.value.replace(/^\S+(특별자치시|특별자치도|특별시|광역시|도)\s+(?=\S)/, '')));
 // ===== 웹 요약 — 앱 매매수요(① 수치 · ② 지표)와 같은 칸 · 같은 연계 =====
 type DmId = 'deal' | 'units' | 'listings' | 'turn' | 'absorb' | 'burden' | 'clear';
 /** 칸을 짚으면 켜지는 칸 — 앱 AuctionDetailPage 의 DM_LIT_LINKS 와 같다 */
@@ -597,7 +599,7 @@ const downloadCsv = () => {
       <!-- 앱 매매수요와 같은 짜임 — 위 ① 수치(거래량 · 세대수 · 매물수) 3칸, 아래 ② 지표 4칸. 두 줄은 시작과 끝이 같다.
            칸에 마우스를 대면 그 값과 이어진 칸이 같이 빨갛게 켜진다(앱 DM_LIT_LINKS 와 같은 짝) -->
       <section v-if="webEmbed && rows.length > 0" class="adm-nav dm">
-        <p class="adm-nav-scope"><span><template v-if="props.boxNo">{{ props.boxNo }} </template><template v-if="props.boxNo || props.dongLabel">읍면동 </template>수급분석<span class="area scope-name">{{ dmAreaShort }}</span><small class="scope-q">이 동네는 내놓으면 얼마나 빨리 팔릴까?</small></span><SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
+        <p class="adm-nav-scope"><span><span v-if="props.boxNo" class="box-no">{{ props.boxNo }} </span><template v-if="props.boxNo || props.dongLabel">읍면동 </template>수급분석<span class="area scope-name">{{ dmAreaShort }}</span><small class="scope-q">이 동네는 내놓으면 얼마나 빨리 팔릴까?</small></span><SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
         <p v-if="!props.embed" class="dm-block-head">① 기초수치</p>
         <div class="dm-row c3">
           <div v-for="c in dmInputs" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">

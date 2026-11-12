@@ -175,12 +175,25 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
 .son-app .cmp-persona .sep { display: none; }
 .son-app .cmp-persona .inner { display: grid; gap: 8px; }
 .son-app .cmp-persona .grp { display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: center; justify-items: start; }
-/* ② 입지비교 제목 — 이름 · 지역 한 줄, 물음은 아래 줄 */
-.son-app .cmp-est-h { flex-wrap: wrap; row-gap: 6px; }
-.son-app .cmp-est-h h3 { flex-wrap: wrap; row-gap: 4px; }
-.son-app .cmp-est-h .cmp-q { flex-basis: 100%; margin-left: 0 !important; }
+/* 상자 사이 · 상자 안 위 여백 — ①②③④ 모두 같게(사이 12, 안 위 14) */
+.son-app .adp-dm-body.cmp-order { gap: 12px; }
+.son-app .adp-dm-body.cmp-order > * { margin-top: 0 !important; margin-bottom: 0 !important; }
+.son-app .cmp-persona.top { padding: 14px; }
+.son-app .o-demand .adm-supply { margin-top: 0 !important; }
+/* 상자 제목 — 첫 줄 번호 · 이름(② 는 오른쪽에 필터 기준 검색), 둘째 줄 물음 한 줄. 지역은 동 이름만(2026-11-12 사용자)
+   ② 는 물음 · 동 이름 순(물음이 동 이름 왼쪽) */
+.son-app .cmp-est-h { row-gap: 6px; column-gap: 6px; }
+.son-app .cmp-est-h h3 { display: contents; }
+.son-app .cmp-est-h .cmp-est-desc { order: 1; padding-right: 0; }
+.son-app .cmp-est-h::after { content: ''; order: 2; flex-basis: 100%; height: 0; }
+.son-app .cmp-est-h h3 > .cmp-q { order: 3; margin-left: 0 !important; font-size: 12px; font-weight: 400; white-space: nowrap; }
+.son-app .cmp-est-h h3 > .cmp-scope-chip { order: 4; margin-left: 0 !important; font-size: 12px; }
+.son-app .adm-nav-scope .box-no { margin-right: 10px; }
+.son-app .sup-scope .cmp-no { margin-right: 10px; }   /* 번호 뒤 — ① · ② 상자 제목과 같은 간격 */
+.son-app .adm-nav-scope .scope-q, .son-app .sup-scope .cmp-q { display: block; margin: 6px 0 0 !important; font-size: 12px; white-space: nowrap; }
 /* 읍면동 수급분석 — 위 3칸은 그대로, 아래 지표 4칸은 2 × 2 */
-.son-app .adm-nav.dm { margin: 0; padding: 14px 12px 14px; }
+.son-app .adm-nav.dm { margin: 0; padding: 15px; }
+.son-app .o-demand .adm-body { padding: 0 !important; }   /* 회색 수급분석 상자 양끝을 위 ① · ② 테두리 상자와 같은 줄에 */
 .son-app .adm-nav-scope { flex-wrap: wrap; font-size: 15px; row-gap: 4px; }
 .son-app .dm-row { gap: 8px; }
 .son-app .dm-row.c3 { margin-bottom: 8px; }
