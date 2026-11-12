@@ -921,7 +921,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <template v-else>초기화</template>
           </button>
           <button v-if="!loose" type="button" :class="['save-btn', saving ? 'saving' : webDirty ? 'dirty' : 'saved', { two: webEmbed }]" aria-live="polite" @click="saveNow">
-            <template v-if="saving">저장 중…</template><template v-else-if="webDirty">저장</template><template v-else>{{ webEmbed ? '저장완료' : '✓ 저장됨' }}<small v-if="stamp">{{ stamp }}</small></template>
+            <template v-if="saving">저장 중…</template><template v-else-if="webDirty">{{ webEmbed ? '저장하기' : '저장' }}</template><template v-else>{{ webEmbed ? '저장됨' : '✓ 저장됨' }}<small v-if="stamp">{{ stamp }}</small></template>
           </button>
         </span>
         <div :class="['simrow', { 'has-elev': webEmbed }]">
@@ -1247,6 +1247,14 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .save-btn.two { transition: background .15s, border-color .15s; }
 .save-btn.two.dirty:hover { background: #16305f; }
 .save-btn.two.saved:hover { border-color: #8fceaa; background: #f4fbf6; }
+/* 웹 — 매매수요 입지비교 저장 단추와 같은 꼴 · 색(2026-11-12 사용자): 저장할 게 있으면 파랑 '저장하기', 저장됐으면 회색 '저장됨' + 날짜 */
+.save-btn.two.dirty { background: #2b6df3; border: 1px solid #2b6df3; color: #fff; font-weight: 700; }
+.save-btn.two.dirty:hover { background: #1f5ad6; border-color: #1f5ad6; }
+.save-btn.two.saved { background: #fff; border: 1px solid #d5dbe6; color: #9ca3af; font-weight: 700; }
+.save-btn.two.saved:hover { background: #fff; border-color: #d5dbe6; }
+.save-btn.two.saved small { color: #9ca3af; font-weight: 400; }
+:root[data-theme="dark"] .save-btn.two.saved { background: transparent; border-color: #34405a; color: #6e788c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .save-btn.two.saved { background: transparent; border-color: #34405a; color: #6e788c; } }
 .save-btn.saved { background: #fff; color: var(--ok); border: 1px solid #cfe9d8; font-weight: 600; }
 .save-btn.saving { background: #fff; color: var(--sub); border: 1px solid #dde3ee; font-weight: 400; }
 .simrow { grid-column: 1 / -1; display: grid; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 12px 18px; }
