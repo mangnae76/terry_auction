@@ -3817,6 +3817,8 @@ const dmListings = computed(() => dmNum('fs.dm.listings'));  // 총 매물수 (�
 const dmMonthly = computed(() => deal12mValue.value / 12);   // 월평균 거래량
 // 연간 회전율 = 12개월 거래량 ÷ 총세대수 × 100
 const dmTurnover = computed(() => (dmUnits.value > 0 ? (deal12mValue.value / dmUnits.value) * 100 : 0));
+/** 결론 — 웹 수급분석과 같은 함수(매물율 × 회전율). dmBurden · dmAbsorb 는 아래에서 정의되어 계산할 때 읽는다 */
+const dmOpinion = computed(() => demandOpinionOf(dmAbsorb.value, dmTurnover.value, dmListings.value > 0 && dmUnits.value > 0, isApartment.value, dmBurden.value));
 // 매물율 = 총매물수 ÷ 총세대수 × 100 (내놓은 물건이 동네에서 차지하는 비중)
 const dmBurden = computed(() => (dmUnits.value > 0 ? (dmListings.value / dmUnits.value) * 100 : 0));
 // 매물 소화기간 = 총매물수 ÷ 거래량 (지금 매물이 다 팔리는 데 걸리는 시간).
@@ -9378,10 +9380,10 @@ const goBack = () => router.back();
 
             </div>
 
-            <!-- 앱 ② 입지순위 — 웹 매매수요 빌라 · 단지 리스트(웹에서 저장한 값)에서 이름 · 입지점수 · 순위 · 평균 매매가 네 칸만.
+            <!-- 앱 ② 빌라 · 단지 입지비교 — 웹 매매수요 빌라 · 단지 리스트(웹에서 저장한 값)에서 이름 · 입지점수 · 순위 · 평균 매매가 네 칸만.
                  필터는 앱에 두지 않고 웹에서 정한 값 그대로 — 룸수(입지조건)는 위 ① 과 같이 움직인다(2026-11-13 사용자) -->
             <div v-if="!webEmbed && !sonpumMode" class="adp-dm-block boxed o-loc">
-              <div class="adp-dm-sub"><span class="cmp-no">②</span>입지순위<small class="adp-ru-q">{{ isApartment ? '내가 선정한 아파트 단지는 몇 등일까?' : '내가 선정한 빌라는 주변 유사 빌라 중 몇 등일까?' }}</small></div>
+              <div class="adp-dm-sub o-loc-h"><span class="cmp-no">②</span>{{ cmpN }} 입지비교<span class="adp-dm-area">{{ surveyAreaLabel }}</span><small class="o-loc-q">{{ isApartment ? '내가 선정한 아파트 단지는 몇 등일까?' : '내가 선정한 빌라는 주변 유사 빌라 중 몇 등일까?' }}</small></div>
               <div v-if="cmpSnapOn && cmpRows.length" class="son-demand sup-tbl">
                 <div class="adm-table-wrap">
                   <table class="adm-table cmp-tbl app-loc">
@@ -9407,7 +9409,7 @@ const goBack = () => router.back();
             <template v-if="!sonpumMode">
             <div class="adp-dm-head">
               <!-- 웹 '읍면동 수급분석 검암동 · 이 동네는 내놓으면 얼마나 빨리 팔릴까?'와 같은 이름(2026-11-12 사용자). 번호는 위 ① 실사용자 다음 -->
-              <strong class="adp-dm-title"><span class="cmp-no">③</span>읍면동 수급분석<span class="adp-dm-area adp-dm-area-gap">{{ surveyAreaLabel }}</span></strong>
+              <strong class="adp-dm-title adp-dm-title-sm"><span class="cmp-no">③</span>읍면동 수급분석<span class="adp-dm-area adp-dm-area-gap">{{ surveyAreaLabel }}</span></strong>
               <small class="adp-dm-q">이 동네는 내놓으면 얼마나 빨리 팔릴까?</small>
             </div>
 
@@ -9594,6 +9596,11 @@ const goBack = () => router.back();
               <p v-if="dmTip && !DM_ROW1.includes(dmTip) && !DM_ROW3.includes(dmTip)" :class="['adp-dm-bubble', { 'is-web': webEmbed, flip: dmIsFlip(dmTip) }]" :style="dmArrowStyle(dmTip)" @click="dmTip = ''">
                 <span v-for="(row, ri) in dmTipData[dmTip].rows" :key="ri" :class="{ good: row[0] === '적정' }"><b :class="{ act: tipAct(row[0]) }">{{ tipLabel(row[0]) }}</b>{{ row[1] }}</span>
               </p>
+              </div>
+              <!-- 결론 — 웹 읍면동 수급분석의 결론 상자와 같은 판단 · 같은 꼴(demandOpinionOf, 2026-11-13 사용자). 총 매물수를 넣어야 나온다 -->
+              <div class="sup-opinion dm-app-opinion">
+                <template v-if="dmOpinion"><b>{{ dmOpinion.title }}</b><span>{{ dmOpinion.text }}</span></template>
+                <span v-else class="wait">총 매물수를 넣으면 결론이 나옵니다.</span>
               </div>
             </div>
 
@@ -12548,9 +12555,16 @@ tr.tone-take { background: #fff5f5; }
 /* 조사 대상 동 이름 — 제목 안에서 눈에 띄게 */
 .adp-dm-area { color: #2b6df3; }
 .adp-dm-area-gap { margin-left: 6px; }
+.adp-dm-title.adp-dm-title-sm { font-size: 13px; }   /* ③ 제목 — 위 ① · ② 상자 제목(13 · 800)과 같은 크기, 동 이름까지 */
+.dm-app-opinion { margin-top: 10px; padding: 12px 14px; }
+.dm-app-opinion b { font-size: 15px; }
+.dm-app-opinion > span { font-size: 13px; color: #111827; }
+.dm-app-opinion .wait { color: #9ca3af; }
 .o-loc .sup-tbl { margin-top: 8px; }
+.o-loc-h { flex-wrap: wrap; }
+.o-loc-q { flex: 0 0 100%; margin-top: 2px; font-size: 12.5px; font-weight: 400; color: #6b7280; }   /* 물음은 제목 아래 한 줄 */
 .o-loc .app-loc :is(th, td) { padding-left: 4px; padding-right: 4px; }   /* 폰 폭 네 칸 */
-.adp-dm-q { min-width: 0; font-size: 11.5px; font-weight: 400; color: #6b7280; white-space: nowrap; letter-spacing: -0.4px; }   /* 물음 — 검암동 바로 옆 한 줄(2026-11-12 사용자) */
+.adp-dm-q { min-width: 0; font-size: 12.5px; font-weight: 400; color: #6b7280; white-space: nowrap; letter-spacing: -0.4px; }   /* 물음 — 검암동 바로 옆 한 줄(2026-11-12 사용자) */
 :is(.o-rank:first-child, .o-loc) + .adp-dm-head:has(.adp-dm-q) { flex-wrap: nowrap; gap: 6px; }
 :is(.o-rank:first-child, .o-loc) + .adp-dm-head:has(.adp-dm-q) .adp-dm-title { flex: none; white-space: nowrap; }
 /* 제목 옆 주소 — 제목만큼 크면 어느 쪽이 제목인지 흐려진다.
