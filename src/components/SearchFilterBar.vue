@@ -3,7 +3,7 @@
 // 1줄 반경 · 거래 · 기간 · 엘베 · 층, 2줄 기준(유사도 · 직접범위) · 면적 · 건축(또는 유사도 막대) · 필터초기화 · 조회하기 · 저장하기.
 // 단추는 고르기(draft)만 바꾼다 — 조회하기(apply) · 필터초기화(reset) · 저장하기(save)는 부모가 한다(composables/useFilterDraft 와 같이 쓴다).
 // 다른 화면에 옮길 때는 이 부품을 그대로 넣고, 뺄 항목만 hide 로 끈다 — 남은 상자들이 줄 폭을 나눠 채워 간격 8px 이 그대로 맞는다.
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import RangeInputBox from './RangeInputBox.vue';
 import SimRangeBox from './SimRangeBox.vue';
 
@@ -51,13 +51,11 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:draft': [v: SearchFilter]; apply: []; reset: []; save: [] }>();
 const off = (k: SearchFilterKey) => !!props.hide?.includes(k);
 // 고르면 바로 적용 — 받아 둔 실거래 1년치에서 거르기만 해서 조회하기가 필요 없다(전체화면과 같게, 2026-11-12 사용자)
-// 유사도 막대는 끄는 동안 값이 계속 바뀐다 — 칸 글은 바로, 적용은 손을 멈춘 뒤 한 번(리스트 · 말풍선이 단계마다 나타났다 사라지지 않게, 2026-11-12 사용자)
-let applyT = 0;
-const set = (patch: Partial<SearchFilter>, wait = 0) => {
-  emit('update:draft', { ...props.draft, ...patch });
-  window.clearTimeout(applyT);
-  if (wait) applyT = window.setTimeout(() => emit('apply'), wait); else emit('apply');
-};
+const set = (patch: Partial<SearchFilter>) => { emit('update:draft', { ...props.draft, ...patch }); emit('apply'); };
+// 유사도 막대는 끄는 동안 값이 계속 바뀐다 — 막대 · 글은 이 부품 안에서만 바로 따라가고(simLive), 화면에 알리기(값 바꾸기 · 다시 계산)는 손을 멈춘 뒤 한 번.
+// 예전엔 단계마다 화면 값을 바꿔 표 · 지도를 매번 다시 그려 막대가 무거웠다(2026-11-12 사용자 '슬라이드 바가 너무 무거워')
+const simLive = ref<number | null>(null);
+let simT = 0;
 const key = <K extends keyof SearchFilter>(k: K) => computed<SearchFilter[K]>({ get: () => props.draft[k], set: (v) => set({ [k]: v } as Partial<SearchFilter>) });
 const rangeD = key('range');
 const kindD = key('kind');
@@ -68,9 +66,12 @@ const areaD = key('area');
 const yearD = key('year');
 /** 유사도 % — 바꾸면 면적 · 건축도 그 범위로 */
 /** 유사도 % — 바꾸면 직접범위 칸(면적 · 건축)도 그 범위로 같이 움직인다(2026-11-12 사용자, 시세분석과 같다) */
-const simD = computed<number>({ get: () => props.draft.sim, set: (v) => set({ sim: v, ...props.simRange(v) }, 250) });
+const simD = computed<number>({
+  get: () => simLive.value ?? props.draft.sim,
+  set: (v) => { simLive.value = v; window.clearTimeout(simT); simT = window.setTimeout(() => { simLive.value = null; if (v !== props.draft.sim) set({ sim: v, ...props.simRange(v) }); }, 200); },
+});
 /** 유사도 막대 옆 글 — 그 %로 정해지는 면적 · 건축 */
-const simText = computed(() => { const r = props.simRange(props.draft.sim); return `면적 ${r.area[0]}~${r.area[1]}㎡ · 건축 ${r.year[0]}~${r.year[1]}년`; });
+const simText = computed(() => { const r = props.simRange(simD.value);   /* 끄는 동안에도 글이 따라가게 */ return `면적 ${r.area[0]}~${r.area[1]}㎡ · 건축 ${r.year[0]}~${r.year[1]}년`; });
 /** 기준 — 직접범위로 가면 지금 유사도 범위에서 시작하고, 유사도로 가면 유사도 범위로(둘은 같이 움직인다, 시세분석과 같다) */
 const modeD = computed<'sim' | 'range'>({
   get: () => props.draft.mode,
