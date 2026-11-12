@@ -1206,7 +1206,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
    값이 없어도(0건) 칸 높이가 그대로(2026-11-12 사용자 '세로 맞춰 고정 · 금액도 줄 맞춰'). '보증보험 한도 적용'은 줄을 늘리지 않게 칸 오른쪽 위 작은 딱지로 */
 .tiles.four .tile { grid-template-rows: 18px 30px 16px; align-content: center; row-gap: 4px; padding: 12px 8px; }
 .tiles.four .tile > .k { align-self: center; line-height: 18px; }
-.tiles.four .tile > .v { align-self: center; line-height: 30px; }
+.tiles.four .tile > .v, .tiles.four .tile.key > .v, .tiles.four .tile > .v.sm { align-self: center; line-height: 30px; font-size: 20px; }   /* 금액 · 면적 글 크기를 네 칸 모두 같게 — 크기가 달라 7.5억 · 2,938만 · 면적 · 2건 글줄이 어긋났다(2026-11-12 사용자) */
 .tiles.four .tile > .s { align-self: center; line-height: 16px; grid-row: 3; }
 .tiles.four .tile.key .cap { position: absolute; top: 6px; right: 6px; padding: 0 6px; line-height: 16px; }
 
