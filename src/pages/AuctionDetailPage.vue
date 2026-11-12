@@ -5702,7 +5702,10 @@ const cmpCandidatesNow = (range: CmpRange = cmpRange.value): CompareComplex[] =>
   if (!list.some((c) => c.mine)) list.push({ jibun: myJibun, name: supName.value, umdNm: supRegion.value?.dong ?? '', area: myArea, jeonseAvg: 0, saleAvg: 0, deals: [], mine: true, buildYear: 0 });
   // 빌라 — 건물이 많아 주변시설을 다 찾으면 무거워진다. 거래가 많은 건물부터 50곳까지(선정물건은 늘)
   const capped = isApartment.value ? list : [...list.filter((c) => c.mine), ...list.filter((c) => !c.mine).sort((a, b) => b.deals.length - a.deals.length).slice(0, 50)];
-  return capped.map((c) => (c.mine ? { ...c, name: supName.value || c.name } : c));
+  // 선정물건 — 기간 안에 거래가 없어도 연식은 사용승인일로 채운다(실거래에서만 연식을 받아 '-'로 비던 것, 2026-11-12 사용자)
+  const a = auction.value;
+  const myYear = Number(String(a?.buildingHeader?.approvalDate || a?.approvalDate || surveyForm.value?.buildYear || '').slice(0, 4)) || 0;
+  return capped.map((c) => (c.mine ? { ...c, name: supName.value || c.name, buildYear: c.buildYear || myYear } : c));
 };
 const cmpMePt = computed(() => (supRegion.value?.lat ? { lat: supRegion.value.lat, lng: supRegion.value.lng } : null));
 /** 반경 범위면 좌표를 아는 단지 중 반경 안만 */
