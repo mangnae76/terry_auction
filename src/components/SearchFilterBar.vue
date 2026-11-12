@@ -130,7 +130,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
         <RangeInputBox v-if="modeD === 'range' && !off('year')" label="건축" :min="yearMin" :max="yearMax" :lo="yearD[0]" :hi="yearD[1]" :base="baseYear" :lo-text="yearD[0] == null ? '' : String(yearD[0])" :base-text="String(baseYear || '')" :hi-text="yearD[1] == null ? '' : String(yearD[1])" :sub="yearD[0] != null && yearD[1] != null ? `${yearMax - yearD[1] + 1}~${yearMax - yearD[0] + 1}년차` : ''" allow-blank @update="(lo, hi) => (yearD = [lo, hi])" />
     </div>
     <span class="cmp-qbtns">
-        <button type="button" class="cmp-reset" :disabled="isDefault" title="필터를 기본값으로" @click="keepPlace(); emit('reset'); emit('apply')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button>
+        <button type="button" class="cmp-reset" :disabled="isDefault" title="필터를 기본값으로" @click="keepPlace(); emit('reset'); emit('apply')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>초기화</button>
         <button v-if="!off('save')" type="button" :class="['cmp-save', { ready: canSave && !saved }]" :disabled="!canSave || saving || saved" :title="saved ? '저장된 리스트입니다' : canSave ? '지금 리스트를 저장합니다' : '건물 정보를 다 받으면 저장할 수 있습니다'" @click="emit('save')"><template v-if="saved">저장됨<small v-if="savedDay" class="cmp-save-day">{{ savedDay }}</small></template><template v-else>저장하기</template></button>
       </span>
     </div>
@@ -200,7 +200,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-reset { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #4b5563; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .cmp-qbtns > .cmp-reset { min-width: 96px; }
 /* 단추 폭 고정 — '저장하기' ↔ '저장됨 + 날짜'로 글이 바뀌어도 단추 폭이 그대로라 옆 기준 묶음(유사도 막대)이 흔들리지 않는다(2026-11-12 사용자 '딸깍거려') */
-.sfb:not(.compact) .cmp-qbtns > .cmp-reset { flex: 0 0 118px; width: 118px; min-width: 0; }
+.sfb:not(.compact) .cmp-qbtns > .cmp-reset { flex: 0 0 104px; width: 104px; min-width: 0; white-space: nowrap; }   /* '초기화'(2026-11-12 사용자 — 필터초기화에서 줄임) */
 .sfb:not(.compact) .cmp-qbtns > .cmp-save { flex: 0 0 110px; width: 110px; min-width: 0; padding: 0 8px; }
 .cmp-save-day { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmp-reset:disabled { color: #b8bfcc; cursor: default; }

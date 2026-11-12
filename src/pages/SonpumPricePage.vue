@@ -733,6 +733,11 @@ const evenCols = () => {
     const cw = t.parentElement.clientWidth;
     // 상자 폭 · 거래 종류 · 새 조회가 같으면 칸은 넓어지기만 한다 — 줄이 바뀌어 더 긴 값(1,020,000,000)이 들어와도 옆 칸과 겹치지 않고, 줄어들며 '딸깍' 움직이지도 않게
     const key = `even|${cw}|${kindF.value}|${fetchedAt.value}`;
+    // 같은 조회 · 같은 폭이고 칸 폭이 이미 잡혀 있으면, 넘치는 칸(주소 빼고)이 없는 한 다시 재지 않는다 — 유사도 막대 · 층 등으로 줄만 바뀔 때마다 재며 칸이 좌우로 꿈틀했다(2026-11-12 사용자)
+    if (colsKey === key && t.querySelector('colgroup')) {
+      const over = [...t.querySelectorAll('thead th, tbody td')].some((c) => !(c as HTMLElement).classList.contains('l') && (c as HTMLElement).scrollWidth > (c as HTMLElement).clientWidth + 1);
+      if (!over) return;
+    }
     if (colsKey !== key) { colsKey = key; colsMax = []; }
     t.querySelector('colgroup')?.remove();
     t.style.tableLayout = 'auto';
@@ -751,7 +756,10 @@ const evenCols = () => {
     if (gap < 0) { gap = 0; addrW = Math.max(ADDR_MIN, cw - others()); }   // 모자라면 주소 칸만 줄인다(…으로 잘리고 말풍선으로 전체)
     // 그래도 넘치면 다른 칸을 같은 비율로 줄여 합이 상자 폭을 넘지 않게 — 넘친 만큼 표가 흰 상자 밖으로 삐져나왔다(2026-11-11 사용자 'UI 깨짐')
     const k = others() + addrW > cw ? Math.max(0.5, (cw - addrW) / others()) : 1;
-    const widths = ths.map((_, i) => Math.floor((i === ai ? addrW : nat[i] * k) + gap));
+    // 맨 끝 단추 칸(N · P · 복사)은 줄이지 않는다 — 줄이면 단추가 표 밖으로 7px 삐져나와 상자가 옆으로 밀리고, 그 넘침 때문에 줄이 바뀔 때마다 칸을 다시 재며 꿈틀했다(2026-11-12 사용자)
+    const xi = ths.findIndex((th) => th.classList.contains('acts-th'));
+    const actsMin = xi >= 0 ? Math.max(0, ...[...t.querySelectorAll('td.acts-td .acts')].map((e) => (e as HTMLElement).scrollWidth)) + 16 : 0;
+    const widths = ths.map((_, i) => Math.floor((i === ai ? addrW : i === xi ? Math.max(actsMin, nat[i]) : nat[i] * k) + gap));
     const over = widths.reduce((a, b) => a + b, 0) - cw;
     if (over > 0 && ai >= 0) widths[ai] = Math.max(80, widths[ai] - over);
     const cg = document.createElement('colgroup');
@@ -759,6 +767,10 @@ const evenCols = () => {
     t.insertBefore(cg, t.firstChild);
     t.style.tableLayout = 'fixed';
     t.style.minWidth = '';
+    // 테두리 · 반올림으로 몇 px 넘치면 상자가 옆으로 밀려(가로 스크롤) 머리 · 선정물건 줄 색이 끊겨 보였다 — 넘친 만큼 주소 칸에서 뺀다(2026-11-12 사용자)
+    const spill = t.getBoundingClientRect().width - cw;
+    if (spill > 0 && ai >= 0) { const c = cg.children[ai] as HTMLElement; c.style.width = `${Math.max(80, widths[ai] - Math.ceil(spill) - 1)}px`; }
+    if (t.parentElement) t.parentElement.scrollLeft = 0;
     return;
   }
   t.querySelector('colgroup')?.remove();
