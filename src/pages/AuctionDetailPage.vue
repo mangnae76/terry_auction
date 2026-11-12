@@ -6754,6 +6754,13 @@ const summaryDongText = computed(() => (sumVal('sum.dong') ? `${sumVal('sum.dong
 const summaryHoText = computed(() => (sumVal('sum.ho') ? `${sumVal('sum.ho')}호` : '-호'));
 // 앞이 해당 물건의 층, 뒤가 그 동의 전체 층수
 const summaryFloorPair = computed(() => summaryFloorPairOf(sumVal('sum.floorCurrent'), sumVal('sum.floorTotal')));
+/** 정보요약 엘베(빌라) — 건축물대장 승강기 수(여러 줄이면 합), 없으면 개별성 엘베 O · X. 웹 정보요약과 같은 규칙 */
+const summaryElevText = computed(() => {
+  const ns = String(auction.value?.buildingHeader?.elevator ?? '').match(/\d+/g);
+  if (ns) { const n = ns.reduce((a, b) => a + Number(b), 0); return n > 0 ? `있음 ${n}대` : '없음'; }
+  const ox = indivValue('ind.elevator');
+  return ox === 'O' ? '있음' : ox === 'X' ? '없음' : '-';
+});
 /** 입찰가산정의 늘 드는 비용 — 손대지 않은 물건에만 기본값을 넣어 준다.
  *  (셋 다 0 이면 아직 적지 않은 것으로 본다. 0 으로 고쳐 둔 물건은 건드리지 않는다
  *   — 그런 물건은 보통 한 칸이라도 값이 들어가 있다) */
@@ -7043,6 +7050,11 @@ const goBack = () => router.back();
               <dd>
                 {{ summaryFloorPair }}
               </dd>
+            </div>
+            <!-- 빌라 — 엘베(층 아래 · 세대수 위, 웹 정보요약과 같다 2026-11-12 사용자). 아파트는 늘 있어 뺀다 -->
+            <div v-if="!isApartment" class="adp-base-row">
+              <dt>엘베</dt>
+              <dd><span v-if="summaryElevText !== '-'" class="adp-sum-hi">{{ summaryElevText }}</span><template v-else>-</template></dd>
             </div>
             <!-- 아파트는 '총 / 해당면적' 세대수를 한 줄에(2026-11-10) -->
             <div class="adp-base-row">
