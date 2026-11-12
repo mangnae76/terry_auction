@@ -5637,26 +5637,23 @@ const cmpRangeD = ref<CmpRange>(1000);
 const cmpMonthsD = ref<6 | 12 | 24>(6);
 const cmpKindD = ref<'매매' | '전세'>('매매');
 watch([cmpRange, cmpMonths, cmpKind], ([r, m, k]) => { cmpRangeD.value = r; cmpMonthsD.value = m; cmpKindD.value = k; }, { immediate: true });
+/** 저장본도 없고 아직 조회하지 않았다 — 리스트가 비어 있고 조회하기를 기다린다 */
+const cmpWaiting = computed(() => !cmpQueried.value && !cmpSnapOn.value);
 const cmpDirty = computed(() => cmpRangeD.value !== cmpRange.value || cmpMonthsD.value !== cmpMonths.value || cmpKindD.value !== cmpKind.value);
-const cmpApply = () => { cmpRange.value = cmpRangeD.value; cmpMonths.value = cmpMonthsD.value; cmpKind.value = cmpKindD.value; };
+/** 조회하기를 눌렀나(이 물건 · 이 화면에서) — 누르기 전엔 아무것도 받지 않는다. 저장본이 있으면 저장본만 보여 준다(2026-11-12 사용자) */
+const cmpQueried = ref(false);
+watch(() => auction.value?.id, () => { cmpQueried.value = false; });
+const cmpApply = () => { cmpRange.value = cmpRangeD.value; cmpMonths.value = cmpMonthsD.value; cmpKind.value = cmpKindD.value; cmpQueried.value = true; };
 /** 거래 단추 옆 건수 — 지금 리스트(범위 · 기간 · 유사평형)에 든 매매 · 전세 실거래 수(시세분석 '매매 3'과 같은 꼴, 2026-11-12 사용자) */
 const cmpKindCount = (k: '매매' | '전세') => cmpRows.value.reduce((n, r) => n + r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length, 0).toLocaleString('ko-KR');
 // 고른 거르기는 그 물건 문서(DB)에 남긴다 — 바꾸면 리스트 · 평균가가 달라져, 다시 열어도 같은 숫자를 보게(2026-11-11 사용자). 처음엔 위 기본값
-let cmpFilterFor = '';
 watch(() => auction.value?.id, (id) => {
   if (!id) return;
-  const f = auction.value?.demandFilter;
+  // 저장본이 있으면 저장본의 거르기로 연다(조회만 하고 저장하지 않은 거르기는 남기지 않는다, 2026-11-12 사용자)
+  const f = auction.value?.demandSnap?.filter ?? auction.value?.demandFilter;
   cmpRange.value = f?.range && CMP_RANGES.value.some(([v]) => v === f.range) ? f.range : 1000; cmpMonths.value = f?.months ?? 6; cmpKind.value = f?.kind ?? '매매';   // 종류에 없는 범위(빌라의 2km 등)는 1km
-  cmpFilterFor = id;
 }, { immediate: true });
-watch([cmpRange, cmpMonths, cmpKind], ([range, months, kind]) => {
-  const a = auction.value; if (!a || cmpFilterFor !== a.id) return;
-  if (!CMP_RANGES.value.some(([v]) => v === range)) return;
-  const cur = a.demandFilter ?? { range: 1000, months: 6, kind: '매매' };
-  if (cur.range === range && cur.months === months && cur.kind === kind) return;
-  a.demandFilter = { range, months, kind };
-  persistSoon();
-});
+// 거르기는 '저장하기'를 눌러야 저장본과 같이 DB 에 들어간다(바꾸는 즉시 적던 것은 뺐다, 2026-11-12 사용자)
 /** 단지 열쇠 — 동 · 지번(반경 범위에선 다른 동의 같은 지번이 있다). 선정물건은 'mine' */
 const cmpKeyOf = (c: { mine: boolean; umdNm: string; jibun: string }) => (c.mine ? 'mine' : `${c.umdNm}|${c.jibun}`);
 // 면적 글 — 아파트는 공급면적 먼저, 괄호 안 전용은 숫자만('83.17㎡ (59.98)' · '25.2평 (18.1)'). 단위는 손품조사 탭 줄 단추(sonAreaUnit)
@@ -5680,10 +5677,10 @@ const cmpRows2y = ref<CaseTradeRow[] | null>(null);
 // 2년치는 그 물건에서 한 번만 받아 둔다 — 1년 ↔ 2년을 오가도 다시 받지 않는다(받는 동안 표가 비었다 차며 아래 상자가 출렁였다, 2026-11-11)
 let cmpRows2yFor = '';
 watch(() => auction.value?.id, () => { cmpRows2y.value = null; cmpRows2yFor = ''; });
-watch([() => auction.value?.id, cmpMonths, () => webEmbed] as const, async ([id, mo, web]) => {
+watch([() => auction.value?.id, cmpMonths, () => webEmbed, () => cmpQueried.value] as const, async ([id, mo, web]) => {
   const a = auction.value;
   // 저장본 검사(cmpSnapOn)는 여기서 하지 않는다 — 아래에서 선언돼 처음 부를 때 'before initialization' 오류로 2년치를 못 받았다(2026-11-12)
-  if (mo !== 24 || !id || !web || !a?.address) return;
+  if (mo !== 24 || !id || !web || !a?.address || !cmpQueried.value) return;
   if (cmpRows2yFor === id && cmpRows2y.value) return;
   cmpRows2yFor = id;
   const out = await analyzeAddress({ address: a.address, propertyType: priceKind.value, years: 2 }).catch(() => null);
@@ -5726,6 +5723,7 @@ const cmpSnapRows = computed(() => { const m = new Map<string, DemandSnapRow>();
 const cmpList = computed<CompareComplex[]>(() => {
   const r = cmpRange.value; const me = cmpMePt.value;
   if (cmpSnapOn.value) return cmpSnap.value!.rows.map((r) => ({ jibun: r.jibun, name: r.name, umdNm: r.umdNm, area: r.area, jeonseAvg: r.jeonseAvg, saleAvg: r.saleAvg, mine: r.mine, buildYear: r.buildYear, deals: r.deals as unknown as CompareComplex['deals'] }));
+  if (!cmpQueried.value) return [];   // 조회하기 전 — 저장본이 없으면 빈 표
   if (r === 'dong') return cmpCandidates.value;
   return cmpCandidates.value.filter((c) => {
     if (c.mine) return true;
@@ -5944,9 +5942,9 @@ const cmpPool = async <T,>(items: T[], n: number, run: number, fn: (x: T) => Pro
   let i = 0;
   await Promise.all(Array.from({ length: n }, async () => { while (i < items.length && run === cmpRun) { const x = items[i]; i += 1; await fn(x).catch(() => undefined); } }));
 };
-watch(() => `${cmpRange.value}|${cmpCandidates.value.filter((c) => !c.mine).map((c) => cmpKeyOf(c)).join(',')}`, async () => {
+watch(() => `${cmpQueried.value}|${cmpRange.value}|${cmpCandidates.value.filter((c) => !c.mine).map((c) => cmpKeyOf(c)).join(',')}`, async () => {
   const run = ++cmpRun;
-  if (cmpSnapOn.value) return;   // 저장본으로 그린다 — 다시 받지 않는다
+  if (cmpSnapOn.value || !cmpQueried.value) return;   // 저장본으로 그린다 · 조회하기 전엔 받지 않는다
   if (!cmpCandidates.value.some((c) => !c.mine)) return;
   await new Promise((ok) => { window.setTimeout(ok, 3000); });
   if (run !== cmpRun || !supRegion.value) return;
@@ -6066,6 +6064,7 @@ const cmpDongList = computed<CompareComplex[]>(() => {
 });
 const cmpAll = computed(() => {
   if (cmpSnapOn.value) return cmpSnap.value!.all;
+  if (!cmpQueried.value) return null;
   const ds = cmpDongList.value.flatMap((r) => r.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).map((d) => ({ p: d.price, py: d.areaM2 > 0 ? d.price / (d.areaM2 / 3.305785) : 0 })));
   if (!ds.length) return null;
   const pys = ds.filter((d) => d.py > 0);
@@ -6096,7 +6095,7 @@ const cmpBasis = computed(() => {
 });
 /** 저장본 만들기 — 다 받았을 때(실거래 · 좌표 · 시설 · 공급면적) 지금 리스트를 통째로. 시설은 입지조건 전부(룸수를 바꿔도 다시 받지 않게) */
 const cmpLiveReady = computed(() => {
-  if (cmpSnapOn.value || !supLoaded.value || !supRegion.value || !nearbyEnv.value) return false;
+  if (cmpSnapOn.value || !cmpQueried.value || !supLoaded.value || !supRegion.value || !nearbyEnv.value) return false;
   if (!supAllRows.value.length || (cmpMonths.value === 24 && !cmpRows2y.value?.length)) return false;   // 실거래를 못 받았으면 저장하지 않는다
   if (cmpMonths.value === 24 && !cmpRows2y.value) return false;
   if (cmpRange.value !== 'dong' && cmpCandidates.value.some((c) => !c.mine && !(cmpKeyOf(c) in cmpPoints.value) && !(cmpKeyOf(c) in cmpNearby.value))) return false;
@@ -6124,17 +6123,18 @@ const cmpSnapBuild = (): DemandSnap => {
   });
   return JSON.parse(JSON.stringify({ v: 1, at: new Date().toISOString(), filter: { range: cmpRange.value, months: cmpMonths.value, kind: cmpKind.value }, tol: cmpTol.value, rows, all: cmpAll.value })) as DemandSnap;
 };
-// 다 받으면 1.5초 뒤 한 번 적는다(손을 멈춘 뒤) — 저장 단추 없이(2026-11-12 사용자)
-let cmpSnapTimer = 0;
-watch(() => (cmpLiveReady.value ? `${auction.value?.id}|${cmpRange.value}|${cmpMonths.value}|${cmpKind.value}|${cmpList.value.length}` : ''), (k) => {
-  window.clearTimeout(cmpSnapTimer);
-  if (!k) return;
-  cmpSnapTimer = window.setTimeout(() => {
-    const a = auction.value; if (!a || !cmpLiveReady.value) return;
-    a.demandSnap = cmpSnapBuild();
-    void store.saveAuction(a, { silent: true }).catch(() => undefined);
-  }, 1500);
-});
+/** 저장하기 — 지금 보이는 리스트(조회한 결과)와 거르기를 물건 DB 에. 다 받았을 때만 누를 수 있다(2026-11-12 사용자) */
+const cmpSaving = ref(false);
+const cmpSave = async () => {
+  const a = auction.value; if (!a || !cmpLiveReady.value || cmpSaving.value) return;
+  cmpSaving.value = true;
+  try {
+    const snap = cmpSnapBuild();
+    a.demandSnap = snap; a.demandFilter = { ...snap.filter };
+    await store.saveAuction(a, { silent: true });
+    flashToast('매매수요 리스트를 저장했습니다.', 'success');
+  } catch { flashToast('저장하지 못했습니다. 잠시 뒤 다시 눌러 주세요.', 'error'); } finally { cmpSaving.value = false; }
+};
 /** 저장한 날 — 고정기준 줄 끝에 '2026-11-12 저장' */
 const cmpSnapDay = computed(() => (cmpSnapOn.value ? String(cmpSnap.value!.at).slice(0, 10) : ''));
 /** 표 · 목록의 시설 이름 — 옆 칸이 이미 '학원가'라 '학원가 · 학원 12곳' 은 '학원 12곳' 으로만(2026-11-11) */
@@ -9688,7 +9688,8 @@ const goBack = () => router.back();
                 <span class="pa-lab">범위<span class="pa-seg pa-out" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRangeD === v }" :aria-checked="cmpRangeD === v" :data-t="t" @click="cmpRangeD = v">{{ t }}</button></span></span>
                 <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :data-k="k" :class="{ on: cmpKindD === k }" :aria-checked="cmpKindD === k" @click="cmpKindD = k">{{ k }} {{ cmpKindCount(k) }}</button></span></span>
                 <span class="pa-lab">기간<span class="pa-seg pa-out" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonthsD === m }" :aria-checked="cmpMonthsD === m" :data-t="t" @click="cmpMonthsD = m">{{ t }}</button></span></span>
-                <button type="button" :class="['cmp-go', { dirty: cmpDirty }]" @click="cmpApply">조회하기</button>
+                <button type="button" :class="['cmp-go', { dirty: cmpDirty || cmpWaiting }]" @click="cmpApply">조회하기</button>
+                <button type="button" :class="['cmp-save', { ready: cmpLiveReady }]" :disabled="!cmpLiveReady || cmpSaving" :title="cmpSnapOn ? '저장된 리스트입니다' : cmpLiveReady ? '지금 리스트를 저장합니다' : '조회하기로 불러온 뒤 저장할 수 있습니다'" @click="cmpSave">{{ cmpSnapOn ? '저장됨' : '저장하기' }}</button>
               </div>
               <div class="cmp-est">
                 <div class="cmp-tiles">
@@ -9712,7 +9713,7 @@ const goBack = () => router.back();
                   </template>
                 </div>
                 <!-- 근거 거래 한 줄 — 건물 · 단지를 고르면 칸 줄이 어느 거래로 계산됐는지. 고르기 전엔 안내만(자리를 늘 두어 지도가 위아래로 출렁이지 않게) -->
-                <p class="cmp-basis"><template v-if="cmpBasis"><b class="k">근거</b><template v-if="cmpBasis.n"><span v-for="(t, i) in cmpBasis.shown" :key="i" class="d"><i v-if="i" class="sep">|</i>{{ t }}</span><span v-if="cmpBasis.more" class="more">외 {{ cmpBasis.more }}건</span></template><span v-else class="d">기간 안 {{ cmpKind }} 거래 없음</span><span class="cmp-basis-nt">전용 ±{{ cmpTol }}㎡ 거래만 셌습니다{{ cmpBasis.out ? ` · 다른 평형 ${cmpBasis.out}건은 빠졌습니다` : '' }}</span></template><span v-else class="hint">{{ cmpN }}를 누르면 평균이 어느 거래로 계산됐는지 보입니다</span></p>
+                <p class="cmp-basis"><template v-if="cmpBasis"><b class="k">근거</b><template v-if="cmpBasis.n"><span v-for="(t, i) in cmpBasis.shown" :key="i" class="d"><i v-if="i" class="sep">|</i>{{ t }}</span><span v-if="cmpBasis.more" class="more">외 {{ cmpBasis.more }}건</span></template><span v-else class="d">기간 안 {{ cmpKind }} 거래 없음</span><span class="cmp-basis-nt">전용 ±{{ cmpTol }}㎡ 거래만 셌습니다{{ cmpBasis.out ? ` · 다른 평형 ${cmpBasis.out}건은 빠졌습니다` : '' }}</span></template><span v-else-if="cmpWaiting" class="hint">범위 · 거래 · 기간을 고르고 <b>조회하기</b>를 누르면 실거래를 불러옵니다 · 마음에 들면 <b>저장하기</b></span><span v-else class="hint">{{ cmpN }}를 누르면 평균이 어느 거래로 계산됐는지 보입니다</span></p>
               </div>
                           <!-- 칸 줄과 지도 · 표는 한 상자(2026-11-11) -->
               <div class="cmp-gap" />
@@ -12513,6 +12514,10 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-conds { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 12px; }
 .cmp-go { margin-left: auto; height: 42px; padding: 0 22px; border: 1px solid #2b6df3; border-radius: 8px; background: #fff; color: #2b6df3; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }   /* 조회하기 — 고른 거르기가 지금과 다르면 파랗게 채운다 */
 .cmp-go.dirty { background: #2b6df3; color: #fff; }
+.cmp-save { height: 42px; min-width: 96px; padding: 0 18px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #9ca3af; font: inherit; font-size: 14px; font-weight: 700; cursor: default; }   /* 저장하기 — 조회 결과가 다 오면 초록으로 */
+.cmp-save.ready { border-color: #16a34a; background: #16a34a; color: #fff; cursor: pointer; }
+:root[data-theme="dark"] .cmp-save:not(.ready) { background: transparent; border-color: #34405a; color: #6e788c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-save:not(.ready) { background: transparent; border-color: #34405a; color: #6e788c; } }
 .cmp-go:hover { filter: brightness(.97); }
 :root[data-theme="dark"] .cmp-go:not(.dirty) { background: transparent; color: #8fb0ff; border-color: #5b8cff; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-go:not(.dirty) { background: transparent; color: #8fb0ff; border-color: #5b8cff; } }
