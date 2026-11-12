@@ -26,7 +26,7 @@ const TOP: Record<string, string> = {
   tenantOtherNotes: '임차인메모', tenantTotalDeposit: '보증금합계', tenantInfoRows: '임차인', buildingHeader: '건축물대장',
   rightsChecks: '권리체크', rightsDocUrls: '권리서류', rightsDocNotes: '서류메모', rightsAi: 'AI권리분석', rightsCaseId: '권리사례',
   basicSummary: '정보요약', pdfNearbyEnv: '주변환경', aptComplexInfo: '단지정보', arrearsInfo: '체납정보', locationSummary: '입지요약',
-  realUserBandId: '실사용자', realUserRoomId: '실사용자', realUserRanks: '실사용자', realUserArea: '실사용자', realUserRooms: '실사용자',
+  realUserBandId: '실사용자', realUserRoomId: '실사용자', realUserRanks: '실사용자', realUserArea: '실사용자', demandSnap: '매매수요', realUserRooms: '실사용자',
   realUserDetail: '실사용자', realUserCondition: '실사용자', demandFilter: '매매수요', adminAgencyItems: '중개사무소',
   postWinChecks: '낙찰이후체크', postWinFlow: '진행절차', postWinDocs: '서류', postWinFormVals: '서식입력', postWinMoney: '낙찰이후비용',
   sellAgencyRows: '매도중개', directSellRows: '직거래', marketPicks: '시장분석', aiNotes: 'AI메모', aiSummary: 'AI요약',

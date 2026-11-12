@@ -629,6 +629,9 @@ export interface AuctionDetail {
   realUserRanks?: Record<string, string>;
   /** 손품조사 › 매매수요 단지 입지비교 거르기 — 고른 값을 물건마다 남긴다(처음엔 1km · 6개월 · 매매, 2026-11-11) */
   demandFilter?: { range: 'dong' | 100 | 300 | 500 | 1000 | 2000; months: 6 | 12 | 24; kind: '매매' | '전세' };
+  /** 매매수요 입지비교 저장본 — 필터로 뽑은 그때의 리스트(실거래 · 좌표 · 시설 거리)를 통째로. 다시 열면 새로 계산하지 않고 이 값으로 그린다.
+   *  필터를 바꾸면 새로 계산해 자동으로 다시 저장한다(2026-11-12 사용자 — 사용자가 뽑은 리스트는 바뀌면 안 된다) */
+  demandSnap?: DemandSnap;
   /** @deprecated 자유입력 방식이던 시절의 필드 — 남은 데이터 보존용 */
   realUserArea?: string;
   realUserRooms?: string;
@@ -860,3 +863,28 @@ export interface PostWinFlow {
   /** 기본 단계 판 — 2부터 인테리어 · 매도 · 세금 단계까지 들어 있다 */
   ver?: number;
 }
+
+/** 매매수요 입지비교 저장본 한 줄(건물 · 단지) */
+export type DemandSnapPlace = { name: string; m: number; lat: number; lng: number; src: string };
+export type DemandSnapDeal = { kind: string; price: number; contractDate: string; areaM2: number; floor: string };
+export type DemandSnapRow = {
+  jibun: string; name: string; umdNm: string; area: number; jeonseAvg: number; saleAvg: number; mine: boolean; buildYear: number;
+  deals: DemandSnapDeal[];
+  point: { lat: number; lng: number } | null;
+  supply: { lo: number; hi: number } | null;
+  /** 주변시설을 받았나(못 받았으면 등수 · 점수를 비운다) */
+  env: boolean;
+  /** 입지조건마다 가장 가까운 시설(1km 안에 없으면 null) */
+  places: Record<string, DemandSnapPlace | null>;
+  /** 기간 안 그 건물 · 단지의 같은 거래(매매 · 전세) 전부 — 근거 줄 '다른 평형 n건' */
+  basisAll: number;
+};
+export type DemandSnap = {
+  v: 1;
+  at: string;
+  filter: { range: 'dong' | 100 | 300 | 500 | 1000 | 2000; months: 6 | 12 | 24; kind: '매매' | '전세' };
+  tol: number;
+  rows: DemandSnapRow[];
+  /** 위 칸 줄 동 전체(고르기 전) */
+  all: { n: number; avg: number; perPy: number; complexes: number } | null;
+};
