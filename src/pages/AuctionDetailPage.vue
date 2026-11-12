@@ -12373,7 +12373,7 @@ tr.tone-take { background: #fff5f5; }
 .adp-sub-head.first { padding-top: 2px; }
 .adp-sub-head h3.red { color: #e0574a; }
 /* 카드 제목만 붉게 — 그 안의 표 제목(시세 결론·급매가 결론)은 검은 글씨다 */
-.adp-head-red { color: #e0574a; }
+.adp-head-red { color: inherit; }   /* 현장조사 제목 — 다른 카드 제목과 같은 색(2026-11-13 사용자, 예전 빨강) */
 /* 결론표 비고 줄 — 칸 구분 없이 통으로 */
 .adp-conc-table .adp-conc-note { text-align: left; padding: 4px 5px; }
 .adp-conc-table .adp-conc-note > span { font-size: 11px; font-weight: 400; color: #9ca3af; }
@@ -13631,7 +13631,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .adp-photo-note .adp-fs-input { width: 100%; height: 34px; }
 /* 손품+현장의 비고는 모두 빨갛게 — 숫자 사이에서 '내가 적어 둔 말'이 바로 집혀야 한다.
    색만으로 충분해서 굵게는 쓰지 않는다. 안내문구는 그대로 회색이다. */
-.adp-photo-note .adp-fs-input { color: #e0574a; font-weight: 400; }
+.adp-photo-note .adp-fs-input { color: var(--text, #111827); font-weight: 400; }
 .adp-photo-note .adp-fs-input::placeholder { color: #9ca3af; font-weight: 400; }
 .adp-mkt-cells.adp-dm-table .cell.adp-mkt-wide > .adp-mkt-input { color: #e0574a; font-weight: 400; }
 .adp-mkt-cells.adp-dm-table .cell.adp-mkt-wide > .adp-mkt-input::placeholder { color: #9ca3af; font-weight: 400; }
@@ -13657,7 +13657,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 /* 제목·설명·값이 한 줄에 들어가도록 줄바꿈을 막는다 */
 .adp-dm-head.tight { padding: 4px 2px 8px; flex-wrap: nowrap; }
 .adp-dm-head.tight .adp-dm-memo { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.adp-fs-rank { margin-left: auto; font-size: 17px; font-weight: 800; color: #e0574a; line-height: 1.2; }
+.adp-fs-rank { margin-left: auto; font-size: 17px; font-weight: 800; color: var(--text, #111827); line-height: 1.2; }
 /* 두 줄의 설명 글자가 같은 자리에서 시작하도록 제목 칸 폭을 맞춘다 */
 .adp-dm-head.tight .adp-dm-title { flex: 0 0 auto; white-space: nowrap; }
 .adp-dm-memo { font-size: 11.5px; font-weight: 600; color: #9ca3af; }
@@ -13686,7 +13686,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 /* 옆칸에 붙는 비고 — 손품+현장의 다른 비고와 같은 규칙:
    적은 글씨만 빨갛고 안내문구는 회색 */
 /* 글자 크기는 다른 칸(금액·연락처)과 같게 둔다 — 줄마다 들쭉날쭉해 보였다 */
-.adp-fs-input.note { font-weight: 400; color: #e0574a; text-align: left; }
+.adp-fs-input.note { font-weight: 400; color: var(--text, #111827); text-align: left; }   /* 현장조사 적은 값 — 빨강 대신 기본 글색(2026-11-13 사용자) */
 .adp-fs-input.note::placeholder { color: #9ca3af; font-weight: 400; }
 .adp-fs-input {
   width: 100%; min-width: 0; height: 28px; border: 1px solid #e3e8f0; border-radius: 6px;

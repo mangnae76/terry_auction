@@ -314,7 +314,7 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
   font-size: 13.5px; font-weight: 400; color: #2b6df3; line-height: 26px; height: 26px;
   text-decoration: underline; text-underline-offset: 2px;
 }
-.adp-mkt-input.note { color: #e0574a; font-weight: 400; }
+.adp-mkt-input.note { color: var(--text, #111827); font-weight: 400; }   /* 상담 의견 · 협의 — 빨강 대신 기본 글색(2026-11-13 사용자) */
 .adp-mkt-input.note::placeholder { color: #9ca3af; font-weight: 400; }
 .adp-agency-fld > span.note-txt { font-size: 11.5px; font-weight: 400; color: #9ca3af; }
 .adp-agency-fld > span.note-txt.filled { color: #e0574a; font-weight: 400; }
