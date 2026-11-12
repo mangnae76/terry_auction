@@ -31,9 +31,6 @@ import squareCheckIcon from '../assets/icones/square-check (1).png';
 import infoIcon from '../assets/icones/info (1).png';
 import arrowUpDownIcon from '../assets/icones/arrow-UPDOWN.png';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
-import naverNaviIcon from '../assets/icones/navi/naver_navi.png';
-import tmapNaviIcon from '../assets/icones/navi/TMAP_navi.png';
-import kakaoNaviIcon from '../assets/icones/navi/kakaonavi.png';
 import { updateStamp } from '../services/updateStamp';
 
 const router = useRouter();
@@ -1668,6 +1665,7 @@ watch(() => authStore.uid, (newUid) => {
     </div>
 
     <div v-if="!settingsCollapsed" class="ftp-settings">
+      <!-- 내비 단추 — 회사 로고 대신 우리 선 아이콘(내비 화살표) + 회사 색 점 하나(2026-11-13 사용자). 이름 글은 그대로 -->
       <div class="ftp-nav-launch-row">
         <button
           type="button"
@@ -1675,7 +1673,7 @@ watch(() => authStore.uid, (newUid) => {
           aria-label="네이버 내비게이션 실행"
           @click="chooseNavAndLaunch('naver')"
         >
-          <img :src="naverNaviIcon" alt="" class="ftp-nav-badge-img" />
+          <span class="ftp-nav-ico n" aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg></span>
           <span>네이버</span>
         </button>
         <button
@@ -1684,7 +1682,7 @@ watch(() => authStore.uid, (newUid) => {
           aria-label="티맵 내비게이션 실행"
           @click="chooseNavAndLaunch('tmap')"
         >
-          <img :src="tmapNaviIcon" alt="" class="ftp-nav-badge-img" />
+          <span class="ftp-nav-ico t" aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg></span>
           <span>티맵</span>
         </button>
         <button
@@ -1693,7 +1691,7 @@ watch(() => authStore.uid, (newUid) => {
           aria-label="카카오맵 내비게이션 실행"
           @click="chooseNavAndLaunch('kakao')"
         >
-          <img :src="kakaoNaviIcon" alt="" class="ftp-nav-badge-img" />
+          <span class="ftp-nav-ico k" aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg></span>
           <span>카카오</span>
         </button>
       </div>
@@ -2259,10 +2257,12 @@ watch(() => authStore.uid, (newUid) => {
 .ftp-nav-launch-btn.active {
   border-color: #2b6df3; background: #e9f0ff; color: #1f53d6;
 }
-.ftp-nav-badge-img {
-  width: 22px; height: 22px; object-fit: contain; flex-shrink: 0;
-  border-radius: 5px;
-}
+.ftp-nav-ico { position: relative; flex-shrink: 0; display: inline-grid; place-items: center; width: 22px; height: 22px; color: currentColor; --ring: #fff; }
+.ftp-nav-launch-btn.active .ftp-nav-ico { --ring: #e9f0ff; }
+.ftp-nav-ico::after { content: ''; position: absolute; right: -1px; bottom: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 2px var(--ring); }
+.ftp-nav-ico.n { --dot: #03c75a; }   /* 네이버 초록 */
+.ftp-nav-ico.t { --dot: #7b3fe4; }   /* 티맵 보라 */
+.ftp-nav-ico.k { --dot: #f5c800; }   /* 카카오 노랑 — 흰 바탕에서 보이게 조금 진하게 */
 .ftp-section-title-main {
   display: inline-flex; align-items: baseline; gap: 6px; min-width: 0;
   flex: 1 1 auto;
