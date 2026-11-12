@@ -6439,7 +6439,10 @@ const cmpBase = computed(() => {
   const medFormula = med && o.medPy && o.myPy ? `${o.medName ? `${o.medName} ${per}` : `가운데 2건(${o.medPair || ''}) 평균 ${per}`} ${Math.round(o.medPy / 1e4).toLocaleString('ko-KR')}만 × 전용 ${o.myPy.toFixed(2)}평 = ${cmpEok(med)}` : '';
   return { label: `시세분석 예상 ${o.kind}가`, value: o.est, note: '', formula, med, medFormula };
 });
-const cmpUnitBase = computed(() => cmpBase.value.value);
+/** 예상가를 평균으로 낼지 중간값으로 낼지 — 두 칸 중 누른 것(물건 문서 개별성 값 'unit.base', 비우면 평균, 2026-11-12 사용자) */
+const unitBasePick = computed<'avg' | 'med'>(() => (indivValue('unit.base') === 'med' && cmpBase.value.med > 0 ? 'med' : 'avg'));
+const pickUnitBase = (v: 'avg' | 'med') => { if (unitBasePick.value === v) return; setIndivValue('unit.base', v === 'med' ? 'med' : ''); persistSoon(); };
+const cmpUnitBase = computed(() => (unitBasePick.value === 'med' ? cmpBase.value.med : cmpBase.value.value));
 /** 구역 내 개별성 ± — 단지 자체의 장단점을 가격 %로(단지 내 개별성과 같은 방식, 2026-11-11 사용자). 1 가산 · 0 보통 · -1 감산 */
 /** 시세분석 조건으로 이미 맞춘 개별성 — 엘베를 걸었으면 엘베, 건축 연도 범위를 걸었으면 연식은 보정 0(두 번 세지 않게, 2026-11-12 사용자) */
 const zoneMatched = (id: string) => (id === 'ind.elevator' && !!sonPriceOut?.value?.elevFiltered) || (id === 'ind.age' && !!sonPriceOut?.value?.yearFiltered);
@@ -10042,9 +10045,9 @@ const goBack = () => router.back();
             <Teleport v-if="webEmbed && sonpumMode" defer to="#sonUnitSlot">
             <section class="adp-dm-block boxed cmp-box o-unit">
               <div class="cmp-est-h unit-h"><span class="unit-tag">보정</span><h3>선정물건 호실 예상가<span v-if="cmpMineRow" class="cmp-scope-chip">{{ cmpArea(cmpMineRow.supply, cmpMineRow.area) }}</span></h3><small class="cmp-q">{{ isApartment ? '같은 단지 안에서 내 호실의 가치는?' : '비슷한 빌라들 사이에서 내 호실의 가치는?' }}</small></div>
-              <div :class="['cmp-bases', { one: !cmpBase.med }]"><div class="cmp-base on"><span class="k">{{ cmpBase.label }}</span><span class="v">{{ cmpEok(cmpBase.value) }}</span><small v-if="cmpBase.note">{{ cmpBase.note }}</small><small v-if="cmpBase.formula" class="cmp-base-f">{{ cmpBase.formula }}</small></div>
-                <!-- 중간값 — 예상가는 위 평균 그대로, 참고로 옆에(2026-11-12 사용자) -->
-                <div v-if="cmpBase.med" class="cmp-base"><span class="k">중간값</span><span class="v">{{ cmpEok(cmpBase.med) }}</span><small class="cmp-base-f">{{ cmpBase.medFormula }}</small></div></div>
+              <div :class="['cmp-bases', { one: !cmpBase.med }]" role="radiogroup" aria-label="예상가 기준"><button type="button" role="radio" :aria-checked="unitBasePick === 'avg'" :class="['cmp-base', { on: unitBasePick === 'avg' }]" @click="pickUnitBase('avg')"><span class="k">{{ cmpBase.label }}</span><span class="v">{{ cmpEok(cmpBase.value) }}</span><small v-if="cmpBase.note">{{ cmpBase.note }}</small><small v-if="cmpBase.formula" class="cmp-base-f">{{ cmpBase.formula }}</small></button>
+                <!-- 중간값 — 두 칸 중 누른 것으로 아래 예상가를 낸다(처음엔 평균, 2026-11-12 사용자) -->
+                <button v-if="cmpBase.med" type="button" role="radio" :aria-checked="unitBasePick === 'med'" :class="['cmp-base', { on: unitBasePick === 'med' }]" @click="pickUnitBase('med')"><span class="k">중간값</span><span class="v">{{ cmpEok(cmpBase.med) }}</span><small class="cmp-base-f">{{ cmpBase.medFormula }}</small></button></div>
               <!-- 구역 내 · 단지 내 개별성 — 가로로 나란히(좁으면 위아래, 2026-11-11 사용자) -->
               <!-- 구역 내 개별성 — 위 표가 모두 이 단지 거래면 접어 둔다(이미 담겨 있다). 다른 단지 거래가 섞이면 열려 % 로 보정 -->
               <div v-if="!zoneApplied" :class="['cmp-zone-off', { warn: zoneMixed }]"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span v-if="zoneMixed">위 표에 다른 {{ isApartment ? '단지' : '건물' }} 거래 {{ zoneMixed }}건이 섞여 있습니다. 이 {{ isApartment ? '단지' : '건물' }} 거래만 쓰려면 그 줄을 제외하세요. 다른 {{ isApartment ? '단지' : '건물' }} 거래만 남으면 열려 연식 · 주차 · 엘베 · 현관 · 경사 · 용적률을 % 로 보정합니다.</span><span v-else>기준가가 모두 이 {{ isApartment ? '단지' : '건물' }} 거래라 쓰지 않습니다. 이 {{ isApartment ? '단지' : '건물' }} 거래가 없어 다른 {{ isApartment ? '단지' : '건물' }} 거래만 쓸 때 열려 연식 · 주차 · 엘베 · 현관 · 경사 · 용적률을 % 로 보정합니다.</span></div>
@@ -10067,7 +10070,7 @@ const goBack = () => router.back();
                 </table></div></div>
                 <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
                   <colgroup><col style="width: 20%" /><col /><col style="width: 19%" /><col style="width: 22%" /></colgroup>
-                  <thead><tr><th>{{ isApartment ? '단지 내 개별성' : '호실 개별성' }}</th><th>내용 <span class="cmp-th-hint">(해당 물건과 유사 물건이 다를 경우에만 선택하세요)</span></th><th>비율</th><th>보정</th></tr></thead>
+                  <thead><tr><th>{{ isApartment ? '단지 내 개별성' : '호실 개별성' }}</th><th>내용</th><th>비율</th><th>보정</th></tr></thead>
                   <tbody>
                     <template v-for="g in unitGroupsView" :key="g.title">
                     <tr v-for="item in g.items" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
@@ -12944,7 +12947,9 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 /* 기준가 카드 · 표 묶음 줄 */
 .cmp-bases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
 .cmp-bases.one { grid-template-columns: minmax(0, 1fr); }
-.cmp-bases .cmp-base { cursor: default; }
+.cmp-bases .cmp-base { cursor: pointer; }   /* 평균 · 중간값 중 고른다(2026-11-12) */
+.cmp-bases .cmp-base:not(.on):hover { border-color: #b8c7e8; }
+.cmp-bases.one .cmp-base { cursor: default; }
 .cmp-base { display: grid; gap: 3px; padding: 10px 12px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font: inherit; text-align: left; color: #111827; cursor: pointer; }
 .cmp-base .k { font-size: 12.5px; color: #6b7280; }
 .cmp-base .v { font-size: 16px; font-weight: 800; }
