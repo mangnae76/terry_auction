@@ -69,11 +69,20 @@ export const demandOpinionOf = (absorb: number, turnover: number, ready: boolean
   const lively = apt
     ? (turnover >= APT_TURNOVER_HOT ? '매우 활발' : turnover >= 5 ? '활발' : '다소 활발')
     : (turnover >= DEMAND_GRADE_RULES.turnover.a ? '활발' : '다소 활발');
-  // 뒤 한 문장 — 그 구간에서 가격이 어느 쪽으로 가기 쉬운지(단정하지 않는다, 2026-11-10)
-  if (lowListing && highDeal) return { level: 1, title: '저매물 / 고거래', text: `매물은 적고 거래는 ${lively}합니다. 매도자 우위라 가격이 오르기 쉽습니다.` };
-  if (!lowListing && highDeal) return { level: 2, title: '고매물 / 고거래', text: `매물은 많지만 거래도 ${lively}합니다. 균형 구간이라 가격은 보합이기 쉽습니다.` };
-  if (lowListing) return { level: 3, title: '저매물 / 저거래', text: '매물은 적지만 거래도 둔합니다. 관망 구간이라 가격이 정체되기 쉽습니다.' };
-  return { level: 4, title: '고매물 / 저거래', text: '매물은 쌓이고 거래도 둔합니다. 매수자 우위라 가격이 내리기 쉽습니다.' };
+  // 매물 과잉 — 매물율이 선의 2배를 넘거나 소화기간이 20개월(선 10개월의 2배)을 넘으면 '많다'가 아니라 '심하게 쌓였다'로 무게 있게(2026-11-12 사용자, 검암동 매물율 25.8%)
+  const over = burden > burdenLine * 2 || clearMonths > DEMAND_GRADE_RULES.clear.b * 2;
+  const overTx = burden > burdenLine * 2
+    ? `매물율 ${dec1(burden)}%로 기준 ${burdenLine}%의 ${dec1(burden / burdenLine)}배입니다.`
+    : `지금 속도로 다 팔리는 데 ${Number.isFinite(clearMonths) ? `${dec1(clearMonths)}개월` : '기약 없이'} 걸립니다.`;
+  // 뒤 한 문장 — 그 구간에서 가격이 어느 쪽으로 가기 쉬운지(단정하지 않는다, 2026-11-10). 말은 무게 있게(2026-11-12 사용자)
+  if (lowListing && highDeal) return { level: 1, title: '저매물 / 고거래', text: `매물은 적고 거래는 ${lively}합니다. 매도자 우위 시장으로, 가격 상승 압력이 있습니다.` };
+  if (!lowListing && highDeal) return over
+    ? { level: 2, title: '매물 과잉 / 고거래', text: `매물이 심하게 쌓여 있습니다. ${overTx} 거래는 ${lively}하지만 쌓인 물량을 소화하기엔 부족해, 가격이 오르기 어렵고 조정 압력이 남아 있습니다.` }
+    : { level: 2, title: '고매물 / 고거래', text: `매물이 기준보다 많지만 거래도 ${lively}합니다. 수급이 맞서는 균형 구간으로, 가격은 보합 흐름이 예상됩니다.` };
+  if (lowListing) return { level: 3, title: '저매물 / 저거래', text: '매물은 적지만 거래가 둔합니다. 관망세가 짙은 구간으로, 가격이 정체되기 쉽습니다.' };
+  return over
+    ? { level: 4, title: '매물 과잉 / 저거래', text: `매물이 심하게 쌓였고 거래도 둔합니다. ${overTx} 매수자 우위가 뚜렷해, 가격 하락 압력이 큽니다.` }
+    : { level: 4, title: '고매물 / 저거래', text: '매물이 쌓이고 거래도 둔합니다. 매수자 우위 시장으로, 가격 하락 압력이 있습니다.' };
 };
 
 /** A·B 는 적합, C 는 부적합 */
