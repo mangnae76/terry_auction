@@ -5754,6 +5754,33 @@ const cmpCandidates = computed<CompareComplex[]>(() => {
   if (out.length) cmpLastCandidates = out;
   return out;
 });
+/** 동 중심 좌표 — 시군구 실거래에 나온 동마다 한 번(주소 → 좌표, DB 에 남는다). 반경에 걸칠 수 있는 동만 빌라 좌표를 받는다(2026-11-12) */
+const cmpDongPts = ref<Record<string, { lat: number; lng: number } | null>>({});
+/** 동 중심이 반경 + 이만큼 안이면 반경에 걸칠 수 있는 동으로 본다 — 동 하나가 이보다 넓어 끝만 걸치는 일은 드물다 */
+const CMP_DONG_REACH = 3000;
+const cmpDongNames = computed(() => [...new Set(supAllRows.value.map((r) => cmpSquash(r.umdNm)).filter(Boolean))]);
+/** 동 중심을 다 받았나 — 다 받기 전엔 선정물건 동만 */
+const cmpDongReady = computed(() => cmpDongNames.value.every((d) => d in cmpDongPts.value));
+/** 동 중심까지 거리(m) — 모르면 아주 멀게(뒤로) */
+const cmpDongDist = (umd: string) => { const p = cmpDongPts.value[cmpSquash(umd)]; const me = cmpMePt.value; return p && me ? metersBetween(me, p) : 1e9; };
+/** 반경에 걸칠 수 있는 동 — 동 중심을 못 찾은 동은 빼지 않고 넣는다(빠지는 빌라가 없게) */
+const cmpNearDongs = computed<Set<string> | null>(() => {
+  if (!cmpDongReady.value) return null;
+  const r = typeof cmpRange.value === 'number' ? cmpRange.value : 0;
+  return new Set(cmpDongNames.value.filter((d) => { const p = cmpDongPts.value[d]; const me = cmpMePt.value; return !p || !me || metersBetween(me, p) <= r + CMP_DONG_REACH; }));
+});
+watch(() => `${auction.value?.id}|${supRegion.value?.sigungu ?? ''}|${cmpDongNames.value.join(',')}`, async () => {
+  const reg = supRegion.value; if (!reg) return;
+  const todo = cmpDongNames.value.filter((d) => !(d in cmpDongPts.value));
+  let i = 0;
+  await Promise.all(Array.from({ length: 6 }, async () => {
+    while (i < todo.length) {
+      const d = todo[i]; i += 1;
+      const p = await complexPointOf(`${reg.sido} ${reg.sigungu} ${d}`).catch(() => null);
+      cmpDongPts.value = { ...cmpDongPts.value, [d]: p };
+    }
+  }));
+});
 const cmpCandidatesNow = (range: CmpRange = cmpRange.value): CompareComplex[] => {
   const myArea = supMyArea.value; const myJibun = supRegion.value?.jibun || supRows.value[0]?.jibun || '';
   if (!myArea || !myJibun) return [];
@@ -5768,8 +5795,13 @@ const cmpCandidatesNow = (range: CmpRange = cmpRange.value): CompareComplex[] =>
   if (!list.some((c) => c.mine)) list.push({ jibun: myJibun, name: supName.value, umdNm: supRegion.value?.dong ?? '', area: myArea, jeonseAvg: 0, saleAvg: 0, deals: [], mine: true, buildYear: 0 });
   // 빌라 — 건물이 많아 주변시설을 다 찾으면 무거워진다. 거래가 많은 건물부터 50곳까지(선정물건은 늘)
   // 반경 범위에선 좌표만 먼저 받고 반경 안 건물만 주변시설을 받으니 300곳까지 — 50곳에서 자르면 면적을 넓혔을 때 반경 안 건물이 거래 많은 먼 건물에 밀려 빠졌다(2026-11-12)
-  const cap = range === 'dong' ? 50 : 300;
-  const capped = isApartment.value ? list : [...list.filter((c) => c.mine), ...list.filter((c) => !c.mine).sort((a, b) => b.deals.length - a.deals.length).slice(0, cap)];
+  // 반경 범위 — 자르지 않는다(2026-11-12 사용자 '반경 안에 한 건이라도 있으면 나와야'). 대신 반경에 걸칠 수 있는 동(선정물건 동 + 동 중심이 가까운 동)만 남겨
+  // 좌표를 받을 빌라 수를 줄이고, 가까운 동부터 받는다. 읍면동 범위(아파트)는 그 동 전체
+  const near = range === 'dong' ? null : cmpNearDongs.value;
+  const myDong = cmpSquash(supRegion.value?.dong ?? '');
+  const inNear = (c: CompareComplex) => { const d = cmpSquash(c.umdNm); return d === myDong || (near ? near.has(d) : false); };
+  const capped = range === 'dong' ? (isApartment.value ? list : [...list.filter((c) => c.mine), ...list.filter((c) => !c.mine).sort((a, b) => b.deals.length - a.deals.length).slice(0, 50)])
+    : list.filter((c) => c.mine || inNear(c)).sort((a, b) => (cmpDongDist(a.umdNm) - cmpDongDist(b.umdNm)) || (b.deals.length - a.deals.length));
   // 선정물건 — 기간 안에 거래가 없어도 연식은 사용승인일로 채운다(실거래에서만 연식을 받아 '-'로 비던 것, 2026-11-12 사용자)
   const a = auction.value;
   const myYear = Number(String(a?.buildingHeader?.approvalDate || a?.approvalDate || surveyForm.value?.buildYear || '').slice(0, 4)) || 0;
@@ -6023,7 +6055,6 @@ const cmpMoney = (won: number) => {
 // 다른 단지 좌표 · 주변시설 — 처음 여는 화면의 다른 조회가 끝나게 3초 쉬었다가. 받아 둔 단지는 이 브라우저 · DB 에서 바로 온다.
 // 반경 범위면 ① 후보 좌표만 먼저(네 곳씩) → ② 반경 안 단지만 주변시설(두 곳씩). 같은 동이면 ②만
 let cmpRun = 0;
-let cmpWarm = false;
 const cmpAddr = (c: CompareComplex) => { const r = supRegion.value; return r ? `${r.sido} ${r.sigungu} ${c.umdNm} ${c.jibun}` : ''; };
 const cmpPool = async <T,>(items: T[], n: number, run: number, fn: (x: T) => Promise<void>) => {
   let i = 0;
@@ -6033,11 +6064,11 @@ watch(() => `${cmpSnapOn.value}|${cmpQueried.value}|${cmpElevR.value}|${cmpRange
   const run = ++cmpRun;
   if (cmpSnapOn.value || !cmpQueried.value) return;   // 저장본으로 그린다 · 조회하기 전엔 받지 않는다
   if (!cmpCandidates.value.some((c) => !c.mine)) return;
-  if (!cmpWarm) { await new Promise((ok) => { window.setTimeout(ok, 3000); }); cmpWarm = true; }   // 쉬는 건 물건을 처음 열 때만 — 필터를 바꿀 때마다 3초 기다리지 않게
+  // 처음 열 때 3초 쉬던 것은 뺐다 — 실거래 1년치를 받은 뒤에야 후보가 생겨 다른 조회와 겹치지 않는다(2026-11-12, 최대한 빨리)
   if (run !== cmpRun || !supRegion.value) return;
   if (cmpRange.value !== 'dong') {
     const need = cmpCandidates.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpPoints.value) && !(cmpKeyOf(c) in cmpNearby.value));
-    await cmpPool(need, 8, run, async (c) => { const p = await complexPointOf(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpPoints.value = { ...cmpPoints.value, [cmpKeyOf(c)]: p }; });
+    await cmpPool(need, 10, run, async (c) => { const p = await complexPointOf(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpPoints.value = { ...cmpPoints.value, [cmpKeyOf(c)]: p }; });
   }
   if (cmpElevR.value || !isApartment.value) {   // 빌라는 표에 엘베 칸이 있어 늘 받는다(2026-11-12 사용자)
     const ev = cmpListBase.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpElevs.value));
@@ -6045,7 +6076,7 @@ watch(() => `${cmpSnapOn.value}|${cmpQueried.value}|${cmpElevR.value}|${cmpRange
     await loadBuildingFacts(ev, cmpAddr, 6, () => run === cmpRun, (c, f) => { cmpElevs.value = { ...cmpElevs.value, [cmpKeyOf(c)]: f ? f.elevator : null }; });
   }
   const todo = cmpList.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpNearby.value));
-  await cmpPool(todo, 6, run, async (c) => { const nb = await complexNearbyOf(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpNearby.value = { ...cmpNearby.value, [cmpKeyOf(c)]: nb }; });
+  await cmpPool(todo, 8, run, async (c) => { const nb = await complexNearbyOf(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpNearby.value = { ...cmpNearby.value, [cmpKeyOf(c)]: nb }; });
   // 공급면적 — 단지 문서에 있으면 바로, 없으면 건축물대장을 받아 단지 문서에 둔다(한 곳씩 — 큰 단지는 여러 쪽)
   const sup = isApartment.value ? cmpList.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpSupply.value)) : [];   // 빌라는 공급면적을 쓰지 않는다
   await cmpPool(sup, 1, run, async (c) => {
@@ -6054,7 +6085,7 @@ watch(() => `${cmpSnapOn.value}|${cmpQueried.value}|${cmpElevR.value}|${cmpRange
     if (run === cmpRun) cmpSupply.value = { ...cmpSupply.value, [cmpKeyOf(c)]: v };
   });
 });
-watch(() => auction.value?.id, () => { cmpWarm = false; cmpFitted = ''; cmpElevs.value = {}; cmpNearby.value = {}; cmpPoints.value = {}; cmpSupply.value = {}; cmpPick.value = ''; cmpLastCandidates = []; cmpDongLast = []; });
+watch(() => auction.value?.id, () => { cmpFitted = ''; cmpElevs.value = {}; cmpNearby.value = {}; cmpPoints.value = {}; cmpSupply.value = {}; cmpPick.value = ''; cmpLastCandidates = []; cmpDongLast = []; });
 // 지도 — 시세분석 지도와 같은 점(웹 pa-pin). 평소엔 점만, 고른 단지는 크게 + 이름표 · 도보 5분 / 10분 원 · 조건별 가장 가까운 시설
 const cmpMapEl = ref<HTMLElement | null>(null);
 let cmpMv: MapView | null = null; let cmpMvP: Promise<void> | null = null; let cmpFitted = '';
@@ -6208,6 +6239,7 @@ const cmpFetched = computed(() => {
   if (cmpSnapOn.value || !cmpQueried.value || !supLoaded.value || !supRegion.value || !nearbyEnv.value) return false;
   if (!supAllRows.value.length || (cmpMonths.value === 24 && !cmpRows2y.value?.length)) return false;   // 실거래를 못 받았으면 저장하지 않는다
   if (cmpMonths.value === 24 && !cmpRows2y.value) return false;
+  if (cmpRange.value !== 'dong' && !cmpDongReady.value) return false;   // 동 중심을 다 받아야 후보가 다 나온다
   if (cmpRange.value !== 'dong' && cmpCandidates.value.some((c) => !c.mine && !(cmpKeyOf(c) in cmpPoints.value) && !(cmpKeyOf(c) in cmpNearby.value))) return false;
   if ((cmpElevR.value || !isApartment.value) && cmpListBase.value.some((c) => !c.mine && !(cmpKeyOf(c) in cmpElevs.value))) return false;
   const list = cmpList.value;
@@ -6247,7 +6279,7 @@ const cmpElevNum = (c: { mine: boolean; umdNm: string; jibun: string }): number 
   if (sr) return sr.elev ?? null;
   return cmpElevs.value[cmpKeyOf(c)] ?? null;
 };
-const cmpElevTx = (c: { mine: boolean; umdNm: string; jibun: string }) => { const n = cmpElevNum(c); return n == null ? '-' : n > 0 ? '있음' : '없음'; };
+const cmpElevTx = (c: { mine: boolean; umdNm: string; jibun: string }) => { const n = cmpElevNum(c); return n == null ? '모름' : n > 0 ? '있음' : '없음'; };   // 대장에 없으면 '모름'(리스트엔 남긴다, 2026-11-12 사용자)
 const cmpSnapBuild = (): DemandSnap => {
   const conds = Object.keys(LOCATION_SOURCES);
   const sq = (v: string) => String(v ?? '').replace(/\s+/g, '');
@@ -9839,7 +9871,8 @@ const goBack = () => router.back();
                 <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">필터 기준 검색</span></span>
               </div>
               <div class="cmp-est">
-                <div class="cmp-tiles">
+                <!-- 내비게이터(위 여섯 칸) — 빌라는 뺐다: 동 전체로 계산해 리스트와 숫자가 달랐다(2026-11-12 사용자). 아파트는 그대로 -->
+                <div v-if="isApartment" class="cmp-tiles">
                   <!-- 단지를 고르기 전엔 동 전체(평균 · 최저 · 최고 · 평당가 · 단지 수 · 건수), 고르면 그 단지(평균 · 최저 · 최고 · 평당가 · 면적 · 건수). 칸 자리는 그대로 — 흔들리지 않게 -->
                   <template v-if="cmpPick">
                   <!-- 단지를 고르면 그 단지 '같은 평형(전용면적이 같은 거래)'만의 평균 — 단지 전체로 읽히지 않게 면적을 적는다(2026-11-11 사용자) -->
@@ -9931,7 +9964,7 @@ const goBack = () => router.back();
                         <td class="n"><button type="button" class="cmp-sc" :aria-label="`${r.name || r.jibun} 입지 점수 계산 보기`" @click.stop="cmpPopOpen('loc', r, $event)">{{ cmpScore(r.loc) }}</button></td>
                         <td class="n"><span v-if="cmpRankOf.get(cmpKeyOf(r))" :class="['cmp-rk', { r1: cmpRankOf.get(cmpKeyOf(r)) === 1 }]">{{ cmpRankOf.get(cmpKeyOf(r)) }}</span><template v-else>-</template></td>
                         <!-- 연식은 시세 묶음 앞(순위 묶음 · 시세 묶음으로 나눈다, 2026-11-11) -->
-                        <td class="n">{{ r.buildYear ? `${r.buildYear}년` : '-' }}<small v-if="r.buildYear" class="sup-tbl-sub">{{ new Date().getFullYear() - r.buildYear + 1 }}년차</small></td>
+                        <td class="n">{{ r.buildYear ? `${r.buildYear}년` : '모름' }}<small v-if="r.buildYear" class="sup-tbl-sub">{{ new Date().getFullYear() - r.buildYear + 1 }}년차</small></td>
                         <!-- 엘베 — 빌라만, 연식 옆(2026-11-12 사용자) -->
                         <td v-if="!isApartment" class="n">{{ cmpElevTx(r) }}</td>
                         <!-- 고른 거래 쪽 평균을 굵게. 중간값은 고른 거래(매매 · 전세)의 가운데 값 -->
