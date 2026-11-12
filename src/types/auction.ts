@@ -878,6 +878,8 @@ export type DemandSnapRow = {
   places: Record<string, DemandSnapPlace | null>;
   /** 기간 안 그 건물 · 단지의 같은 거래(매매 · 전세) 전부 — 근거 줄 '다른 평형 n건' */
   basisAll: number;
+  /** 엘베 대수(건축물대장) — 0 없음, null 모름. 빌라 표 엘베 칸(2026-11-12 사용자), 예전 저장본엔 없다 */
+  elev?: number | null;
 };
 export type DemandSnap = {
   v: 1;

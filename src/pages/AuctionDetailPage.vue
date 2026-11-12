@@ -6037,7 +6037,7 @@ watch(() => `${cmpSnapOn.value}|${cmpQueried.value}|${cmpElevR.value}|${cmpRange
     const need = cmpCandidates.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpPoints.value) && !(cmpKeyOf(c) in cmpNearby.value));
     await cmpPool(need, 4, run, async (c) => { const p = await complexPointOf(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpPoints.value = { ...cmpPoints.value, [cmpKeyOf(c)]: p }; });
   }
-  if (cmpElevR.value) {
+  if (cmpElevR.value || !isApartment.value) {   // 빌라는 표에 엘베 칸이 있어 늘 받는다(2026-11-12 사용자)
     const ev = cmpListBase.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpElevs.value));
     await cmpPool(ev, 3, run, async (c) => { const f = await getBuildingFacts(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpElevs.value = { ...cmpElevs.value, [cmpKeyOf(c)]: f ? f.elevator : null }; });
   }
@@ -6196,7 +6196,7 @@ const cmpFetched = computed(() => {
   if (!supAllRows.value.length || (cmpMonths.value === 24 && !cmpRows2y.value?.length)) return false;   // 실거래를 못 받았으면 저장하지 않는다
   if (cmpMonths.value === 24 && !cmpRows2y.value) return false;
   if (cmpRange.value !== 'dong' && cmpCandidates.value.some((c) => !c.mine && !(cmpKeyOf(c) in cmpPoints.value) && !(cmpKeyOf(c) in cmpNearby.value))) return false;
-  if (cmpElevR.value && cmpListBase.value.some((c) => !c.mine && !(cmpKeyOf(c) in cmpElevs.value))) return false;
+  if ((cmpElevR.value || !isApartment.value) && cmpListBase.value.some((c) => !c.mine && !(cmpKeyOf(c) in cmpElevs.value))) return false;
   const list = cmpList.value;
   if (list.some((c) => !c.mine && !(cmpKeyOf(c) in cmpNearby.value))) return false;
   if (isApartment.value && list.some((c) => !c.mine && !(cmpKeyOf(c) in cmpSupply.value))) return false;
@@ -6206,6 +6206,14 @@ const cmpFetched = computed(() => {
 const cmpLiveReady = computed(() => cmpFetched.value && cmpList.value.some((c) => !c.mine));   // 비교 건물이 없으면 저장하지 않는다(다음에 열 때 다시 계산)
 /** 조회 중 — 조회하기를 눌렀고 아직 다 받지 못했다(단추에 '조회 중…') */
 const cmpLoading = computed(() => cmpQueried.value && !cmpSnapOn.value && !cmpFetched.value);
+/** 엘베 대수 — 선정물건은 개별성 엘베(O · X), 다른 건물은 저장본 → 건축물대장. 0 없음 · null 모름 */
+const cmpElevNum = (c: { mine: boolean; umdNm: string; jibun: string }): number | null => {
+  if (c.mine) { const v = indivValue('ind.elevator'); return v === 'O' ? 1 : v === 'X' ? 0 : null; }
+  const sr = cmpSnapRows.value.get(cmpKeyOf(c));
+  if (sr) return sr.elev ?? null;
+  return cmpElevs.value[cmpKeyOf(c)] ?? null;
+};
+const cmpElevTx = (c: { mine: boolean; umdNm: string; jibun: string }) => { const n = cmpElevNum(c); return n == null ? '-' : n > 0 ? '있음' : '없음'; };
 const cmpSnapBuild = (): DemandSnap => {
   const conds = Object.keys(LOCATION_SOURCES);
   const sq = (v: string) => String(v ?? '').replace(/\s+/g, '');
@@ -6220,7 +6228,7 @@ const cmpSnapBuild = (): DemandSnap => {
     return {
       jibun: c.jibun, name: (c.mine ? supName.value : '') || c.name, umdNm: c.umdNm, area: c.area, jeonseAvg: c.jeonseAvg, saleAvg: c.saleAvg, mine: c.mine, buildYear: row?.buildYear ?? c.buildYear,
       deals: c.deals.map((d) => ({ kind: d.kind, price: d.price, contractDate: d.contractDate, areaM2: d.areaM2, floor: String(d.floor ?? '') })),
-      point: row?.point ?? null, supply: row?.supply ?? null, env: !!env, places, basisAll,
+      point: row?.point ?? null, supply: row?.supply ?? null, env: !!env, places, basisAll, elev: cmpElevNum(c),
     };
   });
   return JSON.parse(JSON.stringify({ v: 1, at: new Date().toISOString(), filter: { range: cmpRange.value, months: cmpMonths.value, kind: cmpKind.value, area: cmpAreaR.value, year: cmpYearR.value, floor: cmpFloorR.value, elev: cmpElevR.value, mode: cmpModeR.value, sim: cmpSimR.value }, tol: cmpTol.value, rows, all: cmpAll.value })) as DemandSnap;
@@ -6233,9 +6241,9 @@ const cmpSave = () => {
   const old = a.demandSnap?.v === 1 ? a.demandSnap : null;
   if (!old) { void cmpSaveNow(); return; }
   confirmBox.value = {
-    title: '기존 저장 데이터가 지워집니다',
-    desc: `${String(old.at).slice(0, 10)}에 저장한 리스트(${cmpN.value} ${old.rows.length}곳)는 지워지고, 지금 조회한 리스트로 새로 저장됩니다. 지운 데이터는 되돌릴 수 없습니다.`,
-    okLabel: '지우고 저장', skipKey: '', tone: 'danger', icon: 'warn', run: cmpSaveNow,
+    title: '기존 저장 데이터에 덮어씌우기 됩니다',
+    desc: '지금 조회한 정보로 새로 저장됩니다. 덮어씌워진 데이터는 되돌릴 수 없습니다.',
+    okLabel: '확인', skipKey: '', tone: 'calm', run: cmpSaveNow,
   };
 };
 const cmpSaveNow = async () => {
@@ -6248,7 +6256,7 @@ const cmpSaveNow = async () => {
     flashToast('매매수요 리스트를 저장했습니다.', 'success');
   } catch { flashToast('저장하지 못했습니다. 잠시 뒤 다시 눌러 주세요.', 'error'); } finally { cmpSaving.value = false; }
 };
-/** 저장한 날 — 검색기준 줄 끝에 '2026-11-12 저장' */
+/** 저장한 날 — 필터 '저장됨' 단추 밑에 '2026-11-12'(예전엔 검색기준 줄 끝, 2026-11-12 사용자) */
 const cmpSnapDay = computed(() => (cmpSnapOn.value ? String(cmpSnap.value!.at).slice(0, 10) : ''));
 /** 표 · 목록의 시설 이름 — 옆 칸이 이미 '학원가'라 '학원가 · 학원 12곳' 은 '학원 12곳' 으로만(2026-11-11) */
 const cmpPlaceName = (name: string) => name.replace(/^학원가\s*·\s*/, '');
@@ -9794,10 +9802,10 @@ const goBack = () => router.back();
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
             <section v-if="webEmbed && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
               <div class="cmp-est-h"><h3><span class="cmp-no">②</span>{{ cmpN }} 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}<template v-if="cmpPick && cmpPicked"> · {{ cmpPicked.name || cmpPicked.jibun }}</template></span><span class="cmp-q">{{ isApartment ? '내가 선정한 아파트 단지는 몇 등일까?' : '내가 선정한 빌라는 주변 유사 빌라 중 몇 등일까?' }}</span></h3>
-                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">검색기준 · {{ cmpRangeText }} · 최근 {{ cmpPeriodText }} · {{ cmpCondText }} {{ cmpKind }} 실거래</span> · {{ cmpN }} {{ cmpRows.length }}곳 전체<template v-if="cmpSnapDay"> · {{ cmpSnapDay }} 저장</template></span>
+                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">검색기준 · {{ cmpRangeText }} · 최근 {{ cmpPeriodText }} · {{ cmpCondText }} {{ cmpKind }} 실거래</span> · {{ cmpN }} {{ cmpRows.length }}곳 전체</span>
               </div>
               <!-- 검색 거르기 — 부품 하나(components/SearchFilterBar, '필터 기본 부품 세트' 2026-11-12). 다른 화면은 이 부품을 그대로 끼우고 hide 로 뺄 항목만 끈다 -->
-              <SearchFilterBar v-model:draft="cmpDraft" :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :dirty="cmpDirty" :waiting="cmpWaiting" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :loading="cmpLoading" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
+              <SearchFilterBar v-model:draft="cmpDraft" :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :dirty="cmpDirty" :waiting="cmpWaiting" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :loading="cmpLoading" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" :saved-day="cmpSnapDay" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
               <div class="cmp-est">
                 <div class="cmp-tiles">
                   <!-- 단지를 고르기 전엔 동 전체(평균 · 평당가 · 건수 · 단지 수), 고르면 그 단지(중간값 · 최저 · 최고 · 면적까지). 칸 자리는 그대로 — 흔들리지 않게 -->
@@ -9883,7 +9891,7 @@ const goBack = () => router.back();
                     <colgroup><col style="width: 200px" /></colgroup>
                     <thead><tr>
                       <th>{{ cmpN }} 리스트<small>{{ isApartment ? '(공급(전용))' : '(전용 ㎡/평)' }}</small></th>
-                      <th :aria-sort="cmpSortAria('tot')" @click="cmpSortBy('tot')">입지점수<i :class="['sdir', { on: cmpSortK === 'tot' }]" aria-hidden="true">{{ cmpSortK === 'tot' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>100점 · 거리</small></th><th>순위<small>입지</small></th><th :aria-sort="cmpSortAria('year')" @click="cmpSortBy('year')">연식<i :class="['sdir', { on: cmpSortK === 'year' }]" aria-hidden="true">{{ cmpSortK === 'year' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(건축년도)</small></th><th :aria-sort="cmpSortAria('sale')" @click="cmpSortBy('sale')">평균 매매가<i :class="['sdir', { on: cmpSortK === 'sale' }]" aria-hidden="true">{{ cmpSortK === 'sale' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th :aria-sort="cmpSortAria('jeonse')" @click="cmpSortBy('jeonse')">평균 전세가<i :class="['sdir', { on: cmpSortK === 'jeonse' }]" aria-hidden="true">{{ cmpSortK === 'jeonse' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th>전용 평당가<small>({{ cmpKind }})</small></th><th>전세가율<small>전세 ÷ 매매</small></th>
+                      <th :aria-sort="cmpSortAria('tot')" @click="cmpSortBy('tot')">입지점수<i :class="['sdir', { on: cmpSortK === 'tot' }]" aria-hidden="true">{{ cmpSortK === 'tot' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>100점 · 거리</small></th><th>순위<small>입지</small></th><th :aria-sort="cmpSortAria('year')" @click="cmpSortBy('year')">연식<i :class="['sdir', { on: cmpSortK === 'year' }]" aria-hidden="true">{{ cmpSortK === 'year' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(건축년도)</small></th><th v-if="!isApartment">엘베<small>(건축물대장)</small></th><th :aria-sort="cmpSortAria('sale')" @click="cmpSortBy('sale')">평균 매매가<i :class="['sdir', { on: cmpSortK === 'sale' }]" aria-hidden="true">{{ cmpSortK === 'sale' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th :aria-sort="cmpSortAria('jeonse')" @click="cmpSortBy('jeonse')">평균 전세가<i :class="['sdir', { on: cmpSortK === 'jeonse' }]" aria-hidden="true">{{ cmpSortK === 'jeonse' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th>전용 평당가<small>({{ cmpKind }})</small></th><th>전세가율<small>전세 ÷ 매매</small></th>
                     </tr></thead>
                     <tbody>
                       <tr v-for="r in cmpRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine, on: cmpIsOn(r) }]" tabindex="0" @click="cmpToggle(cmpKeyOf(r))" @keydown.enter="cmpToggle(cmpKeyOf(r))">
@@ -9893,6 +9901,8 @@ const goBack = () => router.back();
                         <td class="n"><span v-if="cmpRankOf.get(cmpKeyOf(r))" :class="['cmp-rk', { r1: cmpRankOf.get(cmpKeyOf(r)) === 1 }]">{{ cmpRankOf.get(cmpKeyOf(r)) }}</span><template v-else>-</template></td>
                         <!-- 연식은 시세 묶음 앞(순위 묶음 · 시세 묶음으로 나눈다, 2026-11-11) -->
                         <td class="n">{{ r.buildYear ? `${r.buildYear}년` : '-' }}<small v-if="r.buildYear" class="sup-tbl-sub">{{ new Date().getFullYear() - r.buildYear + 1 }}년차</small></td>
+                        <!-- 엘베 — 빌라만, 연식 옆(2026-11-12 사용자) -->
+                        <td v-if="!isApartment" class="n">{{ cmpElevTx(r) }}</td>
                         <!-- 고른 거래 쪽 평균을 굵게. 중간값은 고른 거래(매매 · 전세)의 가운데 값 -->
                         <td class="n amt"><b v-if="cmpKind === '매매'">{{ cmpMoney(r.saleAvg) }}</b><template v-else>{{ cmpMoney(r.saleAvg) }}</template></td>
                         <td class="n amt"><b v-if="cmpKind === '전세'">{{ cmpMoney(r.jeonseAvg) }}</b><template v-else>{{ cmpMoney(r.jeonseAvg) }}</template></td>
@@ -9900,7 +9910,7 @@ const goBack = () => router.back();
                         <td class="n">{{ cmpPerPy(r) > 0 ? `${Math.round(cmpPerPy(r) / 1e4).toLocaleString('ko-KR')}만` : '-' }}</td>
                         <td class="n">{{ cmpJeonseRate(r) > 0 ? `${Math.round(cmpJeonseRate(r))}%` : '-' }}</td>
                       </tr>
-                      <tr v-if="!cmpRows.length"><td :colspan="8" class="cmp-dim">{{ supLoaded ? `범위 안에 견줄 ${cmpN} 거래가 없습니다.` : '실거래를 받는 중입니다…' }}</td></tr>
+                      <tr v-if="!cmpRows.length"><td :colspan="isApartment ? 8 : 9" class="cmp-dim">{{ supLoaded ? `범위 안에 견줄 ${cmpN} 거래가 없습니다.` : '실거래를 받는 중입니다…' }}</td></tr>
                     </tbody>
                   </table>
                 </div>

@@ -40,6 +40,8 @@ const props = defineProps<{
   saving: boolean;
   /** 저장본과 같다 — '저장됨' */
   saved: boolean;
+  /** 저장한 날 — '저장됨' 밑에 작게(2026-11-12 사용자 '같은 세트') */
+  savedDay?: string;
   /** 뺄 항목 — '반경만 빼' 같은 요청 */
   hide?: SearchFilterKey[];
 }>();
@@ -90,7 +92,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
     <span class="cmp-qbtns">
         <button type="button" class="cmp-reset" :disabled="isDefault" title="필터를 기본값(반경 500m · 매매 · 3개월 · 엘베 · 층 전체 · 유사도 80%)으로 — 조회하기를 눌러야 적용" @click="emit('reset')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button>
           <button type="button" :class="['cmp-go', { dirty: dirty || waiting, busy: loading }]" :aria-busy="loading" @click="emit('apply')"><template v-if="loading">조회 중<span class="dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></template><template v-else>조회하기</template></button>
-        <button type="button" :class="['cmp-save', { ready: canSave }]" :disabled="!canSave || saving" :title="saved ? '저장된 리스트입니다' : dirty ? '조회하기를 누른 뒤 저장할 수 있습니다' : canSave ? '지금 리스트를 저장합니다' : '조회하기로 불러온 뒤 저장할 수 있습니다'" @click="emit('save')">{{ saved ? '저장됨' : '저장하기' }}</button>
+        <button type="button" :class="['cmp-save', { ready: canSave }]" :disabled="!canSave || saving" :title="saved ? '저장된 리스트입니다' : dirty ? '조회하기를 누른 뒤 저장할 수 있습니다' : canSave ? '지금 리스트를 저장합니다' : '조회하기로 불러온 뒤 저장할 수 있습니다'" @click="emit('save')"><template v-if="saved">저장됨<small v-if="savedDay" class="cmp-save-day">{{ savedDay }}</small></template><template v-else>저장하기</template></button>
       </span>
     </div>
   </div>
@@ -140,9 +142,28 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-go.dirty { background: #2b6df3; color: #fff; }
 .cmp-save { height: 42px; min-width: 96px; padding: 0 18px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #9ca3af; font: inherit; font-size: 14px; font-weight: 700; cursor: default; }   /* 저장하기 — 조회 결과가 다 오면 초록으로 */
 .cmp-save.ready { border-color: #16a34a; background: #16a34a; color: #fff; cursor: pointer; }
+.cmp-save { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; }
+.cmp-save-day { font-size: 12px; font-weight: 500; opacity: .85; }   /* 저장됨 밑 저장한 날 */
 :root[data-theme="dark"] .cmp-save:not(.ready) { background: transparent; border-color: #34405a; color: #6e788c; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-save:not(.ready) { background: transparent; border-color: #34405a; color: #6e788c; } }
-.cmp-go:hover { filter: brightness(.97); }
+/* 마우스 올림 — 모든 단추가 반응한다(2026-11-12 사용자). 폭 · 높이는 그대로, 바탕 · 테두리 색만 */
+.cmp-conds .pa-seg button { transition: background-color .12s, color .12s; }
+.cmp-conds .pa-seg.pa-out button:not(.on):hover { background: #e6eaf1; color: #374151; }
+.cmp-conds .kindF button:not(.on)[data-k="매매"]:hover { background: #dfe6fb; }
+.cmp-conds .kindF button:not(.on)[data-k="전세"]:hover { background: #f9e7c6; }
+.cmp-conds .kindF button.on:hover { filter: brightness(1.08); }
+.cmp-reset:not(:disabled):hover { background: #f3f5f9; border-color: #b8c2d3; color: #1f2937; }
+.cmp-go:not(.dirty):not(.busy):hover { background: #eef3fe; }
+.cmp-go.dirty:hover { background: #1f5ad6; border-color: #1f5ad6; }
+.cmp-save.ready:not(:disabled):hover { background: #15803d; border-color: #15803d; }
+:root[data-theme="dark"] .cmp-conds .pa-seg.pa-out button:not(.on):hover { background: #2a3449; color: #e5e9f0; }
+:root[data-theme="dark"] .cmp-reset:not(:disabled):hover { background: #232c3f; border-color: #4a5672; color: #e5e9f0; }
+:root[data-theme="dark"] .cmp-go:not(.dirty):not(.busy):hover { background: rgba(91, 140, 255, .14); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .cmp-conds .pa-seg.pa-out button:not(.on):hover { background: #2a3449; color: #e5e9f0; }
+  :root:not([data-theme="light"]) .cmp-reset:not(:disabled):hover { background: #232c3f; border-color: #4a5672; color: #e5e9f0; }
+  :root:not([data-theme="light"]) .cmp-go:not(.dirty):not(.busy):hover { background: rgba(91, 140, 255, .14); }
+}
 :root[data-theme="dark"] .cmp-go:not(.dirty) { background: transparent; color: #8fb0ff; border-color: #5b8cff; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-go:not(.dirty) { background: transparent; color: #8fb0ff; border-color: #5b8cff; } }
 .cmp-conds .pa-lab { display: inline-flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 4px 12px; font-size: 14px; font-weight: 700; color: #6b7280; white-space: nowrap; }

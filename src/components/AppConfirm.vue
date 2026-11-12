@@ -62,4 +62,7 @@ const onOk = async () => {
 .acf-btns .ok { border: none; background: #d14343; color: #fff; }
 /* 되돌릴 수 있는 일은 빨갛게 묻지 않는다 */
 .acf-btns .ok.calm { background: #2b6df3; }
+.acf-btns .cancel:hover { background: #f3f5f9; border-color: #b8c2d3; color: #1f2937; }   /* 마우스 올림(2026-11-12 사용자) */
+.acf-btns .ok:hover { background: #b83232; }
+.acf-btns .ok.calm:hover { background: #1f5ad6; }
 </style>
