@@ -4211,7 +4211,9 @@ const lowAddrTyped = (index: number) => !!mktVal(lowKey(index, 'addr')).trim();
 const subjectBuildingName = computed(() => subjectBuildingLabel.value.trim());
 /** 인근 매각사례 — 값이 하나라도 있는 줄만(빈 줄만 있으면 '데이터 없음') */
 const nearBidRowsFilled = computed(() => nearBidRows.value.filter((r) => [r.saleInfo, r.appraisal, r.minimum, r.winning, r.rate, r.expectedWinning].some((v) => String(v ?? '').trim())));
-const LOW_GROUPS = [{ sim: false, label: '경매빌라 호가매물' }, { sim: true, label: '유사빌라 호가매물' }];
+/** 호가매물 두 묶음 — 아파트면 '경매아파트 · 유사아파트', 빌라면 '경매빌라 · 유사빌라'(2026-11-12 사용자) */
+const lowKindWord = computed(() => (isApartment.value ? '아파트' : '빌라'));
+const LOW_GROUPS = computed(() => [{ sim: false, label: `경매${lowKindWord.value} 호가매물` }, { sim: true, label: `유사${lowKindWord.value} 호가매물` }]);
 const lowKeyG = (sim: boolean, index: number, field: string) => `mkt.c.${sim ? 'sim.' : ''}${index === 0 ? field : `${field}${index}`}`;
 const lowCountKey = (sim: boolean) => (sim ? 'mkt.c.sim.rowCount' : 'mkt.c.rowCount');
 const lowRowCountG = (sim: boolean) => {
@@ -10314,7 +10316,7 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell">
                     <small>주소</small>
-                    <input v-if="editingSurvey.listing" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'addr'))" :placeholder="lowAddrAuto ? (subjectHasDong ? '동 · 층 · 호' : '층 · 호') : '빌라명 · 층 · 호'" @input="setMktVal(lowKey(i - 1, 'addr'), ($event.target as HTMLInputElement).value)" />
+                    <input v-if="editingSurvey.listing" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'addr'))" :placeholder="lowAddrAuto ? (subjectHasDong ? '동 · 층 · 호' : '층 · 호') : `${lowKindWord}명 · 층 · 호`" @input="setMktVal(lowKey(i - 1, 'addr'), ($event.target as HTMLInputElement).value)" />
                     <strong v-else :class="['adp-mkt-area1', 'adp-mkt-addr2', { typed: lowAddrTyped(i - 1) }]">{{ lowAddrText(i - 1) }}</strong>
                   </div>
                   <div class="cell">
@@ -10369,7 +10371,7 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell">
                     <small>주소</small>
-                    <span v-if="editingSurvey.listing" class="son-addr-field"><em v-if="!g.sim && subjectBuildingName && !webEmbed" class="son-addr-head" :title="subjectBuildingName">{{ subjectBuildingName }}</em><input class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'addr'))" :placeholder="webEmbed ? '빌라명 1동 1층 101호' : !g.sim ? (subjectHasDong ? '동층호 입력' : '층호 입력') : '빌라명 · 층 · 호 입력'" @input="setMktVal(lowKeyG(g.sim, i - 1, 'addr'), ($event.target as HTMLInputElement).value)" /></span>
+                    <span v-if="editingSurvey.listing" class="son-addr-field"><em v-if="!g.sim && subjectBuildingName && !webEmbed" class="son-addr-head" :title="subjectBuildingName">{{ subjectBuildingName }}</em><input class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'addr'))" :placeholder="webEmbed ? `${lowKindWord}명 1동 1층 101호` : !g.sim ? (subjectHasDong ? '동층호 입력' : '층호 입력') : `${lowKindWord}명 · 층 · 호 입력`" @input="setMktVal(lowKeyG(g.sim, i - 1, 'addr'), ($event.target as HTMLInputElement).value)" /></span>
                     <strong v-else :class="['adp-mkt-area1', 'adp-mkt-addr2', { typed: lowAddrTypedG(g.sim, i - 1) }]">{{ lowAddrTextG(g.sim, i - 1) }}</strong>
                     <span class="son-row-links">
                       <button type="button" class="son-map-go planet" aria-label="부동산플래닛" title="부동산플래닛에서 이 줄 주소 보기 — 동 · 지번을 복사해 둡니다" @click.stop="openAskMap(g.sim, 'planet', i - 1)">P</button>

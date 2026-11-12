@@ -533,7 +533,9 @@ const askOf = (sim: boolean): AskPick | null => {
 // 예전에는 이 브라우저(localStorage)에만 적었다 — 계정에 없는 주소면 그 값을 읽어 한 번 옮겨 담는다
 type AskLocalRow = { ask: string; area: string; addr: string; note: string };
 type AskGroupKey = 'case' | 'sim';
-const ASK_GROUPS: { key: AskGroupKey; label: string }[] = [{ key: 'case', label: '경매빌라 호가매물' }, { key: 'sim', label: '유사빌라 호가매물' }];
+/** 호가매물 두 묶음 — 고른 종류(빌라 · 아파트 · 오피스텔)를 따라 이름이 바뀐다(2026-11-12 사용자) */
+const askKindWord = computed(() => (kind.value === 'apt' ? '아파트' : kind.value === 'officetel' ? '오피스텔' : '빌라'));
+const ASK_GROUPS = computed<{ key: AskGroupKey; label: string }[]>(() => [{ key: 'case', label: `경매${askKindWord.value} 호가매물` }, { key: 'sim', label: `유사${askKindWord.value} 호가매물` }]);
 const blankAsk = (): AskLocalRow => ({ ask: '', area: '', addr: '', note: '' });
 const localAsk = ref<Record<AskGroupKey, AskLocalRow[]>>({ case: [blankAsk()], sim: [blankAsk()] });
 const askLocalKey = () => `caseTrade.ask.${kind.value}.${lastRunAddress.value.replace(/\s+/g, '')}`;
@@ -1594,7 +1596,7 @@ const downloadCsv = () => {
                 <span class="al-cell"><FormattedNumberInput v-model="r.ask" mode="string" class="al-in" align="center" placeholder="호가 입력" /></span>
                 <span :class="['al-cell', 'al-auto', { 'al-none': !askUnitOf(g.key, r) }]">{{ askUnitOf(g.key, r) ? askUnitOf(g.key, r).toLocaleString('ko-KR') : '자동 입력' }}</span>
                 <span class="al-cell al-area"><input v-model="r.area" :class="['al-in', { need: !!r.ask && !askAreaOf(g.key, r), 'al-base': g.key === 'case' && baseArea > 0 }]" inputmode="decimal" :placeholder="g.key === 'case' && baseArea > 0 ? String(baseArea) : '면적 입력'" /><em>㎡</em></span>
-                <span class="al-cell al-addr"><input v-model="r.addr" class="al-in" :placeholder="g.key === 'case' ? '동층호 입력' : '빌라명 · 층 · 호 입력'" /><span class="al-links"><button type="button" class="adm-copy map-go planet" aria-label="부동산플래닛" @click="openAskLocal(g.key, r, 'planet')">P</button><button type="button" class="adm-copy map-go naver" aria-label="네이버 부동산" @click="openAskLocal(g.key, r, 'naver')">N</button></span></span>
+                <span class="al-cell al-addr"><input v-model="r.addr" class="al-in" :placeholder="g.key === 'case' ? '동층호 입력' : `${askKindWord}명 · 층 · 호 입력`" /><span class="al-links"><button type="button" class="adm-copy map-go planet" aria-label="부동산플래닛" @click="openAskLocal(g.key, r, 'planet')">P</button><button type="button" class="adm-copy map-go naver" aria-label="네이버 부동산" @click="openAskLocal(g.key, r, 'naver')">N</button></span></span>
               </div>
               <div class="al-row al-wide"><input v-model="r.note" class="al-in" placeholder="비고 입력" /></div>
             </div>
