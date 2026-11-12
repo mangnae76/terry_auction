@@ -722,54 +722,71 @@ const askSlotRef = (el: unknown) => { if (sonAskReady) sonAskReady.value = !!el;
 const tableEl = ref<HTMLTableElement | null>(null);
 /* 웹 — 칸 폭은 창 폭 · 거래 종류 · 새 조회 때만 다시 잰다. 유사도 ↔ 직접범위 · 반경 · 제외처럼 줄만 바뀔 때마다 재면 칸이 좌우로 '딸깍' 움직였다 */
 let colsKey = '';
-/** 칸마다 지금까지 잰 가장 넓은 폭 — 같은 조회 안에서는 줄어들지 않는다 */
-let colsMax: number[] = [];
 const evenCols = () => {
   const t = tableEl.value;
   if (!t || !t.parentElement?.clientWidth) return;
   if (webEmbed) {
-    // 웹 — 칸마다 내용 폭을 잰 뒤 남는 폭을 모든 칸에 똑같이 더한다(칸 사이 간격이 고르게, 2026-11-11 사용자).
-    // 다시 재는 때는 상자 폭 · 거래 종류 · 새 조회 때만 — 조건을 바꿔 줄만 바뀔 때마다 재면 칸이 좌우로 '딸깍' 움직였다
+    // 웹 — 칸 폭은 지금 줄의 값이 아니라 칸마다 정해 둔 '가장 긴 글'(머리말 · 값)로 잰다 → 거래 종류(매매 · 전세 · 월세)와 창 폭이 같으면 줄이 바뀌어도 칸이 한 픽셀도 안 움직인다(2026-11-12 사용자 '표 흔들리지 않게 내용과 말머리 정확하게').
+    // 남는 폭은 모든 칸에 똑같이 더하고, 모자라면 칸 안 여백을 줄인 뒤 주소 칸만 줄인다(… 으로 잘리고 말풍선으로 전체)
     const cw = t.parentElement.clientWidth;
-    // 상자 폭 · 거래 종류 · 새 조회가 같으면 칸은 넓어지기만 한다 — 줄이 바뀌어 더 긴 값(1,020,000,000)이 들어와도 옆 칸과 겹치지 않고, 줄어들며 '딸깍' 움직이지도 않게
-    const key = `even|${cw}|${kindF.value}|${fetchedAt.value}`;
-    // 같은 조회 · 같은 폭이고 칸 폭이 이미 잡혀 있으면, 넘치는 칸(주소 빼고)이 없는 한 다시 재지 않는다 — 유사도 막대 · 층 등으로 줄만 바뀔 때마다 재며 칸이 좌우로 꿈틀했다(2026-11-12 사용자)
-    if (colsKey === key && t.querySelector('colgroup')) {
-      const over = [...t.querySelectorAll('thead th, tbody td')].some((c) => !(c as HTMLElement).classList.contains('l') && (c as HTMLElement).scrollWidth > (c as HTMLElement).clientWidth + 1);
-      if (!over) return;
-    }
-    if (colsKey !== key) { colsKey = key; colsMax = []; }
+    const key = `even|${cw}|${kindF.value}|${isAptKind}`;
+    if (colsKey === key && t.querySelector('colgroup')) return;
+    colsKey = key;
     t.querySelector('colgroup')?.remove();
-    t.style.tableLayout = 'auto';
-    t.classList.remove('tight');
     const ths = [...t.querySelectorAll('thead th')] as HTMLElement[];
-    const measureW = () => { t.classList.add('measure'); const w = ths.map((th) => th.getBoundingClientRect().width); t.classList.remove('measure'); return w; };
-    let nat = measureW().map((w, i) => Math.max(w, colsMax[i] ?? 0));
-    colsMax = nat;
+    const ctx = document.createElement('canvas').getContext('2d');
+    const cs = (el: Element | null) => (el ? getComputedStyle(el) : null);
+    const thCs = cs(ths.find((th) => th.dataset.k) ?? ths[0]); const tdCs = cs(t.querySelector('tbody td:not(.ck-td)'));
+    const fontOf = (c: CSSStyleDeclaration | null, weight?: string, size?: string) => (c ? `${weight ?? c.fontWeight} ${size ?? c.fontSize} ${c.fontFamily}` : '13px sans-serif');
+    const tw = (txt: string, font: string) => { if (!ctx) return txt.length * 8; ctx.font = font; return ctx.measureText(txt).width; };
+    const k = kindF.value;
+    // 칸마다 들어갈 수 있는 가장 긴 값(숫자는 자릿수가 가장 많은 꼴) — 바뀌면 여기만
+    const SAMPLE: Record<string, string[]> = {
+      date: ['2026.12.31', `${k} 예상`],
+      won: k === '월세' ? ['10,000,000', '9,999,999,999'] : ['9,999,999,999'],
+      perPy: ['99,999,999'],
+      pub: ['9,999,999,999', '999.9%', '공시가 없음'],
+      gap: k === '전세' ? ['9,999,999,999', '초과 9,999,999,999', '한도 안'] : ['9,999,999,999', '갭 -9,999,999,999'],
+      area: isAptKind ? ['999.99㎡ (999.99)'] : ['999.99㎡', '999.99평'],
+      elev: ['조회 중', '9대있음'],
+      year: ['2026년'],
+      dist: ['9,999m'],
+      floor: ['99층'],
+    };
+    const natOf = (pad: number) => ths.map((th) => {
+      if (th.classList.contains('ck-th')) return 44;
+      if (th.classList.contains('acts-th')) return Math.max(0, ...[...t.querySelectorAll('td.acts-td .acts')].map((e) => (e as HTMLElement).scrollWidth)) + 16;
+      const key2 = th.dataset.k ?? '';
+      const head = (th.querySelector('.hk') as HTMLElement | null)?.innerText ?? th.innerText;
+      const headW = tw(head.split('\n')[0], fontOf(thCs)) + (key2 ? 16 : 0);   // 정렬 ▲▼ 자리
+      const vals = key2 === 'name' ? [] : key2 ? (SAMPLE[key2] ?? []) : ['선정물건'];
+      const chip = !key2 || key2 === 'elev';   // 구분 · 엘베는 칩(안쪽 여백 · 굵은 글) — 칩 폭까지 잡아야 '2대있음'이 두 줄로 꺾이지 않는다
+      const valW = Math.max(0, ...vals.map((v) => tw(v, fontOf(tdCs, chip ? '700' : undefined, chip ? '12px' : undefined)) + (chip ? 16 : 0)));
+      return Math.ceil(Math.max(headW, valW) + pad);
+    });
     const ai = ths.findIndex((th) => th.dataset.k === 'name');
     const ADDR_MIN = 170;
+    let nat = natOf(24); t.classList.remove('tight', 'tighter');
     const others = () => nat.reduce((a, w, i) => (i === ai ? a : a + w), 0);
-    if (cw - others() < ADDR_MIN) { t.classList.add('tight'); nat = measureW().map((w, i) => Math.max(w, colsMax[i] ?? 0)); }   // 좁으면 칸 안 여백을 줄여 다시 잰다
-    const addrNat = ai >= 0 ? Math.max(ADDR_MIN, nat[ai]) : 0;
-    let gap = (cw - others() - addrNat) / ths.length;
-    let addrW = addrNat;
-    if (gap < 0) { gap = 0; addrW = Math.max(ADDR_MIN, cw - others()); }   // 모자라면 주소 칸만 줄인다(…으로 잘리고 말풍선으로 전체)
-    // 그래도 넘치면 다른 칸을 같은 비율로 줄여 합이 상자 폭을 넘지 않게 — 넘친 만큼 표가 흰 상자 밖으로 삐져나왔다(2026-11-11 사용자 'UI 깨짐')
-    const k = others() + addrW > cw ? Math.max(0.5, (cw - addrW) / others()) : 1;
-    // 맨 끝 단추 칸(N · P · 복사)은 줄이지 않는다 — 줄이면 단추가 표 밖으로 7px 삐져나와 상자가 옆으로 밀리고, 그 넘침 때문에 줄이 바뀔 때마다 칸을 다시 재며 꿈틀했다(2026-11-12 사용자)
-    const xi = ths.findIndex((th) => th.classList.contains('acts-th'));
-    const actsMin = xi >= 0 ? Math.max(0, ...[...t.querySelectorAll('td.acts-td .acts')].map((e) => (e as HTMLElement).scrollWidth)) + 16 : 0;
-    const widths = ths.map((_, i) => Math.floor((i === ai ? addrW : i === xi ? Math.max(actsMin, nat[i]) : nat[i] * k) + gap));
-    const over = widths.reduce((a, b) => a + b, 0) - cw;
-    if (over > 0 && ai >= 0) widths[ai] = Math.max(80, widths[ai] - over);
+    if (cw - others() < ADDR_MIN) { t.classList.add('tight'); nat = natOf(10); }   // 좁으면 칸 안 여백을 줄인다
+    if (cw - others() < 100) { t.classList.add('tighter'); nat = natOf(4); }   // 더 좁으면 한 번 더(창이 좁을 때 표가 상자 밖으로 넘치지 않게)
+    let gap = (cw - others() - ADDR_MIN) / ths.length;
+    let addrW = ADDR_MIN;
+    if (gap < 0) { gap = 0; addrW = Math.max(100, cw - others()); }
+    const widths = ths.map((_, i) => Math.floor((i === ai ? addrW : nat[i]) + gap));
+    let over = widths.reduce((a, b) => a + b, 0) - cw;
+    if (over > 0 && ai >= 0) { const cut = Math.min(over + 1, widths[ai] - 80); widths[ai] -= Math.max(0, cut); over = widths.reduce((a, b) => a + b, 0) - cw; }
+    // 그래도 넘치면(아주 좁은 창) 값 칸들을 같은 비율로 조금씩 — 정해 둔 '가장 긴 값'이 넉넉해 실제 값은 잘리지 않는다. 제외 · 단추 칸은 그대로
+    if (over > 0) {
+      const flex = widths.map((w, i) => (i === ai || ths[i].classList.contains('ck-th') || ths[i].classList.contains('acts-th') ? 0 : w));
+      const sum = flex.reduce((a, b) => a + b, 0);
+      if (sum > 0) { const k2 = Math.max(0.7, (sum - over - 1) / sum); flex.forEach((w, i) => { if (w) widths[i] = Math.floor(w * k2); }); }
+    }
     const cg = document.createElement('colgroup');
     widths.forEach((w) => { const c = document.createElement('col'); c.style.width = `${w}px`; cg.appendChild(c); });
     t.insertBefore(cg, t.firstChild);
     t.style.tableLayout = 'fixed';
     t.style.minWidth = '';
-    // 테두리 · 반올림으로 몇 px 넘치면 상자가 옆으로 밀려(가로 스크롤) 머리 · 선정물건 줄 색이 끊겨 보였다 — 넘친 만큼 주소 칸에서 뺀다(2026-11-12 사용자)
-    const spill = t.getBoundingClientRect().width - cw;
-    if (spill > 0 && ai >= 0) { const c = cg.children[ai] as HTMLElement; c.style.width = `${Math.max(80, widths[ai] - Math.ceil(spill) - 1)}px`; }
     if (t.parentElement) t.parentElement.scrollLeft = 0;
     return;
   }
@@ -1391,6 +1408,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa-list table.even.measure td.l { white-space: nowrap; }
 .pa-list table.even th, .pa-list table.even td { padding-left: 12px; padding-right: 12px; }
 .pa-list table.even.tight th, .pa-list table.even.tight td { padding-left: 5px; padding-right: 5px; }
+.pa-list table.even.tighter th, .pa-list table.even.tighter td { padding-left: 2px; padding-right: 2px; }
 .pa-list table.even td.l { white-space: normal; word-break: keep-all; }   /* 주소는 낱말 단위로 줄바꿈 */
 .pa-list th[data-k] .hk { cursor: pointer; user-select: none; }
 .pa-list th[aria-sort] .hk { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
