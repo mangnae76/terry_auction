@@ -15,6 +15,11 @@ import AdminLegalBox from '../components/AdminLegalBox.vue';
 import DateTimeField from '../components/DateTimeField.vue';
 import { useAuthStore } from '../stores/authStore';
 import { OPS_MENU, opsItem } from '../services/adminMenu';
+// 밤 화면 — 웹에서 고른 밤 · 낮(wlp.web.theme)을 그대로 따른다. 고른 적 없으면 기기 설정(2026-11-13 사용자 '운영 쪽도 밤모드')
+try {
+  const t = JSON.parse(localStorage.getItem('wlp.web.theme') ?? 'null');
+  if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t;
+} catch { /* 그만 */ }
 import { POINTS_OPEN, TRIAL_DAYS } from '../services/billingPlans';
 import {
   newBoardId,
@@ -852,5 +857,49 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 70;
   margin: 0; padding: 10px 16px; border-radius: 999px;
   background: rgba(17, 24, 39, .92); color: #fff; font-size: 12.5px;
+}
+</style>
+
+<style>
+/* ===== 운영 화면 밤 — 웹 밤 색(바탕 #0f141d · 상자 #182030 · 선 #2a3449 · 글 #cfd6e2)(2026-11-13 사용자). 낮 화면엔 닿지 않는다 ===== */
+:root[data-theme="dark"] .adm-shell { background: #0f141d; color: #cfd6e2; }
+:root[data-theme="dark"] .adm-shell .adm-body :is(h1, h2, h3, b:not([class]), strong:not([class]), label, li, td, .ops-item:not(.on):not(.soon), .afq-q, .asc-label, .amb-count) { color: #dfe4ec; }
+:root[data-theme="dark"] .adm-shell .adm-body :is(p, span:not([class]), em:not([class]), small:not([class]), th) { color: #a9b2c2; }
+:root[data-theme="dark"] .adm-shell .adm-body .ops-group h3 { color: #8b95a8; }
+:root[data-theme="dark"] .adm-shell .adb-card { background: #182030; border-color: #2a3449; }
+:root[data-theme="dark"] .adm-shell .adm-body :is(input, textarea, select) { background: #141b28; border-color: #34405a; color: #e5e9f0; }
+:root[data-theme="dark"] .adm-shell .adm-body :is(input, textarea)::placeholder { color: #6e788c; }
+:root[data-theme="dark"] .adm-shell .adm-body button:not(.on):not(.ops-item):not(.del) { background: #1d2638; border-color: #34405a; color: #cfd6e2; }
+:root[data-theme="dark"] .adm-shell .adm-body button.del { background: #1d2638; border-color: rgba(224, 62, 62, .45); }
+:root[data-theme="dark"] .adm-shell .adm-body button.on:not(.ops-item) { background: rgba(91, 140, 255, .16); }
+:root[data-theme="dark"] .adm-shell .adm-body :is(.alg-mode, .amb-seg, .asc-seg, .amb-table-wrap, .aac-list, li) { border-color: #2a3449; }
+:root[data-theme="dark"] .adm-shell .adm-body :is(td, th) { border-color: #232c3f; }
+:root[data-theme="dark"] .adm-shell .adm-body th { background: #1d2638; }
+:root[data-theme="dark"] .adm-shell .adm-body :is(.aac-note, .afq-note, .alg-note, .alv-note, .asc-note) { background: #1a2232; color: #a9b2c2; }
+:root[data-theme="dark"] .adm-shell .adm-body :is(.aac-tag, .adb-tag, .adb-state.종료) { background: #252e40; color: #b5bfd0; }
+:root[data-theme="dark"] .adm-shell .adm-body :is(.afq-tag) { background: rgba(91, 140, 255, .16); }
+:root[data-theme="dark"] .adm-shell .adm-body :is(.aac-tag.base, em:not([class])) { background: rgba(245, 158, 11, .14); border-color: rgba(245, 158, 11, .3); }
+:root[data-theme="dark"] .adm-shell .adm-body .adb-state.게시중 { background: rgba(34, 160, 90, .16); }
+:root[data-theme="dark"] .adm-shell .adm-body .dtf-date { background: #141b28; border-color: #34405a; color: #e5e9f0; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .adm-shell { background: #0f141d; color: #cfd6e2; }
+  :root:not([data-theme="light"]) .adm-shell .adm-body :is(h1, h2, h3, b:not([class]), strong:not([class]), label, li, td, .ops-item:not(.on):not(.soon), .afq-q, .asc-label, .amb-count) { color: #dfe4ec; }
+  :root:not([data-theme="light"]) .adm-shell .adm-body :is(p, span:not([class]), em:not([class]), small:not([class]), th) { color: #a9b2c2; }
+  :root:not([data-theme="light"]) .adm-shell .adm-body .ops-group h3 { color: #8b95a8; }
+  :root:not([data-theme="light"]) .adm-shell .adb-card { background: #182030; border-color: #2a3449; }
+  :root:not([data-theme="light"]) .adm-shell .adm-body :is(input, textarea, select) { background: #141b28; border-color: #34405a; color: #e5e9f0; }
+  :root:not([data-theme="light"]) .adm-shell .adm-body :is(input, textarea)::placeholder { color: #6e788c; }
+  :root:not([data-theme="light"]) .adm-shell .adm-body button:not(.on):not(.ops-item):not(.del) { background: #1d2638; border-color: #34405a; color: #cfd6e2; }
+  :root:not([data-theme="light"]) .adm-shell .adm-body button.del { background: #1d2638; border-color: rgba(224, 62, 62, .45); }
+  :root:not([data-theme="light"]) .adm-shell .adm-body button.on:not(.ops-item) { background: rgba(91, 140, 255, .16); }
+  :root:not([data-theme="light"]) .adm-shell .adm-body :is(.alg-mode, .amb-seg, .asc-seg, .amb-table-wrap, .aac-list, li) { border-color: #2a3449; }
+  :root:not([data-theme="light"]) .adm-shell .adm-body :is(td, th) { border-color: #232c3f; }
+  :root:not([data-theme="light"]) .adm-shell .adm-body th { background: #1d2638; }
+  :root:not([data-theme="light"]) .adm-shell .adm-body :is(.aac-note, .afq-note, .alg-note, .alv-note, .asc-note) { background: #1a2232; color: #a9b2c2; }
+  :root:not([data-theme="light"]) .adm-shell .adm-body :is(.aac-tag, .adb-tag, .adb-state.종료) { background: #252e40; color: #b5bfd0; }
+  :root:not([data-theme="light"]) .adm-shell .adm-body :is(.afq-tag) { background: rgba(91, 140, 255, .16); }
+  :root:not([data-theme="light"]) .adm-shell .adm-body :is(.aac-tag.base, em:not([class])) { background: rgba(245, 158, 11, .14); border-color: rgba(245, 158, 11, .3); }
+  :root:not([data-theme="light"]) .adm-shell .adm-body .adb-state.게시중 { background: rgba(34, 160, 90, .16); }
+  :root:not([data-theme="light"]) .adm-shell .adm-body .dtf-date { background: #141b28; border-color: #34405a; color: #e5e9f0; }
 }
 </style>
