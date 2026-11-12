@@ -43,7 +43,7 @@ const typeIn = (el: HTMLInputElement, moved: 'lo' | 'hi') => {
 <style scoped>
 /* 반경 · 기간 상자(.pa-lab)와 같은 틀 — 흰 바탕 · 테두리 · 둥근 8px */
 .rib { display: inline-flex; align-items: center; justify-content: space-between; gap: 12px; height: 42px; box-sizing: border-box; padding: 4px 10px 4px 12px; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; }
-.dn { display: grid; gap: 1px; font-size: 14px; font-weight: 700; line-height: 1.15; color: #374151; white-space: nowrap; }
+.dn { display: grid; gap: 1px; font-size: 14px; font-weight: 700; line-height: 1.15; color: #6b7280; white-space: nowrap; }
 .dn small { font-size: 12px; font-weight: 400; color: #6b7280; }
 .vals { display: inline-flex; align-items: center; gap: 8px; background: #f3f5f9; border-radius: 6px; padding: 3px; }
 .me { font-style: normal; font-size: 14px; font-weight: 800; color: #e03e3e; font-variant-numeric: tabular-nums; padding: 0 2px; }
@@ -51,12 +51,12 @@ const typeIn = (el: HTMLInputElement, moved: 'lo' | 'hi') => {
 .rib .vals input.in.in { width: 64px; height: 26px !important; min-height: 0 !important; padding: 0 6px !important; box-sizing: border-box; border: 1px solid #2b6df3; border-radius: 5px; background: #fff; text-align: center; font-family: inherit; font-size: 14px !important; font-weight: 700; color: #2b6df3; font-variant-numeric: tabular-nums; box-shadow: none !important; }
 .rib .vals input.in.in:focus { outline: none; box-shadow: 0 0 0 2px rgba(43, 109, 243, .2) !important; }
 :root[data-theme="dark"] .rib { background: #182031; border-color: #2a3449; }
-:root[data-theme="dark"] .dn { color: #cfd6e2; }
+:root[data-theme="dark"] .dn { color: #9aa3b5; }
 :root[data-theme="dark"] .vals { background: #1d2638; }
 :root[data-theme="dark"] .rib .vals input.in.in { background: #182031; color: #8fb0ff; border-color: #5b8cff; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .rib { background: #182031; border-color: #2a3449; }
-  :root:not([data-theme="light"]) .dn { color: #cfd6e2; }
+  :root:not([data-theme="light"]) .dn { color: #9aa3b5; }
   :root:not([data-theme="light"]) .vals { background: #1d2638; }
   :root:not([data-theme="light"]) .rib .vals input.in.in { background: #182031; color: #8fb0ff; border-color: #5b8cff; }
 }
