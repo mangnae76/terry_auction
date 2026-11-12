@@ -5900,6 +5900,8 @@ const cmpRows = computed<CmpRow[]>(() => {
   });
 });
 /** 줄 · 점 고르기 — 같은 것을 다시 누르면 풀린다(풀리면 칸 줄 · 상세는 선정물건으로, 고른 표시는 없다, 2026-11-11) */
+/** 선정물건 칩 — 그 줄이 우리 물건 평형(전용)일 때만. 같은 건물이라도 다른 평형 거래로 채운 줄은 선정물건이 아니다(2026-11-12 사용자) */
+const cmpIsMyUnit = (r: { mine: boolean; area: number }) => r.mine && Math.abs((r.area || 0) - supMyArea.value) < 0.05;
 const cmpToggle = (key: string) => { cmpPick.value = cmpPick.value === key ? '' : key; };
 const cmpIsOn = (r: { mine: boolean; umdNm: string; jibun: string }) => !!cmpPick.value && cmpKeyOf(r) === cmpPick.value;
 /** 종합 순위 — 선정물건 포함, 종합 점수 큰 순(정렬과 상관없이) */
@@ -9661,7 +9663,7 @@ const goBack = () => router.back();
                   <div class="cmp-fs-rows">
                   <div class="cmp-fs-rh"><span>{{ cmpN }}</span><span>평균 {{ cmpKind }}가</span></div>
                   <button v-for="r in cmpRows" :key="cmpKeyOf(r)" type="button" :class="['cmp-fs-row', { on: cmpIsOn(r), mine: r.mine }]" @click="cmpFsGo(r)">
-                    <span class="nm"><span class="nm-line"><b class="nmt">{{ r.name || r.jibun }}</b><span v-if="r.mine" class="cmp-tag">선정물건</span></span><small>입지 {{ cmpScore(r.tot) }}{{ cmpRankOf.get(cmpKeyOf(r)) ? ` · ${cmpRankOf.get(cmpKeyOf(r))}위` : '' }} · {{ cmpArea(r.supply, r.area) }}{{ r.buildYear ? ` · ${r.buildYear}년` : '' }}</small></span>
+                    <span class="nm"><span class="nm-line"><b class="nmt">{{ r.name || r.jibun }}</b><span v-if="cmpIsMyUnit(r)" class="cmp-tag">선정물건</span><span v-else-if="r.mine" class="cmp-tag same">{{ isApartment ? '동일단지' : '동일빌라' }}</span></span><small>입지 {{ cmpScore(r.tot) }}{{ cmpRankOf.get(cmpKeyOf(r)) ? ` · ${cmpRankOf.get(cmpKeyOf(r))}위` : '' }} · {{ cmpArea(r.supply, r.area) }}{{ r.buildYear ? ` · ${r.buildYear}년` : '' }}</small></span>
                     <!-- 금액은 이름 줄 높이, 그 아래 종합 줄 높이에 거래건수(2026-11-11 사용자) -->
                     <span class="pr">{{ cmpMoney(cmpKind === '매매' ? r.saleAvg : r.jeonseAvg) }}<small>{{ r.deals.filter((d) => (cmpKind === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세')).length }}건</small></span>
                   </button>
@@ -9669,7 +9671,7 @@ const goBack = () => router.back();
                   <!-- 보고 있는 단지의 입지 · 구역 내 개별성 — 탭 없이 위아래로 한눈에(단지 4~5곳이라 높이가 된다, 2026-11-11 사용자) -->
                   <!-- 한 상자 — 제목은 보고 있는 단지 이름 + 종합점수 · 순위, 안에 입지 · 구역 내 개별성(2026-11-11 사용자) -->
                   <div v-if="cmpPicked" class="cmp-fs-places">
-                    <p class="cmp-fs-pt"><b>{{ cmpPicked.name || cmpPicked.jibun }}</b><span v-if="cmpPicked.mine" class="cmp-tag">선정물건</span><em v-if="cmpRankOf.get(cmpKeyOf(cmpPicked))">입지 <b>{{ cmpRankOf.get(cmpKeyOf(cmpPicked)) }}위</b> / {{ cmpRankOf.size }}곳</em></p>
+                    <p class="cmp-fs-pt"><b>{{ cmpPicked.name || cmpPicked.jibun }}</b><span v-if="cmpIsMyUnit(cmpPicked)" class="cmp-tag">선정물건</span><span v-else-if="cmpPicked.mine" class="cmp-tag same">{{ isApartment ? '동일단지' : '동일빌라' }}</span><em v-if="cmpRankOf.get(cmpKeyOf(cmpPicked))">입지 <b>{{ cmpRankOf.get(cmpKeyOf(cmpPicked)) }}위</b> / {{ cmpRankOf.size }}곳</em></p>
                     <div class="cmp-fs-sec">
                     <p class="cmp-fs-ph"><b>입지</b><em>입지점수 <b>{{ cmpScore(cmpPicked.loc) }}</b> / 100</em></p>
                     <span v-for="x in cmpLocParts(cmpPicked)" :key="x.cond"><i>{{ x.pl?.ic ?? '·' }}</i><span class="c">{{ x.cond }}</span><b>{{ x.pl ? `${cmpPlaceName(x.pl.name)} ${x.pl.m.toLocaleString('ko-KR')}m` : '1km 안에 없음' }}</b><em class="sc">{{ Math.round(x.score) }}점</em></span>
@@ -9699,7 +9701,7 @@ const goBack = () => router.back();
                     </tr></thead>
                     <tbody>
                       <tr v-for="r in cmpRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine, on: cmpIsOn(r) }]" tabindex="0" @click="cmpToggle(cmpKeyOf(r))" @keydown.enter="cmpToggle(cmpKeyOf(r))">
-                        <td class="nm" :data-tip="r.name || r.jibun" data-tip-pos="left"><span class="cmp-nm-line"><span class="cmp-nm">{{ r.name || r.jibun }}</span><span v-if="r.mine" class="cmp-tag">선정물건</span></span><small class="sup-tbl-sub">{{ cmpArea(r.supply, r.area) }}</small></td>
+                        <td class="nm" :data-tip="r.name || r.jibun" data-tip-pos="left"><span class="cmp-nm-line"><span class="cmp-nm">{{ r.name || r.jibun }}</span><span v-if="cmpIsMyUnit(r)" class="cmp-tag">선정물건</span><span v-else-if="r.mine" class="cmp-tag same">{{ isApartment ? '동일단지' : '동일빌라' }}</span></span><small class="sup-tbl-sub">{{ cmpArea(r.supply, r.area) }}</small></td>
                         <!-- 점수를 누르면 계산 내역 팝업(조건별 등수 칸은 팝업으로, 2026-11-11 시안) -->
                         <td class="n"><button type="button" class="cmp-sc" :aria-label="`${r.name || r.jibun} 입지 점수 계산 보기`" @click.stop="cmpPopOpen('loc', r, $event)">{{ cmpScore(r.loc) }}</button></td>
                         <td class="n"><span v-if="cmpRankOf.get(cmpKeyOf(r))" :class="['cmp-rk', { r1: cmpRankOf.get(cmpKeyOf(r)) === 1 }]">{{ cmpRankOf.get(cmpKeyOf(r)) }}</span><template v-else>-</template></td>
@@ -9726,7 +9728,7 @@ const goBack = () => router.back();
               <!-- 점수 팝업 — 머리 줄을 잡고 옮긴다. 폰에서는 아래에서 올라오는 창(2026-11-11 시안) -->
               <Teleport to="body">
                 <div v-if="cmpPop && cmpPopRow && (!sonpumTab || sonpumTab === 'demand')" class="cmp-pop" role="dialog" aria-modal="false" :aria-label="`입지 창 ${cmpPopRow.name || cmpPopRow.jibun} ${CMP_POP_TITLE[cmpPop.kind]}`" :style="cmpPopPos ? { left: `${cmpPopPos.x}px`, top: `${cmpPopPos.y}px` } : {}">
-                  <div class="cmp-pop-h" @pointerdown="cmpPopDown" @pointermove="cmpPopMove" @pointerup="cmpPopUp" @pointercancel="cmpPopUp"><span class="grip" aria-hidden="true">⋮⋮</span><h4><span class="cmp-pop-k">입지 창</span>{{ cmpPopRow.name || cmpPopRow.jibun }}<span v-if="cmpPopRow.mine" class="cmp-tag">선정물건</span></h4><button type="button" aria-label="닫기" @click="cmpPop = null">×</button></div>
+                  <div class="cmp-pop-h" @pointerdown="cmpPopDown" @pointermove="cmpPopMove" @pointerup="cmpPopUp" @pointercancel="cmpPopUp"><span class="grip" aria-hidden="true">⋮⋮</span><h4><span class="cmp-pop-k">입지 창</span>{{ cmpPopRow.name || cmpPopRow.jibun }}<span v-if="cmpIsMyUnit(cmpPopRow)" class="cmp-tag">선정물건</span><span v-else-if="cmpPopRow.mine" class="cmp-tag same">{{ isApartment ? '동일단지' : '동일빌라' }}</span></h4><button type="button" aria-label="닫기" @click="cmpPop = null">×</button></div>
                   <div class="cmp-pop-b">
                     <template v-if="cmpPop">
                       <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
@@ -12697,7 +12699,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .sup-tbl .adm-table tbody tr.cmp-row:hover td { background: #f7f9fc; }
 .sup-tbl .adm-table tbody tr.cmp-row.mine td { background: #fff5f5; box-shadow: inset 0 -2px 0 #efb7b7; }
 .sup-tbl .adm-table tbody tr.cmp-row.on td { background: #eef2ff; box-shadow: none; }   /* 고른 줄 연파랑 — 시세분석과 같게 */
-.cmp-tag { display: inline-block; flex: 0 0 auto; margin-left: 6px; padding: 1px 4px; border-radius: 3px; background: #e03e3e; color: #fff; font-size: 8.5px; font-weight: 400; vertical-align: 2px; }   /* 선정물건 — 시세분석 표 첫 줄 .kind.me 와 같은 네모 칩(모서리 3) */
+.cmp-tag { display: inline-block; flex: 0 0 auto; margin-left: 6px; padding: 1px 4px; border-radius: 3px; background: #e03e3e; color: #fff; font-size: 8.5px; font-weight: 400; vertical-align: 2px; }
+.cmp-tag.same { background: #3b6fd8; }   /* 같은 건물 · 다른 평형 거래로 채운 줄 — 선정물건(빨강)과 구분 */   /* 선정물건 — 시세분석 표 첫 줄 .kind.me 와 같은 네모 칩(모서리 3) */
 .cmp-rk { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 1px solid #e3e8f0; border-radius: 6px; font-weight: 700; color: #111827; }
 .cmp-rk.r1 { color: #2b6df3; border-color: #b9cdf8; }
 .cmp-avg { font-size: 15px; font-weight: 800; color: #e03e3e; }
