@@ -5673,8 +5673,8 @@ const cmpQueried = ref(false);
 watch(() => auction.value?.id, () => { cmpQueried.value = false; });
 /** 거르기 기본값(2026-11-12 사용자 확정) — 반경 1km · 6개월 · 매매 · 면적 내 물건 ±3㎡ · 건축 전체 · 층 전체 · 엘베는 빌라면 내 물건과 같게(아파트는 전체) */
 type CmpFilter = SearchFilter;   // 거르기 한 벌의 꼴은 부품(components/SearchFilterBar)에 하나로
-/** 기본값(2026-11-12 사용자 다시 정함) — 반경 500m(아파트는 500m 단추가 없어 1km) · 매매 · 3개월 · 엘베 전체 · 층 전체 · 기준 유사도 80%, 직접범위 칸은 비움 */
-const cmpDefaults = (): CmpFilter => ({ range: isApartment.value ? 1000 : 500, months: 3, kind: '매매', mode: 'sim', sim: 80, area: [null, null], year: [null, null], floor: null, elev: null });
+/** 기본값(2026-11-12 사용자 다시 정함) — 반경 500m(아파트는 500m 단추가 없어 1km) · 매매 · 3개월 · 엘베 전체 · 층 전체 · 기준 유사도 80%(직접범위 칸도 그 범위) */
+const cmpDefaults = (): CmpFilter => ({ range: isApartment.value ? 1000 : 500, months: 3, kind: '매매', mode: 'sim', sim: 80, area: cmpSimArea(80), year: cmpSimYear(80), floor: null, elev: null });   // 직접범위 칸은 유사도 80% 범위와 같이 움직인다
 /** 저장한 거르기 → 지금 꼴. 없으면 기본값. 예전 저장(기준 없음)은 직접범위 · 면적 비었으면 내 물건 ±3㎡ 였다 */
 const cmpNormFilter = (f?: DemandFilter | null): CmpFilter => {
   if (!f) return cmpDefaults();

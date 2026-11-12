@@ -55,11 +55,15 @@ const floorD = key('floor');
 const areaD = key('area');
 const yearD = key('year');
 /** 유사도 % — 바꾸면 면적 · 건축도 그 범위로 */
-const simD = computed<number>({ get: () => props.draft.sim, set: (v) => set({ sim: v }) });
+/** 유사도 % — 바꾸면 직접범위 칸(면적 · 건축)도 그 범위로 같이 움직인다(2026-11-12 사용자, 시세분석과 같다) */
+const simD = computed<number>({ get: () => props.draft.sim, set: (v) => set({ sim: v, ...props.simRange(v) }) });
 /** 유사도 막대 옆 글 — 그 %로 정해지는 면적 · 건축 */
 const simText = computed(() => { const r = props.simRange(props.draft.sim); return `면적 ${r.area[0]}~${r.area[1]}㎡ · 건축 ${r.year[0]}~${r.year[1]}년`; });
-/** 기준 — 유사도 · 직접범위는 따로 움직인다(바꿔도 서로의 값을 옮기지 않는다, 2026-11-12 사용자) */
-const modeD = key('mode');
+/** 기준 — 직접범위로 가면 지금 유사도 범위에서 시작하고, 유사도로 가면 유사도 범위로(둘은 같이 움직인다, 시세분석과 같다) */
+const modeD = computed<'sim' | 'range'>({
+  get: () => props.draft.mode,
+  set: (m) => set(m === 'sim' ? { mode: m, ...props.simRange(props.draft.sim) } : { mode: m, ...(props.draft.area[0] == null && props.draft.area[1] == null ? props.simRange(props.draft.sim) : {}) }),
+});
 const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 3.305785).toFixed(1)}평`;
 
 </script>
