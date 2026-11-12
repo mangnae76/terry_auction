@@ -30,6 +30,7 @@ import {
   FIELD_CHECKLIST, FIELD_EXTERIOR_CHECKS, FIELD_INTERIOR_CHECKS, FIELD_MANAGE_CHECKS, FIELD_SAFETY_CHECKS, FIELD_COMFORT_CHECKS,
 } from '../services/fieldChecklist';
 import { getBuildingFacts } from '../services/buildingFacts';
+import { loadBuildingFacts } from '../services/buildingGroup';
 import { complexNameOf, totalParkingOf } from '../services/aptComplex';
 import { getComplexAreas, supplyRowsOf, areaUnitsOf, sameExclusiveCountOf, type ComplexAreas } from '../services/complexAreas';
 import { COMPLEX_BURDEN_LINE, DEMAND_PLAIN, dec1, demandFitText, demandGradeOf, demandOpinionOf, demandPassText, demandTip, type DemandMetric } from '../services/demandGrade';
@@ -6045,7 +6046,8 @@ watch(() => `${cmpSnapOn.value}|${cmpQueried.value}|${cmpElevR.value}|${cmpRange
   }
   if (cmpElevR.value || !isApartment.value) {   // 빌라는 표에 엘베 칸이 있어 늘 받는다(2026-11-12 사용자)
     const ev = cmpListBase.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpElevs.value));
-    await cmpPool(ev, 6, run, async (c) => { const f = await getBuildingFacts(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpElevs.value = { ...cmpElevs.value, [cmpKeyOf(c)]: f ? f.elevator : null }; });
+    // 건축물대장 받기는 시장분석 건물랭킹과 같은 한 벌(services/buildingGroup) — 같은 저장소라 건물랭킹에서 본 건물은 바로 나온다
+    await loadBuildingFacts(ev, cmpAddr, 6, () => run === cmpRun, (c, f) => { cmpElevs.value = { ...cmpElevs.value, [cmpKeyOf(c)]: f ? f.elevator : null }; });
   }
   const todo = cmpList.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpNearby.value));
   await cmpPool(todo, 6, run, async (c) => { const nb = await complexNearbyOf(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpNearby.value = { ...cmpNearby.value, [cmpKeyOf(c)]: nb }; });

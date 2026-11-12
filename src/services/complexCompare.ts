@@ -8,6 +8,7 @@ import { fetchNearbyEnvironment, type NearbyEnvironment, type NearbyPlace } from
 import { geocodeAddress } from './routeOptimizer';
 import { browserCacheGet, browserCachePut } from './browserCache';
 import { cacheKey, readCache, writeCache } from './marketCache';
+import { buildingNameOf, buildingYearOf, groupByBuilding } from './buildingGroup';
 
 /** 입지조건별로 어느 주변시설을 보는지 — 물건상세 입지등수와 이 비교가 같이 쓴다(여기 한 줄만 고치면 기준이 바뀐다).
  *  입지조건에서 '일자리'는 뺐다 — 교통이 편하면 일자리 접근성도 좋다(2026-11-10). 남은 조건은 모두 거리로 잰다 */
@@ -140,20 +141,14 @@ export type CompareComplex = {
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 const t2 = (n: number) => Math.floor(n * 100 + 1e-6) / 100;
-const modeOf = (xs: number[]) => { const c = new Map<number, number>(); xs.forEach((x) => c.set(x, (c.get(x) ?? 0) + 1)); return [...c.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]?.[0] ?? 0; };
 const squash = (s: string) => String(s ?? '').replace(/\s+/g, '');
 
 /** 실거래 → 단지 목록. 단지마다 내 전용면적과 가장 가까운 평형(±tol㎡ 안, 기본 5) 하나, 그 평형의 전세 · 매매가 한 건이라도 있어야 넣는다.
  *  fromYmd8 — 이 날짜(YYYYMMDD)부터의 거래만(조회일부터 12개월) */
 /** range — 전용 면적 범위(㎡)를 직접 주면 tol 대신 그 안에서 가장 가까운 평형(매매수요 면적 막대, 2026-11-12) */
 export const complexesOf = (rows: CaseTradeRow[], myArea: number, myJibun: string, fromYmd8: string, tol = 5, myUmd = '', range?: { lo: number; hi: number }): CompareComplex[] => {
-  const by = new Map<string, CaseTradeRow[]>();
-  rows.forEach((r) => {
-    if (!r.jibun || !['매매', '직거래', '전세'].includes(r.kind)) return;
-    if (r.contractDate.replace(/\D/g, '') < fromYmd8) return;
-    const k = `${squash(r.umdNm)}|${r.jibun}`;
-    by.set(k, [...(by.get(k) ?? []), r]);
-  });
+  // 건물 묶기 · 이름 · 연식은 건물랭킹과 같은 한 벌(services/buildingGroup)
+  const by = groupByBuilding(rows, (r) => ['매매', '직거래', '전세'].includes(r.kind) && r.contractDate.replace(/\D/g, '') >= fromYmd8);
   const out: CompareComplex[] = [];
   by.forEach((list) => {
     // 평형은 전용면적 소수 둘째 자리까지(버림 — 화면 trunc2 와 같게) 같은 것끼리
@@ -162,13 +157,13 @@ export const complexesOf = (rows: CaseTradeRow[], myArea: number, myJibun: strin
     if (near === undefined) return;
     const same = list.filter((r) => t2(r.areaM2) === near).sort((a, b) => b.contractDate.localeCompare(a.contractDate));
     out.push({
-      jibun: list[0].jibun, name: list.find((r) => r.name)?.name ?? '', umdNm: list[0].umdNm, area: near,
+      jibun: list[0].jibun, name: buildingNameOf(list), umdNm: list[0].umdNm, area: near,
       jeonseAvg: avg(same.filter((r) => r.kind === '전세').map((r) => r.price)),
       saleAvg: avg(same.filter((r) => r.kind !== '전세').map((r) => r.price)),
       // 선정물건 — 지번이 같고(동까지 주면 동도 같아야 — 반경 범위에선 다른 동의 같은 지번이 섞인다)
       deals: same, mine: squash(list[0].jibun) === squash(myJibun) && (!myUmd || squash(list[0].umdNm) === squash(myUmd)),
       // 단지 안에서 가장 많이 적힌 건축년도(동마다 다를 수 있다 — 가장 흔한 해)
-      buildYear: modeOf(list.map((r) => r.buildYear ?? 0).filter((y) => y > 1900)),
+      buildYear: buildingYearOf(list),
     });
   });
   return out;
