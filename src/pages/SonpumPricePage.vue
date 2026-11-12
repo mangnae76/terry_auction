@@ -1051,7 +1051,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 
       <div class="list-tools">
         <span v-if="webEmbed" class="lt-count pa-num">지번 {{ listPlaces }}곳 · 거래 {{ shownRows.length }}건</span>
-        <div class="warn-box" role="note">
+        <!-- 앱 — 공시가 · 전세가율 글은 뺐다(공시가 칸이 없다, 2026-11-13 사용자) -->
+        <div v-if="!props.app" class="warn-box" role="note">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4M12 17h.01" /></svg>
           <!-- 앱 — 짧게(2026-11-09) -->
           <template v-if="props.app">
@@ -1071,7 +1072,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <thead><tr><th>주소</th><th>실거래가</th><th>연식</th><th>전용</th><th>엘베</th></tr></thead>
           <tbody>
             <tr class="mine">
-              <td class="l"><button type="button" class="at-addr" @click.stop="openAddrTip($event, myAddr)"><span class="kind me">{{ meName }}</span><span class="at-line">{{ myAddr }}</span></button></td>
+              <td class="l"><button type="button" class="at-addr" @click.stop="openAddrTip($event, myAddr)"><span class="kind me">{{ meName }}</span><span class="at-line"><i class="no ph" aria-hidden="true" /><span class="at-tx">{{ myAddr }}</span></span></button></td>
               <td class="r pa-num at-two"><span class="est-lab">{{ kindF }} 예상</span>{{ view ? n0(view.est) : '-' }}</td>
               <td class="pa-num">{{ me.year || '-' }}</td>
               <td v-if="isAptKind" class="pa-num at-two">{{ areaLines(aptMyArea)[0] }}<small v-if="areaLines(aptMyArea)[1]">{{ areaLines(aptMyArea)[1] }}</small></td>
@@ -1079,7 +1080,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td><span v-if="myElev === null" class="ev u">-</span><span v-else-if="myElev > 0" class="ev o">{{ myElev }}대</span><span v-else class="ev x">없음</span></td>
             </tr>
             <tr v-for="r in listRows" :key="r.id">
-              <td class="l"><button type="button" class="at-addr" @click.stop="openAddrTip($event, addrOf(r))"><span class="at-line"><i v-if="orderOf[r.jibun]" class="no">{{ orderOf[r.jibun] }}</i>{{ addrOf(r) }}</span></button></td>
+              <td class="l"><button type="button" class="at-addr" @click.stop="openAddrTip($event, addrOf(r))"><span class="at-line"><i :class="['no', { ph: !orderOf[r.jibun] }]">{{ orderOf[r.jibun] || '' }}</i><span class="at-tx">{{ addrOf(r) }}</span></span></button></td>
               <td class="r pa-num">{{ n0(r.price) }}</td>
               <td class="pa-num">{{ r.buildYear || '-' }}</td>
               <td v-if="isAptKind" class="pa-num at-two">{{ areaLines(aptRowArea(r.areaM2, !!r.same, r))[0] }}<small v-if="areaLines(aptRowArea(r.areaM2, !!r.same, r))[1]">{{ areaLines(aptRowArea(r.areaM2, !!r.same, r))[1] }}</small></td>
@@ -1172,7 +1173,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <button v-if="shownRows.length > MORE_AT" type="button" class="more" @click="showAll = !showAll">{{ showAll ? '접기' : `더 보기 (${shownRows.length - MORE_AT}건)` }}</button>
       </div>
       <!-- 앱 — 제외 · 공시가 칸이 없어 그 설명은 뺀다 -->
-      <p v-if="props.app" class="list-foot">※ 맨 위 빨간 줄은 {{ meName }}입니다(비교 기준이라 계산에 넣지 않습니다).<br>※ 위치를 찾은 거래만 나옵니다. 주소 앞 번호는 임장 순서입니다. 주소를 누르면 전체 주소가 보입니다.</p>
+      <p v-if="props.app" class="list-foot">※ 맨 위 빨간 줄은 {{ meName }}입니다(비교 기준이라 계산에 넣지 않습니다).<br>※ 위치를 찾은 거래만 나옵니다. 주소 앞 번호는 비교 임장 순서입니다. 주소를 누르면 전체 주소가 보입니다.</p>
       <p v-else class="list-foot">※ 맨 위 빨간 줄은 {{ meName }}입니다(비교 기준이라 계산에 넣지 않습니다).<br>※ 공시가는 공동주택가격입니다. 매매가율 = 실거래가 ÷ 공시가, 전세 = 공시가 × 126%(보증보험 한도, 지역 · 평형 보정 없음), 갭 = 실거래가 − 전세.<br>※ 위치를 찾은 거래만 나옵니다. 같은 건물 → 임장 순서(지도 번호, 현장에서 가까운 곳부터 도는 동선). <template v-if="webEmbed">제외 칸에 체크한 거래는 실거래가 예상 · 평균 · 건수에서 빠집니다(체크는 물건에 남습니다).</template><template v-else>머리글 ▾로 값을 빼면 그 거래는 표 · 지도 · 실거래가 예상에서 빠집니다(물건에 남습니다).</template></p>
     </div>
 
@@ -1678,10 +1679,18 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 .app-tbl td.l { text-align: left; padding-left: 6px; }
 .app-tbl .at-addr { display: grid; width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .app-tbl .at-line { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.app-tbl .at-line .no { margin-right: 3px; font-style: normal; font-weight: 800; color: #2b4fd8; }
+.app-tbl .at-line { display: flex; align-items: center; }
+.app-tbl .at-line > :not(.no) { min-width: 0; }
+/* 임장 순서 — 동그라미 번호. 번호가 없는 줄(선정물건 등)도 같은 자리를 비워 두어 주소 글이 세로로 같은 x 에서 시작한다(2026-11-13 사용자) */
+.app-tbl .at-line .no { flex: none; display: inline-grid; place-items: center; width: 14px; height: 14px; margin-right: 4px; border: 1px solid #2b4fd8; border-radius: 50%; box-sizing: border-box; font-style: normal; font-size: 9px; font-weight: 800; line-height: 1; color: #2b4fd8; }
+.app-tbl .at-line .no.ph { visibility: hidden; }
+.app-tbl .at-line .at-tx { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-tbl .kind.me { justify-self: start; margin-bottom: 2px; }
 .app-tbl .at-two { line-height: 1.3; }
 .app-tbl .at-two small { display: block; font-size: 10.5px; color: var(--sub); }
 .app-tbl .est-lab { display: block; font-size: 10.5px; }
 .at-tip { position: fixed; z-index: 3000; margin: 0; padding: 8px 10px; border-radius: 8px; background: #1f2937; color: #fff; font-size: 12.5px; line-height: 1.45; box-shadow: 0 4px 14px rgba(0, 0, 0, .2); word-break: keep-all; }
+/* 앱 — 결론 · 근거: 꼬리표 왼쪽 끝 같은 x, 제목 줄 아래 10, 두 단락 사이 가로 구분선(위 16 · 아래 16)(2026-11-13 사용자) */
+.pa-wrap.app .map-title.static { margin: 0; padding: 0; min-height: 25px; }
+.pa-wrap.app .pa > .zone + .zone { margin-top: 4px; padding-top: 16px; border-top: 1px solid var(--line); }
 </style>
