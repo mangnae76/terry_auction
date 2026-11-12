@@ -5861,9 +5861,9 @@ const cmpRows = computed<CmpRow[]>(() => {
     const nb = c.mine ? null : cmpNearby.value[cmpKeyOf(c)];
     const env = c.mine ? nearbyEnv.value : nb?.env ?? null;
     const places = conds.map((cond) => { const p = nearestPlaceOf(env, cond); const ic = p ? PLACE_ICON[p.src] : undefined; return p ? { cond, name: p.name, m: p.distanceMeters, lat: p.lat, lng: p.lng, ic: ic?.ic ?? '📍', color: ic?.color ?? '#6b7280' } : null; });
-    // 내 물건 — 위 '실사용자 + 입지등수'에 보이는 값 그대로(손으로 고친 등수가 있으면 그 값)
+    // 내 물건도 다른 단지와 같은 자동 등수 — 웹 손품조사엔 등수 손입력이 없다(2026-11-12 사용자, 예전 손입력 값은 DB에서 지움)
     // 주변시설을 받았는데 1km 안에 없으면 3등(위 자동 등수와 같은 규칙)
-    const ranks = conds.map((cond, i) => (c.mine ? (Number(rankValue(cond)) || null) : (places[i] ? rankFromMeters(places[i]!.m) : env && cond in LOCATION_SOURCES ? 3 : null)));
+    const ranks = conds.map((cond, i) => (c.mine ? (Number(autoRankOf(cond)) || null) : (places[i] ? rankFromMeters(places[i]!.m) : env && cond in LOCATION_SOURCES ? 3 : null)));
     const ready = env && ranks.length > 0 && ranks.every((r) => r !== null);
     const avg = ready ? ranks.reduce<number>((a, b) => a + (b ?? 0), 0) / ranks.length : null;
     const sum = places.reduce((a, p) => a + (p?.m ?? 9999), 0);
