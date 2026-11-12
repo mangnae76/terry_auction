@@ -86,9 +86,17 @@ const areaD = key('area');
 const yearD = key('year');
 /** 유사도 % — 바꾸면 면적 · 건축도 그 범위로 */
 /** 유사도 % — 바꾸면 직접범위 칸(면적 · 건축)도 그 범위로 같이 움직인다(2026-11-12 사용자, 시세분석과 같다) */
+// 막대를 손(마우스 · 손가락)으로 잡고 있는 동안엔 화면을 다시 그리지 않는다 — 끄는 도중 다시 그리면(매각분석은 상자째) 잡은 막대가 놓이고 표가 옆으로 끌려 갔다(2026-11-12 사용자). 놓을 때 한 번
+let simHeld = false;
+const simCommit = (v: number) => { simLive.value = null; if (v !== props.draft.sim) set({ sim: v, ...props.simRange(v) }); };
+const simGrab = () => {
+  simHeld = true;
+  const up = () => { simHeld = false; window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); window.clearTimeout(simT); if (simLive.value != null) simCommit(simLive.value); };
+  window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+};
 const simD = computed<number>({
   get: () => simLive.value ?? props.draft.sim,
-  set: (v) => { simLive.value = v; window.clearTimeout(simT); simT = window.setTimeout(() => { simLive.value = null; if (v !== props.draft.sim) set({ sim: v, ...props.simRange(v) }); }, 200); },
+  set: (v) => { simLive.value = v; window.clearTimeout(simT); if (simHeld) return; simT = window.setTimeout(() => simCommit(v), 200); },   // 키보드 화살표 등은 0.2초 뒤
 });
 /** 유사도 막대 옆 글 — 그 %로 정해지는 면적 · 건축 */
 const simText = computed(() => { const r = props.simRange(simD.value);   /* 끄는 동안에도 글이 따라가게 */ return `면적 ${r.area[0]}~${r.area[1]}㎡ · 건축 ${r.year[0]}~${r.year[1]}년`; });
@@ -117,7 +125,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
     <!-- 기준 묶음 — 기준 · 유사도(또는 면적 · 건축)를 흰 상자 하나에, 안쪽은 얇은 선으로만 나눈다(2026-11-12 사용자 시안) -->
     <div class="cmp-bars joined">
         <span v-if="!off('mode')" class="pa-lab cmp-mode">기준<span class="pa-seg pa-out" role="radiogroup" aria-label="유사 조건 방식"><button v-for="[v, t] in ([['sim', '유사도'], ['range', '직접범위']] as const)" :key="v" type="button" role="radio" :class="{ on: modeD === v }" :aria-checked="modeD === v" :data-t="t" @click="modeD = v">{{ t }}</button></span></span>
-        <span v-if="modeD === 'sim'" class="cmp-sim" :style="{ '--p': `${((simD - 60) / 35) * 100}%` }"><SimRangeBox :sim="simD" :text="simText" @update="(v) => (simD = v)" /></span>
+        <span v-if="modeD === 'sim'" class="cmp-sim" @pointerdown="simGrab" :style="{ '--p': `${((simD - 60) / 35) * 100}%` }"><SimRangeBox :sim="simD" :text="simText" @update="(v) => (simD = v)" /></span>
         <RangeInputBox v-if="modeD === 'range' && !off('area')" label="면적 ㎡" :min="20" :max="areaMax" :lo="areaD[0]" :hi="areaD[1]" :base="baseArea" :lo-text="areaD[0] == null ? '' : String(areaD[0])" :base-text="String(Number((Math.floor(baseArea * 100 + 1e-6) / 100).toFixed(2)))" :hi-text="areaD[1] == null ? '' : String(areaD[1])" :sub="areaD[0] != null && areaD[1] != null ? pyTx(areaD[0], areaD[1]) : ''" allow-blank @update="(lo, hi) => (areaD = [lo, hi])" />
         <RangeInputBox v-if="modeD === 'range' && !off('year')" label="건축" :min="yearMin" :max="yearMax" :lo="yearD[0]" :hi="yearD[1]" :base="baseYear" :lo-text="yearD[0] == null ? '' : String(yearD[0])" :base-text="String(baseYear || '')" :hi-text="yearD[1] == null ? '' : String(yearD[1])" :sub="yearD[0] != null && yearD[1] != null ? `${yearMax - yearD[1] + 1}~${yearMax - yearD[0] + 1}년차` : ''" allow-blank @update="(lo, hi) => (yearD = [lo, hi])" />
     </div>
@@ -151,6 +159,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-bars > :is(.rib, .cmp-sim) { flex: 1 1 0; min-width: 0; }
 .cmp-sim { display: flex; align-items: center; height: 42px; box-sizing: border-box; padding: 0 14px; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; overflow: hidden; }   /* 유사도 막대 상자 — 글 · 막대 · 눈금은 부품 기본(시세분석과 같다) */
 .cmp-sim > * { flex: 1 1 auto; min-width: 0; }
+.cmp-sim { user-select: none; -webkit-user-select: none; touch-action: pan-y; }   /* 끄는 동안 글이 잡히거나(선택) 옆 표가 끌려가지 않게 */
 @media (max-width: 760px) { .cmp-bars-row { flex-wrap: wrap; } }
 /* 둘째 줄(기준 · 유사도 · 면적 · 건축 · 필터초기화 · 저장하기) — 시세분석 유사도 상자와 같은 높이 66px(2026-11-12 사용자 '시세분석 사이즈로'). 좁은 칸(전체화면)은 따로 */
 .sfb:not(.compact) .cmp-bars > .cmp-mode, .sfb:not(.compact) .cmp-sim, .sfb:not(.compact) :deep(.rib) { height: 66px; }
@@ -190,6 +199,10 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-qbtns > button { height: auto; min-width: 110px; }
 .cmp-reset { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #4b5563; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .cmp-qbtns > .cmp-reset { min-width: 96px; }
+/* 단추 폭 고정 — '저장하기' ↔ '저장됨 + 날짜'로 글이 바뀌어도 단추 폭이 그대로라 옆 기준 묶음(유사도 막대)이 흔들리지 않는다(2026-11-12 사용자 '딸깍거려') */
+.sfb:not(.compact) .cmp-qbtns > .cmp-reset { flex: 0 0 118px; width: 118px; min-width: 0; }
+.sfb:not(.compact) .cmp-qbtns > .cmp-save { flex: 0 0 110px; width: 110px; min-width: 0; padding: 0 8px; }
+.cmp-save-day { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmp-reset:disabled { color: #b8bfcc; cursor: default; }
 :root[data-theme="dark"] .cmp-reset { background: transparent; border-color: #34405a; color: #b5bfd0; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-reset { background: transparent; border-color: #34405a; color: #b5bfd0; } }   /* 면적 · 건축 상자와 같은 높이(2026-11-12 사용자) */   /* 면적 · 건축 옆 — 필터초기화 · 저장하기(2026-11-12 사용자, 조회하기는 뺐다). .cmp-acts 는 표 줄 바로가기 단추라 이름을 따로 */

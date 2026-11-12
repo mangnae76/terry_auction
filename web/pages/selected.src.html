@@ -7937,7 +7937,7 @@ span.cal-day.has { cursor: help; }
     const T = CLOUD.T; const subj = sxMeSubject(sxMe()) || { areaM2: 0, year: 0 }; const rc = SXM.rc || {};
     const per = (saleApplied && saleApplied.period) || saleSeg.period; const months = Number(String(per).replace(/\D/g, '')) || 12;
     const dirty = !sxSaved || JSON.stringify(sxSaved.snap) !== JSON.stringify(sxSnapNow());
-    const stamp = sxSaved && sxSaved.at && T && T.updateStamp ? T.updateStamp(sxSaved.at) : '';
+    const stamp = sxSaved && sxSaved.at ? new Date(sxSaved.at).toLocaleDateString('sv-SE') : '';   /* 날짜만(2026-11-12) — 시각까지 적으면 글이 길어 단추가 흔들렸다 */
     return {
       draft: { range: Number(SXM.radius), months, kind: '매매', mode: SXM.basis === 'sim' ? 'sim' : 'range', sim: Number(SXM.sim), area: [rc.mMin ?? null, rc.mMax ?? null], year: [rc.yMin ?? null, rc.yMax ?? null], floor: SXM.floor === '0' ? 'same' : null, elev: SXM.elev || null },
       rangeOptions: [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']], periodOptions: [[3, '3개월'], [6, '6개월'], [12, '1년'], [24, '2년']],
