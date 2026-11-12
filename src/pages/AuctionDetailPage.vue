@@ -12542,7 +12542,9 @@ tr.tone-take { background: #fff5f5; }
 /* 조사 대상 동 이름 — 제목 안에서 눈에 띄게 */
 .adp-dm-area { color: #2b6df3; }
 .adp-dm-area-gap { margin-left: 6px; }
-.adp-dm-q { flex: 0 0 100%; margin-top: -4px; font-size: 12.5px; font-weight: 400; color: #6b7280; }   /* 제목 아래 물음 한 줄 — 웹 수급분석 물음과 같은 꼴 */
+.adp-dm-q { min-width: 0; font-size: 11.5px; font-weight: 400; color: #6b7280; white-space: nowrap; letter-spacing: -0.4px; }   /* 물음 — 검암동 바로 옆 한 줄(2026-11-12 사용자) */
+.o-rank:first-child + .adp-dm-head:has(.adp-dm-q) { flex-wrap: nowrap; gap: 6px; }
+.o-rank:first-child + .adp-dm-head:has(.adp-dm-q) .adp-dm-title { flex: none; white-space: nowrap; }
 /* 제목 옆 주소 — 제목만큼 크면 어느 쪽이 제목인지 흐려진다.
    급매가 ① 블록 제목(13px)에 맞추고 굵기는 뺀다 */
 .adp-dm-addr { font-size: 13px; font-weight: 500; color: #2b6df3; }
