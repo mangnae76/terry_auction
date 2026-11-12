@@ -1202,6 +1202,13 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .tile .s { font-size: 12px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hk-sub { display: block; font-size: 11px; font-weight: 400; color: var(--sub); }   /* 아파트 면적 머리 — '공급(전용)' */
 .tile .cap { justify-self: center; font-size: 11px; color: #fff; background: rgba(0, 0, 0, .18); border-radius: 999px; padding: 1px 8px; }
+/* 웹 내비게이터(매도가 예상 · 평균 평당가 · 전용/연식 · 건수) — 네 칸 모두 같은 세 줄(이름 18 · 금액 30 · 아래 글 16)로 고정해 이름 · 금액 · 아래 글 줄이 가로로 맞고,
+   값이 없어도(0건) 칸 높이가 그대로(2026-11-12 사용자 '세로 맞춰 고정 · 금액도 줄 맞춰'). '보증보험 한도 적용'은 줄을 늘리지 않게 칸 오른쪽 위 작은 딱지로 */
+.tiles.four .tile { grid-template-rows: 18px 30px 16px; align-content: center; row-gap: 4px; padding: 12px 8px; }
+.tiles.four .tile > .k { align-self: center; line-height: 18px; }
+.tiles.four .tile > .v { align-self: center; line-height: 30px; }
+.tiles.four .tile > .s { align-self: center; line-height: 16px; grid-row: 3; }
+.tiles.four .tile.key .cap { position: absolute; top: 6px; right: 6px; padding: 0 6px; line-height: 16px; }
 
 /* 지도 */
 .map { position: relative; z-index: 0; isolation: isolate; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }   /* 지도 안 z-index(400~1000)를 이 상자에 가둔다 — 스크롤 때 위 고정 머리를 뚫고 나오지 않게 */
