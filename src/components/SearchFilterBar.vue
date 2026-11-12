@@ -130,6 +130,15 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-sim :deep(input[type="range"]::-moz-range-progress) { height: 3px; border-radius: 2px; background: #2b6df3; }
 .cmp-sim :deep(input[type="range"]::-moz-range-thumb) { width: 12px; height: 12px; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; }   /* 면적 · 건축 — 반경 · 기간과 같은 상자(막대 뺌, 2026-11-12 사용자) */
 @media (max-width: 760px) { .cmp-bars-row { flex-wrap: wrap; } }
+/* 좁은 칸 줄 맞춤 — 한 줄 하나짜리(반경 · 거래 · 기간 · 기준 · 면적 · 건축)는 이름 칸 폭을 하나(--lab)로 둬
+   단추 묶음 · 적는 칸 회색 상자가 모두 같은 x 에서 시작해 줄 끝까지 간다(2026-11-12 사용자). 엘베 · 층(반씩)은 따로 */
+.sfb.compact { --lab: 72px; }
+.sfb.compact > .cmp-conds > .pa-lab:not(:has([aria-label="엘베"], [aria-label="층"])), .sfb.compact .cmp-bars > .cmp-mode { display: grid; grid-template-columns: var(--lab) minmax(0, 1fr); gap: 0; padding: 4px 10px; }
+.sfb.compact > .cmp-conds > .pa-lab:not(:has([aria-label="엘베"], [aria-label="층"])) > .pa-seg, .sfb.compact .cmp-bars > .cmp-mode > .pa-seg { display: flex; }
+.sfb.compact :deep(.rib) { display: grid; grid-template-columns: var(--lab) minmax(0, 1fr); gap: 0; padding: 4px 10px; }
+.sfb.compact :deep(.rib .vals) { justify-content: space-between; }
+.sfb.compact :deep(.rib .vals input.in.in) { flex: 1 1 0; width: auto; min-width: 0; }
+.sfb.compact :deep(.rib .vals .me) { flex: 0 0 auto; padding: 0 6px; }
 /* 좁은 칸 — 전체화면 왼쪽 창(폭 ~400px). 반경 · 거래 · 기간 · 기준 · 유사도(면적 · 건축)는 한 줄씩, 엘베 · 층은 반씩, 단추 둘은 맨 아래 반씩 */
 .sfb.compact { margin: 0; padding: 8px 10px; }
 .sfb.compact > .cmp-conds { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 6px; }
