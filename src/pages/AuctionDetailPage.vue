@@ -6236,11 +6236,11 @@ const cmpSave = () => {
   const a = auction.value; if (!a || !cmpLiveReady.value || cmpSaving.value) return;
   const old = a.demandSnap?.v === 1 ? a.demandSnap : null;
   if (!old) { void cmpSaveNow(); return; }
-  confirmBox.value = {
+  askConfirm({
     title: '기존 저장 데이터에 덮어씌우기 됩니다',
     desc: '지금 조회한 정보로 새로 저장됩니다. 덮어씌워진 데이터는 되돌릴 수 없습니다.',
-    okLabel: '확인', skipKey: '', tone: 'calm', run: cmpSaveNow,
-  };
+    okLabel: '확인', skipKey: 'cmpSaveOverwrite', tone: 'calm', run: cmpSaveNow,
+  });   // 오늘 하루 보지 않기(2026-11-12 사용자)
 };
 const cmpSaveNow = async () => {
   const a = auction.value; if (!a || !cmpLiveReady.value || cmpSaving.value) return;
