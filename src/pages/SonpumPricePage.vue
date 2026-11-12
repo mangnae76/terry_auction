@@ -1001,8 +1001,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td v-if="webEmbed" class="ck-td" />
               <td><span class="kind me">{{ meName }}</span></td>
               <td class="r"><span class="est-lab">{{ kindF }} 예상</span></td>
-              <td v-if="kindF === '월세'" class="r pa-num two">{{ view ? n0(view.est) : '-' }}<small>월세</small></td>
-              <td v-else class="r pa-num">{{ view ? n0(view.est) : '-' }}</td>
+              <td v-if="kindF === '월세'" class="r pa-num two est-v">{{ view ? n0(view.est) : '-' }}<small>월세</small></td>
+              <td v-else class="r pa-num est-v">{{ view ? n0(view.est) : '-' }}</td>
               <td class="r pa-num">{{ view ? n0(view.avgPy) : '-' }}</td>
               <td v-if="pubMissing" class="r two"><input class="pubin pa-num" placeholder="입력" inputmode="numeric" aria-label="선정물건 공시가" :value="typedPub ? n0(typedPub) : ''" @change="onPubInput"><small v-if="typedPub && view && kindF !== '월세'">{{ pct(view.est, typedPub) }}</small></td>
               <td v-else class="r pa-num two">{{ n0(curPub) }}<small>{{ view && kindF !== '월세' ? pct(view.est, curPub) : '-' }}</small></td>
@@ -1444,6 +1444,7 @@ td.two small.neg { color: var(--red); }
 .kind.m { background: #eef7f1; color: var(--ok); }
 .kind.me { background: var(--red); color: #fff; font-size: 9px; padding: 1px 4px; border-radius: 3px; }
 .est-lab { color: var(--red); font-size: 13.5px; }
+.est-v { color: var(--red); }   /* 선정물건 줄 가격 — 실거래가 아니라 예상가라 '매매 예상'과 같은 빨강(2026-11-12 사용자) */
 .pubin { width: 110px; height: 30px; border: 1.5px solid var(--red); border-radius: 6px; padding: 0 8px; font: inherit; font-size: 13px; text-align: right; background: #fff; }
 .ev { font-size: 12px; border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
 .ev.two { display: inline-block; text-align: center; line-height: 1.3; padding: 2px 7px; }
