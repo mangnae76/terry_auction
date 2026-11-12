@@ -6060,6 +6060,20 @@ const cmpEst = computed(() => {
   const avg = ps.length ? ps.reduce((a, b) => a + b, 0) / ps.length : 0;
   return { name: r.name || r.jibun, mine: r.mine, n: ps.length, avg, med: mid, min: ps[0] ?? 0, max: ps[ps.length - 1] ?? 0, perPy: py > 0 ? avg / py : 0, py, year: r.buildYear };
 });
+/** 근거 거래 줄 — 고른 건물 · 단지의 칸 줄(평균 · 중간값 …)이 어느 거래로 계산됐나. 최근 거래부터 3건, 넘으면 '외 n건'(2026-11-12 시안) */
+const cmpBasis = computed(() => {
+  const r = cmpPicked.value; if (!cmpPick.value || !r) return null;
+  const ds = r.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세') && d.price > 0)
+    .slice().sort((x, y) => String(y.contractDate).localeCompare(String(x.contractDate)));
+  const fmtD = (v: string) => { const m = String(v).replace(/\D/g, '').match(/^(\d{4})(\d{2})(\d{2})/); return m ? `${m[1]}.${m[2]}.${m[3]}` : v; };
+  const ar = (m: number) => `${Number((Math.floor(m * 100 + 1e-6) / 100).toFixed(2))}㎡`;
+  // 그 건물 · 단지의 기간 안 같은 거래(매매 · 전세) 전부 — 유사평형(±㎡) 밖 거래가 몇 건 빠졌는지 알린다(2026-11-12 사용자)
+  const src = cmpMonths.value === 24 ? (cmpRows2y.value ?? []) : supAllRows.value;
+  const sq = (v: string) => String(v ?? '').replace(/\s+/g, '');
+  const all = src.filter((d) => sq(d.jibun) === sq(r.jibun) && sq(d.umdNm) === sq(r.umdNm) && d.contractDate.replace(/\D/g, '') >= cmpFrom.value
+    && (cmpKind.value === '전세' ? d.kind === '전세' : ['매매', '직거래'].includes(d.kind)) && d.price > 0).length;
+  return { out: Math.max(0, all - ds.length), n: ds.length, shown: ds.slice(0, 3).map((d) => [fmtD(d.contractDate), d.floor ? `${String(d.floor).replace(/층$/, '')}층` : '', `전용 ${ar(d.areaM2)}`, cmpMoney(d.price)].filter(Boolean).join(' · ')), more: Math.max(0, ds.length - 3) };
+});
 /** 표 · 목록의 시설 이름 — 옆 칸이 이미 '학원가'라 '학원가 · 학원 12곳' 은 '학원 12곳' 으로만(2026-11-11) */
 const cmpPlaceName = (name: string) => name.replace(/^학원가\s*·\s*/, '');
 /** ② 호실 예상가 — 선정물건 단지(같은 평형)의 고른 거래 평균 × (1 + 보정 합) */
@@ -9627,6 +9641,8 @@ const goBack = () => router.back();
                   <div class="cmp-tile"><span class="k">{{ cmpKind }} 거래건수</span><span class="v">{{ cmpAll?.n ?? 0 }}건</span></div>
                   </template>
                 </div>
+                <!-- 근거 거래 한 줄 — 건물 · 단지를 고르면 칸 줄이 어느 거래로 계산됐는지. 고르기 전엔 안내만(자리를 늘 두어 지도가 위아래로 출렁이지 않게) -->
+                <p class="cmp-basis"><template v-if="cmpBasis"><b class="k">근거 거래{{ cmpBasis.n > 1 ? ` ${cmpBasis.n}건` : '' }}</b><template v-if="cmpBasis.n"><span v-for="(t, i) in cmpBasis.shown" :key="i" class="d"><i v-if="i" class="sep">|</i>{{ t }}</span><span v-if="cmpBasis.more" class="more">외 {{ cmpBasis.more }}건</span></template><span v-else class="d">기간 안 {{ cmpKind }} 거래 없음</span><span class="cmp-basis-nt">전용 ±{{ cmpTol }}㎡ 거래만 셌습니다{{ cmpBasis.out ? ` · 다른 평형 ${cmpBasis.out}건은 빠졌습니다` : '' }}</span></template><span v-else class="hint">{{ cmpN }}를 누르면 평균이 어느 거래로 계산됐는지 보입니다</span></p>
               </div>
                           <!-- 칸 줄과 지도 · 표는 한 상자(2026-11-11) -->
               <div class="cmp-gap" />
@@ -12701,6 +12717,10 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .sup-tbl .adm-table tbody tr.cmp-row.on td { background: #eef2ff; box-shadow: none; }
 .sup-tbl .adm-table tbody tr.cmp-row.on td:first-child { box-shadow: inset 3px 0 0 #2b6df3; }   /* 고른 줄 왼쪽 파란 막대 — 매각분석 표와 같게(2026-11-12) */   /* 고른 줄 연파랑 — 시세분석과 같게 */
 .cmp-tag { display: inline-block; flex: 0 0 auto; margin-left: 6px; padding: 1px 4px; border-radius: 3px; background: #e03e3e; color: #fff; font-size: 8.5px; font-weight: 400; vertical-align: 2px; }
+.cmp-basis { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 8px 0 0; padding: 8px 12px; border-radius: 8px; background: #eef2ff; font-size: 13px; color: #4b5563; min-height: 36px; box-sizing: border-box; }   /* 근거 거래 줄(2026-11-12 시안) */
+.cmp-basis .k { font-weight: 700; color: #2b6df3; } .cmp-basis .d { font-variant-numeric: tabular-nums; } .cmp-basis .sep { font-style: normal; color: #9ca3af; margin-right: 10px; } .cmp-basis .more, .cmp-basis .hint { color: #6b7280; } .cmp-basis .cmp-basis-nt { margin-left: auto; font-size: 12px; color: #6b7280; }
+:root[data-theme="dark"] .cmp-basis { background: rgba(91, 140, 255, .14); color: #b5bfd0; } :root[data-theme="dark"] .cmp-basis .k { color: #8fb0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-basis { background: rgba(91, 140, 255, .14); color: #b5bfd0; } :root:not([data-theme="light"]) .cmp-basis .k { color: #8fb0ff; } }
 .cmp-tag.same { background: #3b6fd8; }   /* 같은 건물 · 다른 평형 거래로 채운 줄 — 선정물건(빨강)과 구분 */   /* 선정물건 — 시세분석 표 첫 줄 .kind.me 와 같은 네모 칩(모서리 3) */
 .cmp-rk { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 1px solid #e3e8f0; border-radius: 6px; font-weight: 700; color: #111827; }
 .cmp-rk.r1 { color: #2b6df3; border-color: #b9cdf8; }
