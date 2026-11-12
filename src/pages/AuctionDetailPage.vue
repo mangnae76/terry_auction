@@ -5982,6 +5982,8 @@ const cmpDraw = () => {
     pick.places.forEach((p) => {
       if (!p?.lat || !p.lng) return;
       mv.line([pick.point!, { lat: p.lat, lng: p.lng }], { color: p.color, weight: 2, opacity: 0.7 });
+      // 선 끝(시설 쪽)에 작은 원 — 선만 뚝 끊겨 보이던 끝을 마감한다(아파트 · 빌라 같은 지도, 2026-11-12 사용자)
+      mv.pin({ lat: p.lat, lng: p.lng }, { className: 'cmp-dot', html: `<i class="kt-dot" style="--c:${p.color}"></i>`, size: [10, 10], z: 19, interactive: false });
       mv.pin({ lat: p.lat, lng: p.lng }, { className: 'cmp-near', html: `<div class="kt-near" style="--c:${p.color}">${p.ic} ${cmpEsc(p.name)} · ${p.m.toLocaleString('ko-KR')}m</div>`, z: 20, interactive: false });
     });
   }
@@ -12500,6 +12502,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-map :deep(.cmp-bub.me.on .cb) { box-shadow: 0 0 0 3px rgba(240, 90, 40, .25), 0 3px 10px rgba(17, 24, 39, .3); }
 .cmp-map :deep(.cmp-bub.on .cb b) { font-size: 13px; }
 .cmp-map :deep(.cmp-near) { position: relative; }
+.cmp-map :deep(.cmp-dot .kt-dot) { display: block; width: 10px; height: 10px; box-sizing: border-box; border-radius: 50%; background: var(--c); border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(15, 23, 42, .25); }   /* 직선 끝 원 */
 .cmp-map :deep(.cmp-near .kt-near) { position: absolute; left: 0; bottom: 4px; transform: translateX(-50%); font-weight: 400; }   /* 시설 상자 글도 굵기 없음 */
 .fs-btn { position: absolute; left: 10px; top: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(17, 24, 39, .18); font: inherit; font-size: 12.5px; font-weight: 400; color: #111827; cursor: pointer; }   /* 굵기 없음 — 다른 화면 전체화면 단추와 같게(2026-11-11) */
 .fs-btn:hover { color: #2b6df3; }
