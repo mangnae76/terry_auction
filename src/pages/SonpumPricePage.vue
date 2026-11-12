@@ -1419,6 +1419,7 @@ tr.off td:not(.ck-td) { opacity: .42; text-decoration: line-through; }
 .pa-list tbody tr { cursor: pointer; }
 .pa-list tbody tr:hover td { background: var(--soft); }
 .pa-list tbody tr.on td { background: var(--blue-tint); }
+.pa-list tbody tr.on td:first-child { box-shadow: inset 3px 0 0 #2b6df3; }   /* 고른 줄 왼쪽 파란 막대 — 매각분석 표와 같게(2026-11-12) */
 /* 다크 모드 — 줄에 마우스를 대거나 고른 줄이 하얗게 튀었다(2026-11-11 사용자) */
 :root[data-theme="dark"] .pa-list tbody tr:hover td { background: rgba(255, 255, 255, .05); }
 :root[data-theme="dark"] .pa-list tbody tr.on td { background: rgba(43, 109, 243, .2); }

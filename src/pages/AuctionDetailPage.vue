@@ -12698,7 +12698,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-row { cursor: pointer; }
 .sup-tbl .adm-table tbody tr.cmp-row:hover td { background: #f7f9fc; }
 .sup-tbl .adm-table tbody tr.cmp-row.mine td { background: #fff5f5; box-shadow: inset 0 -2px 0 #efb7b7; }
-.sup-tbl .adm-table tbody tr.cmp-row.on td { background: #eef2ff; box-shadow: none; }   /* 고른 줄 연파랑 — 시세분석과 같게 */
+.sup-tbl .adm-table tbody tr.cmp-row.on td { background: #eef2ff; box-shadow: none; }
+.sup-tbl .adm-table tbody tr.cmp-row.on td:first-child { box-shadow: inset 3px 0 0 #2b6df3; }   /* 고른 줄 왼쪽 파란 막대 — 매각분석 표와 같게(2026-11-12) */   /* 고른 줄 연파랑 — 시세분석과 같게 */
 .cmp-tag { display: inline-block; flex: 0 0 auto; margin-left: 6px; padding: 1px 4px; border-radius: 3px; background: #e03e3e; color: #fff; font-size: 8.5px; font-weight: 400; vertical-align: 2px; }
 .cmp-tag.same { background: #3b6fd8; }   /* 같은 건물 · 다른 평형 거래로 채운 줄 — 선정물건(빨강)과 구분 */   /* 선정물건 — 시세분석 표 첫 줄 .kind.me 와 같은 네모 칩(모서리 3) */
 .cmp-rk { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 1px solid #e3e8f0; border-radius: 6px; font-weight: 700; color: #111827; }
