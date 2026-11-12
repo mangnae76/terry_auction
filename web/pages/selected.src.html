@@ -1271,6 +1271,10 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-acts .sx-save { flex: 1; min-width: 0; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.2; padding: 0 10px; border: 0; background: #1f3a72; color: #fff; font-weight: 700; transition: background .15s, border-color .15s; }
 /* 매각분석 표 경매물건 줄 평당가 — 실제가 아니라 평균 매각평당가라 빨강(시세분석 '매매 예상'과 같은 뜻, 2026-11-12 사용자) */
 .sx-tbl tr.me td.sx-est, tr.me td.sx-est { color: #e03e3e; }
+/* 매각분석 필터 부품 자리 — 지도 아래(예전 회색 조건 띠 자리), 안내 글은 그 아래 오른쪽 */
+.sx-filt { margin-top: 12px; display: grid; gap: 6px; }
+.sx-filt .sx-mapmsg { justify-self: end; }
+.sx-filt .sx-mapmsg:empty { display: none; }
 /* PDF 인근 매각사례 통계 상자 — 인근 유사 매각사례 표 바로 아래(2026-11-12) */
 .sx-pdfnear-box { margin-top: 16px; }
 .sx-pdfnear table { width: 100%; }
@@ -7514,6 +7518,7 @@ span.cal-day.has { cursor: help; }
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && SXG.fs) sxSetFs(false); });
   /* 결과를 다시 그릴 때마다 — 지도는 한 번만 만들어 두고 새 자리(#sxMapSlot)로 옮겨 붙인다 */
   function sxMountMap() {
+    sxMountFilt();
     const slot = $('sxMapSlot');
     if (!slot && !SXG.fs) return;
     if (!SXG.host) {
@@ -7902,15 +7907,48 @@ span.cal-day.has { cursor: help; }
     const seg = (k, opts) => `<span class="sx-pseg" role="radiogroup">${opts.map(([v, t]) => `<button type="button" role="radio" class="${String(SXM[k]) === String(v) ? 'on' : ''}" aria-checked="${String(SXM[k]) === String(v)}" data-act="sxm-set" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</span>`;
     const segLock = (k, opts) => `<span class="sx-pseg" role="radiogroup" aria-disabled="true" data-tip="표나 지도에서 기준물건을 고르면 쓸 수 있습니다">${opts.map(([v, t]) => `<button type="button" role="radio" disabled class="${String(SXM[k]) === String(v) ? 'on' : ''}" aria-checked="${String(SXM[k]) === String(v)}">${t}</button>`).join('')}</span>`;
     return `<section class="sx-card sx-mapcard" aria-label="지도"><div class="sx-mapslot" id="sxMapSlot"></div>${saleBandHtml()}`
+      /* 경매물건(기준물건)이 있으면 매매수요 · 시세분석과 같은 필터 부품(SearchFilterBar)을 이 자리에 띄운다(2026-11-12 사용자) — sxMountFilt */
+      + (sxMe() && CLOUD.T && CLOUD.T.mountSearchFilter ? `<div class="sx-filt"><div class="sx-filt-slot" id="sxFiltSlot"></div><span class="sx-mapmsg" id="sxMapMsg">${esc(sxMapMsgText())}</span></div></section>` : '')
       /* 지역으로 · 기준물건 고르기 전 — 반경 · 층은 기본값을 보이되 잠근다(기준이 없어 걸리지 않는다). 고르면 다섯 칸 모두 쓴다(2026-11-08) */
-      + `<div class="sx-conds"><span class="sx-plab rad${sxMe() ? '' : ' off'}">반경${sxMe() ? seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']]) : segLock('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']])}</span>`
+      + (sxMe() && CLOUD.T && CLOUD.T.mountSearchFilter ? '' : `<div class="sx-conds"><span class="sx-plab rad${sxMe() ? '' : ' off'}">반경${sxMe() ? seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']]) : segLock('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']])}</span>`
       /* 매각기간 — 왼쪽 검색조건에서 이 줄 반경 옆으로(2026-11-07). 누르면 바로 다시 계산(검색을 다시 누르지 않는다) */
       + `<span class="sx-plab per">매각기간<span class="sx-pseg" role="radiogroup">${SALE_SEG.period.map((v) => { const on = ((saleApplied && saleApplied.period) || saleSeg.period) === v; return `<button type="button" role="radio" class="${on ? 'on' : ''}" aria-checked="${on}" data-act="sx-period" data-v="${v}">${v}</button>`; }).join('')}</span></span>`
       + `<span class="sx-plab">기준${sxMe() ? seg('basis', [['sim', '유사도'], ['range', '직접범위']])
         : '<span class="sx-pseg" role="radiogroup"><button type="button" role="radio" disabled aria-disabled="true" class="sx-lock" data-tip="지역으로 조회할 때는 기준 물건이 없어 유사도를 쓰지 않습니다">유사도</button><button type="button" role="radio" class="on" aria-checked="true">직접범위</button></span>'}</span>`
       + `<span class="sx-plab">엘베${seg('elev', [['', '전체'], ['yes', '있음'], ['no', '없음']])}</span>`
       + `<span class="sx-plab${sxMe() ? '' : ' off'}">층${sxMe() ? seg('floor', [['', '전체'], ['0', '같은층']]) : segLock('floor', [['', '전체'], ['0', '같은층']])}</span>`
-      + `<span class="sx-mapmsg" id="sxMapMsg">${esc(sxMapMsgText())}</span>${sxSimRowHtml()}${sxActsHtml()}</div></section>`;
+      + `<span class="sx-mapmsg" id="sxMapMsg">${esc(sxMapMsgText())}</span>${sxSimRowHtml()}${sxActsHtml()}</div></section>`);
+  }
+  /* ===== 필터 부품 — 한 번 띄운 부품(SXF.host)을 다시 그릴 때마다 자리(#sxFiltSlot)에 옮겨 꽂고 값만 새로 넘긴다(깜빡이지 않게) ===== */
+  const SXF = { host: null, app: null };
+  function sxFiltProps() {
+    const T = CLOUD.T; const subj = sxMeSubject(sxMe()) || { areaM2: 0, year: 0 }; const rc = SXM.rc || {};
+    const per = (saleApplied && saleApplied.period) || saleSeg.period; const months = Number(String(per).replace(/\D/g, '')) || 12;
+    const dirty = !sxSaved || JSON.stringify(sxSaved.snap) !== JSON.stringify(sxSnapNow());
+    const stamp = sxSaved && sxSaved.at && T && T.updateStamp ? T.updateStamp(sxSaved.at) : '';
+    return {
+      draft: { range: Number(SXM.radius), months, kind: '매매', mode: SXM.basis === 'sim' ? 'sim' : 'range', sim: Number(SXM.sim), area: [rc.mMin ?? null, rc.mMax ?? null], year: [rc.yMin ?? null, rc.yMax ?? null], floor: SXM.floor === '0' ? 'same' : null, elev: SXM.elev || null },
+      rangeOptions: [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']], periodOptions: [[3, '3개월'], [6, '6개월'], [12, '1년'], [24, '2년']],
+      kindCount: () => '', kinds: ['매매'], baseArea: subj.areaM2 || 0, baseYear: subj.year || 0, areaMax: SX_AREA[1], yearMin: SX_YEAR[0], yearMax: SX_YEAR[1],
+      simRange: (v) => { const sc = subj.areaM2 > 0 && T && T.simCond ? T.simCond(Number(v), subj) : null; return sc ? { area: [Math.max(SX_AREA[0], Math.floor(sc.mMin)), Math.min(SX_AREA[1], Math.ceil(sc.mMax))], year: [Math.max(SX_YEAR[0], sc.yMin || SX_YEAR[0]), Math.min(SX_YEAR[1], sc.yMax || SX_YEAR[1])] } : { area: [rc.mMin ?? null, rc.mMax ?? null], year: [rc.yMin ?? null, rc.yMax ?? null] }; },
+      isDefault: false, canSave: S.route !== 'market', saving: false, saved: !dirty, savedDay: stamp, hide: S.route === 'market' ? ['kind', 'save'] : ['kind'],
+    };
+  }
+  function sxFiltChange(v) {
+    const per = `${v.months}개월`; const cur = (saleApplied && saleApplied.period) || saleSeg.period;
+    if (per !== cur) { saleSeg.period = per; saleSave(); if (saleApplied) saleApply({ ...saleApplied, period: per }); renderMarket(); return; }   /* 매각기간 — 바로 다시 계산(예전 단추와 같다) */
+    const toRange = v.mode === 'range' && SXM.basis !== 'range';
+    Object.assign(SXM, { radius: Number(v.range), elev: v.elev || '', floor: v.floor === 'same' ? '0' : '', sim: Number(v.sim) });
+    if (toRange) sxRcFromSim();   /* 직접범위로 가면 유사도 범위에서 시작 */
+    else { const rc = SXM.rc || {}; SXM.rc = { mMin: v.area[0] ?? rc.mMin, mMax: v.area[1] ?? rc.mMax, yMin: v.year[0] ?? rc.yMin, yMax: v.year[1] ?? rc.yMax }; }
+    SXM.basis = v.mode; sxSaveM();
+    if ($('sxResults')) agPaintTable(); else sxDrawMap();
+  }
+  function sxMountFilt() {
+    const slot = $('sxFiltSlot'); const T = CLOUD.T; if (!slot || !T || !T.mountSearchFilter) return;
+    if (!SXF.host) { SXF.host = document.createElement('div'); SXF.app = T.mountSearchFilter(SXF.host, sxFiltProps(), { change: sxFiltChange, reset: () => sxMapReset(), save: () => sxMapSave() }); }
+    else SXF.app.set(sxFiltProps());
+    slot.appendChild(SXF.host);
   }
   /* ===== 초기화 · 저장 — 손품조사 시세분석과 같은 꼴 · 같은 자리(거르기 상자 오른쪽, 위 '층' 칸 아래, 2026-11-07).
      초기화는 반경 · 매각기간 · 기준 · 엘베 · 층 · 유사도 · 직접범위를 처음 값으로(5초 안에 다시 누르면 되돌리기),

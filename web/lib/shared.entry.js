@@ -105,6 +105,15 @@ export const mountKakaoTools = (el, k, map, near) => {
   app.mount(el);
   return { setNear: (p) => { st.near = p || null; }, unmount: () => app.unmount() };
 };
+/* 필터 기본 부품 세트(SearchFilterBar) — 매매수요 · 시세분석과 같은 필터를 웹 매각분석 칸에 띄운다(2026-11-12 사용자).
+   props 는 부품 그대로(draft · rangeOptions …), on.change(v) · on.reset() · on.save() 로 웹 쪽 값을 바꾼다. set(p) 로 값만 새로 넘긴다 */
+import SearchFilterBar from '../../src/components/SearchFilterBar.vue';
+export const mountSearchFilter = (el, props, on) => {
+  const st = vueReactive({ ...props });
+  const app = createApp({ render: () => h(SearchFilterBar, { ...st, 'onUpdate:draft': (v) => on.change(v), onApply: () => {}, onReset: () => on.reset(), onSave: () => on.save() }) });
+  app.mount(el);
+  return { set: (p) => { Object.assign(st, p); }, unmount: () => app.unmount() };
+};
 // 매각기일 요일 — 앱 일정 저장소의 weekdayLabel 그대로
 export { weekdayLabel } from '../../src/stores/scheduleStore';
 
