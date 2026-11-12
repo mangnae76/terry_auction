@@ -85,8 +85,7 @@ import SonpumPricePage from './SonpumPricePage.vue';
 import type { CasePropertyType } from '../services/caseTradeAnalysis';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
 import { dongShapeOf, parcelShapeOf } from '../services/zoning';
-import RangeInputBox from '../components/RangeInputBox.vue';
-import SimRangeBox from '../components/SimRangeBox.vue';
+import SearchFilterBar, { type SearchFilter } from '../components/SearchFilterBar.vue';
 import { useFilterDraft } from '../composables/useFilterDraft';
 import { complexesOf, complexNearbyOf, complexPointOf, metersBetween, LOCATION_SOURCES, nearestPlaceOf, PLACE_ICON, rankFromMeters, walkMinOf, WALK_DETOUR, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
 import KakaoMapTools from '../components/KakaoMapTools.vue';
@@ -5657,7 +5656,6 @@ const cmpElevR = ref<'yes' | 'no' | null>(null);
 const cmpMyFloor = computed(() => Number(String(auction.value?.basicSummary?.['sum.floorCurrent'] ?? '').replace(/[^\d-]/g, '')) || 0);
 /** 건물마다 엘베 수(건축물대장) — 엘베로 거를 때만 받는다. null = 대장에 없음 */
 const cmpElevs = ref<Record<string, number | null>>({});
-const cmpPyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 3.305785).toFixed(1)}평`;
 const cmpMyYear = computed(() => Number(String(auction.value?.buildingHeader?.approvalDate || auction.value?.approvalDate || '').slice(0, 4)) || 0);
 const cmpYearAll = (y: [number, number]) => y[0] <= CMP_YEAR_MIN && y[1] >= cmpYearMax;
 /** 설명 글 — '전용 52~59㎡' · 건축을 좁혔으면 '· 건축 2005~2015년' */
@@ -5677,13 +5675,13 @@ const cmpMyElev = (): 'yes' | 'no' | null => {
   return ox === 'O' ? 'yes' : ox === 'X' ? 'no' : null;
 };
 /** 거르기 기본값(2026-11-12 사용자 확정) — 반경 1km · 6개월 · 매매 · 면적 내 물건 ±3㎡ · 건축 전체 · 층 전체 · 엘베는 빌라면 내 물건과 같게(아파트는 전체) */
-type CmpFilter = { range: CmpRange; months: 3 | 6 | 12 | 24; kind: '매매' | '전세'; mode: 'sim' | 'range'; sim: number; area: [number, number]; year: [number, number]; floor: 'same' | null; elev: 'yes' | 'no' | null };
+type CmpFilter = SearchFilter;   // 거르기 한 벌의 꼴은 부품(components/SearchFilterBar)에 하나로
 const cmpDefaults = (): CmpFilter => ({ range: 1000, months: 6, kind: '매매', mode: 'range', sim: 80, area: cmpAreaDef(), year: [CMP_YEAR_MIN, cmpYearMax], floor: null, elev: isApartment.value ? null : cmpMyElev() });
 /** 고르기 → 조회하기 → 초기화 한 벌(composables/useFilterDraft — 다른 화면도 같은 부품을 끼운다) */
 const cmpF = useFilterDraft<CmpFilter>(
   () => ({ range: cmpRange.value, months: cmpMonths.value, kind: cmpKind.value, mode: cmpModeR.value, sim: cmpSimR.value, area: [...cmpArea2.value] as [number, number], year: [...cmpYear2.value] as [number, number], floor: cmpFloorR.value, elev: cmpElevR.value }),
   (v) => {
-    cmpRange.value = v.range; cmpMonths.value = v.months; cmpKind.value = v.kind;
+    cmpRange.value = v.range as CmpRange; cmpMonths.value = v.months as 3 | 6 | 12 | 24; cmpKind.value = v.kind;
     cmpModeR.value = v.mode; cmpSimR.value = v.sim;
     cmpAreaR.value = v.mode === 'sim' || cmpSame2(v.area, cmpAreaDef()) ? null : v.area; cmpYearR.value = v.mode === 'sim' || cmpYearAll(v.year) ? null : v.year;
     cmpFloorR.value = v.floor; cmpElevR.value = v.elev;
@@ -5696,21 +5694,8 @@ const cmpDirty = cmpF.dirty;
 const cmpIsDefault = cmpF.isDefault;
 const cmpReset = cmpF.reset;
 const cmpApply = cmpF.apply;
-/** 단추가 고치는 칸 — 고르기(초안)만 바꾼다 */
-const cmpDraftKey = <K extends keyof CmpFilter>(k: K) => computed<CmpFilter[K]>({ get: () => cmpDraft.value[k], set: (v) => { cmpDraft.value = { ...cmpDraft.value, [k]: v }; } });
-const cmpRangeD = cmpDraftKey('range');
-const cmpMonthsD = cmpDraftKey('months');
-const cmpKindD = cmpDraftKey('kind');
-const cmpAreaD = cmpDraftKey('area');
-const cmpYearD = cmpDraftKey('year');
-const cmpFloorD = cmpDraftKey('floor');
-const cmpElevD = cmpDraftKey('elev');
-const cmpSimD = computed<number>({ get: () => cmpDraft.value.sim, set: (v) => { cmpDraft.value = { ...cmpDraft.value, sim: v, area: cmpSimArea(v), year: cmpSimYear(v) }; } });
-/** 기준 바꾸기 — 직접범위로 가면 지금 유사도 범위에서 시작(시세분석과 같다), 유사도로 가면 유사도 범위로 */
-const cmpModeD = computed<'sim' | 'range'>({
-  get: () => cmpDraft.value.mode,
-  set: (m) => { const d = cmpDraft.value; cmpDraft.value = m === 'sim' ? { ...d, mode: m, area: cmpSimArea(d.sim), year: cmpSimYear(d.sim) } : { ...d, mode: m }; },
-});
+/** 유사도 % → 면적 · 건축 범위(부품이 기준 · 유사도 막대를 바꿀 때 쓴다) */
+const cmpSimRanges = (sim: number) => ({ area: cmpSimArea(sim), year: cmpSimYear(sim) });
 /** 거래 단추 옆 건수 — 지금 리스트(범위 · 기간 · 유사평형)에 든 매매 · 전세 실거래 수(시세분석 '매매 3'과 같은 꼴, 2026-11-12 사용자) */
 const cmpKindCount = (k: '매매' | '전세') => cmpRows.value.reduce((n, r) => n + r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length, 0).toLocaleString('ko-KR');
 // 고른 거르기는 그 물건 문서(DB)에 남긴다 — 바꾸면 리스트 · 평균가가 달라져, 다시 열어도 같은 숫자를 보게(2026-11-11 사용자). 처음엔 위 기본값
@@ -9782,29 +9767,8 @@ const goBack = () => router.back();
               <div class="cmp-est-h"><h3><span class="cmp-no">②</span>{{ cmpN }} 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}<template v-if="cmpPick && cmpPicked"> · {{ cmpPicked.name || cmpPicked.jibun }}</template></span><span class="cmp-q">{{ isApartment ? '내가 선정한 아파트 단지는 몇 등일까?' : '내가 선정한 빌라는 주변 유사 빌라 중 몇 등일까?' }}</span></h3>
                 <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">검색기준 · {{ cmpRangeText }} · 최근 {{ cmpPeriodText }} · {{ cmpCondText }} {{ cmpKind }} 실거래</span> · {{ cmpN }} {{ cmpRows.length }}곳 전체<template v-if="cmpSnapDay"> · {{ cmpSnapDay }} 저장</template></span>
               </div>
-              <!-- 거르기 — 제목 · 검색기준 줄 바로 밑(2026-11-12 사용자). 단추는 고르기만, 조회하기를 눌러야 리스트 · 지도 · 칸 줄이 바뀌고 저장된다. (예전: 지도 밑 · 표 바로 위, 2026-11-11) 시세분석 조건 줄과 같은 단추 · 순서(범위 → 거래 → 기간 → 평형). 표 · 지도 · 위 칸 줄이 같이 바뀐다 -->
-              <div class="cmp-conds">
-                <span class="pa-lab">반경<span class="pa-seg pa-out" role="radiogroup" aria-label="반경"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRangeD === v }" :aria-checked="cmpRangeD === v" :data-t="t" @click="cmpRangeD = v">{{ t }}</button></span></span>
-                <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :data-k="k" :class="{ on: cmpKindD === k }" :aria-checked="cmpKindD === k" @click="cmpKindD = k">{{ k }} {{ cmpKindCount(k) }}</button></span></span>
-                <span class="pa-lab">기간<span class="pa-seg pa-out" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonthsD === m }" :aria-checked="cmpMonthsD === m" :data-t="t" @click="cmpMonthsD = m">{{ t }}</button></span></span>
-                <span class="pa-lab">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베"><button v-for="[v, t] in ([[null, '전체'], ['yes', '있음'], ['no', '없음']] as const)" :key="t" type="button" role="radio" :class="{ on: cmpElevD === v }" :aria-checked="cmpElevD === v" :data-t="t" @click="cmpElevD = v">{{ t }}</button></span></span>
-                <span class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층"><button type="button" role="radio" :class="{ on: cmpFloorD !== 'same' }" :aria-checked="cmpFloorD !== 'same'" data-t="전체" @click="cmpFloorD = null">전체</button><button type="button" role="radio" :class="{ on: cmpFloorD === 'same' }" :aria-checked="cmpFloorD === 'same'" data-t="같은 층" @click="cmpFloorD = 'same'">같은 층</button></span></span>
-              </div>
-              <!-- 면적 · 건축 막대 — 거르기 줄 밑 한 줄, 두 상자가 위 줄 폭에 맞게 반씩(2026-11-12 사용자) -->
-              <!-- 면적 · 건축 상자(적는 칸), 조회하기 · 저장하기는 오른쪽 — 단추는 위 거르기까지 다 같이 쓴다(2026-11-12 사용자) -->
-              <div class="cmp-bars-row">
-              <div class="cmp-bars">
-                  <span class="pa-lab cmp-mode">기준<span class="pa-seg pa-out" role="radiogroup" aria-label="유사 조건 방식"><button v-for="[v, t] in ([['sim', '유사도'], ['range', '직접범위']] as const)" :key="v" type="button" role="radio" :class="{ on: cmpModeD === v }" :aria-checked="cmpModeD === v" :data-t="t" @click="cmpModeD = v">{{ t }}</button></span></span>
-                  <span v-if="cmpModeD === 'sim'" class="cmp-sim" :style="{ '--p': `${((cmpSimD - 60) / 35) * 100}%` }"><SimRangeBox :sim="cmpSimD" :text="`면적 ${cmpDraft.area[0]}~${cmpDraft.area[1]}㎡ · 건축 ${cmpDraft.year[0]}~${cmpDraft.year[1]}년`" @update="(v) => (cmpSimD = v)" /></span>
-                  <RangeInputBox v-if="cmpModeD === 'range'" label="면적 ㎡" :min="20" :max="cmpAreaBarMax" :lo="cmpAreaD[0]" :hi="cmpAreaD[1]" :base="supMyArea" :lo-text="String(cmpAreaD[0])" :base-text="String(Number((Math.floor(supMyArea * 100 + 1e-6) / 100).toFixed(2)))" :hi-text="String(cmpAreaD[1])" :sub="cmpPyTx(cmpAreaD[0], cmpAreaD[1])" @update="(lo, hi) => (cmpAreaD = [lo, hi])" />
-                  <RangeInputBox v-if="cmpModeD === 'range'" label="건축" :min="CMP_YEAR_MIN" :max="cmpYearMax" :lo="cmpYearD[0]" :hi="cmpYearD[1]" :base="cmpMyYear" :lo-text="String(cmpYearD[0])" :base-text="String(cmpMyYear || '')" :hi-text="String(cmpYearD[1])" :sub="`${cmpYearMax - cmpYearD[1] + 1}~${cmpYearMax - cmpYearD[0] + 1}년차`" @update="(lo, hi) => (cmpYearD = [lo, hi])" />
-              </div>
-              <span class="cmp-qbtns">
-                  <button type="button" class="cmp-reset" :disabled="cmpIsDefault" title="거르기를 기본값(반경 1km · 6개월 · 매매 · 면적 ±3㎡ …)으로 — 조회하기를 눌러야 적용" @click="cmpReset"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button>
-                    <button type="button" :class="['cmp-go', { dirty: cmpDirty || cmpWaiting }]" @click="cmpApply">조회하기</button>
-                  <button type="button" :class="['cmp-save', { ready: cmpLiveReady }]" :disabled="!cmpLiveReady || cmpSaving" :title="cmpSnapOn && !cmpDirty ? '저장된 리스트입니다' : cmpDirty ? '조회하기를 누른 뒤 저장할 수 있습니다' : cmpLiveReady ? '지금 리스트를 저장합니다' : '조회하기로 불러온 뒤 저장할 수 있습니다'" @click="cmpSave">{{ cmpSnapOn && !cmpDirty ? '저장됨' : '저장하기' }}</button>
-                </span>
-              </div>
+              <!-- 검색 거르기 — 부품 하나(components/SearchFilterBar, '필터 기본 부품 세트' 2026-11-12). 다른 화면은 이 부품을 그대로 끼우고 hide 로 뺄 항목만 끈다 -->
+              <SearchFilterBar v-model:draft="cmpDraft" :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :dirty="cmpDirty" :waiting="cmpWaiting" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
               <div class="cmp-est">
                 <div class="cmp-tiles">
                   <!-- 단지를 고르기 전엔 동 전체(평균 · 평당가 · 건수 · 단지 수), 고르면 그 단지(중간값 · 최저 · 최고 · 면적까지). 칸 자리는 그대로 — 흔들리지 않게 -->
@@ -9819,7 +9783,7 @@ const goBack = () => router.back();
                   <div class="cmp-tile"><span class="k">{{ cmpKind }} 거래건수</span><span class="v">{{ cmpEst?.n ?? 0 }}건</span></div>
                   </template>
                   <template v-else>
-                  <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · {{ supRegion?.dong || '동 전체' }}</span><span class="v">{{ cmpAll ? cmpEok(cmpAll.avg) : '-' }}</span><span class="s">{{ cmpCondText }}</span></div>
+                  <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · {{ supRegion?.dong || '동 전체' }}</span><span class="v">{{ cmpAll ? cmpEok(cmpAll.avg) : '-' }}</span></div>
                   <div v-for="k in ['중간값', '최저가', '최고가']" :key="k" class="cmp-tile off"><span class="k">{{ k }}</span><span class="v sm">{{ cmpN }}를 누르면 보입니다</span></div>
                   <div class="cmp-tile"><span class="k">평균 평당가</span><span class="v">{{ cmpAll ? cmpPy(cmpAll.perPy) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">{{ cmpN }} 수</span><span class="v">{{ cmpAll?.complexes ?? 0 }}곳</span></div>
@@ -12625,65 +12589,13 @@ tr.tone-take { background: #fff5f5; }
 input.cmp-rk.in { padding: 0; font: inherit; font-weight: 700; text-align: center; border-color: #2b6df3; background: #fff; }
 input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b45309; }   /* 손으로 고친 등수 */
 /* 단지 입지비교 거르기 — 시세분석 조건 줄(.pa-lab · .pa-seg · .kindF) 값 그대로(2026-11-11) */
-.cmp-conds { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; margin: 10px 0 12px; }   /* 범위 · 거래 · 기간 · 엘베 · 층 한 줄 — 상자가 줄 폭을 나눠 갖는다(2026-11-12 사용자) */
-.cmp-conds > .pa-lab { flex: 1 1 auto; min-width: 0; justify-content: space-between; padding: 4px 10px; gap: 8px; }
-.cmp-conds > .pa-lab > .pa-seg { flex: 1 1 auto; justify-content: space-between; }
-.cmp-conds > .pa-lab > .pa-seg > button { flex: 1 1 auto; padding: 0 8px; }
-@media (max-width: 1180px) { .cmp-conds { flex-wrap: wrap; } }
-.cmp-bars-row { display: flex; align-items: stretch; gap: 8px; margin: -2px 0 12px; }   /* [기준][면적][건축 | 유사도] … [필터초기화][조회하기][저장하기] — 상자 사이 모두 8px */
-.cmp-bars { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
-.cmp-bars > .cmp-mode { display: inline-flex; align-items: center; gap: 10px; height: 42px; box-sizing: border-box; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 4px 12px; font-size: 14px; font-weight: 700; color: #6b7280; white-space: nowrap; }   /* 기준 — 반경 · 기간 상자와 같은 꼴 */
-.cmp-bars > .cmp-mode .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
-.cmp-bars > .cmp-mode .pa-seg button { border: none; background: transparent; border-radius: 5px; height: 26px; padding: 0 12px; font: inherit; font-size: 14px; font-weight: 400; color: #6b7280; cursor: pointer; }
-.cmp-bars > .cmp-mode .pa-seg button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
-.cmp-bars { flex: 1 1 auto; min-width: 0; }   /* 필터초기화 단추까지 같은 8px 간격으로 채운다 */
-.cmp-bars > :is(.rib, .cmp-sim) { flex: 1 1 0; min-width: 0; }
-.cmp-sim { display: flex; align-items: center; height: 42px; box-sizing: border-box; padding: 0 14px; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; overflow: hidden; }   /* 유사도 막대 상자 — 높이는 다른 상자와 같은 42px */
-.cmp-sim > * { flex: 1 1 auto; min-width: 0; }
 /* 상자 안에 다 들어가게 — 글 · 눈금 · 막대 · 동그라미를 작게(2026-11-12 사용자). 시세분석 유사도 막대는 그대로 */
-.cmp-sim :deep(.simA) { gap: 0; }
-.cmp-sim :deep(.simlab) { font-size: 11.5px; line-height: 1.1; gap: 8px; }
-.cmp-sim :deep(.simlab span + span) { font-size: 11px; }
-.cmp-sim :deep(.ticks) { font-size: 9px; transform: none; padding: 0 1px; }
-.cmp-sim :deep(input[type="range"]) { -webkit-appearance: none; appearance: none; height: 12px; margin: 1px 0; background: transparent; }
-.cmp-sim :deep(input[type="range"]::-webkit-slider-runnable-track) { height: 3px; border-radius: 2px; background: linear-gradient(#2b6df3, #2b6df3) 0 / var(--p, 57%) 100% no-repeat, #dde3ee; }
-.cmp-sim :deep(input[type="range"]::-webkit-slider-thumb) { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5.5px; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; box-shadow: 0 1px 2px rgba(17, 24, 39, .3); cursor: grab; }
-.cmp-sim :deep(input[type="range"]::-moz-range-track) { height: 3px; border-radius: 2px; background: #dde3ee; }
-.cmp-sim :deep(input[type="range"]::-moz-range-progress) { height: 3px; border-radius: 2px; background: #2b6df3; }
-.cmp-sim :deep(input[type="range"]::-moz-range-thumb) { width: 12px; height: 12px; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; }   /* 면적 · 건축 — 반경 · 기간과 같은 상자(막대 뺌, 2026-11-12 사용자) */
-@media (max-width: 760px) { .cmp-bars-row { flex-wrap: wrap; } }
-.cmp-qbtns { display: flex; align-items: stretch; gap: 8px; margin-left: auto; }
-.cmp-qbtns > button { height: auto; min-width: 110px; }
-.cmp-reset { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #4b5563; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
-.cmp-qbtns > .cmp-reset { min-width: 96px; }
-.cmp-reset:disabled { color: #b8bfcc; cursor: default; }
-:root[data-theme="dark"] .cmp-reset { background: transparent; border-color: #34405a; color: #b5bfd0; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-reset { background: transparent; border-color: #34405a; color: #b5bfd0; } }   /* 면적 · 건축 상자와 같은 높이(2026-11-12 사용자) */   /* 면적 · 건축 옆 — 필터초기화 · 조회하기 · 저장하기(2026-11-12 사용자). .cmp-acts 는 표 줄 바로가기 단추라 이름을 따로 */
-.cmp-go { height: 42px; padding: 0 22px; border: 1px solid #2b6df3; border-radius: 8px; background: #fff; color: #2b6df3; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }   /* 조회하기 — 고른 거르기가 지금과 다르면 파랗게 채운다 */
-.cmp-go.dirty { background: #2b6df3; color: #fff; }
-.cmp-save { height: 42px; min-width: 96px; padding: 0 18px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #9ca3af; font: inherit; font-size: 14px; font-weight: 700; cursor: default; }   /* 저장하기 — 조회 결과가 다 오면 초록으로 */
-.cmp-save.ready { border-color: #16a34a; background: #16a34a; color: #fff; cursor: pointer; }
-:root[data-theme="dark"] .cmp-save:not(.ready) { background: transparent; border-color: #34405a; color: #6e788c; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-save:not(.ready) { background: transparent; border-color: #34405a; color: #6e788c; } }
-.cmp-go:hover { filter: brightness(.97); }
-:root[data-theme="dark"] .cmp-go:not(.dirty) { background: transparent; color: #8fb0ff; border-color: #5b8cff; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-go:not(.dirty) { background: transparent; color: #8fb0ff; border-color: #5b8cff; } }
 .cmp-fixed { margin-left: auto; align-self: center; font-size: 12px; color: #6b7280; }   /* 필터 줄 오른쪽 빈자리 — 위 설명 줄과 같은 꼴(깔때기 + 파란 글, 2026-11-11 사용자) */
-.cmp-conds .pa-lab { display: inline-flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 4px 12px; font-size: 14px; font-weight: 700; color: #6b7280; white-space: nowrap; }
-.cmp-conds .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
-.cmp-conds .pa-seg button { border: none; background: transparent; border-radius: 5px; height: 26px; padding: 0 13px; font: inherit; font-size: 14px; font-weight: 400; color: #6b7280; cursor: pointer; white-space: nowrap; }
 /* 고르면 굵어져도 폭이 그대로 — 굵은 글 폭을 보이지 않게 미리 잡아 둔다(data-t), 단추를 눌러도 줄이 흔들리지 않게(2026-11-11) */
-.cmp-conds .pa-seg.pa-out button, .cmp-persona .pa-seg button { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; }
-.cmp-conds .pa-seg.pa-out button::after, .cmp-persona .pa-seg button::after { content: attr(data-t); height: 0; overflow: hidden; visibility: hidden; font-weight: 700; pointer-events: none; }
-.cmp-conds .pa-seg.pa-out button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
-.cmp-conds .kindF button { font-weight: 700; }
-.cmp-conds .kindF button { min-width: 84px; }   /* '전세 1,234'까지 들어가게 — 건수 자릿수가 바뀌어도 상자 폭이 그대로(2026-11-12) */
 .cmp-fs-conds .fseg[aria-label="거래 종류"] button { min-width: 76px; }
-.cmp-conds .kindF button[data-k="매매"] { background: #eef2ff; color: #2b3a67; }
-.cmp-conds .kindF button[data-k="전세"] { background: #fdf3e1; color: #b7791f; }
-.cmp-conds .kindF button.on[data-k="매매"] { background: #2b3a67; color: #fff; }
-.cmp-conds .kindF button.on[data-k="전세"] { background: #b7791f; color: #fff; }
 /* 시세분석 결론 칸 줄 — SonpumPricePage .zone-h · .pa-tag · .est · .tiles · .tile 값 그대로(2026-11-11) */
+.cmp-persona .pa-seg button { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; }
+.cmp-persona .pa-seg button::after { content: attr(data-t); height: 0; overflow: hidden; visibility: hidden; font-weight: 700; pointer-events: none; }   /* 실사용자 줄 단추 — 굵은 글 폭 예약(검색 거르기 부품에도 같은 규칙) */
 .cmp-est-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .cmp-scope-chip { display: inline-flex; align-items: center; margin-left: 8px; color: #2b6df3; font-size: 12.5px; font-weight: 700; line-height: 1.4; white-space: nowrap; }   /* 지역 — 알약은 빼고 파란 글만(2026-11-11 사용자) */
 .cmp-q { margin-left: 8px; font-size: 12.5px;   /* h3 안은 span — 웹의 'h3 > small 은 14' 규칙에 걸려 '누구한테 팔까?'보다 커졌다(2026-11-11) */
