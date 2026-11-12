@@ -53,11 +53,23 @@ const off = (k: SearchFilterKey) => !!props.hide?.includes(k);
 // 고르면 바로 적용 — 받아 둔 실거래 1년치에서 거르기만 해서 조회하기가 필요 없다(전체화면과 같게, 2026-11-12 사용자)
 // 보던 자리 지키기 — 필터를 바꾸면 위쪽 칸(예상가 · 지표 등) 높이가 바뀌어 화면이 밀렸다. 바꾸기 전 이 필터의 화면 위치를 재 두고, 다시 그려진 뒤 그만큼 스크롤을 되돌린다(2026-11-12 사용자)
 const rootEl = ref<HTMLElement | null>(null);
+// 아래 표 · 리스트가 줄어 페이지가 짧아지면 스크롤을 되돌릴 자리가 없다(브라우저가 끌어올림) — 그만큼 페이지 밑을 잠깐 받쳐 둔다. 받침이 화면 밖으로 나가면 걷는다
+let padNow = 0;
+const setPad = (px: number) => { padNow = Math.max(0, Math.round(px)); document.body.style.paddingBottom = padNow ? `${padNow}px` : ''; };
+const onPadScroll = () => { if (padNow && window.scrollY + window.innerHeight <= document.documentElement.scrollHeight - padNow - 2) setPad(0); };
+if (typeof window !== 'undefined') window.addEventListener('scroll', onPadScroll, { passive: true });
 const keepPlace = () => {
   const el = rootEl.value; if (!el || typeof window === 'undefined') return;
   const y0 = el.getBoundingClientRect().top;
-  const fix = () => { if (!el.isConnected) return; const dy = el.getBoundingClientRect().top - y0; if (Math.abs(dy) > 1) window.scrollBy(0, dy); };
-  requestAnimationFrame(() => { fix(); requestAnimationFrame(fix); });
+  const fix = () => {
+    if (!el.isConnected) return;
+    let dy = el.getBoundingClientRect().top - y0;
+    if (Math.abs(dy) <= 1) return;
+    window.scrollBy(0, dy);
+    dy = el.getBoundingClientRect().top - y0;   // 더 내릴 자리가 없어 남은 만큼(필터가 아래로 밀린 채)
+    if (dy > 1) { setPad(padNow + dy); window.scrollBy(0, dy); }
+  };
+  requestAnimationFrame(() => { fix(); requestAnimationFrame(() => { fix(); setTimeout(fix, 120); }); });
 };
 const set = (patch: Partial<SearchFilter>) => { keepPlace(); emit('update:draft', { ...props.draft, ...patch }); emit('apply'); };
 // 유사도 막대는 끄는 동안 값이 계속 바뀐다 — 막대 · 글은 이 부품 안에서만 바로 따라가고(simLive), 화면에 알리기(값 바꾸기 · 다시 계산)는 손을 멈춘 뒤 한 번.
