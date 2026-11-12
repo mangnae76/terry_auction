@@ -35,7 +35,7 @@ import { complexNameOf, totalParkingOf } from '../services/aptComplex';
 import { getComplexAreas, supplyRowsOf, areaUnitsOf, sameExclusiveCountOf, type ComplexAreas } from '../services/complexAreas';
 import { COMPLEX_BURDEN_LINE, DEMAND_PLAIN, dec1, demandFitText, demandGradeOf, demandOpinionOf, demandPassText, demandTip, type DemandMetric } from '../services/demandGrade';
 import { openNaverComplexListing, openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
-import { computed, inject, markRaw, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch, type Ref } from 'vue';
+import { computed, defineAsyncComponent, inject, markRaw, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
@@ -83,6 +83,7 @@ import { askRightsAnalysis, DOC_LABELS, type RightsAi, type RightsDocPart } from
 import { buildRightsFacts } from '../services/rightsFacts';
 import RightsPanel from '../components/RightsPanel.vue';
 import SonpumPricePage from './SonpumPricePage.vue';
+import WebScope from '../components/WebScope.vue';
 import type { CasePropertyType } from '../services/caseTradeAnalysis';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
 import { dongShapeOf, parcelShapeOf } from '../services/zoning';
@@ -100,6 +101,8 @@ import {
 import { buildCashOutPlan } from '../services/cashOutPlan';
 import { buildingAgeOf, buildingAgeText } from '../utils/buildingAge';
 
+// 앱 손품조사 탭 — 웹 손품조사 화면(SonpumAnalysisPage)을 그대로. 그 화면이 이 화면을 품고 있어 늦게 불러 서로 물고 물리지 않게 한다
+const SonpumAnalysisPage = defineAsyncComponent(() => import('./SonpumAnalysisPage.vue'));
 const props = defineProps<{
   mode?: 'create' | 'view' | 'edit';
   id?: string;
@@ -113,6 +116,8 @@ const sonpumMode = inject<boolean>('sonpumMode', false);
 /** 앱 손품+현장 › 시세조사 — 웹 손품조사 › 시세분석(SonpumPricePage)을 그대로 띄우고, 그 아래 참고 호가매물 둘(2026-11-09 시안 price-mock).
  *  예전 1. 실거래가 조사(경매지번 실거래가 · 실거래가 조건분석) · 3. 동일지번 매각물건은 앱에서 뺐다 */
 const appPrice = !webEmbed && !sonpumMode;
+/** 앱 손품조사 탭이 띄운 웹 손품조사인가 — 웹과 같게 그리고 지도만 뺀다(2026-11-12 사용자 '앱에서는 지도 기능만 없이') */
+const sonApp = inject<boolean>('sonApp', false);
 /** 시세분석 종류 — 손품분석(SonpumAnalysisPage)과 같은 가름 */
 const priceKind = computed<CasePropertyType>(() => {
   const t = auction.value?.propertyType ?? '';
@@ -6191,7 +6196,7 @@ const cmpTools = shallowRef<{ k: unknown; map: unknown } | null>(null);
 const cmpMePoint = computed(() => cmpRows.value.find((r) => r.mine)?.point ?? null);
 /** 전체화면 — 시세분석 지도처럼. 고른 보기는 새로고침 · 다른 물건에서도 남긴다(닫아야 풀린다) */
 const CMP_FS_KEY = 'son.cmp.fs';
-const cmpFs = ref(webEmbed && (() => { try { return localStorage.getItem(CMP_FS_KEY) === '1'; } catch { return false; } })());
+const cmpFs = ref(webEmbed && !sonApp && (() => { try { return localStorage.getItem(CMP_FS_KEY) === '1'; } catch { return false; } })());
 /** 전체화면 왼쪽 목록 접기 */
 const cmpFsFold = ref(false);
 const onCmpFsKey = (e: KeyboardEvent) => { if (e.key === 'Escape') cmpFs.value = false; };
@@ -6276,6 +6281,10 @@ const cmpHold = computed(() => cmpLoading.value && !cmpGiveUp.value);
 // 받는 동안엔 바로 전에 보여 준 리스트 · 말풍선을 그대로 둔다(지웠다 다시 그리지 않는다, 2026-11-12 사용자 '굳이 왜 지워야 되냐'). 처음이라 보여 준 게 없으면 선정물건만
 let cmpShown: CmpRow[] = [];
 watch(() => auction.value?.id, () => { cmpShown = []; });
+const cmpViewRows = computed(() => {
+  if (!cmpHold.value) { cmpShown = cmpRows.value; return cmpRows.value; }
+  return cmpShown.length ? cmpShown : cmpRows.value.filter((r) => r.mine);
+});
 /** 리스트가 바뀔 때 보던 자리 지키기 — 필터 위치를 바뀌기 전에 재고(pre), 그린 뒤 밀렸으면(페이지가 짧아져 끌어올려진 것) 그만큼 아래를 받쳐 되돌린다 */
 const cmpBarRef = ref<{ $el?: HTMLElement } | null>(null);
 const cmpSpacerEl = ref<HTMLElement | null>(null);
@@ -6297,10 +6306,6 @@ watch(() => cmpViewRows.value.map((r) => cmpKeyOf(r)).join(','), () => {
 const onCmpScroll = () => { const el = cmpSpacerEl.value; if (cmpSpacer.value && el && el.getBoundingClientRect().top > window.innerHeight) cmpSpacer.value = 0; };   // 받침이 화면 밖이면 걷어도 화면이 안 움직인다
 if (typeof window !== 'undefined') { window.addEventListener('scroll', onCmpScroll, { passive: true }); onBeforeUnmount(() => window.removeEventListener('scroll', onCmpScroll)); }
 watch(() => auction.value?.id, () => { cmpSpacer.value = 0; });
-const cmpViewRows = computed(() => {
-  if (!cmpHold.value) { cmpShown = cmpRows.value; return cmpRows.value; }
-  return cmpShown.length ? cmpShown : cmpRows.value.filter((r) => r.mine);
-});
 /** 받는 진행 — 후보 건물 중 필요한 정보(좌표 · 반경 안이면 주변시설 · 빌라 엘베)를 다 받은 곳 수 */
 const cmpProg = computed(() => {
   const inList = new Set(cmpListBase.value.map((c) => cmpKeyOf(c)));
@@ -9200,7 +9205,11 @@ const goBack = () => router.back();
 
       </template>
 
-      <template v-if="activeTab === 'survey' && auction">
+      <!-- 앱 손품조사 — 웹 손품조사(매매수요 · 시세분석) 화면을 그대로 띄운다. 지도만 뺀다(2026-11-12 사용자) -->
+      <div v-if="activeTab === 'survey' && auction && appPrice" class="app-market item-son app-son" data-k="dong" data-s="son">
+        <WebScope><SonpumAnalysisPage :item-id="auction.id" /></WebScope>
+      </div>
+      <template v-if="activeTab === 'survey' && auction && !appPrice">
         <!-- 본건사진 — 전경 + 평면도 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('photos')">
@@ -9955,14 +9964,14 @@ const goBack = () => router.back();
                   </template>
                 </div>
                 <!-- 근거 거래 한 줄 — 건물 · 단지를 고르면 칸 줄이 어느 거래로 계산됐는지. 고르기 전엔 안내만(자리를 늘 두어 지도가 위아래로 출렁이지 않게) -->
-                <p class="cmp-basis"><template v-if="cmpBasis"><b class="k">근거</b><template v-if="cmpBasis.n"><span v-for="(t, i) in cmpBasis.shown" :key="i" class="d"><i v-if="i" class="sep">|</i>{{ t }}</span><span v-if="cmpBasis.more" class="more">외 {{ cmpBasis.more }}건</span></template><span v-else class="d">기간 안 {{ cmpKind }} 거래 없음</span><span class="cmp-basis-nt">{{ cmpCondText }} 거래만 셌습니다{{ cmpBasis.out ? ` · 다른 평형 ${cmpBasis.out}건은 빠졌습니다` : '' }}</span></template><span v-else class="hint">리스트나 지도에서 {{ cmpN }}를 선택하세요</span></p>
+                <p class="cmp-basis"><template v-if="cmpBasis"><b class="k">근거</b><template v-if="cmpBasis.n"><span v-for="(t, i) in cmpBasis.shown" :key="i" class="d"><i v-if="i" class="sep">|</i>{{ t }}</span><span v-if="cmpBasis.more" class="more">외 {{ cmpBasis.more }}건</span></template><span v-else class="d">기간 안 {{ cmpKind }} 거래 없음</span><span class="cmp-basis-nt">{{ cmpCondText }} 거래만 셌습니다{{ cmpBasis.out ? ` · 다른 평형 ${cmpBasis.out}건은 빠졌습니다` : '' }}</span></template><span v-else class="hint">{{ sonApp ? '리스트' : '리스트나 지도' }}에서 {{ cmpN }}를 선택하세요</span></p>
               </div>
                           <!-- 칸 줄과 지도 · 표는 한 상자(2026-11-11) -->
               <div class="cmp-gap" />
 
 
               <!-- 지도 — 시세분석 지도와 같은 도구 막대(주변 · 로드뷰 …) · 전체화면. 전체화면이면 body 로 옮겨 화면을 채우고 오른쪽에 단지 목록 -->
-              <div class="cmp-map-slot">
+              <div v-if="!sonApp" class="cmp-map-slot">
               <Teleport to="body" :disabled="!cmpFs">
               <div :class="['cmp-map', { fs: cmpFs }]">
                 <div v-if="cmpFs" class="cmp-fs-top">
@@ -10009,7 +10018,7 @@ const goBack = () => router.back();
               </div>
               <p v-if="!cmpConds.length" class="cmp-noroom">매매수요 조사 맨 위에서 <b>룸수</b>를 고르면 세대구성에 맞는 입지조건과 {{ cmpN }}별 입지등수가 나옵니다.</p>
               <!-- 검색 거르기 — 지도와 빌라 · 단지 리스트 사이(2026-11-12 사용자). 부품 하나(components/SearchFilterBar, '필터 기본 부품 세트' 2026-11-12). 다른 화면은 이 부품을 그대로 끼우고 hide 로 뺄 항목만 끈다 -->
-              <SearchFilterBar ref="cmpBarRef" v-model:draft="cmpDraft" :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :loading="cmpLoading" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" :saved-day="cmpSnapDay" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
+              <SearchFilterBar ref="cmpBarRef" v-model:draft="cmpDraft" :compact="sonApp" :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :loading="cmpLoading" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" :saved-day="cmpSnapDay" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
               <div class="son-demand sup-tbl">
                 <div class="adm-table-wrap">
                   <table class="adm-table cmp-tbl">
@@ -10149,7 +10158,7 @@ const goBack = () => router.back();
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>시세조사</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survPrice') }]" alt="" />
           </header>
-          <div v-if="sonpumMode || !isCollapsed('survPrice')" :class="['adp-mkt-body', { 'app-price': appPrice }]">
+          <div v-if="sonpumMode || !isCollapsed('survPrice')" :class="['adp-mkt-body', { 'app-price': appPrice || sonApp }]">
             <!-- 앱 — 웹 시세분석 그대로(기간 조회 · 매도가 예상 · 지도(접힘) · 거르기 · 근거 유사물건) -->
             <SonpumPricePage v-if="appPrice && auction" :key="auction.id" :auction="auction" :kind="priceKind" app />
             <template v-if="!sonpumMode && !appPrice">

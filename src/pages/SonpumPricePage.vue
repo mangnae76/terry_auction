@@ -303,6 +303,8 @@ const colFilter = useColumnFilters<PriceRow>(kindRows, COLS);
 if (sv?.keep) colFilter.picked.value = { ...colFilter.picked.value, ...sv.keep };
 // 웹 — 머리글 ▾ 거르기 대신 줄마다 '제외' 체크(처음엔 비어 있다 · 체크하면 실거래가 예상 · 평균 · 건수에서 빠지고 표엔 흐리게 남는다) · 머리글은 오름 · 내림 정렬(2026-11-05). 앱은 그대로
 const webEmbed = inject<boolean>('webEmbed', false) || !!props.app;
+/** 앱 손품조사 탭이 띄운 웹 시세분석 — 지도만 뺀다(2026-11-12 사용자 '앱에서는 지도 기능만 없이') */
+const sonApp = inject<boolean>('sonApp', false);
 /** 줄 열쇠 — 다시 불러와도 같은 줄이 같은 열쇠(순번 id 는 불러올 때마다 바뀐다) */
 const rowKey = (r: PriceRow) => [r.group, r.contractDate, r.jibun, r.price, r.floorNo, Math.round(r.areaM2 * 100)].join('|');
 const dropped = ref<string[]>(Array.isArray(sv?.drop) ? [...sv.drop] : []);
@@ -872,7 +874,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 </script>
 
 <template>
-  <div :class="['pa-wrap', { app: props.app }]">
+  <div :class="['pa-wrap', { app: props.app, phone: sonApp }]">
   <Teleport to="body" :disabled="!fs">
   <section :class="['pa', 'pa-card', { fs }]" aria-label="시세분석">
     <!-- 전체화면 위 띠 — 닫기 · 사건 · 조회기간 · 조회 -->
@@ -925,7 +927,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <button v-if="props.app" type="button" class="map-fold" :aria-expanded="mapOpen" @click="mapOpen = !mapOpen">
         <span class="pa-tag">근거</span><b class="mf-t">유사물건</b><small>반경 {{ radText(radius) }} · 유사물건 {{ mapGroups.length }}곳</small><i>{{ mapOpen ? '접기 ⌃' : '지도 보기 ⌄' }}</i>
       </button>
-      <div v-show="!props.app || mapOpen" class="map">
+      <div v-if="sonApp" class="map-title static"><span class="pa-tag">근거</span><b>유사물건</b></div>
+      <div v-if="!sonApp" v-show="!props.app || mapOpen" class="map">
         <div ref="mapEl" class="map-in" />
         <KakaoMapTools v-if="kTools" :k="kTools.k" :map="kTools.map" :near="webEmbed ? mySpot : null" />
         <button v-if="webEmbed && !fs && !props.app" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="fs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
@@ -957,7 +960,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <p v-if="!fsList.length" class="none">지도에 유사물건이 없습니다.</p>
       </div>
       <!-- 웹 — 매매수요와 같은 필터 부품(1줄 반경 · 거래 · 엘베 · 층, 2줄 기준 묶음 · 초기화 · 저장). 기간은 위 조회기간. 전체화면은 좁은 꼴 -->
-      <SearchFilterBar v-if="webEmbed && !props.app" :draft="sfDraft" :compact="fs" :hide="loose ? ['period', 'save'] : ['period']" :range-options="sfRadii" :period-options="[]" :kinds="KINDS" :kind-count="(k) => kindCount(k).toLocaleString('ko-KR')"
+      <SearchFilterBar v-if="webEmbed && !props.app" :draft="sfDraft" :compact="fs || sonApp" :hide="loose ? ['period', 'save'] : ['period']" :range-options="sfRadii" :period-options="[]" :kinds="KINDS" :kind-count="(k) => kindCount(k).toLocaleString('ko-KR')"
         :base-area="me.areaM2" :base-year="me.year" :area-max="AREA_MAX" :year-min="YEAR_MIN" :year-max="yearMax" :sim-range="sfSimRange"
         :is-default="false" :can-save="!loose" :saving="saving" :saved="!webDirty" :saved-day="savedAt ? new Date(savedAt).toLocaleDateString('sv-SE') : ''" @update:draft="sfSet" @reset="reset" @save="saveNow" />
       <div v-else :class="['conds', { web: webEmbed }]">
@@ -1215,6 +1218,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .map-in { height: 620px; }   /* 조회 줄 · 근거 제목 줄을 걷은 만큼(약 100px) 늘렸고(510), 2026-11-03 표 3줄(약 110px)만큼 더 높였다 */
 .map-title { position: absolute; left: 10px; top: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, .95); border-radius: 8px; padding: 6px 12px 6px 8px; box-shadow: 0 1px 3px rgba(17, 24, 39, .12); }
 .map-title b { font-size: 15px; font-weight: 800; color: var(--fg); }
+.map-title.static { position: static; display: flex; margin: 4px 0 10px; padding: 0; background: none; box-shadow: none; }   /* 앱 — 지도 없이 제목만(2026-11-12) */
 .add-btn { position: absolute; right: 10px; bottom: 26px; z-index: 600; height: 34px; padding: 0 14px; border: 0; border-radius: 8px; background: #1f3a72; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px rgba(17, 24, 39, .2); }
 .add-btn.done { background: #fff; color: var(--ok); box-shadow: inset 0 0 0 1px #cfe9d8, 0 2px 8px rgba(17, 24, 39, .12); }
 .add-pop { position: absolute; right: 10px; bottom: 68px; z-index: 600; width: min(300px, calc(100% - 20px)); max-height: calc(100% - 90px); overflow: auto; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 28px rgba(17, 24, 39, .18); padding: 12px; display: grid; gap: 6px; font-size: 13px; }
@@ -1555,25 +1559,25 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 
 
 /* ===== 앱(물건상세 › 손품+현장 › 시세조사) — 폰 폭으로 위아래 쌓기(2026-11-09 시안 price-mock) ===== */
-.pa-wrap.app .pa { padding: 12px; gap: 12px; border-radius: 12px; }
+.pa-wrap:is(.app, .phone) .pa { padding: 12px; gap: 12px; border-radius: 12px; }
 /* 넓은 표가 칸 폭을 밀지 않게 — 모든 칸을 상자 폭에 가둔다 */
-.pa-wrap.app, .pa-wrap.app .pa, .pa-wrap.app .zone { grid-template-columns: minmax(0, 1fr); min-width: 0; max-width: 100%; }
-.pa-wrap.app .est, .pa-wrap.app .conds, .pa-wrap.app .list-tools, .pa-wrap.app .pa-list { min-width: 0; max-width: 100%; }
-.pa-wrap.app .zone-h { row-gap: 8px; }
-.pa-wrap.app .bar-desc { flex: 1 1 100%; margin-left: 0; font-size: 12px; }
-.pa-wrap.app .pa-load-r { flex: 1 1 100%; margin-left: 0; }
-.pa-wrap.app .pa-load-r .prog { min-width: 0; }
-.pa-wrap.app .pa-load-r .pa-seg { flex: 1 1 auto; min-width: 0; }
-.pa-wrap.app .pa-load-r .pa-seg button { flex: 1 1 0; min-width: 0; padding: 0 4px; }
-.pa-wrap.app .pa-load-r .pa-load { flex: 0 0 72px; width: 72px; min-width: 0; padding: 0; }
+.pa-wrap:is(.app, .phone), .pa-wrap:is(.app, .phone) .pa, .pa-wrap:is(.app, .phone) .zone { grid-template-columns: minmax(0, 1fr); min-width: 0; max-width: 100%; }
+.pa-wrap:is(.app, .phone) .est, .pa-wrap:is(.app, .phone) .conds, .pa-wrap:is(.app, .phone) .list-tools, .pa-wrap:is(.app, .phone) .pa-list { min-width: 0; max-width: 100%; }
+.pa-wrap:is(.app, .phone) .zone-h { row-gap: 8px; }
+.pa-wrap:is(.app, .phone) .bar-desc { flex: 1 1 100%; margin-left: 0; font-size: 12px; }
+.pa-wrap:is(.app, .phone) .pa-load-r { flex: 1 1 100%; margin-left: 0; }
+.pa-wrap:is(.app, .phone) .pa-load-r .prog { min-width: 0; }
+.pa-wrap:is(.app, .phone) .pa-load-r .pa-seg { flex: 1 1 auto; min-width: 0; }
+.pa-wrap:is(.app, .phone) .pa-load-r .pa-seg button { flex: 1 1 0; min-width: 0; padding: 0 4px; }
+.pa-wrap:is(.app, .phone) .pa-load-r .pa-load { flex: 0 0 72px; width: 72px; min-width: 0; padding: 0; }
 /* 매도가 예상 — 큰 칸 한 줄 + 작은 칸 셋씩 */
-.pa-wrap.app .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.pa-wrap.app .tile { padding: 8px 6px; gap: 3px; border: 1px solid #e8ecf3; box-shadow: none; }
-.pa-wrap.app .tile .k { font-size: 11.5px; }
-.pa-wrap.app .tile .v { font-size: 15px; }
-.pa-wrap.app .tile .v.sm { font-size: 12px; white-space: normal; line-height: 1.3; }
-.pa-wrap.app .tile.key { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; padding: 10px 12px; }
-.pa-wrap.app .tile.key .v { font-size: 24px; }
+.pa-wrap:is(.app, .phone) .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.pa-wrap:is(.app, .phone) .tile { padding: 8px 6px; gap: 3px; border: 1px solid #e8ecf3; box-shadow: none; }
+.pa-wrap:is(.app, .phone) .tile .k { font-size: 11.5px; }
+.pa-wrap:is(.app, .phone) .tile .v { font-size: 15px; }
+.pa-wrap:is(.app, .phone) .tile .v.sm { font-size: 12px; white-space: normal; line-height: 1.3; }
+.pa-wrap:is(.app, .phone) .tile.key { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; padding: 10px 12px; }
+.pa-wrap:is(.app, .phone) .tile.key .v { font-size: 24px; }
 /* 지도 — 접힌 한 줄, 펴면 240 */
 /* 상자 없이 제목 줄로 — 위 '결론 이 물건 매도가 예상' 줄과 같은 꼴(근거 칩 · 유사물건 · 오른쪽 접기) */
 .map-fold { display: flex; align-items: center; gap: 8px; width: 100%; padding: 2px 0; border: 0; border-radius: 0; background: none; cursor: pointer; text-align: left; font-family: inherit; }
@@ -1589,39 +1593,39 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 .pa-wrap.app .add-pop { left: 10px; right: auto; top: 50px; bottom: auto; max-height: calc(100% - 60px); }
 .pa-wrap.app .add-msg { left: 10px; right: auto; top: 48px; bottom: auto; }
 /* 거르기 — 반경 · 거래 · 엘베 · 층 · 기준 · 막대 · 단추 차례로 한 줄씩 */
-.pa-wrap.app .conds { display: flex !important; flex-direction: column; align-items: stretch; gap: 6px; padding: 8px; }
-.pa-wrap.app .conds > .simrow { width: 100%; box-sizing: border-box; }
-.pa-wrap.app .conds > .elev-pick { order: 1; }
-.pa-wrap.app .conds > .floor-pick { order: 2; }
-.pa-wrap.app .conds > .mode-pick { order: 3; }
-.pa-wrap.app .conds > .simrow { order: 4; }
-.pa-wrap.app .conds > .acts-r { order: 5; }
-.pa-wrap.app .conds > .pa-lab,
-.pa-wrap.app .conds:has(> .elev-pick) > .pa-lab { display: grid !important; grid-template-columns: 34px minmax(0, 1fr); gap: 6px; font-size: 12.5px; padding: 4px 8px !important; }
-.pa-wrap.app .conds > .pa-lab .pa-seg { width: 100% !important; }
-.pa-wrap.app .conds > .pa-lab .pa-seg button { font-size: 12.5px; padding: 0 2px; }
-.pa-wrap.app .simrow.has-elev :is(.simA, .simB) { height: auto; }
-.pa-wrap.app .conds > .simrow { padding: 8px !important; }
-.pa-wrap.app .simrow.has-elev .simB,
-.pa-wrap.app .simrow.has-elev .simB:has(> .dl.one) { grid-template-columns: minmax(0, 1fr); row-gap: 18px; }
-.pa-wrap.app .simrow.has-elev .simB .dl.one { grid-template-columns: 58px minmax(0, 1fr); gap: 0 10px; padding-top: 6px; }
-.pa-wrap.app .simrow.has-elev .simB .dl.one > .dn { font-size: 13px; }
-.pa-wrap.app .simrow.has-elev .simB .dl.one > .dual { margin-right: 16px; }   /* 오른쪽 끝 값(2020)이 상자 밖으로 나가지 않게 */
-.pa-wrap.app .simrow.has-elev .simB .dl.one > .dn small { font-size: 11px; }
-.pa-wrap.app .conds > .acts-r { display: flex; width: 100%; }
-.pa-wrap.app .conds > .acts-r > button { flex: 1 1 0; width: auto; }
-.pa-wrap.app .conds > .acts-r .save-btn { flex: 2 1 0; }
+.pa-wrap:is(.app, .phone) .conds { display: flex !important; flex-direction: column; align-items: stretch; gap: 6px; padding: 8px; }
+.pa-wrap:is(.app, .phone) .conds > .simrow { width: 100%; box-sizing: border-box; }
+.pa-wrap:is(.app, .phone) .conds > .elev-pick { order: 1; }
+.pa-wrap:is(.app, .phone) .conds > .floor-pick { order: 2; }
+.pa-wrap:is(.app, .phone) .conds > .mode-pick { order: 3; }
+.pa-wrap:is(.app, .phone) .conds > .simrow { order: 4; }
+.pa-wrap:is(.app, .phone) .conds > .acts-r { order: 5; }
+.pa-wrap:is(.app, .phone) .conds > .pa-lab,
+.pa-wrap:is(.app, .phone) .conds:has(> .elev-pick) > .pa-lab { display: grid !important; grid-template-columns: 34px minmax(0, 1fr); gap: 6px; font-size: 12.5px; padding: 4px 8px !important; }
+.pa-wrap:is(.app, .phone) .conds > .pa-lab .pa-seg { width: 100% !important; }
+.pa-wrap:is(.app, .phone) .conds > .pa-lab .pa-seg button { font-size: 12.5px; padding: 0 2px; }
+.pa-wrap:is(.app, .phone) .simrow.has-elev :is(.simA, .simB) { height: auto; }
+.pa-wrap:is(.app, .phone) .conds > .simrow { padding: 8px !important; }
+.pa-wrap:is(.app, .phone) .simrow.has-elev .simB,
+.pa-wrap:is(.app, .phone) .simrow.has-elev .simB:has(> .dl.one) { grid-template-columns: minmax(0, 1fr); row-gap: 18px; }
+.pa-wrap:is(.app, .phone) .simrow.has-elev .simB .dl.one { grid-template-columns: 58px minmax(0, 1fr); gap: 0 10px; padding-top: 6px; }
+.pa-wrap:is(.app, .phone) .simrow.has-elev .simB .dl.one > .dn { font-size: 13px; }
+.pa-wrap:is(.app, .phone) .simrow.has-elev .simB .dl.one > .dual { margin-right: 16px; }   /* 오른쪽 끝 값(2020)이 상자 밖으로 나가지 않게 */
+.pa-wrap:is(.app, .phone) .simrow.has-elev .simB .dl.one > .dn small { font-size: 11px; }
+.pa-wrap:is(.app, .phone) .conds > .acts-r { display: flex; width: 100%; }
+.pa-wrap:is(.app, .phone) .conds > .acts-r > button { flex: 1 1 0; width: auto; }
+.pa-wrap:is(.app, .phone) .conds > .acts-r .save-btn { flex: 2 1 0; }
 /* 근거 표 — 옆으로 밀어 본다 */
-.pa-wrap.app .list-tools { gap: 6px; }
+.pa-wrap:is(.app, .phone) .list-tools { gap: 6px; }
 /* 한 줄 — 왼쪽 '지번 ○곳 · 거래 ○건', 오른쪽 '공시가 기준 …' 글만(상자 없이, 2026-11-09) */
-.pa-wrap.app .list-tools { flex-wrap: nowrap; align-items: center; }
-.pa-wrap.app .list-tools .lt-count { flex: 0 0 auto; margin-right: 0; font-size: 13px; }
-.pa-wrap.app .warn-box { flex: 0 1 auto; min-width: 0; margin-left: auto; padding: 0; border: 0; background: none; font-size: 11.5px; line-height: 1.4; text-align: right; }
-.pa-wrap.app .warn-box > svg { display: none; }
-.pa-wrap.app .pa-list { overflow: hidden; }   /* 표가 옆 칸 밖으로 화면을 밀지 않게 — 표는 안에서 옆으로 민다 */
-.pa-wrap.app .pa-list .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.pa-wrap.app .pa-list table.even { width: max-content; min-width: 100%; font-size: 12px; }
-.pa-wrap.app .pa-list table.even th, .pa-wrap.app .pa-list table.even td { padding-left: 6px; padding-right: 6px; }
-.pa-wrap.app .pa-list table.even td.l { white-space: nowrap; }
-.pa-wrap.app .list-foot { font-size: 11px; }
+.pa-wrap:is(.app, .phone) .list-tools { flex-wrap: nowrap; align-items: center; }
+.pa-wrap:is(.app, .phone) .list-tools .lt-count { flex: 0 0 auto; margin-right: 0; font-size: 13px; }
+.pa-wrap:is(.app, .phone) .warn-box { flex: 0 1 auto; min-width: 0; margin-left: auto; padding: 0; border: 0; background: none; font-size: 11.5px; line-height: 1.4; text-align: right; }
+.pa-wrap:is(.app, .phone) .warn-box > svg { display: none; }
+.pa-wrap:is(.app, .phone) .pa-list { overflow: hidden; }   /* 표가 옆 칸 밖으로 화면을 밀지 않게 — 표는 안에서 옆으로 민다 */
+.pa-wrap:is(.app, .phone) .pa-list .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.pa-wrap:is(.app, .phone) .pa-list table.even { width: max-content; min-width: 100%; font-size: 12px; }
+.pa-wrap:is(.app, .phone) .pa-list table.even th, .pa-wrap:is(.app, .phone) .pa-list table.even td { padding-left: 6px; padding-right: 6px; }
+.pa-wrap:is(.app, .phone) .pa-list table.even td.l { white-space: nowrap; }
+.pa-wrap:is(.app, .phone) .list-foot { font-size: 11px; }
 </style>

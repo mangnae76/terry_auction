@@ -17,6 +17,10 @@ import type { SonPriceOut } from '../services/priceAnalysis';
 
 // 손품조사 화면을 손품분석 모드로 — 본건사진 · 입지/개별성만, 그 사이에 아래 수요분석을 끼운다
 provide('sonpumMode', true);
+/** 앱 물건상세 › 손품조사 — 웹 손품조사 화면을 그대로 띄운다(2026-11-12 사용자). 물건은 그 물건 하나로 고정, 지도는 뺀다 */
+const props = defineProps<{ itemId?: string }>();
+const sonApp = !!props.itemId;
+provide('sonApp', sonApp);
 
 const store = useAuctionStore();
 const { auctions } = storeToRefs(store);
@@ -28,9 +32,9 @@ const readLS = (k: string) => { try { return localStorage.getItem(k) ?? ''; } ca
 const writeLS = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* 그만 */ } };
 const list = computed(() => [...auctions.value].sort((a, b) => String(b.eventDate || '').localeCompare(String(a.eventDate || ''))));
 const pickId = ref(readLS(PICK_KEY));
-const auction = computed<AuctionDetail | null>(() => list.value.find((a) => a.id === pickId.value) ?? list.value[0] ?? null);
+const auction = computed<AuctionDetail | null>(() => (sonApp ? list.value.find((a) => a.id === props.itemId) ?? null : list.value.find((a) => a.id === pickId.value) ?? list.value[0] ?? null));
 // 고른 물건을 적고 웹에 알린다 — 웹이 위 머리 카드를 그 물건으로 다시 그린다
-watch(pickId, (v) => { writeLS(PICK_KEY, v); window.dispatchEvent(new CustomEvent('son:pick', { detail: v })); });
+watch(pickId, (v) => { if (sonApp) return; writeLS(PICK_KEY, v); window.dispatchEvent(new CustomEvent('son:pick', { detail: v })); });
 // 고른 물건이 목록에 없으면(처음 · 지운 물건) 맨 앞 물건으로 — 고르는 칸이 비어 보이지 않게
 watch(list, (l) => { if (l.length && !l.some((a) => a.id === pickId.value)) pickId.value = l[0].id; }, { immediate: true });
 // 손품결론 탭은 뺐다(2026-11-02) — 결론은 가격분석의 실거래가 예상, 인근 매각사례는 물건정보 탭
@@ -53,7 +57,7 @@ provide('sonPriceOut', sonPriceOut);
 const priceSeen = ref(false);
 watch(tab, (v) => { if (v === 'price') priceSeen.value = true; }, { immediate: true });
 // 웹 경로에 지금 탭 — '홈 › 시장분석 › 손품분석 › 수요분석'
-const tellTab = () => window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: ['손품조사', TAB_LABEL[tab.value]] } }));
+const tellTab = () => !sonApp && window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: ['손품조사', TAB_LABEL[tab.value]] } }));
 watch(tab, (v) => { writeLS(TAB_KEY, v); tellTab(); }, { immediate: true });
 
 const kindOf = (t: string): CasePropertyType => (/아파트/.test(t) ? 'apt' : /오피스텔/.test(t) ? 'officetel' : 'villa');
@@ -102,7 +106,7 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
 </script>
 
 <template>
-  <section class="son">
+  <section :class="['son', { 'son-app': sonApp }]">
     <p v-if="!list.length" class="son-empty">선정물건이 없습니다. 물건을 등록하면 여기서 손품조사를 할 수 있습니다.</p>
     <!-- 물건은 선정물건에서 마지막으로 연 물건(웹이 'son.pick' 에 적는다) — 위 머리 카드가 그 물건이라 따로 고르는 칸은 없다 -->
     <template v-else-if="auction">
@@ -152,3 +156,66 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
 .son-tabbar { position: relative; display: flex !important; align-items: flex-end; gap: 12px; }
 /* 시세분석 상자 위치는 수요분석 첫 상자(본건사진)와 같다 — 둘 다 탭 줄에서 .son 줄 간격(10)만큼. 따로 띄우지 않는다(2026-11-04) */
 </style>
+
+<style>
+/* ===== 앱 물건상세 › 손품조사(sonApp) — 웹 손품조사 화면을 폰 폭에 맞춘다(2026-11-12 사용자 '웹에 있는 거 그대로'). 웹(.son-app 없음)엔 닿지 않는다 ===== */
+.son-app { gap: 10px; }
+/* 안에 뜬 물건상세의 머리(사건번호 · 탭)는 바깥 앱 화면에 이미 있다 */
+.son-app :is(.adp-sticky-head, .amb, .adp-field-next) { display: none !important; }
+.son-app .son-detail :is(.adp-shell, .adp-body) { padding-left: 0 !important; padding-right: 0 !important; padding-top: 0 !important; min-height: 0 !important; background: none !important; }
+/* 탭 줄 — 매매수요 · 시세분석(앱 하위 탭처럼 밑줄) */
+.son-app .son-tabbar { display: flex; align-items: flex-end; margin: 0 12px; border-bottom: 1px solid #e3e8f0; }
+.son-app .son-tabbar .adm-view-tabs { display: flex; gap: 4px; }
+.son-app .son-tabbar .adm-view-tabs button { position: relative; height: 40px; padding: 0 14px; border: 0; border-radius: 0; background: none; color: #6b7280; font-size: 15px; font-weight: 700; }
+.son-app .son-tabbar .adm-view-tabs button.on { color: #111827; }
+.son-app .son-tabbar .adm-view-tabs button.on::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; background: #111827; }
+.son-app .adm-crumb-slot { display: none; }
+.son-app .adm-shell { min-height: 0 !important; background: none !important; }   /* 지역분석 화면 높이(100vh) — 손품조사 안에선 내용만큼 */
+/* ① 실사용자 — 줄마다 이름 칸 폭 하나로 맞추고 세로 칸막이는 뺀다 */
+.son-app .cmp-persona .sep { display: none; }
+.son-app .cmp-persona .inner { display: grid; gap: 8px; }
+.son-app .cmp-persona .grp { display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: center; justify-items: start; }
+/* ② 입지비교 제목 — 이름 · 지역 한 줄, 물음은 아래 줄 */
+.son-app .cmp-est-h { flex-wrap: wrap; row-gap: 6px; }
+.son-app .cmp-est-h h3 { flex-wrap: wrap; row-gap: 4px; }
+.son-app .cmp-est-h .cmp-q { flex-basis: 100%; margin-left: 0 !important; }
+/* 읍면동 수급분석 — 위 3칸은 그대로, 아래 지표 4칸은 2 × 2 */
+.son-app .adm-nav.dm { margin: 0; padding: 14px 12px 14px; }
+.son-app .adm-nav-scope { flex-wrap: wrap; font-size: 15px; row-gap: 4px; }
+.son-app .dm-row { gap: 8px; }
+.son-app .dm-row.c3 { margin-bottom: 8px; }
+.son-app .dm-row.c3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.son-app .dm-row.c3 > .dm-cell:first-child { grid-column: 1 / -1; }   /* 거래량(연 · 월) 칸만 한 줄을 다 쓴다 */
+.son-app .dm-row.c4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.son-app .dm-cell .dm-body b { flex-wrap: wrap; justify-content: center; white-space: normal; row-gap: 2px; }
+.son-app .dm-cell .nbar { display: none; }
+.son-app .dm-cell .pass { flex-basis: 100%; text-align: center; }
+.son-app .dm-head { font-size: 13px; padding: 7px 4px; }
+.son-app .dm-body { flex-wrap: wrap; gap: 4px; padding: 10px 4px; }
+.son-app .dm-body b { font-size: 16px; }
+.son-app .dm-input { width: 100%; max-width: 96px; font-size: 16px; }
+.son-app .dm-opinion { padding: 12px 14px; }
+.son-app .dm-opinion b { font-size: 15px; }
+/* 매매수요 조사 제목 — 단계 단추(① 실사용자 …)는 제목 아래 줄로 */
+.son-app .adp-survey-head { flex-wrap: wrap; row-gap: 8px; }
+.son-app .adp-survey-head h2 { white-space: nowrap; }
+.son-app .adp-survey-head .cmp-steps { order: 3; flex: 1 1 100%; margin: 0; }
+/* 단지 입지비교 위 여섯 칸 — 셋씩 두 줄 */
+.son-app .cmp-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+/* ④ 단지 수급분석 — 거래량 한 줄, 세대수 · 해당평형 · 매물수 셋, 지표 넷은 2 × 2 */
+.son-app .sup-row { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
+.son-app .sup-row > .sup-cell { grid-column: span 2; }
+.son-app .sup-row:first-of-type > .sup-cell:first-child { grid-column: 1 / -1; }
+.son-app .sup-row:not(:first-of-type) > .sup-cell { grid-column: span 3; }
+.son-app .sup-h { font-size: 13px; padding: 7px 4px; }
+.son-app .sup-b { flex-wrap: wrap; gap: 4px; padding: 10px 4px; }
+.son-app .sup-b b { flex-wrap: wrap; justify-content: center; white-space: normal; row-gap: 2px; font-size: 16px; }
+.son-app .sup-b b:has(.sup-pass) .sup-bar { display: none; }
+.son-app .sup-pass { flex-basis: 100%; text-align: center; }
+.son-app .sup-in { width: 100%; max-width: 96px; font-size: 16px; }
+/* 빌라 · 단지 리스트 — 웹 칸 그대로 두고 옆으로 민다 */
+.son-app .son-demand.sup-tbl .adm-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.son-app .o-est .son-demand.sup-tbl .adm-table { min-width: 860px; }
+.son-app .o-unit .son-demand.sup-tbl .adm-table { min-width: 520px; }   /* 호실 예상가 개별성 표 — 고르는 단추가 잘리지 않게 */
+</style>
+
