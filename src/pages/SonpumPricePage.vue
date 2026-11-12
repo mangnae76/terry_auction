@@ -625,11 +625,11 @@ const drawMap = () => {
     const lp = live.map((r) => r.price); const lo = Math.min(...lp); const hi = Math.max(...lp);
     const range = lo === hi ? eok(lo) : `${Number((lo / 1e8).toFixed(2))}~${eok(hi)}`;
     if (webEmbed) {
-      // 웹 — 매매수요 지도와 같은 말풍선, 이름 · 평균 금액만(등수는 시세분석엔 필요 없다, 2026-11-11 사용자). 누르면 건수 · 거리까지
+      // 웹 — 매매수요 지도와 같은 말풍선, 이름 · 평균 금액 · 거래 건수(등수는 시세분석엔 필요 없다, 2026-11-11 사용자). 건수는 누르지 않아도 처음부터(2026-11-12 사용자)
       const avg = lp.reduce((a, b) => a + b, 0) / (lp.length || 1);
       mv!.pin(g.spot, {
         className: `cmp-bub${on ? ' on' : ''}${off ? ' off' : ''}`,
-        html: `<div class="cb"><b><span class="nm" title="${esc(g.name)}">${esc(g.name)}</span></b><span>${kindF.value} ${eok(avg)}${on ? `<i></i>${live.length}건` : ''}</span></div>`,
+        html: `<div class="cb"><b><span class="nm" title="${esc(g.name)}">${esc(g.name)}</span></b><span>${kindF.value} ${eok(avg)}<i></i>${live.length}건</span></div>`,
         onClick: () => { meOpen.value = false; focus.value = on ? '' : g.jibun; },
         z: on ? 50 : 1,
       });
@@ -648,7 +648,7 @@ const drawMap = () => {
     const mAvg = mp.length ? mp.reduce((a, b) => a + b, 0) / mp.length : 0;
     mv.pin(m, {
       className: 'cmp-bub me',
-      html: `<div class="cb"><b><span class="nm" title="${esc(meName.value)}">${esc(meName.value)}</span></b><span>${mAvg ? `${kindF.value} ${eok(mAvg)}` : '선정물건'}</span></div>`,
+      html: `<div class="cb"><b><span class="nm" title="${esc(meName.value)}">${esc(meName.value)}</span></b><span>${mAvg ? `${kindF.value} ${eok(mAvg)}<i></i>${mp.length}건` : '선정물건'}</span></div>`,
       onClick: () => { focus.value = ''; meOpen.value = !meOpen.value; },
       z: 1000,
     });
