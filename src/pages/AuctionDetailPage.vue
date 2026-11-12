@@ -6212,7 +6212,18 @@ const cmpSnapBuild = (): DemandSnap => {
 };
 /** 저장하기 — 지금 보이는 리스트(조회한 결과)와 거르기를 물건 DB 에. 다 받았을 때만 누를 수 있다(2026-11-12 사용자) */
 const cmpSaving = ref(false);
-const cmpSave = async () => {
+// 저장본은 물건마다 하나 — 이미 있으면 덮어쓴다고 먼저 알린다(2026-11-12 사용자)
+const cmpSave = () => {
+  const a = auction.value; if (!a || !cmpLiveReady.value || cmpSaving.value) return;
+  const old = a.demandSnap?.v === 1 ? a.demandSnap : null;
+  if (!old) { void cmpSaveNow(); return; }
+  confirmBox.value = {
+    title: '기존 저장 데이터가 지워집니다',
+    desc: `${String(old.at).slice(0, 10)}에 저장한 리스트(${cmpN.value} ${old.rows.length}곳)는 지워지고, 지금 조회한 리스트로 새로 저장됩니다. 지운 데이터는 되돌릴 수 없습니다.`,
+    okLabel: '지우고 저장', skipKey: '', tone: 'danger', icon: 'warn', run: cmpSaveNow,
+  };
+};
+const cmpSaveNow = async () => {
   const a = auction.value; if (!a || !cmpLiveReady.value || cmpSaving.value) return;
   cmpSaving.value = true;
   try {
