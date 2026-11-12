@@ -6152,21 +6152,26 @@ const cmpDongList = computed<CompareComplex[]>(() => {
   if (out.length) cmpDongLast = out;
   return out;
 });
+/** 동 전체 최저 · 최고 — 예전 저장본엔 없어 받아 둔 실거래로 채운다 */
 const cmpAll = computed(() => {
-  if (cmpSnapOn.value) return cmpSnap.value!.all;
+  const live = cmpAllLive.value;
+  if (cmpSnapOn.value) { const s = cmpSnap.value!.all; return s ? { ...s, min: s.min ?? live?.min ?? 0, max: s.max ?? live?.max ?? 0 } : null; }
+  return live;
+});
+const cmpAllLive = computed(() => {
   if (!cmpQueried.value) return null;
   const ds = cmpDongList.value.flatMap((r) => r.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).map((d) => ({ p: d.price, py: d.areaM2 > 0 ? d.price / (d.areaM2 / 3.305785) : 0 })));
   if (!ds.length) return null;
   const pys = ds.filter((d) => d.py > 0);
-  return { n: ds.length, avg: ds.reduce((a, d) => a + d.p, 0) / ds.length, perPy: pys.length ? pys.reduce((a, d) => a + d.py, 0) / pys.length : 0, complexes: cmpDongList.value.length };
+  const ps = ds.map((d) => d.p);
+  return { n: ds.length, avg: ds.reduce((a, d) => a + d.p, 0) / ds.length, perPy: pys.length ? pys.reduce((a, d) => a + d.py, 0) / pys.length : 0, complexes: cmpDongList.value.length, min: Math.min(...ps), max: Math.max(...ps) };
 });
 const cmpEst = computed(() => {
   const r = cmpPicked.value; if (!r) return null;
   const ps = r.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세') && d.price > 0).map((d) => d.price).sort((a, b) => a - b);
   const py = r.area / 3.305785;
-  const mid = ps.length ? (ps.length % 2 ? ps[(ps.length - 1) / 2] : (ps[ps.length / 2 - 1] + ps[ps.length / 2]) / 2) : 0;
   const avg = ps.length ? ps.reduce((a, b) => a + b, 0) / ps.length : 0;
-  return { name: r.name || r.jibun, mine: r.mine, n: ps.length, avg, med: mid, min: ps[0] ?? 0, max: ps[ps.length - 1] ?? 0, perPy: py > 0 ? avg / py : 0, py, year: r.buildYear };
+  return { name: r.name || r.jibun, mine: r.mine, n: ps.length, avg, min: ps[0] ?? 0, max: ps[ps.length - 1] ?? 0, perPy: py > 0 ? avg / py : 0, py, year: r.buildYear };
 });
 /** 근거 거래 줄 — 고른 건물 · 단지의 칸 줄(평균 · 중간값 …)이 어느 거래로 계산됐나. 최근 거래 1건 + '외 n건' — 한 줄로 끝나게(2026-11-12 사용자) */
 const cmpBasis = computed(() => {
@@ -9801,11 +9806,10 @@ const goBack = () => router.back();
               <SearchFilterBar v-model:draft="cmpDraft" :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :loading="cmpLoading" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" :saved-day="cmpSnapDay" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
               <div class="cmp-est">
                 <div class="cmp-tiles">
-                  <!-- 단지를 고르기 전엔 동 전체(평균 · 평당가 · 건수 · 단지 수), 고르면 그 단지(중간값 · 최저 · 최고 · 면적까지). 칸 자리는 그대로 — 흔들리지 않게 -->
+                  <!-- 단지를 고르기 전엔 동 전체(평균 · 최저 · 최고 · 평당가 · 단지 수 · 건수), 고르면 그 단지(평균 · 최저 · 최고 · 평당가 · 면적 · 건수). 칸 자리는 그대로 — 흔들리지 않게 -->
                   <template v-if="cmpPick">
                   <!-- 단지를 고르면 그 단지 '같은 평형(전용면적이 같은 거래)'만의 평균 — 단지 전체로 읽히지 않게 면적을 적는다(2026-11-11 사용자) -->
                   <div class="cmp-tile key"><span class="k">해당평형 평균 {{ cmpKind }}가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.avg) : '-' }}</span></div>
-                  <div class="cmp-tile"><span class="k">중간값</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.med) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">최저가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.min) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">최고가</span><span class="v">{{ cmpEst ? cmpEok(cmpEst.max) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">평균 평당가</span><span class="v">{{ cmpEst ? cmpPy(cmpEst.perPy) : '-' }}</span></div>
@@ -9814,7 +9818,9 @@ const goBack = () => router.back();
                   </template>
                   <template v-else>
                   <div class="cmp-tile key"><span class="k">평균 {{ cmpKind }}가 · {{ supRegion?.dong || '동 전체' }}</span><span class="v">{{ cmpAll ? cmpEok(cmpAll.avg) : '-' }}</span></div>
-                  <div v-for="k in ['중간값', '최저가', '최고가']" :key="k" class="cmp-tile off"><span class="k">{{ k }}</span><span class="v sm">{{ cmpN }}를 누르면 보입니다</span></div>
+                  <!-- 고르기 전 최저 · 최고는 동 전체(평균과 같은 거래), 중간값은 뺐다(2026-11-12 사용자) -->
+                  <div class="cmp-tile"><span class="k">최저가</span><span class="v">{{ cmpAll?.min ? cmpEok(cmpAll.min) : '-' }}</span></div>
+                  <div class="cmp-tile"><span class="k">최고가</span><span class="v">{{ cmpAll?.max ? cmpEok(cmpAll.max) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">평균 평당가</span><span class="v">{{ cmpAll ? cmpPy(cmpAll.perPy) : '-' }}</span></div>
                   <div class="cmp-tile"><span class="k">{{ cmpN }} 수</span><span class="v">{{ cmpAll?.complexes ?? 0 }}곳</span></div>
                   <div class="cmp-tile"><span class="k">{{ cmpKind }} 거래건수</span><span class="v">{{ cmpAll?.n ?? 0 }}건</span></div>
@@ -12637,7 +12643,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-desc-hi { color: #2563eb; }   /* 필터 설명 중 기간 · 평형 · 매매/전세 — 파란 글(2026-11-11 사용자) */
 .cmp-est-desc { margin-left: auto; padding-right: 14px; font-size: 12px; color: #6b7280; text-align: right; }   /* 오른쪽 — 아래 마지막 칸(거래건수) 오른쪽 선에 맞춘다(2026-11-11) */
 .cmp-est { background: #f7f8fb; border-radius: 10px; padding: 14px; }
-.cmp-tiles { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+.cmp-tiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }   /* 중간값 빼고 여섯 칸(2026-11-12 사용자) */
 @media (max-width: 1000px) { .cmp-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .cmp-tile { background: #fff; border-radius: 10px; padding: 13px 8px; text-align: center; display: grid; gap: 5px; box-shadow: 0 1px 2px rgba(17, 24, 39, .04); min-width: 0; }
 .cmp-tile .k { font-size: 13px; color: #6b7280; }

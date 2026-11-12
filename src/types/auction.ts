@@ -888,7 +888,7 @@ export type DemandSnap = {
   tol: number;
   rows: DemandSnapRow[];
   /** 위 칸 줄 동 전체(고르기 전) */
-  all: { n: number; avg: number; perPy: number; complexes: number } | null;
+  all: { n: number; avg: number; perPy: number; complexes: number; min?: number; max?: number } | null;
 };
 /** 매매수요 입지비교 거르기 — area · year 가 없으면 기본(면적 내 물건 ±3㎡ · 건축 전체) */
 export type DemandFilter = { range: 'dong' | 100 | 300 | 500 | 1000 | 2000; months: 3 | 6 | 12 | 24; kind: '매매' | '전세'; area?: [number | null, number | null] | null; year?: [number | null, number | null] | null; floor?: 'same' | null; elev?: 'yes' | 'no' | null; mode?: 'sim' | 'range'; sim?: number };
