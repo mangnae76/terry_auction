@@ -6060,7 +6060,7 @@ const cmpEst = computed(() => {
   const avg = ps.length ? ps.reduce((a, b) => a + b, 0) / ps.length : 0;
   return { name: r.name || r.jibun, mine: r.mine, n: ps.length, avg, med: mid, min: ps[0] ?? 0, max: ps[ps.length - 1] ?? 0, perPy: py > 0 ? avg / py : 0, py, year: r.buildYear };
 });
-/** 근거 거래 줄 — 고른 건물 · 단지의 칸 줄(평균 · 중간값 …)이 어느 거래로 계산됐나. 최근 거래부터 3건, 넘으면 '외 n건'(2026-11-12 시안) */
+/** 근거 거래 줄 — 고른 건물 · 단지의 칸 줄(평균 · 중간값 …)이 어느 거래로 계산됐나. 최근 거래 1건 + '외 n건' — 한 줄로 끝나게(2026-11-12 사용자) */
 const cmpBasis = computed(() => {
   const r = cmpPicked.value; if (!cmpPick.value || !r) return null;
   const ds = r.deals.filter((d) => (cmpKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세') && d.price > 0)
@@ -6072,7 +6072,7 @@ const cmpBasis = computed(() => {
   const sq = (v: string) => String(v ?? '').replace(/\s+/g, '');
   const all = src.filter((d) => sq(d.jibun) === sq(r.jibun) && sq(d.umdNm) === sq(r.umdNm) && d.contractDate.replace(/\D/g, '') >= cmpFrom.value
     && (cmpKind.value === '전세' ? d.kind === '전세' : ['매매', '직거래'].includes(d.kind)) && d.price > 0).length;
-  return { out: Math.max(0, all - ds.length), n: ds.length, shown: ds.slice(0, 3).map((d) => [fmtD(d.contractDate), d.floor ? `${String(d.floor).replace(/층$/, '')}층` : '', `전용 ${ar(d.areaM2)}`, cmpMoney(d.price)].filter(Boolean).join(' · ')), more: Math.max(0, ds.length - 3) };
+  return { out: Math.max(0, all - ds.length), n: ds.length, shown: ds.slice(0, 1).map((d) => [fmtD(d.contractDate), d.floor ? `${String(d.floor).replace(/층$/, '')}층` : '', `전용 ${ar(d.areaM2)}`, cmpMoney(d.price)].filter(Boolean).join(' · ')), more: Math.max(0, ds.length - 1) };
 });
 /** 표 · 목록의 시설 이름 — 옆 칸이 이미 '학원가'라 '학원가 · 학원 12곳' 은 '학원 12곳' 으로만(2026-11-11) */
 const cmpPlaceName = (name: string) => name.replace(/^학원가\s*·\s*/, '');
