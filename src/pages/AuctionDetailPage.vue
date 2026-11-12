@@ -77,6 +77,7 @@ import { updateStamp } from '../services/updateStamp';
 import { addressParts, buildingNameOf, hasBuildingName, isUnitToken } from '../utils/addressName';
 import { stageDates, bidStageOf, stageLabelOf } from '../utils/stageLabel';
 import { useAuthStore } from '../stores/authStore';
+import { isAdminEmail } from '../services/accessControl';
 import { deleteSitePdf, deleteSitePhoto, isPdfEntry, isPdfFile, isPhotoId, loadSitePdf, loadSitePhoto, pdfNameOf, saveSitePdf, saveSitePhoto } from '../services/sitePhotoRepository';
 import { getGeminiKey, isGeminiOn, loadGeminiPrefs } from '../services/geminiPdf';
 import { askRightsAnalysis, DOC_LABELS, type RightsAi, type RightsDocPart } from '../services/geminiRights';
@@ -127,6 +128,8 @@ const sonAskReady = inject<Ref<boolean> | null>('sonAskReady', null);
 const route = useRoute();
 const store = useAuctionStore();
 const authStore = useAuthStore();
+/** 운영자 — 앱 손품조사 매각분석 카드는 운영자만(웹 agIsAdmin 과 같은 명단) */
+const isOperator = computed(() => isAdminEmail(authStore.email));
 
 type TabKey = 'basic' | 'rights' | 'profit' | 'verify' | 'survey' | 'field';
 const TAB_KEYS: TabKey[] = ['basic', 'rights', 'profit', 'verify', 'survey', 'field'];
@@ -10451,6 +10454,16 @@ const goBack = () => router.back();
           </div>
         </section>
         </Teleport>
+        <!-- 앱 매각분석 — 운영자만(웹 손품조사 › 매각분석 탭처럼 '운영' 칩, 2026-11-13 사용자). 시세분석 카드 아래 같은 꼴 · 같은 접기 -->
+        <section v-if="appPrice && isOperator" class="adp-card">
+          <header class="adp-card-head adp-survey-head" @click="toggleSection('survSale')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" /></svg>매각분석<span class="adp-op-chip">운영</span></h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survSale') }]" alt="" />
+          </header>
+          <div v-if="!isCollapsed('survSale')" class="adp-mkt-body">
+            <p class="adp-sub-note">웹 손품조사 › 매각분석 화면을 이 자리로 옮기는 중입니다.</p>
+          </div>
+        </section>
         <!-- 손품결론 카드는 뺐다(2026-11-02) — 실거래가 예상은 손품조사 › 가격분석, 인근 매각사례는 물건정보 탭 -->
         <!-- 손품분석(웹) — 임장 결과로 수익분석 다시 보기는 시세 아래에 그대로 -->
         <!-- 임장을 다녀온 뒤 할 일 — 임장 결과로 수익분석을 다시 본다(손품 → 대략 수익 → 임장 → 수익 확정, 2026-11-03). 웹은 임장조사 탭 아래 제 단추를 쓴다 -->
@@ -12561,6 +12574,7 @@ tr.tone-take { background: #fff5f5; }
 }
 /* 조사 대상 동 이름 — 제목 안에서 눈에 띄게 */
 .adp-dm-area { color: #2b6df3; }
+.adp-op-chip { display: inline-flex; align-items: center; height: 18px; margin-left: 6px; padding: 0 6px; border-radius: 5px; background: #fff1e6; color: #e8590c; font-size: 11px; font-weight: 700; }   /* 운영자만 보이는 카드 — 웹 '운영' 칩과 같은 주황 */
 .adp-dm-area-gap { margin-left: 6px; }
 .adp-dm-title.adp-dm-title-sm { font-size: 13px; }   /* ③ 제목 — 위 ① · ② 상자 제목(13 · 800)과 같은 크기, 동 이름까지 */
 .sup-opinion.dm-app-opinion { margin-top: 10px; padding: 12px 14px; }
@@ -12906,8 +12920,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 #appUnitSlot .sup-tbl .adm-table td.lft { padding-left: 5px !important; }
 #appUnitSlot .cmp-ind-seg { gap: 2px; padding: 2px; }
 #appUnitSlot .cmp-ind-seg button { height: 22px; padding: 0 5px; font-size: 11.5px; }
-#appUnitSlot .cmp-rate-in { gap: 1px; }
-#appUnitSlot .cmp-rate-in input { width: 34px; height: 24px; padding: 0 3px; font-size: 11.5px; }
+#appUnitSlot .cmp-rate-in { display: flex; width: 100%; gap: 1px; }   /* 비율 입력칸 — 칸 폭 끝까지(단위 % · 만 자리만 남기고) */
+#appUnitSlot .cmp-rate-in input { flex: 1 1 0; width: auto; min-width: 0; height: 24px; padding: 0 4px; font-size: 11.5px; }
 #appUnitSlot .cmp-ind-in input { width: 34px; height: 24px; padding: 0 3px; font-size: 11.5px; }
 #appUnitSlot .cmp-auto { display: none; }
 #appUnitSlot .adp-ind-adj small { display: block; font-size: 10px; }
