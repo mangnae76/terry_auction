@@ -7955,7 +7955,19 @@ span.cal-day.has { cursor: help; }
     SXM.basis = v.mode; sxSaveM();
     if ($('sxResults')) agPaintTable(); else sxDrawMap();
   }
+  /* 엘베 · 층은 종류마다 따로 남긴다 — 아파트는 처음 엘베 · 층 전체, 빌라 등은 엘베 있음 · 같은 층(2026-11-12 사용자). 종류가 바뀌면 그 종류에서 고른 값으로 */
+  function sxKindSync() {
+    const k = sxAptKind() ? 'apt' : 'etc';
+    if (SXM.kindOf === k) return;
+    const def = (x) => (x === 'apt' ? { elev: '', floor: '' } : { elev: 'yes', floor: '0' });
+    SXM.picks = SXM.picks || {};
+    /* 지금 값은 앞 종류의 것 — 처음 한 번(종류 기록 없음)은 그동안 빌라 등에서 고른 값이라 'etc' 로 남긴다 */
+    SXM.picks[SXM.kindOf || 'etc'] = { elev: SXM.elev, floor: SXM.floor };
+    const d = SXM.picks[k] || def(k);
+    SXM.elev = d.elev; SXM.floor = d.floor; SXM.kindOf = k; sxSaveM();
+  }
   function sxMountFilt() {
+    sxKindSync();
     const slot = $('sxFiltSlot'); const T = CLOUD.T; if (!slot || !T || !T.mountSearchFilter) return;
     if (!SXF.host) { SXF.host = document.createElement('div'); SXF.app = T.mountSearchFilter(SXF.host, sxFiltProps(), { change: sxFiltChange, reset: () => sxMapReset(), save: () => sxMapSave() }); }
     else SXF.app.set(sxFiltProps());
@@ -7983,7 +7995,8 @@ span.cal-day.has { cursor: help; }
     clearTimeout(sxUndoTimer);
     if (sxUndo) { sxSnapRestore(sxUndo); sxUndo = null; agPaintTable(); return; }
     sxUndo = sxSnapNow();
-    sxSnapRestore({ radius: 100, elev: 'yes', floor: '0', basis: 'range', sim: 80, rc: { mMin: SX_AREA[0], mMax: SX_AREA[1], yMin: SX_YEAR[0], yMax: SX_YEAR[1] }, period: '3개월' });
+    const apt = sxAptKind();   /* 아파트는 엘베 · 층 전체가 기본(2026-11-12 사용자) */
+    sxSnapRestore({ radius: 100, elev: apt ? '' : 'yes', floor: apt ? '' : '0', basis: 'range', sim: 80, rc: { mMin: SX_AREA[0], mMax: SX_AREA[1], yMin: SX_YEAR[0], yMax: SX_YEAR[1] }, period: '3개월' });
     agPaintTable();
     sxUndoTimer = setTimeout(() => { sxUndo = null; const b = document.querySelector('.sx-reset.undo'); if (b) { b.classList.remove('undo'); b.setAttribute('aria-label', '초기화'); b.textContent = '초기화'; } }, 5000);
   }
@@ -7993,6 +8006,7 @@ span.cal-day.has { cursor: help; }
     const el = document.querySelector('.sx-acts'); if (el) el.outerHTML = sxActsHtml();
   }
   function sxResultsHtml() {
+    sxKindSync();   /* 종류(아파트 · 빌라)에 맞는 엘베 · 층을 먼저 — 결과를 그 값으로 계산 */
     const rows = agIsAdmin() && AG.recs.length ? sxRows() : null;
     if (!rows) {
       return `<div class="sx-results" id="sxResults">${saleBandHtml() ? `<section class="sx-card sx-bandcard">${saleBandHtml()}</section>` : ''}<section class="sx-card sx-wait"><b>인근 매각물건 분석</b><span>${S.route === 'item' && !sonSaleFail ? '이 물건 지역의 모은 매각물건을 불러오는 중입니다…' : '위에서 지역 · 종류를 고르고 <b>조회</b>를 누르면(또는 물건카드에서 물건을 고르면) 모은 매각물건으로 예상 입찰가 · 지표 · 매각가율 분포를 보여 줍니다.'}</span></section></div>`;
