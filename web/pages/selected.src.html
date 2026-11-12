@@ -1277,6 +1277,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-filt .sx-mapmsg:empty { display: none; }
 /* PDF 인근 매각사례 통계 상자 — 인근 유사 매각사례 표 바로 아래(2026-11-12) */
 .sx-pdfnear-box { margin-top: 16px; }
+.sx-pdfcard { padding: 16px; } .sx-pdfcard .sx-pdfnear-box { margin-top: 0; }   /* 0건일 때 따로 선 상자 */
 .sx-pdfnear table { width: 100%; }
 .sx-pdfnear th, .sx-pdfnear td.c { text-align: center; }
 .sx-pdfnear td small { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
@@ -8022,7 +8023,9 @@ span.cal-day.has { cursor: help; }
         : !inPeriod ? `${place}에 모은 ${all.toLocaleString('ko-KR')}건이 모두 최근 ${q.period} 밖이거나 매각일이 비어 있습니다.${q.period === SALE_SEG.period[SALE_SEG.period.length - 1] ? '' : ' 매각기간을 늘려 보세요.'}`
         : me ? `최근 ${q.period} ${inPeriod.toLocaleString('ko-KR')}건이 있지만, 물건카드 물건(${me.caseNo}) 둘레 반경 ${SXM.radius >= 1000 ? `${SXM.radius / 1000}km` : `${SXM.radius}m`} · 직접범위 · 엘베 · 층 조건에 맞는 물건이 없습니다.`
         : `최근 ${q.period} ${inPeriod.toLocaleString('ko-KR')}건이 있지만, 아래 직접범위 · 엘베 · 층 조건에 맞는 물건이 없습니다.`;
-      return `<div class="sx-results" id="sxResults"><section class="sx-card sx-wait"><b>${esc(place)} · ${esc(q.kind || '전체')} — 0건</b><span>${esc(msg)}</span></section>${sxMapCardHtml()}</div>`;
+      /* 0건이어도 PDF '○○동 전체 매각사례 평균'은 그대로 — 유사도를 좁혀 0건이 되면 함께 사라지던 것(2026-11-12 사용자) */
+      const pdf = me && !me.__ref ? `<section class="sx-card sx-pdfcard">${sxPdfNearHtml(me)}</section>` : '';
+      return `<div class="sx-results" id="sxResults"><section class="sx-card sx-wait"><b>${esc(place)} · ${esc(q.kind || '전체')} — 0건</b><span>${esc(msg)}</span></section>${sxMapCardHtml()}${pdf}</div>`;
     }
     const conds = [`최근 ${q.period} ${saleSpan(q.period)}`, (sxNum(q.amin) || sxNum(q.amax)) ? `면적 ${q.amin || ''}~${q.amax || ''}㎡` : '', (sxNum(q.ymin) || sxNum(q.ymax)) ? `건축 ${q.ymin || ''}~${q.ymax || ''}년` : '', `${st.n.toLocaleString('ko-KR')}건 기준`].filter(Boolean).join(' · ');
     /* 경매물건을 고르면(손품조사 › 경매사례는 늘) 그 물건 동까지 적고, 실제 거르는 범위인 반경도 함께 — '서해구 검암동 · 반경 500m'(2026-11-07) */
