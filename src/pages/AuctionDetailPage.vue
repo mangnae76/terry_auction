@@ -5675,7 +5675,8 @@ let cmpRows2yFor = '';
 watch(() => auction.value?.id, () => { cmpRows2y.value = null; cmpRows2yFor = ''; });
 watch([() => auction.value?.id, cmpMonths, () => webEmbed] as const, async ([id, mo, web]) => {
   const a = auction.value;
-  if (mo !== 24 || !id || !web || !a?.address || cmpSnapOn.value) return;
+  // 저장본 검사(cmpSnapOn)는 여기서 하지 않는다 — 아래에서 선언돼 처음 부를 때 'before initialization' 오류로 2년치를 못 받았다(2026-11-12)
+  if (mo !== 24 || !id || !web || !a?.address) return;
   if (cmpRows2yFor === id && cmpRows2y.value) return;
   cmpRows2yFor = id;
   const out = await analyzeAddress({ address: a.address, propertyType: priceKind.value, years: 2 }).catch(() => null);
