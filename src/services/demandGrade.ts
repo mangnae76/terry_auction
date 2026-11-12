@@ -57,32 +57,43 @@ export const DEMAND_PASS_TEXT: Record<DemandMetric, string> = {
 export const demandPassText = (m: DemandMetric, apt = false, complex = false) => (m === 'turnover' ? `${turnoverLineOf(apt)}% 이상 적합` : m === 'burden' && complex ? `${COMPLEX_BURDEN_LINE}% 이하 적합` : DEMAND_PASS_TEXT[m]);
 
 /** 종합 의견 — 매물(소화기간 10개월 · 매물율 5% 선) × 거래(회전율 1.5% 선, 아파트 3%) 네 칸. 등급 대신 한 줄(2026-11-10 사용자 시안 'Level 3 · 저매물 / 저거래').
- *  매물이 많고 적음은 세대수가 아니라 팔리는 속도로 본다 — 1년치가 쌓였으면 세대수 대비 적어도 '고매물'(2026-11-10 사용자 결정, 성포동 329건 · 329건).
+ *  (2026-11-12 바뀜) 매물 많고 적음은 매물율 하나로 본다 — 소화기간은 매물율 ÷ 회전율 × 12 라 따로 세지 않고 결론 끝에 참고로. 매물율이 없을 때만 소화기간으로.
  *  소화기간 = 1,200 ÷ 소화율 이라 소화율로 받는다(거래 0건이면 소화율 0 → 고매물). 선은 DEMAND_PASS_TEXT 와 같은 합격선. 값이 없으면 null */
-// 매물율이 5%를 넘으면 소화기간과 상관없이 '고매물'(많이 쌓였다, 2026-11-10 사용자 결정) — 둘 중 하나만 넘어도 고매물
+// (예전 11-10: 매물율 · 소화기간 둘 중 하나만 넘어도 고매물 → 11-12 사용자가 매물율 하나로 바꿈)
 export const demandOpinionOf = (absorb: number, turnover: number, ready: boolean, apt = false, burden = 0, burdenLine: number = DEMAND_GRADE_RULES.burden.b): { level: number; title: string; text: string } | null => {
   if (!ready) return null;
   const clearMonths = absorb > 0 ? 1200 / absorb : Infinity;
-  const lowListing = clearMonths <= DEMAND_GRADE_RULES.clear.b && burden <= burdenLine;
-  const highDeal = turnover >= turnoverLineOf(apt);
+  const clearLine = DEMAND_GRADE_RULES.clear.b;
+  const tLine = turnoverLineOf(apt);
+  // 매물 많고 적음은 매물율 하나로 — 소화기간은 매물율 ÷ 회전율 × 12 라 같은 숫자를 두 번 세지 않게(2026-11-12 사용자, 11-10 '둘 중 하나만 넘어도 고매물'을 바꿈).
+  // 매물율을 모르면(0) 예전처럼 소화기간으로
+  const lowListing = burden > 0 ? burden <= burdenLine : clearMonths <= clearLine;
+  const highDeal = turnover >= tLine;
+  const over = burden > burdenLine * 2 || (!(burden > 0) && clearMonths > clearLine * 2);
   // 거래가 얼마나 활발한지 한 낱말 — 아파트 3~5% 다소 · 5~8% · 8%↑ 매우(ⓘ 단계와 같다), 빌라 1.5~3% 다소 · 3%↑
   const lively = apt
     ? (turnover >= APT_TURNOVER_HOT ? '매우 활발' : turnover >= 5 ? '활발' : '다소 활발')
     : (turnover >= DEMAND_GRADE_RULES.turnover.a ? '활발' : '다소 활발');
-  // 매물 과잉 — 매물율이 선의 2배를 넘거나 소화기간이 20개월(선 10개월의 2배)을 넘으면 '많다'가 아니라 '심하게 쌓였다'로 무게 있게(2026-11-12 사용자, 검암동 매물율 25.8%)
-  const over = burden > burdenLine * 2 || clearMonths > DEMAND_GRADE_RULES.clear.b * 2;
-  const overTx = burden > burdenLine * 2
-    ? `매물율 ${dec1(burden)}%로 기준 ${burdenLine}%의 ${dec1(burden / burdenLine)}배입니다.`
-    : `지금 속도로 다 팔리는 데 ${Number.isFinite(clearMonths) ? `${dec1(clearMonths)}개월` : '기약 없이'} 걸립니다.`;
-  // 뒤 한 문장 — 그 구간에서 가격이 어느 쪽으로 가기 쉬운지(단정하지 않는다, 2026-11-10). 말은 무게 있게(2026-11-12 사용자)
-  if (lowListing && highDeal) return { level: 1, title: '저매물 / 고거래', text: `매물은 적고 거래는 ${lively}합니다. 매도자 우위 시장으로, 가격 상승 압력이 있습니다.` };
+  // 문장은 숫자와 기준을 같이 — 무엇 때문에 그런 판단인지 바로 보이게(2026-11-12 사용자 '너무 단순하고 오해의 여지')
+  const listTx = !(burden > 0) ? (lowListing ? '매물이 빠르게 소화되는 편입니다.' : '매물이 쌓여 소화가 느립니다.')
+    : over ? `매물율 ${dec1(burden)}%로 기준 ${burdenLine}%의 ${dec1(burden / burdenLine)}배라 매물이 심하게 쌓여 있습니다.`
+      : lowListing ? `매물율 ${dec1(burden)}%로 기준 ${burdenLine}% 이하라 매물은 적정합니다.`
+        : `매물율 ${dec1(burden)}%로 기준 ${burdenLine}%를 넘어 매물이 많은 편입니다.`;
+  const dealTx = highDeal ? `거래 회전율 ${dec1(turnover)}%로 기준 ${tLine}% 이상, 거래가 ${lively}합니다.`
+    : `거래 회전율 ${dec1(turnover)}%로 기준 ${tLine}%에 못 미쳐 거래가 둔합니다.`;
+  // 소화기간 — 단지 매물 전체가 다 팔리는 평균 시간일 뿐, 내 물건은 가격 · 상태로 더 빨리 팔 수 있다
+  const clearTx = !Number.isFinite(clearMonths) ? '최근 1년 거래가 없어 매물이 언제 소화될지 가늠하기 어렵습니다.'
+    : clearMonths > clearLine ? `다만 지금 거래 속도로는 매물이 다 팔리는 데 ${dec1(clearMonths)}개월이 걸립니다(기준 ${clearLine}개월). 가격이나 상태에서 경쟁력을 갖추면 그보다 빨리 팔 수 있습니다.`
+      : `지금 거래 속도면 매물이 ${dec1(clearMonths)}개월 안에 소화됩니다(기준 ${clearLine}개월 이하).`;
+  const join = (...a: string[]) => a.join(' ');
+  if (lowListing && highDeal) return { level: 1, title: '저매물 / 고거래', text: join(listTx, dealTx, '매도자 우위 시장으로, 가격 상승 압력이 있습니다.', clearTx) };
   if (!lowListing && highDeal) return over
-    ? { level: 2, title: '매물 과잉 / 고거래', text: `매물이 심하게 쌓여 있습니다. ${overTx} 거래는 ${lively}하지만 쌓인 물량을 소화하기엔 부족해, 가격이 오르기 어렵고 조정 압력이 남아 있습니다.` }
-    : { level: 2, title: '고매물 / 고거래', text: `매물이 기준보다 많지만 거래도 ${lively}합니다. 수급이 맞서는 균형 구간으로, 가격은 보합 흐름이 예상됩니다.` };
-  if (lowListing) return { level: 3, title: '저매물 / 저거래', text: '매물은 적지만 거래가 둔합니다. 관망세가 짙은 구간으로, 가격이 정체되기 쉽습니다.' };
+    ? { level: 2, title: '매물 과잉 / 고거래', text: join(listTx, dealTx, '쌓인 물량을 소화하기엔 부족해, 가격이 오르기 어렵고 조정 압력이 남아 있습니다.', clearTx) }
+    : { level: 2, title: '고매물 / 고거래', text: join(listTx, dealTx, '수급이 맞서는 균형 구간으로, 가격은 보합 흐름이 예상됩니다.', clearTx) };
+  if (lowListing) return { level: 3, title: '저매물 / 저거래', text: join(listTx, dealTx, '관망세가 짙은 구간으로, 가격이 정체되기 쉽습니다.', clearTx) };
   return over
-    ? { level: 4, title: '매물 과잉 / 저거래', text: `매물이 심하게 쌓였고 거래도 둔합니다. ${overTx} 매수자 우위가 뚜렷해, 가격 하락 압력이 큽니다.` }
-    : { level: 4, title: '고매물 / 저거래', text: '매물이 쌓이고 거래도 둔합니다. 매수자 우위 시장으로, 가격 하락 압력이 있습니다.' };
+    ? { level: 4, title: '매물 과잉 / 저거래', text: join(listTx, dealTx, '매수자 우위가 뚜렷해, 가격 하락 압력이 큽니다.', clearTx) }
+    : { level: 4, title: '고매물 / 저거래', text: join(listTx, dealTx, '매수자 우위 시장으로, 가격 하락 압력이 있습니다.', clearTx) };
 };
 
 /** A·B 는 적합, C 는 부적합 */
