@@ -223,6 +223,8 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 }
 /* 아주 좁은 칸(시세분석 전체화면 340px) — 엘베 · 층도 한 줄씩 */
 @container (max-width: 380px) {
+  .sfb.compact > .cmp-conds, .sfb.compact > .cmp-bars-row { --lab: 56px; }   /* 이름 칸을 좁혀 단추(100m · 300m · 500m · 1km)가 칸을 넘지 않게 */
+  .sfb.compact .cmp-conds .pa-seg button { padding: 0 3px !important; }
   .sfb.compact > .cmp-conds > .pa-lab:has([aria-label="엘베"]), .sfb.compact > .cmp-conds > .pa-lab:has([aria-label="층"]) { grid-column: 1 / -1; display: grid; grid-template-columns: var(--lab) minmax(0, 1fr); gap: 0; padding: 4px 10px; }
   .sfb.compact > .cmp-conds > .pa-lab:has([aria-label="엘베"]) > .pa-seg, .sfb.compact > .cmp-conds > .pa-lab:has([aria-label="층"]) > .pa-seg { display: flex; }
 }</style>

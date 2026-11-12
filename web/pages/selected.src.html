@@ -1386,6 +1386,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-fs .sx-map .legend { left: 364px; }
 .sx-fs :is(.fs-conds, .fs-list) { position: relative; z-index: 2; margin-left: 12px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 20px rgba(17, 24, 39, .14); }
 .sx-fs .fs-conds { grid-column: 1; grid-row: 2; padding: 12px 14px; display: grid; gap: 8px; }
+.sx-fs .fs-conds.fs-filt { padding: 6px; }   /* 필터 부품(좁은 꼴)이 제 여백을 갖는다 */
 .sx-fs .fs-conds .sx-mlab { display: grid; grid-template-columns: 32px minmax(0, 1fr); }
 .sx-fs .fs-conds .sx-mseg { width: 100%; } .sx-fs .fs-conds .sx-mseg button { flex: 1 1 0; min-width: 0; padding: 0 4px; }
 .sx-fs .fs-list { grid-column: 1; grid-row: 3; margin-bottom: 12px; min-height: 0; overflow-y: auto; padding: 10px 10px 14px; display: grid; gap: 6px; align-content: start; }
@@ -7494,10 +7495,20 @@ span.cal-day.has { cursor: help; }
     const list = SXG.groups.map((g) => `<button type="button" class="fs-it ${SXG.focus === g.k ? 'on' : ''}" data-act="sxm-go" data-v="${esc(g.k)}"><i class="n">${g.no}</i><span class="nm">${esc(g.name)}<small>${g.list.length}건${g.dist != null ? ` · ${g.dist.toLocaleString('ko-KR')}m` : ''}</small></span><span class="pr num">${g.range}</span></button>`).join('');
     return `<div class="fs-top"><button type="button" class="fs-x" data-act="sxm-fs"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>닫기</button>`
       + `<b class="fs-t">인근 유사 매각사례<small>${esc([me && me.caseNo, [q.sido, q.sgg, q.dong].filter(Boolean).join(' ')].filter(Boolean).join(' · '))}</small></b><span class="sx-mapmsg fs-msg" id="sxFsMsg">${esc(sxMapMsgText())}</span></div>`
-      + `<div class="fs-conds"><span class="sx-mlab">반경${seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']])}</span><span class="sx-mlab">엘베${seg('elev', [['', '전체'], ['yes', '있음'], ['no', '없음']])}</span><span class="sx-mlab">층${seg('floor', [['', '전체'], ['0', '같은층']])}</span></div>`
+      + (me && CLOUD.T && CLOUD.T.mountSearchFilter ? '<div class="fs-conds fs-filt"><div id="sxFsFiltSlot"></div></div>' : '')   /* 전체화면 — 같은 필터 부품 좁은 꼴(2026-11-12) */
+      + (me && CLOUD.T && CLOUD.T.mountSearchFilter ? '' : `<div class="fs-conds"><span class="sx-mlab">반경${seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']])}</span><span class="sx-mlab">엘베${seg('elev', [['', '전체'], ['yes', '있음'], ['no', '없음']])}</span><span class="sx-mlab">층${seg('floor', [['', '전체'], ['0', '같은층']])}</span></div>`)
       + `<div class="fs-list"><b class="fs-lh">매각물건 ${SXG.groups.length.toLocaleString('ko-KR')}곳</b>${list || '<p class="none">지도에 매각물건이 없습니다.</p>'}</div>`;
   }
-  function sxFsPaint() { const ov = $('sxFs'); if (!ov) return; const pane = ov.querySelector('.fs-pane'); if (pane) pane.innerHTML = sxFsPanelHtml(); }
+  function sxFsPaint() { const ov = $('sxFs'); if (!ov) return; const pane = ov.querySelector('.fs-pane'); if (pane) { pane.innerHTML = sxFsPanelHtml(); sxMountFsFilt(); } }
+  /* 전체화면 왼쪽 창 필터 — 밖과 같은 부품의 좁은 꼴(compact). 한 번 띄운 것을 옮겨 꽂고 값만 새로 */
+  const SXF2 = { host: null, app: null };
+  function sxMountFsFilt() {
+    const slot = $('sxFsFiltSlot'); const T = CLOUD.T; if (!slot || !T || !T.mountSearchFilter) return;
+    const p = { ...sxFiltProps(), compact: true };
+    if (!SXF2.host) { SXF2.host = document.createElement('div'); SXF2.app = T.mountSearchFilter(SXF2.host, p, { change: sxFiltChange, reset: () => sxMapReset(), save: () => sxMapSave() }); }
+    else SXF2.app.set(p);
+    slot.appendChild(SXF2.host);
+  }
   function sxSetFs(on) {
     SXG.fs = !!on; try { if (on) localStorage.setItem('ta.web.sale.fs', '1'); else localStorage.removeItem('ta.web.sale.fs'); } catch (e) { /* 그만 */ }
     let ov = $('sxFs');
