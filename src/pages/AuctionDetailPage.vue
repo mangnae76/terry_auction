@@ -5632,6 +5632,13 @@ const cmpPeriodText = computed(() => CMP_PERIODS.find(([v]) => v === cmpMonths.v
 /** 필터 설명 줄 맨 앞 — 고른 범위(반경 500m · 읍면동이면 그 동 이름, 2026-11-12 사용자) */
 const cmpRangeText = computed(() => (cmpRange.value === 'dong' ? `${supRegion.value?.dong || '읍면동'} 전체` : `반경 ${CMP_RANGES.value.find(([v]) => v === cmpRange.value)?.[1] ?? ''}`));
 const cmpKind = ref<'매매' | '전세'>('매매');   // 강의 — 단지 비교 기본 잣대는 매매
+/** 거르기 단추는 고르기만(초안) — '조회하기'를 눌러야 위 cmpRange · cmpMonths · cmpKind 에 들어가 다시 계산하고 저장한다(2026-11-12 사용자) */
+const cmpRangeD = ref<CmpRange>(1000);
+const cmpMonthsD = ref<6 | 12 | 24>(6);
+const cmpKindD = ref<'매매' | '전세'>('매매');
+watch([cmpRange, cmpMonths, cmpKind], ([r, m, k]) => { cmpRangeD.value = r; cmpMonthsD.value = m; cmpKindD.value = k; }, { immediate: true });
+const cmpDirty = computed(() => cmpRangeD.value !== cmpRange.value || cmpMonthsD.value !== cmpMonths.value || cmpKindD.value !== cmpKind.value);
+const cmpApply = () => { cmpRange.value = cmpRangeD.value; cmpMonths.value = cmpMonthsD.value; cmpKind.value = cmpKindD.value; };
 /** 거래 단추 옆 건수 — 지금 리스트(범위 · 기간 · 유사평형)에 든 매매 · 전세 실거래 수(시세분석 '매매 3'과 같은 꼴, 2026-11-12 사용자) */
 const cmpKindCount = (k: '매매' | '전세') => cmpRows.value.reduce((n, r) => n + r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length, 0).toLocaleString('ko-KR');
 // 고른 거르기는 그 물건 문서(DB)에 남긴다 — 바꾸면 리스트 · 평균가가 달라져, 다시 열어도 같은 숫자를 보게(2026-11-11 사용자). 처음엔 위 기본값
@@ -9676,6 +9683,13 @@ const goBack = () => router.back();
               <div class="cmp-est-h"><h3><span class="cmp-no">②</span>{{ cmpN }} 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}<template v-if="cmpPick && cmpPicked"> · {{ cmpPicked.name || cmpPicked.jibun }}</template></span><span class="cmp-q">{{ isApartment ? '내가 선정한 아파트 단지는 몇 등일까?' : '내가 선정한 빌라는 주변 유사 빌라 중 몇 등일까?' }}</span></h3>
                 <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">고정기준 · {{ cmpRangeText }} · 최근 {{ cmpPeriodText }} · 유사평형(전용 ±{{ cmpTol }}㎡) {{ cmpKind }} 실거래</span> · {{ cmpN }} {{ cmpRows.length }}곳 전체<template v-if="cmpSnapDay"> · {{ cmpSnapDay }} 저장</template></span>
               </div>
+              <!-- 거르기 — 제목 · 고정기준 줄 바로 밑(2026-11-12 사용자). 단추는 고르기만, 조회하기를 눌러야 리스트 · 지도 · 칸 줄이 바뀌고 저장된다. (예전: 지도 밑 · 표 바로 위, 2026-11-11) 시세분석 조건 줄과 같은 단추 · 순서(범위 → 거래 → 기간 → 평형). 표 · 지도 · 위 칸 줄이 같이 바뀐다 -->
+              <div class="cmp-conds">
+                <span class="pa-lab">범위<span class="pa-seg pa-out" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRangeD === v }" :aria-checked="cmpRangeD === v" :data-t="t" @click="cmpRangeD = v">{{ t }}</button></span></span>
+                <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :data-k="k" :class="{ on: cmpKindD === k }" :aria-checked="cmpKindD === k" @click="cmpKindD = k">{{ k }} {{ cmpKindCount(k) }}</button></span></span>
+                <span class="pa-lab">기간<span class="pa-seg pa-out" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonthsD === m }" :aria-checked="cmpMonthsD === m" :data-t="t" @click="cmpMonthsD = m">{{ t }}</button></span></span>
+                <button type="button" :class="['cmp-go', { dirty: cmpDirty }]" @click="cmpApply">조회하기</button>
+              </div>
               <div class="cmp-est">
                 <div class="cmp-tiles">
                   <!-- 단지를 고르기 전엔 동 전체(평균 · 평당가 · 건수 · 단지 수), 고르면 그 단지(중간값 · 최저 · 최고 · 면적까지). 칸 자리는 그대로 — 흔들리지 않게 -->
@@ -9753,14 +9767,6 @@ const goBack = () => router.back();
                 </aside>
               </div>
               </Teleport>
-              </div>
-              <!-- 거르기 — 지도 밑 · 표 바로 위(표를 보면서 바꾸게, 2026-11-11). 시세분석 조건 줄과 같은 단추 · 순서(범위 → 거래 → 기간 → 평형). 표 · 지도 · 위 칸 줄이 같이 바뀐다 -->
-              <div class="cmp-conds">
-                <span class="pa-lab">범위<span class="pa-seg pa-out" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRange === v }" :aria-checked="cmpRange === v" :data-t="t" @click="cmpRange = v">{{ t }}</button></span></span>
-                <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :data-k="k" :class="{ on: cmpKind === k }" :aria-checked="cmpKind === k" @click="cmpKind = k">{{ k }} {{ cmpKindCount(k) }}</button></span></span>
-                <span class="pa-lab">기간<span class="pa-seg pa-out" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonths === m }" :aria-checked="cmpMonths === m" :data-t="t" @click="cmpMonths = m">{{ t }}</button></span></span>
-                <!-- 고정 기준 — 고르는 단추 말고 늘 걸려 있는 조건(2026-11-11 사용자) -->
-                <span class="cmp-fixed"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">고정기준 · {{ cmpRangeText }} · 최근 {{ cmpPeriodText }} · 전용 ±{{ cmpTol }}㎡ · {{ cmpKind }} 실거래</span></span>
               </div>
               <p v-if="!cmpConds.length" class="cmp-noroom">매매수요 조사 맨 위에서 <b>룸수</b>를 고르면 세대구성에 맞는 입지조건과 {{ cmpN }}별 입지등수가 나옵니다.</p>
               <div class="son-demand sup-tbl">
@@ -12504,7 +12510,12 @@ tr.tone-take { background: #fff5f5; }
 input.cmp-rk.in { padding: 0; font: inherit; font-weight: 700; text-align: center; border-color: #2b6df3; background: #fff; }
 input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b45309; }   /* 손으로 고친 등수 */
 /* 단지 입지비교 거르기 — 시세분석 조건 줄(.pa-lab · .pa-seg · .kindF) 값 그대로(2026-11-11) */
-.cmp-conds { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.cmp-conds { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 12px; }
+.cmp-go { margin-left: auto; height: 42px; padding: 0 22px; border: 1px solid #2b6df3; border-radius: 8px; background: #fff; color: #2b6df3; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }   /* 조회하기 — 고른 거르기가 지금과 다르면 파랗게 채운다 */
+.cmp-go.dirty { background: #2b6df3; color: #fff; }
+.cmp-go:hover { filter: brightness(.97); }
+:root[data-theme="dark"] .cmp-go:not(.dirty) { background: transparent; color: #8fb0ff; border-color: #5b8cff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-go:not(.dirty) { background: transparent; color: #8fb0ff; border-color: #5b8cff; } }
 .cmp-fixed { margin-left: auto; align-self: center; font-size: 12px; color: #6b7280; }   /* 필터 줄 오른쪽 빈자리 — 위 설명 줄과 같은 꼴(깔때기 + 파란 글, 2026-11-11 사용자) */
 .cmp-conds .pa-lab { display: inline-flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 4px 12px; font-size: 14px; font-weight: 700; color: #6b7280; white-space: nowrap; }
 .cmp-conds .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
