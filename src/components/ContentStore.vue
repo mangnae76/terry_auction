@@ -33,7 +33,7 @@ const shown = computed(() => books.value.filter((b) => kindOf(b) !== 'mobile' &&
 // === 매뉴얼 HTML 표지 — 관리 › 내용 끝의 [표지] … [/표지] (웹 ebCoverSpec 과 같은 규칙) ===
 const COVER_RE = /\n*\[표지\]([\s\S]*?)\[\/표지\]\s*$/;
 const descOf = (b: Ebook) => String(b.desc || '').replace(COVER_RE, '');
-type Cover = { no: string; eyebrow: string; title: string[]; sub: string; steps: [string, string][]; xs: number[]; mark: [number, number, string] | null; chips: string[]; basis: string; asOf: string };
+type Cover = { page: string; no: string; eyebrow: string; title: string[]; sub: string; steps: [string, string][]; xs: number[]; mark: [number, number, string] | null; chips: string[]; basis: string; asOf: string };
 const coverOf = (b: Ebook): Cover | null => {
   const m = String(b.desc || '').match(COVER_RE);
   if (!m) return null;
@@ -46,6 +46,7 @@ const coverOf = (b: Ebook): Cover | null => {
   const mk = (o['강조'] || '').match(/^(\d+)\s*-\s*(\d+)\s*(.*)$/);
   const mark: Cover['mark'] = mk ? [Number(mk[1]) - 1, Number(mk[2]) - 1, mk[3]] : null;
   return {
+    page: o['페이지'] || '',
     no: o['번호'] || '', eyebrow: o['머리글'] || '', title: (o['제목'] || b.title || '').split('/').map((s) => s.trim()), sub: o['부제'] || '',
     steps, xs, mark: mark && xs[mark[0]] != null && xs[mark[1]] != null ? mark : null,
     chips: (o['칩'] || '').split('·').map((s) => s.trim()).filter(Boolean), basis: o['근거'] || '', asOf: o['기준'] || '',
@@ -131,7 +132,8 @@ const info = ref<Ebook | null>(null);
       <div v-else class="cs-grid">
         <article v-for="b in shown" :key="b.id" class="cs-card">
           <button type="button" class="cs-cv" :aria-label="`${b.title} 자세히보기`" @click="info = b">
-            <div v-if="coverOf(b)" class="mc" role="img" :aria-label="`${coverOf(b)!.title.join(' ')} 표지`">
+            <div v-if="coverOf(b)?.page" class="mc mc-page" role="img" :aria-label="`${b.title} 표지`"><iframe :src="coverOf(b)!.page" :title="`${b.title} 표지`" tabindex="-1" loading="lazy" aria-hidden="true" /></div>
+            <div v-else-if="coverOf(b)" class="mc" role="img" :aria-label="`${coverOf(b)!.title.join(' ')} 표지`">
               <img class="lg" :src="whiteLogo" alt="" />
               <span v-if="coverOf(b)!.no" class="no">MANUAL {{ coverOf(b)!.no }}</span>
               <span class="eb">{{ coverOf(b)!.eyebrow }}</span>
@@ -268,6 +270,8 @@ const info = ref<Ebook | null>(null);
 /* 매뉴얼 HTML 표지 — 웹 .mc 와 같은 꼴(글자 크기는 표지 폭 기준 cqw) */
 .mc { position: relative; container-type: inline-size; aspect-ratio: 600 / 888; overflow: hidden; border-radius: 4px; box-shadow: 0 4px 12px rgba(15, 23, 42, .22); color: #fff; text-align: left; background: radial-gradient(circle at 85% 12%, rgba(80, 195, 252, .2), transparent 50%), radial-gradient(circle at 10% 95%, rgba(244, 112, 10, .18), transparent 50%), linear-gradient(135deg, #24386f, #1c2b58); }
 .mc > * { position: absolute; margin: 0; line-height: 1; white-space: nowrap; font-style: normal; }
+/* 책 HTML 표지 — [표지] 페이지: 주소 */
+.mc-page { background: #f9f0e0; } .mc-page iframe { inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; }
 .mc .lg { left: 8cqw; top: 7.33cqw; height: 6.5cqw; width: auto; }
 .mc .no { right: 8cqw; top: 8.17cqw; height: 4.83cqw; padding: 0 2.17cqw; display: flex; align-items: center; border: .17cqw solid rgba(255, 255, 255, .3); border-radius: 99px; font-size: 2.5cqw; font-weight: 700; color: #c3cde6; }
 .mc .eb { left: 8cqw; top: 26.4cqw; font-size: 3.17cqw; font-weight: 900; letter-spacing: .5cqw; color: #f4700a; }
