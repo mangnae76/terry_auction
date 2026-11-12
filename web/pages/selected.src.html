@@ -1266,6 +1266,8 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-acts .undo-ic .run { fill: none; stroke: #d97706; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 62.83; transform: rotate(-90deg); transform-origin: 12px 12px; animation: sxUndoRun 5s linear forwards; }
 @keyframes sxUndoRun { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 62.83; } }
 .sx-acts .sx-save { flex: 1; min-width: 0; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.2; padding: 0 10px; border: 0; background: #1f3a72; color: #fff; font-weight: 700; transition: background .15s, border-color .15s; }
+/* 매각분석 표 경매물건 줄 평당가 — 실제가 아니라 평균 매각평당가라 빨강(시세분석 '매매 예상'과 같은 뜻, 2026-11-12 사용자) */
+.sx-tbl tr.me td.sx-est, tr.me td.sx-est { color: #e03e3e; }
 .sx-acts .sx-save.dirty { background: #2b6df3; border: 1px solid #2b6df3; }   /* 웹 저장 단추 통일(2026-11-12 사용자) — 저장할 게 있으면 파랑 '저장하기', 저장됐으면 회색 '저장됨'(매매수요 · 시세분석과 같다) */
 .sx-acts .sx-save.dirty:hover { background: #1f5ad6; border-color: #1f5ad6; }
 .sx-acts .sx-save.saved { background: #fff; color: #9ca3af; border: 1px solid #d5dbe6; font-weight: 700; }
@@ -7726,7 +7728,8 @@ span.cal-day.has { cursor: help; }
     return sp ? `<td class="num area">${sxT2(sp).toFixed(2)}㎡<small>(${sxT2(m2).toFixed(2)})</small></td>` : `<td class="num area">-<small>(${sxT2(m2).toFixed(2)})</small></td>`;   /* 공급 모르면 '-' */
   };
   /* 검색리스트 맨 위 '내 물건' — 사건 고정카드의 물건(매각 전이라 매각가 · 매각가율 · 응찰은 비움) */
-  function sxMeRowHtml(it) {
+  /* st — 위 매각사례 통계. 경매물건 줄의 매각가 · 평당가 · 매각가율 · 응찰은 실제가 아니라 사례 평균으로 낸 예상값을 빨강으로(표에서 비교해 보게, 2026-11-12 사용자) */
+  function sxMeRowHtml(it, st) {
     if (it.__ref) return sxRowHtml(it.__ref).replace(/<tr class="[^"]*"/, '<tr class="me"');   /* 같은 지번 · 고른 지번 표시는 빼고 기준물건 빨간 줄만 */   /* 지역으로에서 고른 기준 매각물건 — 맨 윗줄 */
     const a = detailOf(it); const m2 = Number(it.bldg);
     const ym = String(a.approvalDate || '').replace(/[^\d]/g, '').slice(0, 6); const by = Number(ym.slice(0, 4)) || 0;
@@ -7735,7 +7738,13 @@ span.cal-day.has { cursor: help; }
     const fm = /(\d+)\s*층/.exec(it.unit || ''); const fl = fm ? `${fm[1]}층` : '-';
     const full = [it.addr, it.bld, it.unit].filter(Boolean).join(' '); const addr = esc(sxShortAddr(full));
     const won = (v) => (Number(v) > 0 ? `<td class="r num">${agWon(v)}</td>` : '<td>-</td>');
-    return `<tr class="me"><td class="ck-td"></td><td class="num me-case"><span class="kind-me">경매물건</span><span class="cno">${esc(it.caseNo)}</span></td><td class="num">${it.date ? dotDate(it.date) : '-'}</td>${won(it.apr)}${won(it.min)}<td>-</td><td>-</td><td>-</td><td class="num">${esc(it.round || '-')}</td><td>-</td>`
+    return `<tr class="me"><td class="ck-td"></td><td class="num me-case"><span class="kind-me">경매물건</span><span class="cno">${esc(it.caseNo)}</span></td><td class="num">${it.date ? dotDate(it.date) : '-'}</td>${won(it.apr)}${won(it.min)}${(() => {
+        const est = (v, t, html) => (v > 0 ? `<td class="r num sx-est" data-tip="${t}" data-tip-pos="top">${html}</td>` : '<td>-</td>');
+        const rate = st && st.avg; const apr = Number(it.apr);
+        return est(rate > 0 && apr > 0 ? Math.round(apr * rate) : 0, '예상 — 감정가 × 사례 평균 매각가율', agWon(Math.round(apr * (rate || 0))))
+          + est(st && st.py, '예상 — 사례 평균 매각평당가', agWon(st && st.py))
+          + est(rate, '예상 — 사례 평균 매각가율', `${((rate || 0) * 100).toFixed(1)}%`);
+      })()}<td class="num">${esc(it.round || '-')}</td>${st && st.bids > 0 ? `<td class="num sx-est" data-tip="예상 — 사례 평균 응찰자수" data-tip-pos="top">${Math.round(st.bids)}명</td>` : '<td>-</td>'}`
       + `${sxAreaCell(m2, it.addr, /아파트/.test(String(a.propertyType || it.type || it.kind || '')))}${sxElevCell(it.addr)}<td class="num">${built}</td><td class="num">${age}</td><td class="num">-</td><td class="num">${fl}</td><td class="l" data-tip="${esc(full)}" data-tip-pos="right"><div class="sx-addr"><span class="addr">${addr || '-'}</span><span class="chips"><span class="same">경매지번</span></span></div></td></tr>`;
   }
   function sxListHtml(rows) {
@@ -7746,7 +7755,7 @@ span.cal-day.has { cursor: help; }
     const me = sxMe();
     const lot = me ? agLotOf(me.addr) : '';
     /* 지역으로에서 고른 기준물건은 맨 윗줄 빨간 줄로만 — 아래 목록에서는 뺀다(2026-11-08) */
-    const body = (me ? sxMeRowHtml(me) : '') + (view.length ? view.filter((r) => !(me && me.__ref === r)).map((r) => sxRowHtml(r, lot)).join('')
+    const body = (me ? sxMeRowHtml(me, sxStats(rows)) : '') + (view.length ? view.filter((r) => !(me && me.__ref === r)).map((r) => sxRowHtml(r, lot)).join('')
       : `<tr><td colspan="${SX_COLS.length + 1}" class="sx-empty">${q ? '찾는 주소 · 사건번호가 없습니다.' : '조건에 맞는 매각물건이 없습니다. 기간을 늘리거나 면적 · 건축년도 조건을 비워 보세요.'}</td></tr>`);
     /* 물건카드를 고른 때만 '근거 · 인근 유사 매각사례'(맨 윗줄 경매물건). 지역으로 직접 조회하면 '경기도 수원시 권선구 세류동 매각사례'(2026-11-08) */
     const qa = saleApplied || {};
