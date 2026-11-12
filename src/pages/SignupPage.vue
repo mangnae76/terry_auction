@@ -211,7 +211,7 @@ const onSubmit = async () => {
         </svg>
       </button>
       <h1 class="su-title"><img :src="markImg" alt="" class="su-mark" />회원가입</h1>
-      <p class="su-note">마이턴옥션은 영업 전화를 하지 않으며 개인정보를 타사와 공유하지 않습니다.</p>
+      <p class="su-note">마이턴은 영업 전화를 하지 않으며 개인정보를 타사와 공유하지 않습니다.</p>
 
       <p class="su-perk-line">가입 즉시 <b>{{ TRIAL_DAYS }}일 무료이용권</b> + <b>무료 {{ TRIAL_PERK_LINE }}</b><template v-if="POINTS_OPEN"> + <b>{{ WELCOME_POINT.toLocaleString('ko-KR') }}P</b></template> 지급</p>
 

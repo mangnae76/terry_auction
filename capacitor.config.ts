@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.terry.auction',
-  appName: '마이턴옥션',
+  appName: '마이턴',
   webDir: 'dist',
   server: {
     androidScheme: 'https',

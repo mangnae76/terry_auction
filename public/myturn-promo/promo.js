@@ -1,4 +1,4 @@
-// MYTURN AUCTION — 30 s service film v2. Pacing taken from reference #3 (dark hook -> hard cut to light ->
+// MYTURN — 30 s service film v2. Pacing taken from reference #3 (dark hook -> hard cut to light ->
 // phone + two-line copy per feature -> 3-phone summary -> flow diagram -> logo). Graphics are MYTURN's own.
 const W = 1920, H = 1080, SQ = 0.96066;
 // ---- every time below comes from beats.json (reference soundtrack analysis): bt(n) = time of beat n
@@ -170,7 +170,7 @@ function stampImg() {   // built once (after fonts load), 2x resolution; determi
 function drawStepper(t, idx) {
   const S0 = SECTIONS[0], X = 1060;
   const m = eio3(p(t, S0[1] - B, S0[1] - B / 4));                         // 0 = chip row (01), 1 = stepper at the top
-  // summary (idx === NFEAT): the stepper stays, each stage lights orange with 조사하고 / 임장하고 / 낙찰받는다, all connectors glow on '마이턴 옥션.'
+  // summary (idx === NFEAT): the stepper stays, each stage lights orange with 조사하고 / 임장하고 / 낙찰받는다, all connectors glow on '마이턴.'
   const SUM = idx >= NFEAT, GRP = [0, 1, 1, 2, 2];
   const fade = 1 - p(t, bt(END0) - B / 2, bt(END0) - 0.05);
   const act = SUM ? STEPS.length - 1 : (idx >= 1 ? idx - 1 : -1), ak = SUM ? 1 : (idx >= 1 ? eo3(p(t, SECTIONS[idx][0] - B / 2, SECTIONS[idx][0])) : 0);
@@ -410,7 +410,7 @@ function sTag(t) {
   const bar = ctx.createLinearGradient(0, 0, W, 0); bar.addColorStop(0, OR); bar.addColorStop(0.55, PEACH); bar.addColorStop(1, '#2A3F8F');
   ctx.fillStyle = bar; ctx.fillRect(0, 0, W * eo3(p(t, bt(TAG0), bt(TAG0) + 0.45)), 12);
   const z = lerp(1, 1.035, p(t, bt(TAG0), bt(FEAT0))); ctx.save(); ctx.translate(960, 540); ctx.scale(z, z); ctx.translate(-960, -540);
-  const e = '그래서 결론은, 마이턴 옥션!', l1 = '번거로운 일은 앱이,', l2 = '중요한 판단은 당신이.';
+  const e = '그래서 결론은, 마이턴!', l1 = '번거로운 일은 앱이,', l2 = '중요한 판단은 당신이.';
   copyLine([[e, PEACH]], 960 - MW(e, 40, { w: 700 }) / 2, 370, 40, t, bt(TAG0), { w: 700 });
   copyLine([[l1, CREAM]], 960 - MW(l1, 112) / 2, 540, 112, t, bt(TAG0));
   const k = p(t, bt(TAG0 + 2), bt(TAG0 + 2) + 0.3); if (k > 0) { const sc = lerp(1.1, 1, eo5(k)); ctx.save(); ctx.globalAlpha = eo3(cl(k * 2)); ctx.translate(960, 680 - 40); ctx.scale(sc, sc);
@@ -431,7 +431,7 @@ function sSummary(t) {
   copyLine([['임장하고,', NAVY2]], 140, 375, 92, t, bt(SUM0 + 2));
   copyLine([['낙찰받는다.', NAVY2]], 140, 490, 92, t, bt(SUM0 + 3));
   { const k = p(t, bt(SUM0 + 4), bt(SUM0 + 4) + 0.3); if (k > 0) { const sc = lerp(1.15, 1, eo5(k)); ctx.save(); ctx.globalAlpha = eo3(cl(k * 2)); ctx.translate(140, 650); ctx.scale(sc, sc);
-    markAt(56, -40, 0.07); T('마이턴 옥션.', 128, 0, 104, OR); ctx.restore(); } }
+    markAt(56, -40, 0.07); T('마이턴.', 128, 0, 104, OR); ctx.restore(); } }
   drawStepper(t, NFEAT);
 }
 function sFlow(t) {

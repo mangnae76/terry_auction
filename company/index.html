@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>리치마블</title>
-<meta name="description" content="리치마블 — 부동산 경매의 처음부터 끝까지를 한 곳에 남기는 마이턴옥션을 만듭니다.">
+<meta name="description" content="리치마블 — 부동산 경매의 처음부터 끝까지를 한 곳에 남기는 마이턴을 만듭니다.">
 <link rel="icon" href="assets/mark-myturn.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,7 +13,7 @@
   회사 홈페이지 첫 화면 — company/ 폴더 하나가 회사 사이트 전체다.
   - 지금은 배포 때 dist/company/ 로 복사돼 /company/ 로 열린다(firebase.json predeploy).
   - 나중에 회사 도메인을 따로 붙일 때는 이 폴더를 그대로 그 사이트의 맨 위로 올리면 된다 — 안쪽 경로는 모두 상대 경로.
-  - 서비스(마이턴옥션)로 가는 주소는 아래 SERVICE 한 곳에서 바꾼다.
+  - 서비스(마이턴)로 가는 주소는 아래 SERVICE 한 곳에서 바꾼다.
 -->
 <style>
 :root {
@@ -144,9 +144,9 @@ section.block.alt { background: var(--paper-2); }
       <div>
         <p class="eyebrow">RICHMARBLE</p>
         <h1>경매의 처음부터 끝까지,<br><em>내 차례</em>를 한 판 위에</h1>
-        <p class="lead">리치마블은 부동산 경매 실무 서비스 마이턴옥션을 만듭니다. 물건을 고르는 날부터 낙찰 뒤 매도까지, 한 건의 모든 기록을 한 곳에 남깁니다.</p>
+        <p class="lead">리치마블은 부동산 경매 실무 서비스 마이턴을 만듭니다. 물건을 고르는 날부터 낙찰 뒤 매도까지, 한 건의 모든 기록을 한 곳에 남깁니다.</p>
         <div class="cta">
-          <a class="btn main" data-svc="/web" href="#">마이턴옥션 시작하기</a>
+          <a class="btn main" data-svc="/web" href="#">마이턴 시작하기</a>
           <a class="btn line" href="#service">서비스 둘러보기</a>
         </div>
       </div>
@@ -180,7 +180,7 @@ section.block.alt { background: var(--paper-2); }
     <div class="wrap">
       <div class="sec-h">
         <p class="eyebrow">SERVICE</p>
-        <h2>마이턴옥션</h2>
+        <h2>마이턴</h2>
         <p>부동산 경매 실무를 한 판의 게임처럼 단계별로 이어 주는 서비스입니다. 웹과 모바일앱에서 같은 기록을 씁니다.</p>
       </div>
       <div class="svc">
@@ -241,7 +241,7 @@ section.block.alt { background: var(--paper-2); }
 </footer>
 
 <script>
-  // 서비스(마이턴옥션) 주소 — 회사 도메인을 따로 붙여도 서비스로 바로 가게 한 곳에서 정한다
+  // 서비스(마이턴) 주소 — 회사 도메인을 따로 붙여도 서비스로 바로 가게 한 곳에서 정한다
   const SERVICE = 'https://terryauction-6b374.web.app';
   document.querySelectorAll('[data-svc]').forEach((a) => { a.href = SERVICE + a.dataset.svc; });
 </script>

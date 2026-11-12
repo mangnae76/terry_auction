@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<!-- 마이턴옥션 이용가이드 — 웹 머리띠 '이용가이드' 단추가 여는 페이지(/guide/). 2026-11-01 claude.ai 아티팩트에서 옮겨 왔다 -->
+<!-- 마이턴 이용가이드 — 웹 머리띠 '이용가이드' 단추가 여는 페이지(/guide/). 2026-11-01 claude.ai 아티팩트에서 옮겨 왔다 -->
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
-<title>마이턴옥션 이용가이드</title>
-<meta name="description" content="마이턴옥션 웹 이용가이드 — 서비스 목표, 주요 기능, 페이지별 메뉴 설명, 사용 방법, 멤버십, FAQ">
+<title>마이턴 이용가이드</title>
+<meta name="description" content="마이턴 웹 이용가이드 — 서비스 목표, 주요 기능, 페이지별 메뉴 설명, 사용 방법, 멤버십, FAQ">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap">
 <style>
-/* 레이아웃: 마이턴옥션 웹과 같은 틀 — 남색 머리띠 · 흰 장(章) 줄 · 블루그레이 바탕 위 흰 카드. 한 장으로 이어지는 스크롤 문서이며,
-   넓은 화면에서는 왼쪽에 지금 읽는 장의 목차가 따라온다. 색 · 글꼴 · 크기 규칙은 마이턴옥션 웹(/web)의 디자인 토큰을 그대로 옮겼다 */
+/* 레이아웃: 마이턴 웹과 같은 틀 — 남색 머리띠 · 흰 장(章) 줄 · 블루그레이 바탕 위 흰 카드. 한 장으로 이어지는 스크롤 문서이며,
+   넓은 화면에서는 왼쪽에 지금 읽는 장의 목차가 따라온다. 색 · 글꼴 · 크기 규칙은 마이턴 웹(/web)의 디자인 토큰을 그대로 옮겼다 */
 :root{
   --bg:#e7ebf1;--surface:#ffffff;--surface-2:#f8fafc;--surface-3:#f1f5f9;
   --line:#e5e7eb;--line-2:#d5dbe6;--card-line:#eef0f5;--row-line:#f1f3f7;--subtab-line:#d8e0ee;
@@ -616,7 +616,7 @@ html[data-mode="web"] .mode-tabs a[data-tab="web"],html[data-mode="video"] .mode
 (() => {
 'use strict';
 /* =====================================================================
-   마이턴옥션 이용가이드 — 한 장으로 이어지는 스크롤 문서
+   마이턴 이용가이드 — 한 장으로 이어지는 스크롤 문서
    ---------------------------------------------------------------------
    ● 연결 — 서비스 주소. 기존 웹에 붙일 때 바뀌면 여기만 고친다.
    ● 도움말 연결용 자리표(앵커) — 페이지 설명마다 id="help-…" 를 붙였다.
@@ -741,7 +741,7 @@ const V1 = {
     text: '거실 바닥에 부루마블 판을 펼치고, 가족 · 친구들과 둘러앉아 부동산 부자를 꿈꾸던 어린 시절.<br>주사위를 꼭 쥐고 <b>‘내 차례!’</b>를 외치던 그 설렘, 기억하시나요?',
     chips: [],
     photo: 'hero-board.webp',
-    photoAlt: '마이턴옥션 게임판 위로 주사위가 굴러가는 장면',
+    photoAlt: '마이턴 게임판 위로 주사위가 굴러가는 장면',
     story: '그때 꿈꾸던 내 땅, 내 집.<br>이제는 놀이가 아닌 경매로, 진짜 내 차례를 만들 시간입니다.',
     call: '이제 마이턴하세요!',
   },
@@ -754,7 +754,7 @@ const V1 = {
   },
   /* 첫 화면 — '웹으로 보기 · 영상으로 보기' 고르기 */
   home: {
-    title: '마이턴옥션,<br>이렇게 씁니다.',
+    title: '마이턴,<br>이렇게 씁니다.',
     text: '편한 방법으로 보세요. 보는 중에도 위쪽 단추로 언제든 바꿀 수 있습니다.',
     web: { title: '웹으로 보기', text: '화면마다 메뉴를 실제 화면과 번호 설명으로 안내합니다. 필요한 곳만 골라 읽기 좋습니다.', meta: '8개 장 · 화면 16곳', thumb: 'shot-list.webp' },
     video: { title: '영상으로 보기', text: '처음부터 따라 하며 보는 사용법 영상입니다. 장마다 건너뛰어 볼 수 있습니다.' },
@@ -767,7 +767,7 @@ const V1 = {
   video: {
     src: '', poster: 'hero-board.webp', captions: '', length: '', updated: '',
     chapters: [
-      { id: 'start', title: '시작하며', desc: '마이턴옥션이 해 주는 일 한눈에', at: '', aid: 'goal' },
+      { id: 'start', title: '시작하며', desc: '마이턴이 해 주는 일 한눈에', at: '', aid: 'goal' },
       { id: 'layout', title: '화면 공통 구성', desc: '상단 메뉴 · 하위 탭 · 경로 읽는 법', at: '', aid: 'help-layout' },
       { id: 'register', title: '물건등록', desc: 'PDF 자동등록과 직접입력', at: '', aid: 'help-register' },
       { id: 'list', title: '물건목록', desc: '물건카드와 진행 단계 바꾸기', at: '', aid: 'help-list' },
@@ -826,14 +826,14 @@ const V1 = {
   faq: [],
   sections: [
     /* ============================================================ 01 서비스목표 */
-    { id: 'goal', label: '서비스목표', ic: 'target', title: '서비스 목표', hero: true, desc: '마이턴옥션이 무엇을 위해 만들어졌고, 어디를 향하는지 소개합니다.', subs: [
+    { id: 'goal', label: '서비스목표', ic: 'target', title: '서비스 목표', hero: true, desc: '마이턴이 무엇을 위해 만들어졌고, 어디를 향하는지 소개합니다.', subs: [
       { id: 'intro', label: '서비스소개', title: '서비스 소개', ic: 'dice', blocks: [
-        { t: 'statement', eyebrow: 'AI 경매 분석 플랫폼', html: '경매, 물건만 고르세요.<br><em>마이턴옥션</em>이 다 해줍니다.' },
-        { t: 'p', html: '물건 등록부터 권리 · 손품 · 수익 분석, 임장, 낙찰 이후 관리까지 <b>마이턴옥션 하나로</b>.<br><b>AI와 자동화</b>로 시간은 줄이고, 데이터 기반으로 안전한 경매가 가능합니다.<br><b style="color:var(--accent)">이제 감으로 하지 마세요.</b>' },
+        { t: 'statement', eyebrow: 'AI 경매 분석 플랫폼', html: '경매, 물건만 고르세요.<br><em>마이턴</em>이 다 해줍니다.' },
+        { t: 'p', html: '물건 등록부터 권리 · 손품 · 수익 분석, 임장, 낙찰 이후 관리까지 <b>마이턴 하나로</b>.<br><b>AI와 자동화</b>로 시간은 줄이고, 데이터 기반으로 안전한 경매가 가능합니다.<br><b style="color:var(--accent)">이제 감으로 하지 마세요.</b>' },
         { t: 'chips', items: ['기본정보', '권리분석', ['손품+임장', 'key'], '입찰가 산정', '임장경로', '낙찰이후 관리', '자금관리'] },
         { t: 'lead', html: '경매는 아직 <b>아날로그</b>입니다. 경매지 PDF, 엑셀, 시세 사이트, 지도, 계산기, 메모장, 사진첩까지 한 건에 열 개가 넘는 창을 오가며 손으로 모으고 계산합니다.' },
-        { t: 'p', html: '마이턴옥션은 이 일을 <b>사건카드 한 장</b>으로 모읍니다. 권리분석, 시세 · 수요, 현장 사진, 입찰가, 잔금, 세금까지 사건번호 하나에 쌓입니다.' },
-        { t: 'table', head: ['한 건을 하며 하는 일', '지금까지', '마이턴옥션'], rows: [
+        { t: 'p', html: '마이턴은 이 일을 <b>사건카드 한 장</b>으로 모읍니다. 권리분석, 시세 · 수요, 현장 사진, 입찰가, 잔금, 세금까지 사건번호 하나에 쌓입니다.' },
+        { t: 'table', head: ['한 건을 하며 하는 일', '지금까지', '마이턴'], rows: [
           ['사건 자료 정리', 'PDF를 내려받아 옮겨 적기', '올리면 채워짐'],
           ['시세 · 수요 조사', '여러 사이트를 돌며 찾기', '앱이 모아 계산'],
           ['입찰가 산정', '엑셀 표 한 장', 'A~D안을 나란히 비교'],
@@ -845,20 +845,20 @@ const V1 = {
         { t: 'note', tone: 'tip', title: '만든 이유', html: '낙찰부터 매도까지 7건을 직접 해 보니 조사 · 기록 · 관리가 모두 손일이었습니다. 법원에 한 번 가면 3~4건은 입찰하는데, 많은 물건을 보고 나면 잊힙니다. 현장에서 적고 꺼내 보려고 만든 앱이, 경매 한 건의 처음부터 끝까지를 담게 됐습니다.' },
       ] },
       { id: 'direction', label: '방향성', title: '서비스 방향성', ic: 'route', blocks: [
-        { t: 'quote', html: '경매의 처음부터 끝까지,<br><em>현장에서 마이턴옥션 하나로.</em>', small: '물건을 고르는 날부터 팔고 세금을 신고하는 날까지, 한 건의 모든 기록을 한곳에 남깁니다.' },
+        { t: 'quote', html: '경매의 처음부터 끝까지,<br><em>현장에서 마이턴 하나로.</em>', small: '물건을 고르는 날부터 팔고 세금을 신고하는 날까지, 한 건의 모든 기록을 한곳에 남깁니다.' },
         { t: 'cards', cols: 4, items: [
           { no: '핵심 가치 1', title: '현장에서 바로', html: '조사한 내용을 현관 앞에서 펼쳐 보고 그 자리에서 고칩니다.' },
           { no: '핵심 가치 2', title: '기록은 남는다', html: '적고 찍은 모든 것이 사건카드에 쌓여 잊히지 않습니다.' },
           { no: '핵심 가치 3', title: '여러 건도 한 번에', html: '많은 물건을 동시에 조사하고 비교하고, 동선까지 묶습니다.' },
           { no: '핵심 가치 4', title: '끝까지 관리', html: '낙찰 뒤 잔금 · 명도 · 매도 · 세금까지 꾸준히 챙깁니다.', tone: 'hot' },
         ] },
-        { t: 'h4', text: '물건을 고른 뒤부터가 마이턴옥션의 자리입니다' },
+        { t: 'h4', text: '물건을 고른 뒤부터가 마이턴의 자리입니다' },
         { t: 'scope' },
-        { t: 'p', html: '물건 검색은 경매 정보 사이트에 맡기고, 마이턴옥션은 고른 물건을 <b>끝까지 진행</b>하는 데 집중합니다. 자료를 모으고 계산하는 번거로운 일은 앱이, 입찰가를 정하는 판단은 사람이 합니다.' },
+        { t: 'p', html: '물건 검색은 경매 정보 사이트에 맡기고, 마이턴은 고른 물건을 <b>끝까지 진행</b>하는 데 집중합니다. 자료를 모으고 계산하는 번거로운 일은 앱이, 입찰가를 정하는 판단은 사람이 합니다.' },
       ] },
       { id: 'concept', label: '컨셉', title: '마이턴, 내 차례', ic: 'play', blocks: [
         { t: 'lead', html: '‘마이턴(My Turn)’은 <b>내 차례</b>라는 뜻입니다. 부루마블에서 주사위를 굴려 땅을 사고 집을 짓던 것처럼, 경매도 내 차례가 오면 한 칸씩 나아가 부동산을 손에 넣습니다.' },
-        { t: 'p', html: '마이턴옥션은 <b>리치마블</b>의 올인원 경매 분석 플랫폼 브랜드입니다.' },
+        { t: 'p', html: '마이턴은 <b>리치마블</b>의 올인원 경매 분석 플랫폼 브랜드입니다.' },
         { t: 'bi' },
         { t: 'h4', text: '물건 하나가 말 하나입니다' },
         { t: 'p', html: '물건목록에 올린 물건은 모두 아래 칸 위에 놓입니다. 카드의 단계 단추를 누르면 말이 그 칸으로 옮겨 가고, 칸에 맞는 화면이 함께 움직입니다.' },
@@ -878,8 +878,8 @@ const V1 = {
           { no: '한 줄 정리', ic: 'layers', title: '사건카드 한 장에 모든 것', html: '흩어져 있던 정보가 사건번호 하나로 묶여 카드에 쌓입니다. 단계가 바뀌어도 기록과 그 값을 쓴 이유가 남습니다.', to: 'help-list' },
         ] },
       ] },
-      { id: 'survey', label: '손품조사', key: true, title: '마이턴옥션의 핵심, 손품조사', tag: 'key', ic: 'chart', blocks: [
-        { t: 'lead', html: '손품조사는 현장에 가기 전 손(인터넷)으로 먼저 하는 조사입니다. 마이턴옥션은 <b>수요 · 개별성 · 시세</b> 세 가지를 한 화면에서 조사하고, 손품결론 하나로 묶습니다.' },
+      { id: 'survey', label: '손품조사', key: true, title: '마이턴의 핵심, 손품조사', tag: 'key', ic: 'chart', blocks: [
+        { t: 'lead', html: '손품조사는 현장에 가기 전 손(인터넷)으로 먼저 하는 조사입니다. 마이턴은 <b>수요 · 개별성 · 시세</b> 세 가지를 한 화면에서 조사하고, 손품결론 하나로 묶습니다.' },
         { t: 'trio' },
         { t: 'note', tone: 'tip', title: '쉽게 말하면', html: '집을 사기 전 하는 건강검진입니다. 이 동네에 살 사람이 있는지(수요), 이 집만의 장단점은 무엇인지(개별성), 얼마에 팔리는지(시세)를 차례로 확인합니다.' },
         { t: 'p', html: '매도가를 1,000만 원 높게 잡으면 수익률이 통째로 달라집니다. 손품조사는 그 숫자에 근거를 붙이는 일이고, 여러 사이트를 돌며 반나절 걸리던 조사를 한 화면에서 끝냅니다.' },
@@ -924,7 +924,7 @@ const V1 = {
           ['사업자 구분', '내 사업자 형태', '세금을 어떤 방식으로 계산할지 정합니다'],
           ['주택 보유수', '지금 가진 주택 수', '주택 수에 따라 달라지는 세금 계산'],
           ['년 매출', '올해 매도 매출 합계', '비워 두면 매도 기록으로 자동 계산(흐린 숫자)'],
-          ['년 다른 소득금액', '마이턴옥션 밖의 매출 − 경비', '종합소득세 구간을 정할 때 더합니다'],
+          ['년 다른 소득금액', '마이턴 밖의 매출 − 경비', '종합소득세 구간을 정할 때 더합니다'],
         ] },
         { t: 'note', tone: 'tip', title: '왜 적어야 하나요?', html: '내비게이션의 출발지와 같습니다. 출발지가 틀리면 경로가 틀리듯, 이 값이 비어 있거나 다르면 세후 수익이 실제와 달라집니다.' },
       ] },
@@ -1107,7 +1107,7 @@ V1.sections.find((s) => s.id === 'pages').subs = [
     { t: 'note', tone: 'tip', html: '분석 결과는 끝나는 즉시 저장되어 새로고침 · 앱에서도 그대로 보입니다. 직접확인 칸은 적으면 저절로 저장됩니다.' },
   ] },
   { aid: 'help-item-survey', label: '손품조사', key: true, title: '물건상세 · 손품조사', tag: 'key', ic: 'chart', path: '물건상세 › 손품조사', route: '#/', blocks: [
-    { t: 'p', html: '마이턴옥션의 핵심 화면입니다. <b>수요 · 개별성 · 시세</b>를 한 화면에서 조사해 손품결론을 냅니다. 결론은 수익분석의 예상 매도가로 넘어갑니다.' },
+    { t: 'p', html: '마이턴의 핵심 화면입니다. <b>수요 · 개별성 · 시세</b>를 한 화면에서 조사해 손품결론을 냅니다. 결론은 수익분석의 예상 매도가로 넘어갑니다.' },
     { t: 'shot', key: 'survey', pins: [], legend: [
       ['본건사진 · 기타사진', '링크는 엔터, 이미지는 붙여넣기로 올립니다.'],
       ['수요조사', '① 기초수치(총 거래건수 · 세대수 · 매물수) → ② 수요지표(회전율 · 소화율 · 부담률 · 소진기간)가 자동 계산됩니다.'],
@@ -1374,7 +1374,7 @@ GUIDE.release({
   v: '1.1.0', date: '2026-12-01', base: '1.0.0', title: '앱 출시 반영',
   notes: ['모바일앱 출시 안내 추가'],
   patch(c) {
-    c.faq.push({ cat: '서비스', q: '앱은 어디서 받나요?', a: 'Google Play와 App Store에서 ‘마이턴옥션’을 검색하세요.', since: '1.1.0' });
+    c.faq.push({ cat: '서비스', q: '앱은 어디서 받나요?', a: 'Google Play와 App Store에서 ‘마이턴’을 검색하세요.', since: '1.1.0' });
   },
 });
 */
@@ -1489,21 +1489,21 @@ function heroHtml() {
 function videoHtml() {
   /* 소개 영상을 페이지 안에 붙인다(2026-11-03) — 재생 전 화면(썸네일 · ▶)으로 서 있고, 눌러야 소리와 함께 재생된다(저절로 돌지 않는다).
      [전체 화면]은 영상 틀을 화면 가득. 영상은 플랫폼 소개 영상 최종본(261106, 46초)으로 바꿨다(2026-11-07) */
-  return `<figure class="video-box"><div class="video-frame" id="promoFrame"><iframe src="${PROMO_PLAY_URL}" title="마이턴옥션 소개 영상" loading="lazy" allow="autoplay; fullscreen" allowfullscreen></iframe></div>`
-    + `<figcaption><span class="play">${I('play')}</span><span class="vt"><b>마이턴옥션 소개 영상 · 46초</b><small>물건등록부터 손품조사 · 임장 · 수익분석 · 낙찰 이후까지</small></span>`
+  return `<figure class="video-box"><div class="video-frame" id="promoFrame"><iframe src="${PROMO_PLAY_URL}" title="마이턴 소개 영상" loading="lazy" allow="autoplay; fullscreen" allowfullscreen></iframe></div>`
+    + `<figcaption><span class="play">${I('play')}</span><span class="vt"><b>마이턴 소개 영상 · 46초</b><small>물건등록부터 손품조사 · 임장 · 수익분석 · 낙찰 이후까지</small></span>`
     + `<button type="button" class="video-full" data-act="video-full">${I('full')}전체 화면</button></figcaption></figure>`;
 }
 
 function scopeHtml() {
   const cells = [['물건 검색', 0], ['물건 선정', 1], ['손품조사', 1], ['임장', 1], ['입찰', 1], ['낙찰', 1], ['명도 · 관리', 1], ['매도 · 세금', 1]];
   return `<div><div class="scope">${cells.map(([t, inn]) => `<div class="sc ${inn ? 'in' : ''}">${t}</div>`).join('')}
-    <div class="scope-cap">경매 정보 사이트</div><div class="scope-cap in">마이턴옥션이 함께하는 구간</div></div>
-    <p class="scope-key"><i></i>파란 칸이 마이턴옥션이 함께하는 구간입니다.</p></div>`;
+    <div class="scope-cap">경매 정보 사이트</div><div class="scope-cap in">마이턴이 함께하는 구간</div></div>
+    <p class="scope-key"><i></i>파란 칸이 마이턴이 함께하는 구간입니다.</p></div>`;
 }
 
 function biHtml() {
   const L = $('logo').getAttribute('src');
-  return `<div class="bi"><div class="bi-logo"><img src="${L}" alt="마이턴옥션 BI"></div><ul class="bi-list">
+  return `<div class="bi"><div class="bi-logo"><img src="${L}" alt="마이턴 BI"></div><ul class="bi-list">
     <li><span class="bi-sw" style="background:var(--accent)">${I('dice')}</span><div><b>주사위</b>주사위를 굴려 한 칸씩 나아가는 ‘내 차례’를 담았습니다.</div></li>
     <li><span class="bi-sw" style="background:var(--strong)">${I('play')}</span><div><b>삼각형</b>주사위 안의 삼각형은 ‘플레이’, 지금 시작한다는 뜻입니다.</div></li>
     <li><span class="bi-sw" style="background:var(--nav-name)">${I('globe')}</span><div><b>파란 원</b>주사위 뒤의 파란 원은 ‘지구’, 내가 움직이는 넓은 판입니다.</div></li>
@@ -1571,7 +1571,7 @@ function renderHome() {
   const h = C().home; const v = V(); const n = v.chapters.length;
   const vMeta = vReady() ? [v.length, `${n}개 장`].filter(Boolean).join(' · ') : `${n}개 장 · 준비 중`;
   $('home').innerHTML = `<div class="wrap"><div class="home-hero">
-    <div class="home-head"><span class="home-eyebrow">${I('bookOpen')}마이턴옥션 이용가이드 v${esc(S.rel.v)}</span><h1 class="home-title" id="homeTitle">${h.title}</h1><p>${esc(h.text)}</p></div>
+    <div class="home-head"><span class="home-eyebrow">${I('bookOpen')}마이턴 이용가이드 v${esc(S.rel.v)}</span><h1 class="home-title" id="homeTitle">${h.title}</h1><p>${esc(h.text)}</p></div>
     <div class="pick">
       <a class="pick-card" href="#web" data-mode="web"><div class="pick-thumb"><img src="${IMG}${esc(h.web.thumb)}" alt="" loading="lazy"><span class="stamp">실제 화면 · 번호 설명</span></div>
         <div class="pick-body"><h3>${I('doc')}${esc(h.web.title)}</h3><p>${esc(h.web.text)}</p><div class="pick-foot"><span class="pick-meta">${esc(h.web.meta)}</span><span class="pick-go">웹 가이드 열기${I('arrowR')}</span></div></div></a>
@@ -1590,7 +1590,7 @@ function playerHtml() {
   const v = V();
   if (!vReady()) return `<img src="${IMG}${esc(v.poster)}" alt=""><div class="player-cover"><span class="stamp">${I('play')}준비 중</span><strong>웹 사용법 영상을 만들고 있습니다</strong><p>영상이 올라오면 이 자리에서 바로 재생되고, 목차를 눌러 원하는 장면으로 건너뛸 수 있습니다.</p><p class="more">그동안 같은 내용을 웹으로 보기에서 실제 화면과 함께 볼 수 있어요.</p><a class="btn-accent" href="#web" data-mode="web">${I('doc')}웹으로 보기</a></div>`;
   const id = ytId(v.src);
-  if (id) return `<iframe id="vFrame" src="${esc(ytSrc(id, 0, false))}" title="마이턴옥션 웹 사용법 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe>`;
+  if (id) return `<iframe id="vFrame" src="${esc(ytSrc(id, 0, false))}" title="마이턴 웹 사용법 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe>`;
   return `<video id="vFile" controls playsinline preload="metadata" poster="${IMG}${esc(v.poster)}"><source src="${esc(v.src)}" type="${/\.webm($|\?)/i.test(v.src) ? 'video/webm' : 'video/mp4'}">${v.captions ? `<track kind="captions" srclang="ko" label="한국어" src="${esc(v.captions)}" default>` : ''}이 브라우저는 영상 재생을 지원하지 않습니다.</video>`;
 }
 function renderVideo() {
@@ -1672,7 +1672,7 @@ function renderContent() {
 function renderFoot() {
   const k = C().contact; const L = GUIDE.latest();
   $('foot').innerHTML = `<div class="wrap">
-    <div><p><b>마이턴옥션 이용가이드</b> v${esc(S.rel.v)} · ${dot(S.rel.date)} 기준</p><p>최신 버전 v${esc(L.v)} · <button type="button" class="linkish" data-act="log">업데이트 내역</button></p><p>마이턴옥션은 리치마블의 부동산 경매 브랜드입니다.</p></div>
+    <div><p><b>마이턴 이용가이드</b> v${esc(S.rel.v)} · ${dot(S.rel.date)} 기준</p><p>최신 버전 v${esc(L.v)} · <button type="button" class="linkish" data-act="log">업데이트 내역</button></p><p>마이턴은 리치마블의 부동산 경매 브랜드입니다.</p></div>
     <div><p>문의 ${esc(k.phone)} · 대표메일 ${esc(k.email)}</p><p>${esc(k.address)}</p><p>COPYRIGHT ⓒMyTurn. ALL RIGHTS RESERVED.</p></div>
   </div>`;
 }

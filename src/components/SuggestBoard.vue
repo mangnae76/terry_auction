@@ -24,7 +24,7 @@ import {
 const props = withDefaults(defineProps<{ board?: BoardKey }>(), { board: 'suggest' });
 const WRITE_HINT: Record<BoardKey, string> = {
   suggest: '오류는 어느 화면에서 무엇을 했을 때 생겼는지, 제안은 무엇이 있으면 좋을지 적어 주세요.',
-  greet: '반갑습니다! 어떻게 마이턴옥션을 알게 되었는지, 경매는 얼마나 해 보셨는지 편하게 인사 남겨 주세요.',
+  greet: '반갑습니다! 어떻게 마이턴을 알게 되었는지, 경매는 얼마나 해 보셨는지 편하게 인사 남겨 주세요.',
   review: '써 보니 어땠는지 적어 주세요. 도움이 된 화면, 아쉬웠던 점, 낙찰 · 매도 경험도 좋습니다.',
 };
 

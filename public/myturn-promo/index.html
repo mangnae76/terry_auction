@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>마이턴옥션 플랫폼 소개 영상</title>
+<title>마이턴 플랫폼 소개 영상</title>
 <style>
   /* the film draws its text with these exact faces; subset to the characters it uses (SIL OFL 1.1) */
   @font-face { font-family: 'Noto Sans CJK KR'; src: url('inline/403d209a3be867c7.woff2') format('woff2'); font-weight: 700; font-display: block; }
@@ -53,7 +53,7 @@
 </style>
 </head>
 <body>
-<div class="mtp loading" id="mtp" role="button" tabindex="0" aria-label="마이턴 옥션 소개 영상 재생">
+<div class="mtp loading" id="mtp" role="button" tabindex="0" aria-label="마이턴 소개 영상 재생">
   <canvas id="cv" width="1920" height="1080"></canvas>
   <div class="poster" style="background-image:url('inline/cb25137b76318f0b.jpg')"></div>
   <div class="mid" aria-hidden="true"><i><svg viewBox="0 0 24 24"><path d="M6 3.8v16.4a1 1 0 0 0 1.5.86l13.2-8.2a1 1 0 0 0 0-1.72L7.5 2.94A1 1 0 0 0 6 3.8z"/></svg></i></div>
@@ -2594,7 +2594,7 @@ const BEATS = {
 <script>
 const SHOT_DATA={"bid_stage": "inline/1c12455584890018.png", "74c80b031850a5a3008625a222d77b0e": "inline/4a26484dc3c4eab3.png", "field_detail_done": "inline/bc3c99bd15c723e6.png", "field_tamun_done": "inline/ca2ac113904ab4ef.png", "d38a0c761a697d916f83f5b34bb5434f": "inline/3a25599666a05ccc.png", "fund_filled": "inline/cf8422db6232b531.png", "53eb5d72dbedcf14716dc675474e1f72": "inline/3f0523a10b6410cb.png", "route_multi": "inline/67355676f85b3ead.png", "f538ce26245556b86f18e8e3bec69984": "inline/07b11977e4a74695.png"};
 const WEB_DATA={"postwin_0": "inline/6c94e6ce67e1bec6.png", "synergy_0": "inline/a851f8fe2948c8b4.png", "synergy_1": "inline/ab0e679df645c774.png", "field_0": "inline/1b17471b673910e2.png", "profit_0": "inline/f046051215e18b70.png", "register_0": "inline/60676cee58676658.png", "price_0": "inline/194654a6156fe537.png", "trip_0": "inline/38032ea65381b99b.png"};
-// MYTURN AUCTION — 30 s service film v2. Pacing taken from reference #3 (dark hook -> hard cut to light ->
+// MYTURN — 30 s service film v2. Pacing taken from reference #3 (dark hook -> hard cut to light ->
 // phone + two-line copy per feature -> 3-phone summary -> flow diagram -> logo). Graphics are MYTURN's own.
 const W = 1920, H = 1080, SQ = 0.96066;
 // ---- every time below comes from beats.json (reference soundtrack analysis): bt(n) = time of beat n
@@ -2767,7 +2767,7 @@ function stampImg() {   // built once (after fonts load), 2x resolution; determi
 function drawStepper(t, idx) {
   const S0 = SECTIONS[0], X = 1060;
   const m = eio3(p(t, S0[1] - B, S0[1] - B / 4));                         // 0 = chip row (01), 1 = stepper at the top
-  // summary (idx === NFEAT): the stepper stays, each stage lights orange with 조사하고 / 임장하고 / 낙찰받는다, all connectors glow on '마이턴 옥션.'
+  // summary (idx === NFEAT): the stepper stays, each stage lights orange with 조사하고 / 임장하고 / 낙찰받는다, all connectors glow on '마이턴.'
   const SUM = idx >= NFEAT, GRP = [0, 1, 1, 2, 2];
   const fade = 1 - p(t, bt(END0) - B / 2, bt(END0) - 0.05);
   const act = SUM ? STEPS.length - 1 : (idx >= 1 ? idx - 1 : -1), ak = SUM ? 1 : (idx >= 1 ? eo3(p(t, SECTIONS[idx][0] - B / 2, SECTIONS[idx][0])) : 0);
@@ -3012,7 +3012,7 @@ function sTag(t) {
   const bar = ctx.createLinearGradient(0, 0, W, 0); bar.addColorStop(0, OR); bar.addColorStop(0.55, PEACH); bar.addColorStop(1, '#2A3F8F');
   ctx.fillStyle = bar; ctx.fillRect(0, 0, W * eo3(p(t, bt(TAG0), bt(TAG0) + 0.45)), 12);
   const z = lerp(1, 1.035, p(t, bt(TAG0), bt(FEAT0))); ctx.save(); ctx.translate(960, 540); ctx.scale(z, z); ctx.translate(-960, -540);
-  const e = '그래서 결론은, 마이턴옥션!', l1 = '번거로운 일은 AI 도구가,', l2 = '중요한 판단은 당신이.';
+  const e = '그래서 결론은, 마이턴!', l1 = '번거로운 일은 AI 도구가,', l2 = '중요한 판단은 당신이.';
   copyLine([[e, PEACH]], 960 - MW(e, 40, { w: 700 }) / 2, 370, 40, t, bt(TAG0), { w: 700 });
   copyLine([[l1, CREAM]], 960 - MW(l1, 112) / 2, 540, 112, t, bt(TAG0));
   const k = p(t, bt(TAG0 + 2), bt(TAG0 + 2) + 0.3); if (k > 0) { const sc = lerp(1.1, 1, eo5(k)); ctx.save(); ctx.globalAlpha = eo3(cl(k * 2)); ctx.translate(960, 680 - 40); ctx.scale(sc, sc);
@@ -3090,7 +3090,7 @@ function sSummary(t) {
   copyLine([['임장하고,', NAVY2]], 140, 375, 92, t, bt(SUM0 + 2));
   copyLine([['낙찰받는다.', NAVY2]], 140, 490, 92, t, bt(SUM0 + 3));
   { const k = p(t, bt(SUM0 + 4), bt(SUM0 + 4) + 0.3); if (k > 0) { const sc = lerp(1.15, 1, eo5(k)); ctx.save(); ctx.globalAlpha = eo3(cl(k * 2)); ctx.translate(140, 650); ctx.scale(sc, sc);
-    markAt(56, -40, 0.07); T('마이턴 옥션.', 128, 0, 104, OR); ctx.restore(); } }
+    markAt(56, -40, 0.07); T('마이턴.', 128, 0, 104, OR); ctx.restore(); } }
   drawStepper(t, NFEAT);
 }
 // platform <-> app: desk (web) and field (phone) with sync pulses, on the beat
@@ -3220,7 +3220,7 @@ keys.forEach(k => { const im = new Image(); im.onload = () => { IMG[k] = im; if 
   const cls = c => { box.className = 'mtp ' + c + (started ? ' started' : '') + (HERO ? ' hero' : ''); };
   if (HERO) cls('loading');
   const fontsOk = Promise.all(['700 40px "Noto Sans CJK KR"', '900 40px "Noto Sans CJK KR"', '700 40px "Noto Sans Mono CJK KR"']
-    .map(f => document.fonts.load(f, '마이턴 옥션 MYTURN 0123'))).catch(() => {});
+    .map(f => document.fonts.load(f, '마이턴 MYTURN 0123'))).catch(() => {});
   const assetsOk = new Promise(res => { const w = () => window.READY ? res() : setTimeout(w, 50); w(); });
   Promise.all([fontsOk, assetsOk]).then(() => { ready = true; box.classList.remove('loading'); render(0); if (wantPlay) start(); });
 

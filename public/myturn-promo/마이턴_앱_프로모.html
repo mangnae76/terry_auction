@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>마이턴 옥션 소개 영상</title>
+<title>마이턴 소개 영상</title>
 <style>
   /* the film draws its text with these exact faces; subset to the characters it uses (SIL OFL 1.1) */
   @font-face { font-family: 'Noto Sans CJK KR'; src: url('fonts/NotoSansCJKkr-Bold-subset.woff2') format('woff2'); font-weight: 700; font-display: block; }
@@ -53,7 +53,7 @@
 </style>
 </head>
 <body>
-<div class="mtp loading" id="mtp" role="button" tabindex="0" aria-label="마이턴 옥션 소개 영상 재생">
+<div class="mtp loading" id="mtp" role="button" tabindex="0" aria-label="마이턴 소개 영상 재생">
   <canvas id="cv" width="1920" height="1080"></canvas>
   <div class="poster" style="background-image:url('media/poster.jpg')"></div>
   <div class="mid" aria-hidden="true"><i><svg viewBox="0 0 24 24"><path d="M6 3.8v16.4a1 1 0 0 0 1.5.86l13.2-8.2a1 1 0 0 0 0-1.72L7.5 2.94A1 1 0 0 0 6 3.8z"/></svg></i></div>
@@ -81,7 +81,7 @@
   const cls = c => { box.className = 'mtp ' + c + (started ? ' started' : '') + (HERO ? ' hero' : ''); };
   if (HERO) cls('loading');
   const fontsOk = Promise.all(['700 40px "Noto Sans CJK KR"', '900 40px "Noto Sans CJK KR"', '700 40px "Noto Sans Mono CJK KR"']
-    .map(f => document.fonts.load(f, '마이턴 옥션 MYTURN 0123'))).catch(() => {});
+    .map(f => document.fonts.load(f, '마이턴 MYTURN 0123'))).catch(() => {});
   const assetsOk = new Promise(res => { const w = () => window.READY ? res() : setTimeout(w, 50); w(); });
   Promise.all([fontsOk, assetsOk]).then(() => { ready = true; box.classList.remove('loading'); render(0); if (wantPlay) start(); });
 

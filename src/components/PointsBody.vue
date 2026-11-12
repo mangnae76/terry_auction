@@ -78,7 +78,7 @@ const goBenefit = (b: PointBenefit) => {
       <!-- 3. 포인트 혜택 안내 -->
       <section data-sec="benefit">
         <h2 class="pt-head">포인트 혜택 안내</h2>
-        <p class="pt-pt1">마이턴옥션 회원님께 드리는 포인트 혜택</p>
+        <p class="pt-pt1">마이턴 회원님께 드리는 포인트 혜택</p>
         <button
           v-for="b in POINT_BENEFITS"
           :key="b.when"

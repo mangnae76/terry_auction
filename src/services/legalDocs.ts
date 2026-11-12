@@ -41,7 +41,7 @@ const refundBody = () => {
   const SHOW_POINTS = POINTS_OPEN;
   let n = 0;
   const h = (t: string) => `<h3>${++n}. ${t}</h3>`;
-  return `<p class="doc-lead">리치마블(이하 '회사')이 운영하는 마이턴옥션 서비스(이하 '서비스')의 유료 이용권 환불 정책입니다.</p>
+  return `<p class="doc-lead">리치마블(이하 '회사')이 운영하는 마이턴 서비스(이하 '서비스')의 유료 이용권 환불 정책입니다.</p>
       ${h('디지털 콘텐츠 특성')}
       <p>서비스는 「전자상거래 등에서의 소비자보호에 관한 법률」에 따른 디지털 콘텐츠(무형상품)에 해당합니다. 서비스 이용을 시작한 뒤에는 청약철회가 제한될 수 있습니다.</p>
       ${h('환불 가능 기준')}
@@ -66,7 +66,7 @@ const refundBody = () => {
 };
 
 const copyrightBody = () => `
-      <p class="doc-scope"><b>적용대상</b> 마이턴(이하 '회사')이 운영하는 마이턴옥션 웹과 앱(이하 '서비스')에서 제공하는 모든 정보와 자료</p>
+      <p class="doc-scope"><b>적용대상</b> 마이턴(이하 '회사')이 운영하는 마이턴 웹과 앱(이하 '서비스')에서 제공하는 모든 정보와 자료</p>
       <h3>제1조 목적</h3>
       <p>이 정책은 회사가 서비스로 제공하는 정보(경매 물건 정리, 권리분석 · 수익분석 · 시장분석 결과, 사진, 도표, 영상 등)의 저작권을 보호하고 공정하게 이용하기 위한 원칙을 정해, 저작권 침해로부터 회사와 이용자 모두를 보호하는 것을 목적으로 합니다.</p>
       <h3>제2조 저작권의 귀속</h3>
@@ -80,7 +80,7 @@ const copyrightBody = () => `
       <ul>
         <li>서비스의 자료는 비영리 · 교육 목적(블로그, 카페, 공부 자료 등)으로 게시할 수 있습니다.</li>
         <li>이때 다음 사항을 반드시 지켜야 합니다.
-          <ul><li>출처를 <b>'마이턴옥션'</b>으로 밝힐 것</li><li>소유자 · 채무자 · 임차인 등의 개인정보는 반드시 지울 것</li></ul>
+          <ul><li>출처를 <b>'마이턴'</b>으로 밝힐 것</li><li>소유자 · 채무자 · 임차인 등의 개인정보는 반드시 지울 것</li></ul>
         </li>
       </ul>
       <h3>제4조 정보 수집 및 복제 제한</h3>
@@ -99,7 +99,7 @@ const copyrightBody = () => `
       ${DOC_CONTACT}`;
 
 const partnerBody = () => `
-      <p class="doc-lead">마이턴옥션과 함께할 파트너를 찾습니다. 아래 분야의 제안을 기다립니다.</p>
+      <p class="doc-lead">마이턴과 함께할 파트너를 찾습니다. 아래 분야의 제안을 기다립니다.</p>
       <h3>제휴 분야</h3>
       <ul>
         <li><b>데이터 · 콘텐츠</b> 경매 · 부동산 정보, 교육 콘텐츠 제공</li>
@@ -120,7 +120,7 @@ const DOCS: Record<LegalDocKey, { title: string; body: () => string }> = {
   terms: { title: '이용약관', body: termsBody },
   privacy: { title: '개인정보처리방침', body: privacyBody },
   refund: { title: '환불정책', body: refundBody },
-  copyright: { title: '마이턴옥션 저작권 정책', body: copyrightBody },
+  copyright: { title: '마이턴 저작권 정책', body: copyrightBody },
   partner: { title: '사업제휴', body: partnerBody },
 };
 

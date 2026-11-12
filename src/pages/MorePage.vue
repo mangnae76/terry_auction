@@ -154,7 +154,7 @@ onMounted(() => {
       <SupportBody v-else />
     </div>
 
-    <p class="more-version">MyTurn Auction · v1.0</p>
+    <p class="more-version">MYTURN · v1.0</p>
 
     <Teleport to="body">
       <p v-if="toast" class="more-toast">{{ toast }}</p>

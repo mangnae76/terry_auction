@@ -1,10 +1,10 @@
 <!--
-  마이턴옥션 웹 — 선정물건 · 선정물건등록 (한 파일짜리 페이지 원본)
+  마이턴 웹 — 선정물건 · 선정물건등록 (한 파일짜리 페이지 원본)
   - 로고는 {{LOGO_WHITE}} 자리에 앱의 src/assets/icones/log/LOGO_MYTURN.svg(엠블럼 · MYTURN 벡터) 를 빌드 때 끼워 넣는다
   - PDF 읽기 등 앱 로직은 web/lib/shared.entry.js 가 앱 src/ 를 그대로 가져다 묶은 pdfparse.js 로 쓴다
   - 빌드: 저장소 맨 위에서 node web/build.mjs  →  web/site/selected.html, web/site/pdfparse.js
 -->
-<title>마이턴옥션 물건목록</title>
+<title>마이턴 물건목록</title>
 <script>
   /* 로그인해 있던 탭 — 앱 화면 모양(pdfparse.css)을 맨 앞에서 미리 받기만 한다(붙이는 자리는 그대로). 새로고침 덮개가 기다리는 틈을 줄인다(2026-11-06) */
   /* 새로고침 — 덮개(보던 화면)가 준비될 때까지 새 페이지를 숨긴다. 그 사이 브라우저는 이전 화면을 그대로 둔다(그림 붙잡기).
@@ -4378,7 +4378,7 @@ html, body { overflow-x: clip; }
 .f-brand { display: flex; align-items: center; gap: 10px; margin: 0 0 8px 3px; }
 .f-brand img { height: 32px; width: auto; display: block; } /* 머리띠 로고(44px)와 너무 벌어지지 않게 */
 .f-brand span { color: #c8cdd8; font-size: 14px; padding-left: 9px; border-left: 1px solid #5d6476; line-height: 1; }
-.f-info { margin: 0 0 0 3px; font-size: 11px; line-height: 1.5; } /* 정보 · 저작권 11, 링크 12, 로고 옆 마이턴옥션 14 (2026-11-03) */
+.f-info { margin: 0 0 0 3px; font-size: 11px; line-height: 1.5; } /* 정보 · 저작권 11, 링크 12, 로고 옆 마이턴 14 (2026-11-03) */
 /* 저작권 — 맨 아랫줄 가운데, 바닥에서 조금 띄운다 */
 .f-copy { margin-top: 10px; text-align: center; font-size: 11px; color: var(--foot-text); letter-spacing: .2px; white-space: nowrap; }
 .f-right { position: absolute; right: 0; top: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
@@ -4797,7 +4797,7 @@ span.cal-day.has { cursor: help; }
 <header class="gnb">
   <div class="wrap">
     <div class="gnb-in">
-      <a class="g-logo" href="#/" data-act="go-home" aria-label="마이턴옥션 홈"><img src="{{LOGO_WHITE}}" alt="MYTURN"></a>
+      <a class="g-logo" href="#/" data-act="go-home" aria-label="마이턴 홈"><img src="{{LOGO_WHITE}}" alt="MYTURN"></a>
       <a class="g-menu m0" href="#/register" data-act="go-register" id="navReg">물건등록</a>
       <a class="g-menu m1" href="#/list" data-act="go-list" id="navWatch">물건목록</a>
       <a class="g-menu m2" href="#/trip" data-act="go-trip" id="navTrip">임장경로</a>
@@ -5010,8 +5010,8 @@ span.cal-day.has { cursor: help; }
 <footer class="foot">
   <div class="wrap">
     <div class="foot-in">
-      <div class="f-brand"><img src="{{LOGO_WHITE}}" alt="MYTURN"><span>마이턴옥션</span></div>
-      <p class="f-info">상호 리치마블 · 서비스명 마이턴옥션 · 대표 강정인<br>사업자번호 000-00-03787 · 통신판매신고 2026-서울광진-1320<br>주소 서울시 광진구 강변역로4길 68, 3층301호<br>문의 02-456-1234 · 대표메일 contact@myturn.co.kr</p>
+      <div class="f-brand"><img src="{{LOGO_WHITE}}" alt="MYTURN"><span>마이턴</span></div>
+      <p class="f-info">상호 리치마블 · 서비스명 마이턴 · 대표 강정인<br>사업자번호 000-00-03787 · 통신판매신고 2026-서울광진-1320<br>주소 서울시 광진구 강변역로4길 68, 3층301호<br>문의 02-456-1234 · 대표메일 contact@myturn.co.kr</p>
       <div class="f-copy">COPYRIGHT ⓒMyTurn. ALL RIGHTS RESERVED.</div>
       <!-- 오른쪽 묶음 — 이용약관 줄과 채널 아이콘 줄. 둘 다 1280 상자 안쪽 오른쪽 끝(사업제휴 · 인스타그램)에 세로로 맞춘다 -->
       <div class="f-right">
@@ -5663,7 +5663,7 @@ span.cal-day.has { cursor: help; }
     if (CLOUD.on ? !CLOUD.synced : (EXPECT_IN && !S.authReady)) { root.innerHTML = '<div class="empty"><b>불러오는 중입니다…</b></div>'; return; }   /* 남겨 둔 목록이 있으면 그것으로 그린다 */
     /* 노란 '예시 물건입니다 — 로그인' 안내는 뺐다(예시 물건도 뺐다). 허가 없는 계정 안내만 남긴다 */
     const note = !CLOUD.on && S.denied
-      ? '<div class="demo-note">이 계정은 마이턴옥션 사용 허가가 없습니다 — 허가된 계정으로 로그인해 주세요.</div>'
+      ? '<div class="demo-note">이 계정은 마이턴 사용 허가가 없습니다 — 허가된 계정으로 로그인해 주세요.</div>'
       : '';
     queueMicrotask(() => {
       const r = $('content'); if (!r) return;
@@ -6312,7 +6312,7 @@ span.cal-day.has { cursor: help; }
   const skipsToday = (k) => k && (store.get(SKIP_KEY, {})[k] === TODAY_YMD);
   /* 바닥 링크로 여는 글 — 저작권정책 · 사업제휴. 연락처는 바닥 띠(f-info)와 같은 값 */
   /* 약관 · 정책 창 — 글은 대문과 같은 공통 파일(앱 services/legalDocs · 이용약관 · 개인정보처리방침은 앱과 같은 글). 묶음(window.TAPdf)에서 읽는다 */
-  const DOC_TITLES = { terms: '이용약관', privacy: '개인정보처리방침', refund: '환불정책', copyright: '마이턴옥션 저작권 정책', partner: '사업제휴' };
+  const DOC_TITLES = { terms: '이용약관', privacy: '개인정보처리방침', refund: '환불정책', copyright: '마이턴 저작권 정책', partner: '사업제휴' };
   const DOCS = Object.fromEntries(Object.entries(DOC_TITLES).map(([k, title]) => [k, { title, body: () => {
     const d = window.TAPdf && window.TAPdf.legalDoc ? window.TAPdf.legalDoc(k) : null;
     return d ? d.html : '<p>글을 불러오지 못했습니다 — 새로고침 뒤 다시 열어 주세요.</p>';
@@ -6637,7 +6637,7 @@ span.cal-day.has { cursor: help; }
     /* 늘 본문 위 한 자리(왼쪽)에만 — 화면 안 탭 줄 칸(#admCrumbSlot 등)으로 옮겼다 돌아오면 다시 그릴 때마다 한 줄씩 덜컹거렸다 */
     { const nav = CRUMBS; const slot = SUBTABS[S.route] ? $('subCrumbLeft') : reg ? ($('regCrumbLeft') || $('crumbSlotReg')) : $(page ? 'crumbSlotAppPage' : reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : info ? 'crumbSlotInfo' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
-    document.title = home ? '마이턴옥션' : info ? `마이턴옥션 ${S.route === 'store' ? '콘텐츠' : '모바일앱'}` : page ? `마이턴옥션 ${APP_PAGE_NAMES[S.route]}` : reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? '마이턴옥션 시장분석' : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 물건목록';
+    document.title = home ? '마이턴' : info ? `마이턴 ${S.route === 'store' ? '콘텐츠' : '모바일앱'}` : page ? `마이턴 ${APP_PAGE_NAMES[S.route]}` : reg ? '마이턴 선정물건등록' : trip ? '마이턴 임장경로' : market ? '마이턴 시장분석' : my ? '마이턴 마이페이지' : item ? `마이턴 ${cur ? cur.caseNo : '물건상세'}` : '마이턴 물건목록';
     if (!item) closeAppDetail();
     if (!trip) closeAppTrip();
     if (!market) closeAppMarket();
@@ -9085,13 +9085,13 @@ span.cal-day.has { cursor: help; }
   const mobileHtml = () => {
     /* 실제 앱 캡처(대문 소개 영상에 쓴 것) — public/myturn-promo/shots */
     const SHOT = (f) => `/myturn-promo/shots/web/${f.replace(/\.png$/, '.webp')}`;   /* 화면용 600px WebP(원본 PNG 1.6MB → 0.4MB) */
-    const phone = `<div class="mb-stage"><div class="mb-glow" aria-hidden="true"></div><div class="mb-phone" role="img" aria-label="마이턴옥션 앱 화면"><i class="mb-btn l1"></i><i class="mb-btn l2"></i><i class="mb-btn r1"></i>`
+    const phone = `<div class="mb-stage"><div class="mb-glow" aria-hidden="true"></div><div class="mb-phone" role="img" aria-label="마이턴 앱 화면"><i class="mb-btn l1"></i><i class="mb-btn l2"></i><i class="mb-btn r1"></i>`
       + `<div class="mb-screen"><span class="mb-island" aria-hidden="true"></span><div class="mb-view">${MOBILE_SLIDES.map(([f, t], i) => `<img class="mb-slide ${i === 0 ? 'on' : ''}" src="${SHOT(f)}" alt="" width="600" height="1298" decoding="async"><span class="mb-cap ${i === 0 ? 'on' : ''}">${t}</span>`).join('')}</div></div></div>`
       + `<div class="mb-dots">${MOBILE_SLIDES.map(([, t], i) => `<button type="button" class="${i === 0 ? 'on' : ''}" data-act="mobile-slide" data-v="${i}" aria-label="${t} 화면 보기"></button>`).join('')}</div></div>`;
     /* 아래 — 실제 앱 화면 4장. 그림은 자르지 않는다(틀이 캡처 비율을 따른다) */
-    const shots = APP_SHOTS.map(([f, t, d]) => `<figure class="mb-app"><div class="mb-app-frame"><img src="${SHOT(f)}" alt="마이턴옥션 앱 ${t} 화면" width="600" height="1298" loading="lazy" decoding="async"></div><figcaption><b>${t}</b><small>${d}</small></figcaption></figure>`).join('');
+    const shots = APP_SHOTS.map(([f, t, d]) => `<figure class="mb-app"><div class="mb-app-frame"><img src="${SHOT(f)}" alt="마이턴 앱 ${t} 화면" width="600" height="1298" loading="lazy" decoding="async"></div><figcaption><b>${t}</b><small>${d}</small></figcaption></figure>`).join('');
     return ''
-      + `<div class="mb-hero"><div class="mb-copy"><span class="mb-badge">실전 경매 노트 앱</span><h3>경매의 처음부터 끝까지,<br><em>현장에서 마이턴옥션 하나로.</em></h3>`
+      + `<div class="mb-hero"><div class="mb-copy"><span class="mb-badge">실전 경매 노트 앱</span><h3>경매의 처음부터 끝까지,<br><em>현장에서 마이턴 하나로.</em></h3>`
       + `<p>물건을 고르는 날부터 팔고 세금을 신고하는 날까지, 한 건의 모든 기록을 한 곳에 남깁니다.<br><b class="or">AI와 자동화</b>로 시간은 줄이고 데이터 기반으로 안전한 경매가 가능합니다.<br>3일 무료체험으로 먼저 써 보세요.</p>`
       + `<div class="mb-values">${MOBILE_VALUES.map(([t, d], i) => `<article class="mb-value${i === MOBILE_VALUES.length - 1 ? ' hot' : ''}"><em>${String(i + 1).padStart(2, '0')}</em><b>${t}</b><span>${d}</span></article>`).join('')}</div>`
       + `<div class="mb-stores"><button type="button" data-act="soon" data-name="Google Play">구글 플레이에서 다운로드</button><button type="button" data-act="soon" data-name="App Store">앱스토어에서 다운로드</button></div>`
@@ -9294,7 +9294,7 @@ span.cal-day.has { cursor: help; }
     const notices = HM.notices.slice(0, 4);
     const recent = hmRecent(4);
     return ''
-      + `<section class="hm-card hm-app"><span class="ico">${HM_SVG(HM_IC.phone).replace('<svg', '<svg width="28" height="28"')}</span><div class="tx"><div class="eb"><span class="tag">실전 경매 노트 앱</span><span class="soon">웹서비스 · 모바일앱 출시 예정</span></div><b>경매의 처음부터 끝까지, <em>현장에서 마이턴옥션 하나로.</em></b><p>물건을 고르는 날부터 팔고 세금을 신고하는 날까지, 한 건의 모든 기록을 한 곳에 남깁니다.</p></div><nav><button type="button" class="o" data-act="go-mobile">마이턴 앱 알아보기</button><button type="button" class="w" data-act="go-mobile">마이턴 앱 다운받기</button></nav></section>`
+      + `<section class="hm-card hm-app"><span class="ico">${HM_SVG(HM_IC.phone).replace('<svg', '<svg width="28" height="28"')}</span><div class="tx"><div class="eb"><span class="tag">실전 경매 노트 앱</span><span class="soon">웹서비스 · 모바일앱 출시 예정</span></div><b>경매의 처음부터 끝까지, <em>현장에서 마이턴 하나로.</em></b><p>물건을 고르는 날부터 팔고 세금을 신고하는 날까지, 한 건의 모든 기록을 한 곳에 남깁니다.</p></div><nav><button type="button" class="o" data-act="go-mobile">마이턴 앱 알아보기</button><button type="button" class="w" data-act="go-mobile">마이턴 앱 다운받기</button></nav></section>`
       + cont
       + `<section class="hm-card"><div class="hm-h"><h2>${HM_SVG(HM_IC.cal)}나의 경매 일정</h2></div><div class="hm-sch">${hmCalHtml()}<div class="hm-sch-list">${schedHtml}</div></div></section>`
       + `<div class="hm-two even">`

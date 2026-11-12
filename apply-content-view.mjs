@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* 마이턴옥션 — 콘텐츠 › 매뉴얼 '보기' 적용 (2026-11-09)
+/* 마이턴 — 콘텐츠 › 매뉴얼 '보기' 적용 (2026-11-09)
    저장소 맨 위(terry_auction/)에서:  node apply-content-view.mjs
    하는 일
    1) web/manual/unpermit.html  — 매각불허가 신청 매뉴얼(팝업 안 ?embed=1 대응, 체크리스트는 글자형)

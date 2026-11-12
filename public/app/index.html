@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>마이턴 앱 · 마이턴옥션</title>
-<meta name="description" content="마이턴옥션 모바일앱 — 경매의 처음부터 끝까지, 현장에서 마이턴옥션 하나로. 한 건의 모든 기록을 한 곳에 남깁니다.">
+<title>마이턴 앱 · 마이턴</title>
+<meta name="description" content="마이턴 모바일앱 — 경매의 처음부터 끝까지, 현장에서 마이턴 하나로. 한 건의 모든 기록을 한 곳에 남깁니다.">
 <link rel="icon" href="/favicon.svg">
 <!-- 글꼴 — 대문(intro.html)과 같은 주소 그대로. 대문에서 받아 둔 글꼴을 다시 써서 같은 글꼴로 바로 뜬다 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -113,7 +113,7 @@ button{font:inherit;cursor:pointer}
 <body>
 <header class="top">
   <div class="top-in">
-    <a href="/intro.html" data-home aria-label="마이턴옥션 처음으로"><img src="/logo-myturn.svg" alt="MYTURN"></a><span class="brand-name">마이턴앱</span>
+    <a href="/intro.html" data-home aria-label="마이턴 처음으로"><img src="/logo-myturn.svg" alt="MYTURN"></a><span class="brand-name">마이턴앱</span>
     <nav><a href="#" id="guideSoon">이용가이드</a></nav>
   </div>
 </header>
@@ -122,7 +122,7 @@ button{font:inherit;cursor:pointer}
     <div class="mb-hero">
       <div class="mb-copy">
         <span class="mb-badge">실전 경매 노트 앱</span>
-        <h1>경매의 처음부터 끝까지,<br><em>현장에서 마이턴옥션 하나로.</em></h1>
+        <h1>경매의 처음부터 끝까지,<br><em>현장에서 마이턴 하나로.</em></h1>
         <p>물건을 고르는 날부터 팔고 세금을 신고하는 날까지, 한 건의 모든 기록을 한 곳에 남깁니다.<br><b class="or">AI와 자동화</b>로 시간은 줄이고 데이터 기반으로 안전한 경매가 가능합니다.<br>3일 무료체험으로 먼저 써 보세요.</p>
         <div class="mb-values" id="values"></div>
         <div class="mb-stores"><button type="button" data-soon="Google Play">구글 플레이에서 다운로드</button><button type="button" data-soon="App Store">앱스토어에서 다운로드</button></div>
@@ -177,12 +177,12 @@ try { if (localStorage.getItem('ta.web.in') === '1') document.querySelectorAll('
   const ic = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
 
   $('stage').innerHTML = '<div class="mb-glow" aria-hidden="true"></div>'
-    + '<div class="mb-phone" role="img" aria-label="마이턴옥션 앱 화면"><i class="mb-btn l1"></i><i class="mb-btn l2"></i><i class="mb-btn r1"></i>'
+    + '<div class="mb-phone" role="img" aria-label="마이턴 앱 화면"><i class="mb-btn l1"></i><i class="mb-btn l2"></i><i class="mb-btn r1"></i>'
     + `<div class="mb-screen"><span class="mb-island" aria-hidden="true"></span><div class="mb-view" id="view">${SLIDES.map(([f, t], i) => `<img class="mb-slide${i ? '' : ' on'}" src="${SHOT(f)}" alt="" width="600" height="1298" decoding="async"><span class="mb-cap${i ? '' : ' on'}">${t}</span>`).join('')}</div></div></div>`
     + `<div class="mb-dots" id="dots">${SLIDES.map(([, t], i) => `<button type="button" class="${i ? '' : 'on'}" data-i="${i}" aria-label="${t} 화면 보기"></button>`).join('')}</div>`;
   $('values').innerHTML = VALUES.map(([t, d], i) => `<article class="mb-value${i === VALUES.length - 1 ? ' hot' : ''}"><em>${String(i + 1).padStart(2, '0')}</em><b>${t}</b><span>${d}</span></article>`).join('');
   $('feats').innerHTML = FEATS.map(([k, t, d]) => `<article class="mb-feat"><h3>${ic(k)}${t}</h3><p>${d}</p></article>`).join('');
-  $('apps').innerHTML = SHOTS.map(([f, t, d]) => `<figure class="mb-app"><div class="mb-app-frame"><img src="${SHOT(f)}" alt="마이턴옥션 앱 ${t} 화면" width="600" height="1298" loading="lazy" decoding="async"></div><figcaption><b>${t}</b><small>${d}</small></figcaption></figure>`).join('');
+  $('apps').innerHTML = SHOTS.map(([f, t, d]) => `<figure class="mb-app"><div class="mb-app-frame"><img src="${SHOT(f)}" alt="마이턴 앱 ${t} 화면" width="600" height="1298" loading="lazy" decoding="async"></div><figcaption><b>${t}</b><small>${d}</small></figcaption></figure>`).join('');
 
   // 휴대폰 안 — 3초마다 다음 장, 점을 누르면 그 장
   let k = 0, timer = 0;

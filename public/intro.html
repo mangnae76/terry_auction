@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>마이턴옥션</title>
+<title>마이턴</title>
 <!-- 로그인 창은 웹과 같은 앱 로그인 화면(LoginPage)을 그대로 띄운다 — 웹 묶음(pdfparse)을 누를 때 불러온다 -->
 <link rel="stylesheet" href="/web/pdfparse.css" media="print" onload="this.media='all'">   <!-- 로그인 · 회원가입 창(앱 화면)용 530KB — 대문을 먼저 그리고 뒤에서 받는다(대문 전체 규칙은 없다) -->
 <!-- 글꼴 — 웹(로그인 뒤 화면)과 같은 Noto Sans KR. 대문 제목이 900 굵기를 써서 900 까지 받는다 -->
@@ -83,7 +83,7 @@
   .ld-stats #ldTools { color: var(--orange); }
   .ld-up { margin-left: 6px; font-style: normal; font-size: 12px; font-weight: 700; color: #16a34a; white-space: nowrap; font-variant-numeric: tabular-nums; }   /* 전일 대비 +몇 — 또르륵 올라간다 */
   .ld-up.pop { animation: ldUpPop .6s ease-out; }
-  @keyframes ldUpPop { 0% { opacity: 0; transform: translateY(4px); } 100% { opacity: 1; transform: none; } }   /* 분석 및 활용 도구 숫자는 마이턴옥션 글자와 같은 주황(2026-11-03) */
+  @keyframes ldUpPop { 0% { opacity: 0; transform: translateY(4px); } 100% { opacity: 1; transform: none; } }   /* 분석 및 활용 도구 숫자는 마이턴 글자와 같은 주황(2026-11-03) */
   /* 오른쪽 — 우리 진행 단계(세로 줄). AI 가 하는 단계는 주황 AI 표시 */
   .ld-steps { border: 1px solid var(--line); border-radius: 20px; background: var(--soft); padding: 20px 22px; }   /* 상자 · 안쪽 글자를 20% 남짓 줄였다(2026-11-03) */
   .ld-steps-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }   /* 제목 오른쪽에 설명 한 줄 */
@@ -248,7 +248,7 @@
   .ld-app-eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }   /* 세 줄 — 칩 · 출시 예정 / 제목 / 설명 */
   .ld-app-tag { flex: 0 0 auto; font-size: 10.5px; font-weight: 800; line-height: 1.5; color: #fff; background: var(--orange); border-radius: 999px; padding: 1px 9px; }
   .ld-app h2 { margin: 0; font-size: 15px; line-height: 1.35; font-weight: 800; color: var(--navy); }
-  .ld-app h2 em { font-style: normal; color: var(--orange); }   /* 흰 바탕 — 큰 제목 「마이턴 옥션」과 같은 주황 */
+  .ld-app h2 em { font-style: normal; color: var(--orange); }   /* 흰 바탕 — 큰 제목 「마이턴」과 같은 주황 */
   .ld-app p { margin: 2px 0 0; font-size: 12px; line-height: 1.45; color: var(--sub); }
   .ld-app-soon { font-size: 11px; font-weight: 500; color: #9aa3b2; white-space: nowrap; }
   .ld-app nav { margin-left: auto; display: flex; gap: 8px; flex: 0 0 auto; }
@@ -263,7 +263,7 @@
   .f-brand { display: flex; align-items: center; gap: 10px; margin: 0 0 8px 3px; }
   .f-brand img { height: 32px; width: auto; display: block; }
   .f-brand span { color: #c8cdd8; font-size: 14px; padding-left: 9px; border-left: 1px solid #5d6476; line-height: 1; }
-  .f-info { margin: 0 0 0 3px; font-size: 11px; line-height: 1.5; }   /* 정보 · 저작권 11, 링크 12, 로고 옆 마이턴옥션 14 (2026-11-03) */
+  .f-info { margin: 0 0 0 3px; font-size: 11px; line-height: 1.5; }   /* 정보 · 저작권 11, 링크 12, 로고 옆 마이턴 14 (2026-11-03) */
   .f-copy { margin-top: 10px; text-align: center; font-size: 11px; letter-spacing: .2px; white-space: nowrap; }   /* 맨 아래 가운데 한 줄 */
   .f-right { position: absolute; right: max(20px, env(safe-area-inset-right, 0px)); top: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
   .f-links { display: flex; gap: 28px; height: 32px; align-items: center; }   /* 로고(32) 줄과 가운데를 맞춘다 */
@@ -341,7 +341,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   <!-- ===== 대문 — 로그인 전 화면. 로그인 창은 이 위에 뜨고, 닫으면 대문을 그대로 본다 ===== -->
   <header class="ld-head">
     <div class="ld-wrap">
-      <a class="ld-logo" href="/intro.html" aria-label="마이턴옥션 처음으로"><img src="/logo-myturn.svg" alt="MYTURN" onerror="this.src='/logo-myturn.svg'" /></a>
+      <a class="ld-logo" href="/intro.html" aria-label="마이턴 처음으로"><img src="/logo-myturn.svg" alt="MYTURN" onerror="this.src='/logo-myturn.svg'" /></a>
       <nav><button type="button" class="ld-ghost" data-ld="login">로그인</button><button type="button" class="ld-fill" data-ld="signup">회원가입</button></nav>
     </div>
   </header>
@@ -352,18 +352,18 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
         <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.6"/><path d="M10.5 18.5h3"/><path d="M9 7h6M9 10h6M9 13h3.5" stroke="#f4700a"/></svg></span>
         <div class="ld-app-copy">
           <div class="ld-app-eyebrow"><span class="ld-app-tag">실전 경매 노트 앱</span><small class="ld-app-soon">웹서비스 · 모바일앱 출시 예정</small></div>
-          <h2 id="appTitle">경매의 처음부터 끝까지, <em>현장에서 마이턴옥션 하나로.</em></h2>
+          <h2 id="appTitle">경매의 처음부터 끝까지, <em>현장에서 마이턴 하나로.</em></h2>
           <p>물건을 고르는 날부터 팔고 세금을 신고하는 날까지, 한 건의 모든 기록을 한 곳에 남깁니다.</p>
         </div>
         <nav><a class="o" href="#" data-soon="모바일앱 소개 페이지">마이턴 앱 알아보기</a><a class="w" href="/app/" target="_blank" rel="noopener">마이턴 앱 다운받기</a></nav>
       </div>
     </section>
 
-    <section class="ld-wrap ld-hero" aria-label="마이턴옥션 소개">
+    <section class="ld-wrap ld-hero" aria-label="마이턴 소개">
       <div class="ld-left">
         <span class="ld-badge ld-badge-l"><i></i><span>실전 경매 플랫폼</span></span>
-        <h1>경매, 물건만 고르세요.<br><em>마이턴 옥션</em>이 다 해줍니다.</h1>
-        <p class="ld-lead">경매 실무! 처음부터 끝까지, <b>마이턴 옥션 하나로</b> 해결합니다.<br><b class="ld-or">AI와 자동화</b>로 시간은 줄이고 데이터 기반으로 안전한 경매가 가능합니다.</p>
+        <h1>경매, 물건만 고르세요.<br><em>마이턴</em>이 다 해줍니다.</h1>
+        <p class="ld-lead">경매 실무! 처음부터 끝까지, <b>마이턴 하나로</b> 해결합니다.<br><b class="ld-or">AI와 자동화</b>로 시간은 줄이고 데이터 기반으로 안전한 경매가 가능합니다.</p>
         <div class="ld-cta"><button type="button" class="p" data-ld="signup">무료로 시작하기</button><a class="s" href="/guide/" target="_blank" rel="noopener">이용가이드 →</a></div>
         <!-- 숫자 줄 — 「무료로 시작하기」 · 위 선 · 숫자 · 아래 선 · 「경매가 처음이신가요?」 사이 네 간격을 똑같이(sp) -->
         <i class="sp" aria-hidden="true"></i><i class="ln" aria-hidden="true"></i><i class="sp" aria-hidden="true"></i>
@@ -387,8 +387,8 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
         <!-- 경매가 처음이신가요 — 왼쪽 단 숫자 아래 카드(예전에는 머리 바로 밑 가로 띠) -->
       </div>
       <div class="ld-right">
-      <div class="ld-steps s1" id="ldStepsBox" aria-label="마이턴옥션으로 하는 경매 순서">
-        <div class="ld-steps-h"><button type="button" class="cs-mini" id="csMini" title="사건카드 장면 다시 보기" aria-label="사건카드 장면 다시 보기"></button><b>마이턴옥션 진행 단계</b><small><b class="ld-hl">사건카드 한 장</b>에 담긴 모든 정보를 따라 경매를 단계별로 진행합니다</small></div>
+      <div class="ld-steps s1" id="ldStepsBox" aria-label="마이턴으로 하는 경매 순서">
+        <div class="ld-steps-h"><button type="button" class="cs-mini" id="csMini" title="사건카드 장면 다시 보기" aria-label="사건카드 장면 다시 보기"></button><b>마이턴 진행 단계</b><small><b class="ld-hl">사건카드 한 장</b>에 담긴 모든 정보를 따라 경매를 단계별로 진행합니다</small></div>
         <ol id="ldSteps"><span class="ld-steps-fill" id="ldStepsFill" aria-hidden="true"></span><span class="ld-steps-dot" id="ldStepsDot" aria-hidden="true"></span><li><i class="num">01</i><div><b>물건등록 <em>AI</em></b><span>분석하여 물건등록 · 물건정보 · 권리관리 정보를 등록합니다</span></div></li><li><i class="num">02</i><div><b>선정물건</b><span>사건카드 등록 · 사건카드 단계관리 · 입찰달력 등 선정물건을 관리합니다</span></div></li><li><i class="num">03</i><div><b>물건정보 <em>AI</em></b><span>건축물대장 · 입지정보(반경 500m) 등을 정리합니다</span></div></li><li><i class="num">04</i><div><b>권리분석 <em>AI</em></b><span>권리분석 · 권리 체크리스트 · 집행관 현황조사</span></div></li><li><i class="num">05</i><div><b>손품조사 <em>AI</em></b><span>수요지표 4종 · 기초수치 3종 · 입지·물건 개별성 · 시세분석(실거래가 예상) · 임장비교 경로설정</span></div></li><li><i class="num">06</i><div><b>임장 <em>AI</em></b><span>동선최적화 · 임장 물건 비교 · 임장 물건 추가 기능</span></div></li><li><i class="num">07</i><div><b>수익분석 <em>AI</em></b><span>수익분석 · 입찰가 비교 · 지출 순서</span></div></li><li><i class="num">08</i><div><b>낙찰이후 <em>AI</em></b><span>진행절차 · 절차별 할 일 · 필요, 사업경비 · 매물등록</span></div></li><li><i class="num">09</i><div><b>자금관리 <em>AI</em></b><span>자금입출금 통합 · 필요경비 · 사업경비 · 세금신고</span></div></li></ol>
         <!-- 첫 장면 — 사건카드 하나에 모든 것(소개서 11쪽 문구 그대로) -->
         <div class="cs" id="cs" aria-hidden="true">
@@ -426,8 +426,8 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   <!-- 바닥 띠 — 웹(선정물건) 바닥과 같은 내용 · 모양. 약관은 /web 의 그 창으로 연다(?doc=…) -->
   <footer class="foot">
     <div class="ld-wrap foot-in">
-      <div class="f-brand"><img src="/logo-myturn.svg" alt="MYTURN"><span>마이턴옥션</span></div>
-      <p class="f-info">상호 리치마블 · 서비스명 마이턴옥션 · 대표 강정인<br>사업자번호 000-00-03787 · 통신판매신고 2026-서울광진-1320<br>주소 서울시 광진구 강변역로4길 68, 3층301호<br>문의 02-456-1234 · 대표메일 contact@myturn.co.kr</p>
+      <div class="f-brand"><img src="/logo-myturn.svg" alt="MYTURN"><span>마이턴</span></div>
+      <p class="f-info">상호 리치마블 · 서비스명 마이턴 · 대표 강정인<br>사업자번호 000-00-03787 · 통신판매신고 2026-서울광진-1320<br>주소 서울시 광진구 강변역로4길 68, 3층301호<br>문의 02-456-1234 · 대표메일 contact@myturn.co.kr</p>
       <div class="f-copy">COPYRIGHT ⓒMyTurn. ALL RIGHTS RESERVED.</div>
       <div class="f-right">
         <div class="f-links">
