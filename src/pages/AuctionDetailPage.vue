@@ -5698,6 +5698,8 @@ const cmpApply = cmpF.apply;
 /** 유사도 % → 면적 · 건축 범위(부품이 기준 · 유사도 막대를 바꿀 때 쓴다) */
 const cmpSimRanges = (sim: number) => ({ area: cmpSimArea(sim), year: cmpSimYear(sim) });
 /** 거래 단추 옆 건수 — 지금 리스트(범위 · 기간 · 유사평형)에 든 매매 · 전세 실거래 수(시세분석 '매매 3'과 같은 꼴, 2026-11-12 사용자) */
+/** 한 줄의 매매 · 전세 거래 건수 — 표 평균가 밑 'n건' */
+const cmpDealN = (r: { deals: Array<{ kind: string; price: number }> }, k: '매매' | '전세') => r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length;
 const cmpKindCount = (k: '매매' | '전세') => cmpRows.value.reduce((n, r) => n + r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length, 0).toLocaleString('ko-KR');
 // 고른 거르기는 그 물건 문서(DB)에 남긴다 — 바꾸면 리스트 · 평균가가 달라져, 다시 열어도 같은 숫자를 보게(2026-11-11 사용자). 처음엔 위 기본값
 watch(() => auction.value?.id, (id) => {
@@ -9899,8 +9901,9 @@ const goBack = () => router.back();
                         <!-- 엘베 — 빌라만, 연식 옆(2026-11-12 사용자) -->
                         <td v-if="!isApartment" class="n">{{ cmpElevTx(r) }}</td>
                         <!-- 고른 거래 쪽 평균을 굵게. 중간값은 고른 거래(매매 · 전세)의 가운데 값 -->
-                        <td class="n amt"><b v-if="cmpKind === '매매'">{{ cmpMoney(r.saleAvg) }}</b><template v-else>{{ cmpMoney(r.saleAvg) }}</template></td>
-                        <td class="n amt"><b v-if="cmpKind === '전세'">{{ cmpMoney(r.jeonseAvg) }}</b><template v-else>{{ cmpMoney(r.jeonseAvg) }}</template></td>
+                        <!-- 가격 밑에 그 평균을 낸 거래 건수(2026-11-12 사용자) -->
+                        <td class="n amt"><b v-if="cmpKind === '매매'">{{ cmpMoney(r.saleAvg) }}</b><template v-else>{{ cmpMoney(r.saleAvg) }}</template><small v-if="cmpDealN(r, '매매')" class="sup-tbl-sub">{{ cmpDealN(r, '매매') }}건</small></td>
+                        <td class="n amt"><b v-if="cmpKind === '전세'">{{ cmpMoney(r.jeonseAvg) }}</b><template v-else>{{ cmpMoney(r.jeonseAvg) }}</template><small v-if="cmpDealN(r, '전세')" class="sup-tbl-sub">{{ cmpDealN(r, '전세') }}건</small></td>
                         <!-- 입지 순위대로 전용 평당가가 늘어선다 · 비슷한 연식은 전세가율이 비슷하다(강의 2026-11-11) -->
                         <td class="n">{{ cmpPerPy(r) > 0 ? `${Math.round(cmpPerPy(r) / 1e4).toLocaleString('ko-KR')}만` : '-' }}</td>
                         <td class="n">{{ cmpJeonseRate(r) > 0 ? `${Math.round(cmpJeonseRate(r))}%` : '-' }}</td>
