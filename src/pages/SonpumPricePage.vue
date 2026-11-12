@@ -332,7 +332,18 @@ const shownRows = computed(() => {
 });
 const MORE_AT = 10;
 const showAll = ref(false);
-const listRows = computed(() => (showAll.value ? shownRows.value : shownRows.value.slice(0, MORE_AT)));
+// 엘베로 거를 때 — 건물마다 엘베를 0.5초마다 조금씩 받아 와, 받는 대로 줄이 빠졌다 들어왔다 하며 표가 계속 흔들렸다(2026-11-12 사용자 '엘베 없음 누르면 흔들리기 시작').
+// 받는 동안엔 바로 전 표를 그대로 두고, 다 받으면 한 번에 바꾼다
+const stableRows = shallowRef<PriceRow[]>([]);
+const liveRows = computed(() => (showAll.value ? shownRows.value : shownRows.value.slice(0, MORE_AT)));
+// 엘베를 바꾼 직후부터 붙잡는다 — 받기가 조금 뒤에 시작돼 첫 번째 바뀜이 새어 나갔다. 받기가 끝나면(1초 안에 시작도 안 하면) 놓는다
+const elevHold = ref(false);
+let elevHoldT = 0;
+watch(elevPick, () => { if (!webEmbed) return; elevHold.value = true; window.clearTimeout(elevHoldT); elevHoldT = window.setTimeout(() => { if (!enriching.value) elevHold.value = false; }, 1000); });
+watch(enriching, (on) => { if (!on) elevHold.value = false; });
+const holding = computed(() => webEmbed && !!elevPick.value && (enriching.value || elevHold.value) && stableRows.value.length > 0);
+watch([liveRows, holding], () => { if (!holding.value) stableRows.value = liveRows.value; }, { immediate: true });
+const listRows = computed(() => (holding.value ? stableRows.value : liveRows.value));
 watch(() => (isAptKind ? [...new Set(listRows.value.filter((r) => !r.same && r.jibun).map((r) => `${r.umdNm}|${r.jibun}`))].join(',') : ''), async (k) => {
   for (const key of k ? k.split(',') : []) {
     if (areasAsked.has(key)) continue;
