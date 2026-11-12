@@ -889,4 +889,4 @@ export type DemandSnap = {
   all: { n: number; avg: number; perPy: number; complexes: number } | null;
 };
 /** 매매수요 입지비교 거르기 — area · year 가 없으면 기본(면적 내 물건 ±3㎡ · 건축 전체) */
-export type DemandFilter = { range: 'dong' | 100 | 300 | 500 | 1000 | 2000; months: 6 | 12 | 24; kind: '매매' | '전세'; area?: [number, number] | null; year?: [number, number] | null; floor?: 'same' | null; elev?: 'yes' | 'no' | null; mode?: 'sim' | 'range'; sim?: number };
+export type DemandFilter = { range: 'dong' | 100 | 300 | 500 | 1000 | 2000; months: 3 | 6 | 12 | 24; kind: '매매' | '전세'; area?: [number, number] | null; year?: [number, number] | null; floor?: 'same' | null; elev?: 'yes' | 'no' | null; mode?: 'sim' | 'range'; sim?: number };

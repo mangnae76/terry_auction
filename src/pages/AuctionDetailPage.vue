@@ -5626,8 +5626,8 @@ const cmpRange = ref<CmpRange>(1000);   // 읍면동 · 1km · 2km. 위 청라�
 const CMP_RANGES = computed<Array<[CmpRange, string]>>(() => (isApartment.value
   ? [['dong', '읍면동'], [1000, '1km'], [2000, '2km']]
   : [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']]));   // 빌라는 읍면동 뺌 — 건물이 많아 너무 넓다(2026-11-12 사용자)
-const cmpMonths = ref<6 | 12 | 24>(6);
-const CMP_PERIODS: Array<[6 | 12 | 24, string]> = [[6, '6개월'], [12, '1년'], [24, '2년']];
+const cmpMonths = ref<3 | 6 | 12 | 24>(6);
+const CMP_PERIODS: Array<[3 | 6 | 12 | 24, string]> = [[3, '3개월'], [6, '6개월'], [12, '1년'], [24, '2년']];
 /** 평형 폭 — ±3㎡로 고정. ±1㎡로 좁혀 봤더니 같은 건물의 조금 다른 평형(정성드림빌 52.32㎡ ↔ 55.14㎡) 거래가 빠졌다 — 예외 처리 없이 ±3㎡ 하나로(2026-11-12 사용자) */
 const cmpTol = ref<1 | 3 | 5 | 10>(3);
 /** 필터 줄 오른쪽 · 위 설명 줄 — 기간 단추 이름 그대로(6개월 · 1년 · 2년) */
@@ -5677,7 +5677,7 @@ const cmpMyElev = (): 'yes' | 'no' | null => {
   return ox === 'O' ? 'yes' : ox === 'X' ? 'no' : null;
 };
 /** 거르기 기본값(2026-11-12 사용자 확정) — 반경 1km · 6개월 · 매매 · 면적 내 물건 ±3㎡ · 건축 전체 · 층 전체 · 엘베는 빌라면 내 물건과 같게(아파트는 전체) */
-type CmpFilter = { range: CmpRange; months: 6 | 12 | 24; kind: '매매' | '전세'; mode: 'sim' | 'range'; sim: number; area: [number, number]; year: [number, number]; floor: 'same' | null; elev: 'yes' | 'no' | null };
+type CmpFilter = { range: CmpRange; months: 3 | 6 | 12 | 24; kind: '매매' | '전세'; mode: 'sim' | 'range'; sim: number; area: [number, number]; year: [number, number]; floor: 'same' | null; elev: 'yes' | 'no' | null };
 const cmpDefaults = (): CmpFilter => ({ range: 1000, months: 6, kind: '매매', mode: 'range', sim: 80, area: cmpAreaDef(), year: [CMP_YEAR_MIN, cmpYearMax], floor: null, elev: isApartment.value ? null : cmpMyElev() });
 /** 고르기 → 조회하기 → 초기화 한 벌(composables/useFilterDraft — 다른 화면도 같은 부품을 끼운다) */
 const cmpF = useFilterDraft<CmpFilter>(
