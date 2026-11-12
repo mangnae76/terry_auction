@@ -6071,7 +6071,7 @@ const cmpParcels = ref<Record<string, Array<{ lat: number; lng: number }> | null
 const cmpDraw = () => {
   const mv = cmpMv; if (!mv) return;
   mv.clear();
-  const rows = cmpRows.value.filter((r) => r.point); const pick = cmpPicked.value;
+  const rows = cmpViewRows.value.filter((r) => r.point); const pick = cmpPicked.value;   // 받는 중엔 선정물건만 — 다 받으면 한 번에
   // 범위가 지도에서 어디까지인지 — 읍면동이면 법정동 경계, 1km 면 선정물건에서 1km 원(2026-11-11 사용자)
   const me = cmpMePt.value;
   if (me && cmpRange.value !== 'dong') mv.circle(me, cmpRange.value, { color: '#2b4fd8', weight: 1.6, dash: true, fillOpacity: 0 });
@@ -6222,6 +6222,27 @@ const cmpFetched = computed(() => {
 const cmpLiveReady = computed(() => cmpFetched.value && cmpList.value.some((c) => !c.mine));   // 비교 건물이 없으면 저장하지 않는다(다음에 열 때 다시 계산)
 /** 조회 중 — 조회하기를 눌렀고 아직 다 받지 못했다(단추에 '조회 중…') */
 const cmpLoading = computed(() => cmpQueried.value && !cmpSnapOn.value && !cmpFetched.value);
+/** 받는 동안엔 리스트 · 지도 말풍선을 하나씩 붙이지 않고 선정물건만 — 다 받으면 한 번에 그린다(2026-11-12 사용자).
+ *  받기가 30초 넘게 안 끝나면(시설을 못 받는 건물 등) 기다리지 않고 받은 데까지 보여 준다 */
+const cmpGiveUp = ref(false);
+let cmpGiveUpT = 0;
+watch(cmpLoading, (on) => { window.clearTimeout(cmpGiveUpT); cmpGiveUp.value = false; if (on) cmpGiveUpT = window.setTimeout(() => { cmpGiveUp.value = true; }, 30000); }, { immediate: true });
+const cmpHold = computed(() => cmpLoading.value && !cmpGiveUp.value);
+const cmpViewRows = computed(() => (cmpHold.value ? cmpRows.value.filter((r) => r.mine) : cmpRows.value));
+/** 받는 진행 — 후보 건물 중 필요한 정보(좌표 · 반경 안이면 주변시설 · 빌라 엘베)를 다 받은 곳 수 */
+const cmpProg = computed(() => {
+  const inList = new Set(cmpListBase.value.map((c) => cmpKeyOf(c)));
+  const cands = (cmpRange.value === 'dong' ? cmpListBase.value : cmpCandidates.value).filter((c) => !c.mine);
+  const needElev = !!cmpElevR.value || !isApartment.value;
+  const done = cands.filter((c) => {
+    const k = cmpKeyOf(c);
+    if (cmpRange.value !== 'dong' && !(k in cmpPoints.value) && !(k in cmpNearby.value)) return false;
+    if (!inList.has(k)) return true;   // 반경 밖 — 좌표만 있으면 끝
+    return k in cmpNearby.value && (!needElev || k in cmpElevs.value);
+  }).length;
+  return { done, total: cands.length };
+});
+watch(cmpHold, () => { void cmpEnsureMap(); });
 /** 엘베 대수 — 선정물건은 개별성 엘베(O · X), 다른 건물은 저장본 → 건축물대장. 0 없음 · null 모름 */
 const cmpElevNum = (c: { mine: boolean; umdNm: string; jibun: string }): number | null => {
   if (c.mine) { const v = indivValue('ind.elevator'); return v === 'O' ? 1 : v === 'X' ? 0 : null; }
@@ -9868,14 +9889,14 @@ const goBack = () => router.back();
                 </div>
                 <aside v-if="cmpFs" class="cmp-fs-list">
                   <!-- 접기 — 지도를 넓게 보게 목록을 접는다(머리 줄만 남김, 2026-11-11 사용자) -->
-                  <div class="cmp-fs-lh"><b>{{ cmpN }} {{ cmpRows.length }}곳<small>{{ cmpN }}를 누르면 아래에 순위 이유가 나옵니다.</small></b><button type="button" class="cmp-fs-fold" :aria-label="cmpFsFold ? '목록 펼치기' : '목록 접기'" :aria-expanded="!cmpFsFold" @click="cmpFsFold = !cmpFsFold"><img :src="chevronDownIcon" :class="['adp-chev', { up: !cmpFsFold }]" alt="" /></button></div>
+                  <div class="cmp-fs-lh"><b>{{ cmpN }} {{ cmpHold ? `받는 중 ${cmpProg.done.toLocaleString('ko-KR')} / ${cmpProg.total.toLocaleString('ko-KR')}` : `${cmpRows.length}곳` }}<small>{{ cmpN }}를 누르면 아래에 순위 이유가 나옵니다.</small></b><button type="button" class="cmp-fs-fold" :aria-label="cmpFsFold ? '목록 펼치기' : '목록 접기'" :aria-expanded="!cmpFsFold" @click="cmpFsFold = !cmpFsFold"><img :src="chevronDownIcon" :class="['adp-chev', { up: !cmpFsFold }]" alt="" /></button></div>
                   <!-- 전체화면 거르기 — 왼쪽 창 머리 아래(목록 바로 위, 접어도 남는다). 밖과 같은 부품(필터 기본 부품 세트)을 좁은 꼴로 — 엘베 · 층 · 기준까지 같은 값(2026-11-12 사용자) -->
                   <SearchFilterBar v-model:draft="cmpDraft" compact :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :loading="cmpLoading" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" :saved-day="cmpSnapDay" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
                   <template v-if="!cmpFsFold">
                   <!-- 단지 줄을 테두리 상자 하나로 묶고 위에 회색 머리(단지 · 평균 ○○가) — 줄마다 '평균 ○○가'를 적지 않는다(2026-11-11 사용자) -->
                   <div class="cmp-fs-rows">
                   <div class="cmp-fs-rh"><span>{{ cmpN }}</span><span>평균 {{ cmpKind }}가</span></div>
-                  <button v-for="r in cmpRows" :key="cmpKeyOf(r)" type="button" :class="['cmp-fs-row', { on: cmpIsOn(r), mine: r.mine }]" @click="cmpFsGo(r)">
+                  <button v-for="r in cmpViewRows" :key="cmpKeyOf(r)" type="button" :class="['cmp-fs-row', { on: cmpIsOn(r), mine: r.mine }]" @click="cmpFsGo(r)">
                     <span class="nm"><span class="nm-line"><b class="nmt">{{ r.name || r.jibun }}</b><span v-if="cmpIsMyUnit(r)" class="cmp-tag">선정물건</span><span v-else-if="r.mine" class="cmp-tag same">{{ isApartment ? '동일단지' : '동일빌라' }}</span></span><small>입지 {{ cmpScore(r.tot) }}{{ cmpRankOf.get(cmpKeyOf(r)) ? ` · ${cmpRankOf.get(cmpKeyOf(r))}위` : '' }} · {{ cmpArea(r.supply, r.area) }}{{ r.buildYear ? ` · ${r.buildYear}년` : '' }}</small></span>
                     <!-- 금액은 이름 줄 높이, 그 아래 종합 줄 높이에 거래건수(2026-11-11 사용자) -->
                     <span class="pr">{{ cmpMoney(cmpKind === '매매' ? r.saleAvg : r.jeonseAvg) }}<small>{{ r.deals.filter((d) => (cmpKind === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세')).length }}건</small></span>
@@ -9907,7 +9928,7 @@ const goBack = () => router.back();
                       <th :aria-sort="cmpSortAria('tot')" @click="cmpSortBy('tot')">입지점수<i :class="['sdir', { on: cmpSortK === 'tot' }]" aria-hidden="true">{{ cmpSortK === 'tot' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>100점 · 거리</small></th><th>순위<small>입지</small></th><th :aria-sort="cmpSortAria('year')" @click="cmpSortBy('year')">연식<i :class="['sdir', { on: cmpSortK === 'year' }]" aria-hidden="true">{{ cmpSortK === 'year' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(건축년도)</small></th><th v-if="!isApartment">엘베<small>(건축물대장)</small></th><th :aria-sort="cmpSortAria('sale')" @click="cmpSortBy('sale')">평균 매매가<i :class="['sdir', { on: cmpSortK === 'sale' }]" aria-hidden="true">{{ cmpSortK === 'sale' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th :aria-sort="cmpSortAria('jeonse')" @click="cmpSortBy('jeonse')">평균 전세가<i :class="['sdir', { on: cmpSortK === 'jeonse' }]" aria-hidden="true">{{ cmpSortK === 'jeonse' && cmpSortDir === 'asc' ? '▲' : '▼' }}</i><small>(최근 {{ cmpMonths }}개월)</small></th><th>전용 평당가<small>({{ cmpKind }})</small></th><th>전세가율<small>전세 ÷ 매매</small></th>
                     </tr></thead>
                     <tbody>
-                      <tr v-for="r in cmpRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine, on: cmpIsOn(r) }]" tabindex="0" @click="cmpToggle(cmpKeyOf(r))" @keydown.enter="cmpToggle(cmpKeyOf(r))">
+                      <tr v-for="r in cmpViewRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine, on: cmpIsOn(r) }]" tabindex="0" @click="cmpToggle(cmpKeyOf(r))" @keydown.enter="cmpToggle(cmpKeyOf(r))">
                         <td class="nm" :data-tip="r.name || r.jibun" data-tip-pos="left"><span class="cmp-nm-line"><span class="cmp-nm">{{ r.name || r.jibun }}</span><span v-if="cmpIsMyUnit(r)" class="cmp-tag">선정물건</span><span v-else-if="r.mine" class="cmp-tag same">{{ isApartment ? '동일단지' : '동일빌라' }}</span></span><small class="sup-tbl-sub">{{ cmpArea(r.supply, r.area) }}</small></td>
                         <!-- 점수를 누르면 계산 내역 팝업(조건별 등수 칸은 팝업으로, 2026-11-11 시안) -->
                         <td class="n"><button type="button" class="cmp-sc" :aria-label="`${r.name || r.jibun} 입지 점수 계산 보기`" @click.stop="cmpPopOpen('loc', r, $event)">{{ cmpScore(r.loc) }}</button></td>
@@ -9924,7 +9945,8 @@ const goBack = () => router.back();
                         <td class="n">{{ cmpPerPy(r) > 0 ? `${Math.round(cmpPerPy(r) / 1e4).toLocaleString('ko-KR')}만` : '-' }}</td>
                         <td class="n">{{ cmpJeonseRate(r) > 0 ? `${Math.round(cmpJeonseRate(r))}%` : '-' }}</td>
                       </tr>
-                      <tr v-if="!cmpRows.length"><td :colspan="isApartment ? 8 : 9" class="cmp-dim">{{ supLoaded ? `범위 안에 견줄 ${cmpN} 거래가 없습니다.` : '실거래를 받는 중입니다…' }}</td></tr>
+                      <tr v-if="cmpHold"><td :colspan="isApartment ? 8 : 9" class="cmp-dim">{{ cmpN }} 정보를 받는 중입니다 · {{ cmpProg.done.toLocaleString('ko-KR') }} / {{ cmpProg.total.toLocaleString('ko-KR') }}곳 — 다 받으면 한 번에 보여 드립니다</td></tr>
+                      <tr v-else-if="!cmpRows.length"><td :colspan="isApartment ? 8 : 9" class="cmp-dim">{{ supLoaded ? `범위 안에 견줄 ${cmpN} 거래가 없습니다.` : '실거래를 받는 중입니다…' }}</td></tr>
                     </tbody>
                   </table>
                 </div>
