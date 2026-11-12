@@ -91,6 +91,12 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 </template>
 
 <style scoped>
+/* 필터 두 줄을 감싸는 회색 상자 — ① 실사용자 상자와 같은 꼴(연회색 바탕 · 옅은 테두리 · 10px 둥글기, 2026-11-12 사용자) */
+.sfb { margin: 10px 0 12px; padding: 10px 14px; background: #f7f9fc; border: 1px solid #e3e8f0; border-radius: 10px; }
+.sfb > .cmp-conds { margin: 0 0 8px; }
+.sfb > .cmp-bars-row { margin: 0; }
+:root[data-theme="dark"] .sfb { background: #1a2131; border-color: #2a3449; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sfb { background: #1a2131; border-color: #2a3449; } }
 .cmp-conds { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; margin: 10px 0 12px; }   /* 범위 · 거래 · 기간 · 엘베 · 층 한 줄 — 상자가 줄 폭을 나눠 갖는다(2026-11-12 사용자) */
 .cmp-conds > .pa-lab { flex: 1 1 auto; min-width: 0; justify-content: space-between; padding: 4px 10px; gap: 8px; }
 .cmp-conds > .pa-lab > .pa-seg { flex: 1 1 auto; justify-content: space-between; }

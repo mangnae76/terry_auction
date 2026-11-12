@@ -9791,7 +9791,7 @@ const goBack = () => router.back();
                   </template>
                 </div>
                 <!-- 근거 거래 한 줄 — 건물 · 단지를 고르면 칸 줄이 어느 거래로 계산됐는지. 고르기 전엔 안내만(자리를 늘 두어 지도가 위아래로 출렁이지 않게) -->
-                <p class="cmp-basis"><template v-if="cmpBasis"><b class="k">근거</b><template v-if="cmpBasis.n"><span v-for="(t, i) in cmpBasis.shown" :key="i" class="d"><i v-if="i" class="sep">|</i>{{ t }}</span><span v-if="cmpBasis.more" class="more">외 {{ cmpBasis.more }}건</span></template><span v-else class="d">기간 안 {{ cmpKind }} 거래 없음</span><span class="cmp-basis-nt">{{ cmpCondText }} 거래만 셌습니다{{ cmpBasis.out ? ` · 다른 평형 ${cmpBasis.out}건은 빠졌습니다` : '' }}</span></template><span v-else-if="cmpWaiting" class="hint">범위 · 거래 · 기간을 고르고 <b>조회하기</b>를 누르면 실거래를 불러옵니다 · 마음에 들면 <b>저장하기</b></span><span v-else class="hint">{{ cmpN }}를 누르면 평균이 어느 거래로 계산됐는지 보입니다</span></p>
+                <p class="cmp-basis"><template v-if="cmpBasis"><b class="k">근거</b><template v-if="cmpBasis.n"><span v-for="(t, i) in cmpBasis.shown" :key="i" class="d"><i v-if="i" class="sep">|</i>{{ t }}</span><span v-if="cmpBasis.more" class="more">외 {{ cmpBasis.more }}건</span></template><span v-else class="d">기간 안 {{ cmpKind }} 거래 없음</span><span class="cmp-basis-nt">{{ cmpCondText }} 거래만 셌습니다{{ cmpBasis.out ? ` · 다른 평형 ${cmpBasis.out}건은 빠졌습니다` : '' }}</span></template><span v-else-if="cmpWaiting" class="hint">필터를 고르고 <b>조회하기</b>를 누르면 실거래를 불러옵니다 · 마음에 들면 <b>저장하기</b></span><span v-else class="hint">{{ cmpN }}를 누르면 평균이 어느 거래로 계산됐는지 보입니다</span></p>
               </div>
                           <!-- 칸 줄과 지도 · 표는 한 상자(2026-11-11) -->
               <div class="cmp-gap" />
