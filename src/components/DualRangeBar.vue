@@ -31,6 +31,15 @@ const set = (el: HTMLInputElement, moved: 'lo' | 'hi') => {
   if (String(now) !== el.value) el.value = String(now);   // 막힌 자리로 동그라미도 되돌린다
   emit('update', a, b);
 };
+/** 위 숫자 칸에 직접 적기(2026-11-12 사용자) — 칸을 벗어나면 막대 끝으로, 범위 규칙은 막대와 같다. 숫자가 아니면 원래 값으로 */
+const typeIn = (el: HTMLInputElement, moved: 'lo' | 'hi') => {
+  const n = Number(String(el.value).replace(/[^\d.]/g, ''));
+  if (!String(el.value).trim() || !Number.isFinite(n)) { el.value = moved === 'lo' ? props.loText : props.hiText; return; }
+  const v = Math.min(props.max, Math.max(props.min, n));
+  const [a, b] = clampAroundBase(moved === 'lo' ? v : props.lo, moved === 'hi' ? v : props.hi, props.base, moved);
+  emit('update', a, b);
+  el.value = String(moved === 'lo' ? a : b);
+};
 const setLo = (el: HTMLInputElement) => set(el, 'lo');
 const setHi = (el: HTMLInputElement) => set(el, 'hi');
 </script>
@@ -40,7 +49,7 @@ const setHi = (el: HTMLInputElement) => set(el, 'hi');
     <span class="dn">{{ label }}<small v-if="sub">{{ sub }}</small></span>
     <div class="dual">
       <div class="track"><i class="fill" :style="{ left: pct(lo), right: `calc(100% - ${pct(hi)})` }" /><i v-if="base" class="base" :style="{ left: pct(base) }" /></div>
-      <span v-if="base" class="tvg" :style="{ left: `calc(8px + (100% - 16px) * ${(Math.min(max, Math.max(min, base)) - min) / (max - min)})`, width: `${tvgW ?? 136}px` }"><i>{{ loText }}</i><i class="me">{{ baseText }}</i><i>{{ hiText }}</i></span>
+      <span v-if="base" class="tvg" :style="{ left: `calc(8px + (100% - 16px) * ${(Math.min(max, Math.max(min, base)) - min) / (max - min)})`, width: `${tvgW ?? 136}px` }"><input class="tv-in lo" :value="loText" inputmode="decimal" :aria-label="`${label} 최소 적기`" @change="typeIn($event.target as HTMLInputElement, 'lo')" @keydown.enter="($event.target as HTMLInputElement).blur()"><i class="me">{{ baseText }}</i><input class="tv-in hi" :value="hiText" inputmode="decimal" :aria-label="`${label} 최대 적기`" @change="typeIn($event.target as HTMLInputElement, 'hi')" @keydown.enter="($event.target as HTMLInputElement).blur()"></span>
       <input type="range" :min="min" :max="max" :step="step ?? 1" :value="lo" :aria-label="`${label} 최소`" @input="setLo($event.target as HTMLInputElement)">
       <input type="range" :min="min" :max="max" :step="step ?? 1" :value="hi" :aria-label="`${label} 최대`" @input="setHi($event.target as HTMLInputElement)">
     </div>
@@ -59,7 +68,16 @@ const setHi = (el: HTMLInputElement) => set(el, 'hi');
 .tvg { position: absolute; top: 0; transform: translateX(-50%); display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; font-size: 13px; line-height: 1; font-weight: 800; color: #2b6df3; white-space: nowrap; font-variant-numeric: tabular-nums; pointer-events: none; }
 .tvg i { font-style: normal; }
 .tvg i:first-child { text-align: right; }
-.tvg i.me { color: #e03e3e; }
+.tvg i.me { color: #e03e3e; line-height: 18px; }   /* 양옆 적는 칸(18px)과 같은 줄에 */
+/* 위 최소 · 최대 숫자는 적는 칸 — 평소엔 글자처럼, 대면 밑줄 · 누르면 테두리(2026-11-12 사용자) */
+.tv-in { width: 100%; min-width: 0; height: 18px; padding: 0 2px; border: 0; border-bottom: 1px dashed #9db8f5; border-radius: 0; background: transparent; font-family: inherit; font-size: 13px !important; font-weight: 800; line-height: 18px; color: #2b6df3; box-shadow: none !important; pointer-events: auto; font-variant-numeric: tabular-nums; }
+.tv-in.lo { text-align: right; } .tv-in.hi { text-align: left; }
+/* 웹 .app-detail 입력칸 16px !important 를 이긴다(선택자를 더 좁게) — 숫자는 빨간 값과 같은 13px */
+.dl .tvg input.tv-in.lo, .dl .tvg input.tv-in.hi { font-size: 13px !important; height: 18px !important; min-height: 0 !important; padding: 0 2px !important; }
+.tv-in:hover { border-bottom-style: solid; }
+.tv-in:focus { outline: none; border: 1px solid #2b6df3; border-radius: 4px; background: #fff; }
+:root[data-theme="dark"] .tv-in:focus { background: #182031; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tv-in:focus { background: #182031; } }
 input[type="range"] { position: absolute; left: 0; right: 0; top: 17px; height: 24px; width: 100%; margin: 0; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
 input[type="range"]::-webkit-slider-runnable-track { background: none; }
 input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 16px; height: 16px; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(17, 24, 39, .3); cursor: grab; }
