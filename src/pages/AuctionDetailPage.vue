@@ -5647,6 +5647,16 @@ const cmpAreaDef = (): [number, number] => { const m = supMyArea.value || 0; ret
 const cmpArea2 = computed<[number, number]>(() => cmpAreaR.value ?? cmpAreaDef());
 const cmpYear2 = computed<[number, number]>(() => cmpYearR.value ?? [CMP_YEAR_MIN, cmpYearMax]);
 const cmpAreaBarMax = computed(() => Math.max(150, Math.ceil((supMyArea.value || 0) * 2)));
+/** 층 · 엘베 거르기(시세분석과 같은 단추 — 층: 전체 · 같은 층, 엘베: 전체 · 있음 · 없음, 2026-11-12 사용자) */
+const cmpFloorR = ref<'same' | null>(null);
+const cmpElevR = ref<'yes' | 'no' | null>(null);
+const cmpFloorD = ref<'same' | null>(null);
+const cmpElevD = ref<'yes' | 'no' | null>(null);
+watch([cmpFloorR, cmpElevR], ([f, e]) => { cmpFloorD.value = f; cmpElevD.value = e; }, { immediate: true });
+/** 선정물건 층 — 정보요약 '2층' */
+const cmpMyFloor = computed(() => Number(String(auction.value?.basicSummary?.['sum.floorCurrent'] ?? '').replace(/[^\d-]/g, '')) || 0);
+/** 건물마다 엘베 수(건축물대장) — 엘베로 거를 때만 받는다. null = 대장에 없음 */
+const cmpElevs = ref<Record<string, number | null>>({});
 const cmpAreaD = ref<[number, number]>([0, 0]);
 const cmpYearD = ref<[number, number]>([CMP_YEAR_MIN, cmpYearMax]);
 watch([cmpArea2, cmpYear2], ([a, y]) => { cmpAreaD.value = [...a]; cmpYearD.value = [...y]; }, { immediate: true });
@@ -5654,17 +5664,18 @@ const cmpPyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi
 const cmpMyYear = computed(() => Number(String(auction.value?.buildingHeader?.approvalDate || auction.value?.approvalDate || '').slice(0, 4)) || 0);
 const cmpYearAll = (y: [number, number]) => y[0] <= CMP_YEAR_MIN && y[1] >= cmpYearMax;
 /** 설명 글 — '전용 52~59㎡' · 건축을 좁혔으면 '· 건축 2005~2015년' */
-const cmpCondText = computed(() => `전용 ${cmpArea2.value[0]}~${cmpArea2.value[1]}㎡${cmpYearAll(cmpYear2.value) ? '' : ` · 건축 ${cmpYear2.value[0]}~${cmpYear2.value[1]}년`}`);
+const cmpCondText = computed(() => `전용 ${cmpArea2.value[0]}~${cmpArea2.value[1]}㎡${cmpYearAll(cmpYear2.value) ? '' : ` · 건축 ${cmpYear2.value[0]}~${cmpYear2.value[1]}년`}${cmpFloorR.value === 'same' ? ` · 같은 층(${cmpMyFloor.value}층)` : ''}${cmpElevR.value ? ` · 엘베 ${cmpElevR.value === 'yes' ? '있음' : '없음'}` : ''}`);
 /** 저장본도 없고 아직 조회하지 않았다 — 리스트가 비어 있고 조회하기를 기다린다 */
 const cmpWaiting = computed(() => !cmpQueried.value && !cmpSnapOn.value);
 const cmpSame2 = (x: [number, number], y: [number, number]) => x[0] === y[0] && x[1] === y[1];
-const cmpDirty = computed(() => cmpRangeD.value !== cmpRange.value || cmpMonthsD.value !== cmpMonths.value || cmpKindD.value !== cmpKind.value || !cmpSame2(cmpAreaD.value, cmpArea2.value) || !cmpSame2(cmpYearD.value, cmpYear2.value));
+const cmpDirty = computed(() => cmpFloorD.value !== cmpFloorR.value || cmpElevD.value !== cmpElevR.value || cmpRangeD.value !== cmpRange.value || cmpMonthsD.value !== cmpMonths.value || cmpKindD.value !== cmpKind.value || !cmpSame2(cmpAreaD.value, cmpArea2.value) || !cmpSame2(cmpYearD.value, cmpYear2.value));
 /** 조회하기를 눌렀나(이 물건 · 이 화면에서) — 누르기 전엔 아무것도 받지 않는다. 저장본이 있으면 저장본만 보여 준다(2026-11-12 사용자) */
 const cmpQueried = ref(false);
 watch(() => auction.value?.id, () => { cmpQueried.value = false; });
 const cmpApply = () => {
   cmpRange.value = cmpRangeD.value; cmpMonths.value = cmpMonthsD.value; cmpKind.value = cmpKindD.value;
   cmpAreaR.value = cmpSame2(cmpAreaD.value, cmpAreaDef()) ? null : [...cmpAreaD.value]; cmpYearR.value = cmpYearAll(cmpYearD.value) ? null : [...cmpYearD.value];
+  cmpFloorR.value = cmpFloorD.value; cmpElevR.value = cmpElevD.value;
   cmpQueried.value = true;
 };
 /** 거래 단추 옆 건수 — 지금 리스트(범위 · 기간 · 유사평형)에 든 매매 · 전세 실거래 수(시세분석 '매매 3'과 같은 꼴, 2026-11-12 사용자) */
@@ -5674,7 +5685,7 @@ watch(() => auction.value?.id, (id) => {
   if (!id) return;
   // 저장본이 있으면 저장본의 거르기로 연다(조회만 하고 저장하지 않은 거르기는 남기지 않는다, 2026-11-12 사용자)
   const f = auction.value?.demandSnap?.filter ?? auction.value?.demandFilter;
-  cmpRange.value = f?.range && CMP_RANGES.value.some(([v]) => v === f.range) ? f.range : 1000; cmpMonths.value = f?.months ?? 6; cmpKind.value = f?.kind ?? '매매'; cmpAreaR.value = f?.area ?? null; cmpYearR.value = f?.year ?? null;   // 종류에 없는 범위(빌라의 2km 등)는 1km
+  cmpRange.value = f?.range && CMP_RANGES.value.some(([v]) => v === f.range) ? f.range : 1000; cmpMonths.value = f?.months ?? 6; cmpKind.value = f?.kind ?? '매매'; cmpAreaR.value = f?.area ?? null; cmpYearR.value = f?.year ?? null; cmpFloorR.value = f?.floor ?? null; cmpElevR.value = f?.elev ?? null;   // 종류에 없는 범위(빌라의 2km 등)는 1km
 }, { immediate: true });
 // 거르기는 '저장하기'를 눌러야 저장본과 같이 DB 에 들어간다(바꾸는 즉시 적던 것은 뺐다, 2026-11-12 사용자)
 /** 단지 열쇠 — 동 · 지번(반경 범위에선 다른 동의 같은 지번이 있다). 선정물건은 'mine' */
@@ -5727,7 +5738,9 @@ const cmpCandidatesNow = (range: CmpRange = cmpRange.value): CompareComplex[] =>
   const dong = cmpSquash(supRegion.value?.dong ?? '');
   const src = range === 'dong' ? (dong ? all.filter((r) => cmpSquash(r.umdNm) === dong) : supDongRows.value) : all;
   const [ylo, yhi] = cmpYear2.value;
-  const list = complexesOf(src, myArea, myJibun, cmpFrom.value, cmpTol.value, supRegion.value?.dong ?? '', { lo: cmpArea2.value[0], hi: cmpArea2.value[1] })
+  // 같은 층 — 선정물건 층과 같은 거래만(층을 모르는 거래는 뺀다)
+  const fsrc = cmpFloorR.value === 'same' && cmpMyFloor.value ? src.filter((d) => Number(String(d.floor ?? '').replace(/[^\d-]/g, '')) === cmpMyFloor.value) : src;
+  const list = complexesOf(fsrc, myArea, myJibun, cmpFrom.value, cmpTol.value, supRegion.value?.dong ?? '', { lo: cmpArea2.value[0], hi: cmpArea2.value[1] })
     .filter((c) => c.mine || !c.buildYear || (c.buildYear >= ylo && c.buildYear <= yhi));   // 건축 막대 — 연도를 모르는 건물은 남긴다(시세분석과 같게)
   if (!list.some((c) => c.mine)) list.push({ jibun: myJibun, name: supName.value, umdNm: supRegion.value?.dong ?? '', area: myArea, jeonseAvg: 0, saleAvg: 0, deals: [], mine: true, buildYear: 0 });
   // 빌라 — 건물이 많아 주변시설을 다 찾으면 무거워진다. 거래가 많은 건물부터 50곳까지(선정물건은 늘)
@@ -5746,18 +5759,29 @@ const cmpMePt = computed(() => (supRegion.value?.lat ? { lat: supRegion.value.la
 // 비교 건물이 하나도 없는 저장본은 쓰지 않는다 — 실거래를 못 받았을 때 빈 리스트가 굳어 버리지 않게
 const cmpSnap = computed<DemandSnap | null>(() => { const sn = auction.value?.demandSnap; return sn?.v === 1 && sn.rows.some((r) => !r.mine) ? sn : null; });
 const cmpSnapOn = computed(() => { const s = cmpSnap.value; return !!s && s.filter.range === cmpRange.value && s.filter.months === cmpMonths.value && s.filter.kind === cmpKind.value
-  && JSON.stringify(s.filter.area ?? null) === JSON.stringify(cmpAreaR.value) && JSON.stringify(s.filter.year ?? null) === JSON.stringify(cmpYearR.value); });
+  && JSON.stringify(s.filter.area ?? null) === JSON.stringify(cmpAreaR.value) && JSON.stringify(s.filter.year ?? null) === JSON.stringify(cmpYearR.value)
+  && (s.filter.floor ?? null) === cmpFloorR.value && (s.filter.elev ?? null) === cmpElevR.value; });
 const cmpSnapRows = computed(() => { const m = new Map<string, DemandSnapRow>(); if (cmpSnapOn.value) cmpSnap.value!.rows.forEach((r) => m.set(cmpKeyOf(r), r)); return m; });
 const cmpList = computed<CompareComplex[]>(() => {
   const r = cmpRange.value; const me = cmpMePt.value;
   if (cmpSnapOn.value) return cmpSnap.value!.rows.map((r) => ({ jibun: r.jibun, name: r.name, umdNm: r.umdNm, area: r.area, jeonseAvg: r.jeonseAvg, saleAvg: r.saleAvg, mine: r.mine, buildYear: r.buildYear, deals: r.deals as unknown as CompareComplex['deals'] }));
   if (!cmpQueried.value) return [];   // 조회하기 전 — 저장본이 없으면 빈 표
-  if (r === 'dong') return cmpCandidates.value;
-  return cmpCandidates.value.filter((c) => {
+  const base = r === 'dong' ? cmpCandidates.value : cmpCandidates.value.filter((c) => {
     if (c.mine) return true;
     const p = cmpPoints.value[cmpKeyOf(c)] ?? cmpNearby.value[cmpKeyOf(c)];
     return !!(p && me && metersBetween(me, p) <= r);
   });
+  // 엘베 — 받은 건물만 거른다(대장에 없으면 남긴다, 시세분석과 같게). 선정물건은 늘
+  const ev = cmpElevR.value;
+  if (!ev) return base;
+  return base.filter((c) => { if (c.mine) return true; const k = cmpKeyOf(c); if (!(k in cmpElevs.value)) return false; const e = cmpElevs.value[k]; return e == null || (ev === 'yes' ? e > 0 : e === 0); });
+});
+/** 반경까지만 거른 목록 — 엘베를 받을 건물 */
+const cmpListBase = computed<CompareComplex[]>(() => {
+  if (cmpSnapOn.value || !cmpQueried.value) return [];
+  const r = cmpRange.value; const me = cmpMePt.value;
+  if (r === 'dong') return cmpCandidates.value;
+  return cmpCandidates.value.filter((c) => { if (c.mine) return true; const p = cmpPoints.value[cmpKeyOf(c)] ?? cmpNearby.value[cmpKeyOf(c)]; return !!(p && me && metersBetween(me, p) <= r); });
 });
 /** 표 정렬 — 머리(연식 · 등수평균 · 평균 매매가 · 평균 전세가)를 누르면 그 칸으로, 다시 누르면 반대로. 시세분석 표처럼 ▲ ▼(2026-11-11) */
 type CmpSortKey = 'tot' | 'avg' | 'sale' | 'jeonse' | 'year';
@@ -5970,7 +5994,7 @@ const cmpPool = async <T,>(items: T[], n: number, run: number, fn: (x: T) => Pro
   let i = 0;
   await Promise.all(Array.from({ length: n }, async () => { while (i < items.length && run === cmpRun) { const x = items[i]; i += 1; await fn(x).catch(() => undefined); } }));
 };
-watch(() => `${cmpQueried.value}|${cmpRange.value}|${cmpCandidates.value.filter((c) => !c.mine).map((c) => cmpKeyOf(c)).join(',')}`, async () => {
+watch(() => `${cmpQueried.value}|${cmpElevR.value}|${cmpRange.value}|${cmpCandidates.value.filter((c) => !c.mine).map((c) => cmpKeyOf(c)).join(',')}`, async () => {
   const run = ++cmpRun;
   if (cmpSnapOn.value || !cmpQueried.value) return;   // 저장본으로 그린다 · 조회하기 전엔 받지 않는다
   if (!cmpCandidates.value.some((c) => !c.mine)) return;
@@ -5979,6 +6003,10 @@ watch(() => `${cmpQueried.value}|${cmpRange.value}|${cmpCandidates.value.filter(
   if (cmpRange.value !== 'dong') {
     const need = cmpCandidates.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpPoints.value) && !(cmpKeyOf(c) in cmpNearby.value));
     await cmpPool(need, 4, run, async (c) => { const p = await complexPointOf(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpPoints.value = { ...cmpPoints.value, [cmpKeyOf(c)]: p }; });
+  }
+  if (cmpElevR.value) {
+    const ev = cmpListBase.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpElevs.value));
+    await cmpPool(ev, 3, run, async (c) => { const f = await getBuildingFacts(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpElevs.value = { ...cmpElevs.value, [cmpKeyOf(c)]: f ? f.elevator : null }; });
   }
   const todo = cmpList.value.filter((c) => !c.mine && !(cmpKeyOf(c) in cmpNearby.value));
   await cmpPool(todo, 2, run, async (c) => { const nb = await complexNearbyOf(cmpAddr(c)).catch(() => null); if (run === cmpRun) cmpNearby.value = { ...cmpNearby.value, [cmpKeyOf(c)]: nb }; });
@@ -5990,7 +6018,7 @@ watch(() => `${cmpQueried.value}|${cmpRange.value}|${cmpCandidates.value.filter(
     if (run === cmpRun) cmpSupply.value = { ...cmpSupply.value, [cmpKeyOf(c)]: v };
   });
 });
-watch(() => auction.value?.id, () => { cmpNearby.value = {}; cmpPoints.value = {}; cmpSupply.value = {}; cmpPick.value = ''; cmpLastCandidates = []; cmpDongLast = []; });
+watch(() => auction.value?.id, () => { cmpElevs.value = {}; cmpNearby.value = {}; cmpPoints.value = {}; cmpSupply.value = {}; cmpPick.value = ''; cmpLastCandidates = []; cmpDongLast = []; });
 // 지도 — 시세분석 지도와 같은 점(웹 pa-pin). 평소엔 점만, 고른 단지는 크게 + 이름표 · 도보 5분 / 10분 원 · 조건별 가장 가까운 시설
 const cmpMapEl = ref<HTMLElement | null>(null);
 let cmpMv: MapView | null = null; let cmpMvP: Promise<void> | null = null; let cmpFitted = '';
@@ -6127,6 +6155,7 @@ const cmpLiveReady = computed(() => {
   if (!supAllRows.value.length || (cmpMonths.value === 24 && !cmpRows2y.value?.length)) return false;   // 실거래를 못 받았으면 저장하지 않는다
   if (cmpMonths.value === 24 && !cmpRows2y.value) return false;
   if (cmpRange.value !== 'dong' && cmpCandidates.value.some((c) => !c.mine && !(cmpKeyOf(c) in cmpPoints.value) && !(cmpKeyOf(c) in cmpNearby.value))) return false;
+  if (cmpElevR.value && cmpListBase.value.some((c) => !c.mine && !(cmpKeyOf(c) in cmpElevs.value))) return false;
   const list = cmpList.value;
   if (list.some((c) => !c.mine && !(cmpKeyOf(c) in cmpNearby.value))) return false;
   if (isApartment.value && list.some((c) => !c.mine && !(cmpKeyOf(c) in cmpSupply.value))) return false;
@@ -6149,7 +6178,7 @@ const cmpSnapBuild = (): DemandSnap => {
       point: row?.point ?? null, supply: row?.supply ?? null, env: !!env, places, basisAll,
     };
   });
-  return JSON.parse(JSON.stringify({ v: 1, at: new Date().toISOString(), filter: { range: cmpRange.value, months: cmpMonths.value, kind: cmpKind.value, area: cmpAreaR.value, year: cmpYearR.value }, tol: cmpTol.value, rows, all: cmpAll.value })) as DemandSnap;
+  return JSON.parse(JSON.stringify({ v: 1, at: new Date().toISOString(), filter: { range: cmpRange.value, months: cmpMonths.value, kind: cmpKind.value, area: cmpAreaR.value, year: cmpYearR.value, floor: cmpFloorR.value, elev: cmpElevR.value }, tol: cmpTol.value, rows, all: cmpAll.value })) as DemandSnap;
 };
 /** 저장하기 — 지금 보이는 리스트(조회한 결과)와 거르기를 물건 DB 에. 다 받았을 때만 누를 수 있다(2026-11-12 사용자) */
 const cmpSaving = ref(false);
@@ -9716,6 +9745,8 @@ const goBack = () => router.back();
                 <span class="pa-lab">범위<span class="pa-seg pa-out" role="radiogroup" aria-label="범위"><button v-for="[v, t] in CMP_RANGES" :key="String(v)" type="button" role="radio" :class="{ on: cmpRangeD === v }" :aria-checked="cmpRangeD === v" :data-t="t" @click="cmpRangeD = v">{{ t }}</button></span></span>
                 <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :data-k="k" :class="{ on: cmpKindD === k }" :aria-checked="cmpKindD === k" @click="cmpKindD = k">{{ k }} {{ cmpKindCount(k) }}</button></span></span>
                 <span class="pa-lab">기간<span class="pa-seg pa-out" role="radiogroup" aria-label="기간"><button v-for="[m, t] in CMP_PERIODS" :key="m" type="button" role="radio" :class="{ on: cmpMonthsD === m }" :aria-checked="cmpMonthsD === m" :data-t="t" @click="cmpMonthsD = m">{{ t }}</button></span></span>
+                <span class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층"><button type="button" role="radio" :class="{ on: cmpFloorD !== 'same' }" :aria-checked="cmpFloorD !== 'same'" data-t="전체" @click="cmpFloorD = null">전체</button><button type="button" role="radio" :class="{ on: cmpFloorD === 'same' }" :aria-checked="cmpFloorD === 'same'" data-t="같은 층" @click="cmpFloorD = 'same'">같은 층</button></span></span>
+                <span class="pa-lab">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베"><button v-for="[v, t] in ([[null, '전체'], ['yes', '있음'], ['no', '없음']] as const)" :key="t" type="button" role="radio" :class="{ on: cmpElevD === v }" :aria-checked="cmpElevD === v" :data-t="t" @click="cmpElevD = v">{{ t }}</button></span></span>
                 <button type="button" :class="['cmp-go', { dirty: cmpDirty || cmpWaiting }]" @click="cmpApply">조회하기</button>
                 <button type="button" :class="['cmp-save', { ready: cmpLiveReady }]" :disabled="!cmpLiveReady || cmpSaving" :title="cmpSnapOn ? '저장된 리스트입니다' : cmpLiveReady ? '지금 리스트를 저장합니다' : '조회하기로 불러온 뒤 저장할 수 있습니다'" @click="cmpSave">{{ cmpSnapOn ? '저장됨' : '저장하기' }}</button>
               </div>
