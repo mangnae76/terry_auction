@@ -97,7 +97,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
     </div>
     <span class="cmp-qbtns">
         <button type="button" class="cmp-reset" :disabled="isDefault" title="필터를 기본값으로" @click="emit('reset'); emit('apply')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button>
-        <button type="button" :class="['cmp-save', { ready: canSave }]" :disabled="!canSave || saving" :title="saved ? '저장된 리스트입니다' : canSave ? '지금 리스트를 저장합니다' : '건물 정보를 다 받으면 저장할 수 있습니다'" @click="emit('save')"><template v-if="saved">저장됨<small v-if="savedDay" class="cmp-save-day">{{ savedDay }}</small></template><template v-else>저장하기</template></button>
+        <button type="button" :class="['cmp-save', { ready: canSave && !saved }]" :disabled="!canSave || saving || saved" :title="saved ? '저장된 리스트입니다' : canSave ? '지금 리스트를 저장합니다' : '건물 정보를 다 받으면 저장할 수 있습니다'" @click="emit('save')"><template v-if="saved">저장됨<small v-if="savedDay" class="cmp-save-day">{{ savedDay }}</small></template><template v-else>저장하기</template></button>
       </span>
     </div>
   </div>
@@ -165,8 +165,8 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-reset:disabled { color: #b8bfcc; cursor: default; }
 :root[data-theme="dark"] .cmp-reset { background: transparent; border-color: #34405a; color: #b5bfd0; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-reset { background: transparent; border-color: #34405a; color: #b5bfd0; } }   /* 면적 · 건축 상자와 같은 높이(2026-11-12 사용자) */   /* 면적 · 건축 옆 — 필터초기화 · 저장하기(2026-11-12 사용자, 조회하기는 뺐다). .cmp-acts 는 표 줄 바로가기 단추라 이름을 따로 */
-.cmp-save { height: 42px; min-width: 96px; padding: 0 18px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #9ca3af; font: inherit; font-size: 14px; font-weight: 700; cursor: default; }   /* 저장하기 — 조회 결과가 다 오면 초록으로 */
-.cmp-save.ready { border-color: #16a34a; background: #16a34a; color: #fff; cursor: pointer; }
+.cmp-save { height: 42px; min-width: 96px; padding: 0 18px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #9ca3af; font: inherit; font-size: 14px; font-weight: 700; cursor: default; }   /* 저장하기 — 건물 정보를 다 받으면 파랗게 */
+.cmp-save.ready { border-color: #2b6df3; background: #2b6df3; color: #fff; cursor: pointer; }   /* 저장 — 다른 화면 저장 단추와 같은 파랑(초록은 이 단추만 달랐다, 2026-11-12 사용자). 저장됨이면 회색 */
 .cmp-save { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; }
 .cmp-save-day { font-size: 12px; font-weight: 500; opacity: .85; }   /* 저장됨 밑 저장한 날 */
 :root[data-theme="dark"] .cmp-save:not(.ready) { background: transparent; border-color: #34405a; color: #6e788c; }
@@ -178,7 +178,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-conds .kindF button:not(.on)[data-k="전세"]:hover { background: #f9e7c6; }
 .cmp-conds .kindF button.on:hover { filter: brightness(1.08); }
 .cmp-reset:not(:disabled):hover { background: #f3f5f9; border-color: #b8c2d3; color: #1f2937; }
-.cmp-save.ready:not(:disabled):hover { background: #15803d; border-color: #15803d; }
+.cmp-save.ready:not(:disabled):hover { background: #1f5ad6; border-color: #1f5ad6; }
 :root[data-theme="dark"] .cmp-conds .pa-seg.pa-out button:not(.on):hover { background: #2a3449; color: #e5e9f0; }
 :root[data-theme="dark"] .cmp-reset:not(:disabled):hover { background: #232c3f; border-color: #4a5672; color: #e5e9f0; }
 @media (prefers-color-scheme: dark) {

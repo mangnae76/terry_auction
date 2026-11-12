@@ -9811,8 +9811,6 @@ const goBack = () => router.back();
               <div class="cmp-est-h"><h3><span class="cmp-no">②</span>{{ cmpN }} 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}<template v-if="cmpPick && cmpPicked"> · {{ cmpPicked.name || cmpPicked.jibun }}</template></span><span class="cmp-q">{{ isApartment ? '내가 선정한 아파트 단지는 몇 등일까?' : '내가 선정한 빌라는 주변 유사 빌라 중 몇 등일까?' }}</span></h3>
                 <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">필터 기준 검색</span></span>
               </div>
-              <!-- 검색 거르기 — 부품 하나(components/SearchFilterBar, '필터 기본 부품 세트' 2026-11-12). 다른 화면은 이 부품을 그대로 끼우고 hide 로 뺄 항목만 끈다 -->
-              <SearchFilterBar v-model:draft="cmpDraft" :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :loading="cmpLoading" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" :saved-day="cmpSnapDay" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
               <div class="cmp-est">
                 <div class="cmp-tiles">
                   <!-- 단지를 고르기 전엔 동 전체(평균 · 최저 · 최고 · 평당가 · 단지 수 · 건수), 고르면 그 단지(평균 · 최저 · 최고 · 평당가 · 면적 · 건수). 칸 자리는 그대로 — 흔들리지 않게 -->
@@ -9889,6 +9887,8 @@ const goBack = () => router.back();
               </Teleport>
               </div>
               <p v-if="!cmpConds.length" class="cmp-noroom">매매수요 조사 맨 위에서 <b>룸수</b>를 고르면 세대구성에 맞는 입지조건과 {{ cmpN }}별 입지등수가 나옵니다.</p>
+              <!-- 검색 거르기 — 지도와 빌라 · 단지 리스트 사이(2026-11-12 사용자). 부품 하나(components/SearchFilterBar, '필터 기본 부품 세트' 2026-11-12). 다른 화면은 이 부품을 그대로 끼우고 hide 로 뺄 항목만 끈다 -->
+              <SearchFilterBar v-model:draft="cmpDraft" :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :loading="cmpLoading" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" :saved-day="cmpSnapDay" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
               <div class="son-demand sup-tbl">
                 <div class="adm-table-wrap">
                   <table class="adm-table cmp-tbl">
