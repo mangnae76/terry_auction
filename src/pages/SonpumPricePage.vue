@@ -309,6 +309,21 @@ const sonApp = inject<boolean>('sonApp', false);
 const rowKey = (r: PriceRow) => [r.group, r.contractDate, r.jibun, r.price, r.floorNo, Math.round(r.areaM2 * 100)].join('|');
 const dropped = ref<string[]>(Array.isArray(sv?.drop) ? [...sv.drop] : []);
 const isOff = (r: PriceRow) => webEmbed && dropped.value.includes(rowKey(r));
+/** 앱 표 주소 말풍선 — 누른 칸 바로 아래(화면 밖으로 나가지 않게), 다시 누르거나 밖을 누르거나 스크롤하면 닫는다 */
+const addrTip = ref<{ text: string; style: Record<string, string> } | null>(null);
+const openAddrTip = (e: MouseEvent, text: string) => {
+  if (addrTip.value?.text === text) { addrTip.value = null; return; }
+  const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  const w = Math.min(280, window.innerWidth - 24);
+  const left = Math.max(12, Math.min(r.left, window.innerWidth - w - 12));
+  addrTip.value = { text, style: { top: `${Math.round(r.bottom + 6)}px`, left: `${Math.round(left)}px`, maxWidth: `${w}px` } };
+};
+const closeAddrTip = () => { addrTip.value = null; };
+if (typeof window !== 'undefined') {
+  window.addEventListener('scroll', closeAddrTip, { passive: true, capture: true });
+  window.addEventListener('click', closeAddrTip);
+  onBeforeUnmount(() => { window.removeEventListener('scroll', closeAddrTip, { capture: true }); window.removeEventListener('click', closeAddrTip); });
+}
 const toggleDrop = (r: PriceRow) => { const k = rowKey(r); dropped.value = dropped.value.includes(k) ? dropped.value.filter((x) => x !== k) : [...dropped.value, k]; };
 const passKeep = (r: PriceRow) => (webEmbed ? !isOff(r) : COLS.every((c) => { const k = colFilter.picked.value[c.key] ?? []; return !k.length || k.includes(c.text(r)); }));
 const keptNames = computed(() => COLS.filter((c) => colFilter.isActive(c.key)).map((c) => c.label));
@@ -1050,7 +1065,31 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       </div>
 
       <div class="pa-list">
-        <div class="tbl-wrap"><table ref="tableEl" class="even">
+        <!-- 앱 — 유사물건 표는 다섯 칸(주소 · 실거래가 · 연식 · 전용 · 엘베), 옆으로 밀지 않는다. 주소는 잘리면 … · 누르면 말풍선(2026-11-13 사용자) -->
+        <div v-if="props.app" class="tbl-wrap app-tbl"><table>
+          <colgroup><col style="width: 34%"><col style="width: 25%"><col style="width: 12%"><col style="width: 16%"><col style="width: 13%"></colgroup>
+          <thead><tr><th>주소</th><th>실거래가</th><th>연식</th><th>전용</th><th>엘베</th></tr></thead>
+          <tbody>
+            <tr class="mine">
+              <td class="l"><button type="button" class="at-addr" @click.stop="openAddrTip($event, myAddr)"><span class="kind me">{{ meName }}</span><span class="at-line">{{ myAddr }}</span></button></td>
+              <td class="r pa-num at-two"><span class="est-lab">{{ kindF }} 예상</span>{{ view ? n0(view.est) : '-' }}</td>
+              <td class="pa-num">{{ me.year || '-' }}</td>
+              <td v-if="isAptKind" class="pa-num at-two">{{ areaLines(aptMyArea)[0] }}<small v-if="areaLines(aptMyArea)[1]">{{ areaLines(aptMyArea)[1] }}</small></td>
+              <td v-else class="pa-num at-two">{{ me.areaM2.toFixed(2) }}㎡<small>{{ myPy.toFixed(2) }}평</small></td>
+              <td><span v-if="myElev === null" class="ev u">-</span><span v-else-if="myElev > 0" class="ev o">{{ myElev }}대</span><span v-else class="ev x">없음</span></td>
+            </tr>
+            <tr v-for="r in listRows" :key="r.id">
+              <td class="l"><button type="button" class="at-addr" @click.stop="openAddrTip($event, addrOf(r))"><span class="at-line"><i v-if="orderOf[r.jibun]" class="no">{{ orderOf[r.jibun] }}</i>{{ addrOf(r) }}</span></button></td>
+              <td class="r pa-num">{{ n0(r.price) }}</td>
+              <td class="pa-num">{{ r.buildYear || '-' }}</td>
+              <td v-if="isAptKind" class="pa-num at-two">{{ areaLines(aptRowArea(r.areaM2, !!r.same, r))[0] }}<small v-if="areaLines(aptRowArea(r.areaM2, !!r.same, r))[1]">{{ areaLines(aptRowArea(r.areaM2, !!r.same, r))[1] }}</small></td>
+              <td v-else class="pa-num at-two">{{ r.areaM2.toFixed(2) }}㎡<small>{{ (r.areaM2 / PY).toFixed(2) }}평</small></td>
+              <td><span v-if="r.elev === undefined || r.elev === null" class="ev u">-</span><span v-else-if="r.elev > 0" class="ev o">{{ r.elev }}대</span><span v-else class="ev x">없음</span></td>
+            </tr>
+            <tr v-if="!listRows.length && res && !loading" class="nohover"><td colspan="5" class="pa-empty">반경 {{ radText(radius) }} 안에 조건에 맞는 거래가 없습니다.</td></tr>
+          </tbody>
+        </table></div>
+        <div v-else class="tbl-wrap"><table ref="tableEl" class="even">
           <colgroup v-if="webEmbed && colWidths.length"><col v-for="(w, i) in colWidths" :key="i" :style="{ width: `${w}px` }"></colgroup>
           <thead><tr>
             <th v-if="webEmbed" class="ck-th" title="체크하면 매도가 예상 · 평균 · 건수에서 빠집니다">제외</th>
@@ -1132,10 +1171,13 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         </table></div>
         <button v-if="shownRows.length > MORE_AT" type="button" class="more" @click="showAll = !showAll">{{ showAll ? '접기' : `더 보기 (${shownRows.length - MORE_AT}건)` }}</button>
       </div>
-      <p class="list-foot">※ 맨 위 빨간 줄은 {{ meName }}입니다(비교 기준이라 계산에 넣지 않습니다).<br>※ 공시가는 공동주택가격입니다. 매매가율 = 실거래가 ÷ 공시가, 전세 = 공시가 × 126%(보증보험 한도, 지역 · 평형 보정 없음), 갭 = 실거래가 − 전세.<br>※ 위치를 찾은 거래만 나옵니다. 같은 건물 → 임장 순서(지도 번호, 현장에서 가까운 곳부터 도는 동선). <template v-if="webEmbed">제외 칸에 체크한 거래는 실거래가 예상 · 평균 · 건수에서 빠집니다(체크는 물건에 남습니다).</template><template v-else>머리글 ▾로 값을 빼면 그 거래는 표 · 지도 · 실거래가 예상에서 빠집니다(물건에 남습니다).</template></p>
+      <!-- 앱 — 제외 · 공시가 칸이 없어 그 설명은 뺀다 -->
+      <p v-if="props.app" class="list-foot">※ 맨 위 빨간 줄은 {{ meName }}입니다(비교 기준이라 계산에 넣지 않습니다).<br>※ 위치를 찾은 거래만 나옵니다. 주소 앞 번호는 임장 순서입니다. 주소를 누르면 전체 주소가 보입니다.</p>
+      <p v-else class="list-foot">※ 맨 위 빨간 줄은 {{ meName }}입니다(비교 기준이라 계산에 넣지 않습니다).<br>※ 공시가는 공동주택가격입니다. 매매가율 = 실거래가 ÷ 공시가, 전세 = 공시가 × 126%(보증보험 한도, 지역 · 평형 보정 없음), 갭 = 실거래가 − 전세.<br>※ 위치를 찾은 거래만 나옵니다. 같은 건물 → 임장 순서(지도 번호, 현장에서 가까운 곳부터 도는 동선). <template v-if="webEmbed">제외 칸에 체크한 거래는 실거래가 예상 · 평균 · 건수에서 빠집니다(체크는 물건에 남습니다).</template><template v-else>머리글 ▾로 값을 빼면 그 거래는 표 · 지도 · 실거래가 예상에서 빠집니다(물건에 남습니다).</template></p>
     </div>
 
     <ColumnFilterPanel :ctl="colFilter" />
+    <Teleport to="body"><p v-if="addrTip" class="at-tip" :style="addrTip.style" role="tooltip" @click="addrTip = null">{{ addrTip.text }}</p></Teleport>
   </section>
   </Teleport>
 
@@ -1630,4 +1672,16 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 .pa-wrap.app .tile.key > .s { grid-area: 1 / 2; }
 .pa-wrap.app .tile.key > .v { grid-area: 2 / 1; font-size: 26px; line-height: 1.2; overflow: visible; text-overflow: clip; }
 .pa-wrap.app .tile.key > .cap { grid-area: 2 / 2; justify-self: end; position: static; transform: none; }
+/* 앱 유사물건 표 — 다섯 칸, 폰 폭 안에(2026-11-13) */
+.app-tbl table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12px; }
+.app-tbl :is(th, td) { padding: 7px 3px; text-align: center; vertical-align: middle; white-space: nowrap; overflow: hidden; }
+.app-tbl td.l { text-align: left; padding-left: 6px; }
+.app-tbl .at-addr { display: grid; width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.app-tbl .at-line { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-tbl .at-line .no { margin-right: 3px; font-style: normal; font-weight: 800; color: #2b4fd8; }
+.app-tbl .kind.me { justify-self: start; margin-bottom: 2px; }
+.app-tbl .at-two { line-height: 1.3; }
+.app-tbl .at-two small { display: block; font-size: 10.5px; color: var(--sub); }
+.app-tbl .est-lab { display: block; font-size: 10.5px; }
+.at-tip { position: fixed; z-index: 3000; margin: 0; padding: 8px 10px; border-radius: 8px; background: #1f2937; color: #fff; font-size: 12.5px; line-height: 1.45; box-shadow: 0 4px 14px rgba(0, 0, 0, .2); word-break: keep-all; }
 </style>
