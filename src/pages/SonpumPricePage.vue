@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { clampAroundBase } from '../services/rangeClamp';
 import RangeInputBox from '../components/RangeInputBox.vue';
+import SimRangeBox from '../components/SimRangeBox.vue';
 import { userMessage } from '../services/userMessage';
 // 손품조사 › 시세분석 — 선정물건 둘레(반경) · 비슷한 조건(유사도)의 실거래로 「실거래가 예상」을 낸다.
 // 위→아래: ⓪ 조회 줄 → Ⓐ 실거래가 예상 띠 → Ⓑ 지도 · 조건 줄 · 유사물건 표 → Ⓒ 시세종합 → Ⓓ 호가 입력.
@@ -9,7 +10,7 @@ import { computed, inject, nextTick, onBeforeUnmount, onMounted, onUpdated, ref,
 import type { AuctionDetail, MarketPickRow, MarketPicks, PriceView } from '../types/auction';
 import { analyzeAddress, floorOfHo, pickCaseTrade, type CasePropertyType, type CaseTradeResult, type CaseTradeRow } from '../services/caseTradeAnalysis';
 import {
-  PY, HUG_RATE, RADII, PERIODS, SIM_STEPS, radText, periodText, simCond, simDefText, groupOf, floorNum, matchUnit, inRange,
+  PY, HUG_RATE, RADII, PERIODS, radText, periodText, simCond, simDefText, groupOf, floorNum, matchUnit, inRange,
   estStats, jeonseEstimate, distM, visitOrder, areaIn, type PriceCond, type PriceRow,
   type SonPriceOut,
 } from '../services/priceAnalysis';
@@ -924,11 +925,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           </button>
         </span>
         <div :class="['simrow', { 'has-elev': webEmbed }]">
-          <div v-if="simMode === 'sim'" class="simA">
-            <label for="paSim" class="simlab"><span>유사도 기준 <b>{{ sim }}%</b></span><span>{{ webEmbed ? simDefText(sim).replace(/ · 층.*$/, '') : simDefText(sim) }}</span></label>   <!-- 웹 — 층은 옆 '층' 단추가 정한다 -->
-            <input id="paSim" v-model.number="sim" type="range" min="60" max="95" step="5">
-            <div class="ticks" aria-hidden="true"><span v-for="s in SIM_STEPS" :key="s">{{ s }}%</span></div>
-          </div>
+          <SimRangeBox v-if="simMode === 'sim'" class="simA" :sim="sim" :text="webEmbed ? simDefText(sim).replace(/ · 층.*$/, '') : simDefText(sim)" @update="(v) => (sim = v)" />   <!-- 유사도 막대 — 부품 하나(입지비교와 같다) -->
           <div v-else class="simB">
             <!-- 웹(전체화면 아님) — 면적 · 건축 막대는 부품 하나(RangeInputBox — 막대를 빼고 적는 칸, 매매수요 입지비교와 같다). 범위 규칙은 services/rangeClamp -->
             <template v-if="webEmbed && !fs">

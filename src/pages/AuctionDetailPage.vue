@@ -70,7 +70,7 @@ import { cached, cachedEntryOrStale, loadOrFail, cacheKey, readCache, writeCache
 import { taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxProfitOf } from '../services/profitMath';
 import { baseDateOf, isTakenOver, normalizeYmd } from '../services/registryAnalysis';
 import { VWORLD_KEY_EXPIRES, PRICE_YEAR } from '../services/vworldApi';
-import type { SonPriceOut } from '../services/priceAnalysis';
+import { simCond, type SonPriceOut } from '../services/priceAnalysis';
 import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
 import { addressParts, buildingNameOf, hasBuildingName, isUnitToken } from '../utils/addressName';
@@ -86,6 +86,7 @@ import type { CasePropertyType } from '../services/caseTradeAnalysis';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
 import { dongShapeOf, parcelShapeOf } from '../services/zoning';
 import RangeInputBox from '../components/RangeInputBox.vue';
+import SimRangeBox from '../components/SimRangeBox.vue';
 import { useFilterDraft } from '../composables/useFilterDraft';
 import { complexesOf, complexNearbyOf, complexPointOf, metersBetween, LOCATION_SOURCES, nearestPlaceOf, PLACE_ICON, rankFromMeters, walkMinOf, WALK_DETOUR, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
 import KakaoMapTools from '../components/KakaoMapTools.vue';
@@ -5640,8 +5641,14 @@ const cmpYearMax = new Date().getFullYear();
 const cmpAreaR = ref<[number, number] | null>(null);
 const cmpYearR = ref<[number, number] | null>(null);
 const cmpAreaDef = (): [number, number] => { const m = supMyArea.value || 0; return m > 0 ? [Math.max(10, Math.floor(m - 3)), Math.ceil(m + 3)] : [20, 150]; };
-const cmpArea2 = computed<[number, number]>(() => cmpAreaR.value ?? cmpAreaDef());
-const cmpYear2 = computed<[number, number]>(() => cmpYearR.value ?? [CMP_YEAR_MIN, cmpYearMax]);
+/** 기준 — 유사도(면적 ±% · 건축 ±년을 한 막대로) · 직접범위(면적 · 건축을 적는다). 시세분석 '기준'과 같다(2026-11-12 사용자) */
+const cmpModeR = ref<'sim' | 'range'>('range');
+const cmpSimR = ref(80);
+const cmpSimCond = (sim: number) => simCond(sim, { areaM2: supMyArea.value || 0, year: Number(String(auction.value?.buildingHeader?.approvalDate || auction.value?.approvalDate || '').slice(0, 4)) || 0, floor: 0 });
+const cmpSimArea = (sim: number): [number, number] => { const c = cmpSimCond(sim); return [c.mMin, c.mMax]; };
+const cmpSimYear = (sim: number): [number, number] => { const c = cmpSimCond(sim); return c.yMin > 0 ? [Math.max(CMP_YEAR_MIN, c.yMin), Math.min(cmpYearMax, c.yMax)] : [CMP_YEAR_MIN, cmpYearMax]; };
+const cmpArea2 = computed<[number, number]>(() => (cmpModeR.value === 'sim' ? cmpSimArea(cmpSimR.value) : cmpAreaR.value ?? cmpAreaDef()));
+const cmpYear2 = computed<[number, number]>(() => (cmpModeR.value === 'sim' ? cmpSimYear(cmpSimR.value) : cmpYearR.value ?? [CMP_YEAR_MIN, cmpYearMax]));
 const cmpAreaBarMax = computed(() => Math.max(150, Math.ceil((supMyArea.value || 0) * 1.5)));   // 시세분석과 같은 20~150㎡(큰 평형이면 더 넓게)
 /** 층 · 엘베 거르기(시세분석과 같은 단추 — 층: 전체 · 같은 층, 엘베: 전체 · 있음 · 없음, 2026-11-12 사용자) */
 const cmpFloorR = ref<'same' | null>(null);
@@ -5654,7 +5661,7 @@ const cmpPyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi
 const cmpMyYear = computed(() => Number(String(auction.value?.buildingHeader?.approvalDate || auction.value?.approvalDate || '').slice(0, 4)) || 0);
 const cmpYearAll = (y: [number, number]) => y[0] <= CMP_YEAR_MIN && y[1] >= cmpYearMax;
 /** 설명 글 — '전용 52~59㎡' · 건축을 좁혔으면 '· 건축 2005~2015년' */
-const cmpCondText = computed(() => `전용 ${cmpArea2.value[0]}~${cmpArea2.value[1]}㎡${cmpYearAll(cmpYear2.value) ? '' : ` · 건축 ${cmpYear2.value[0]}~${cmpYear2.value[1]}년`}${cmpFloorR.value === 'same' ? ` · 같은 층(${cmpMyFloor.value}층)` : ''}${cmpElevR.value ? ` · 엘베 ${cmpElevR.value === 'yes' ? '있음' : '없음'}` : ''}`);
+const cmpCondText = computed(() => `${cmpModeR.value === 'sim' ? `유사도 ${cmpSimR.value}% · ` : ''}전용 ${cmpArea2.value[0]}~${cmpArea2.value[1]}㎡${cmpYearAll(cmpYear2.value) ? '' : ` · 건축 ${cmpYear2.value[0]}~${cmpYear2.value[1]}년`}${cmpFloorR.value === 'same' ? ` · 같은 층(${cmpMyFloor.value}층)` : ''}${cmpElevR.value ? ` · 엘베 ${cmpElevR.value === 'yes' ? '있음' : '없음'}` : ''}`);
 /** 저장본도 없고 아직 조회하지 않았다 — 리스트가 비어 있고 조회하기를 기다린다 */
 const cmpWaiting = computed(() => !cmpQueried.value && !cmpSnapOn.value);
 const cmpSame2 = (x: [number, number], y: [number, number]) => x[0] === y[0] && x[1] === y[1];
@@ -5670,14 +5677,15 @@ const cmpMyElev = (): 'yes' | 'no' | null => {
   return ox === 'O' ? 'yes' : ox === 'X' ? 'no' : null;
 };
 /** 거르기 기본값(2026-11-12 사용자 확정) — 반경 1km · 6개월 · 매매 · 면적 내 물건 ±3㎡ · 건축 전체 · 층 전체 · 엘베는 빌라면 내 물건과 같게(아파트는 전체) */
-type CmpFilter = { range: CmpRange; months: 6 | 12 | 24; kind: '매매' | '전세'; area: [number, number]; year: [number, number]; floor: 'same' | null; elev: 'yes' | 'no' | null };
-const cmpDefaults = (): CmpFilter => ({ range: 1000, months: 6, kind: '매매', area: cmpAreaDef(), year: [CMP_YEAR_MIN, cmpYearMax], floor: null, elev: isApartment.value ? null : cmpMyElev() });
+type CmpFilter = { range: CmpRange; months: 6 | 12 | 24; kind: '매매' | '전세'; mode: 'sim' | 'range'; sim: number; area: [number, number]; year: [number, number]; floor: 'same' | null; elev: 'yes' | 'no' | null };
+const cmpDefaults = (): CmpFilter => ({ range: 1000, months: 6, kind: '매매', mode: 'range', sim: 80, area: cmpAreaDef(), year: [CMP_YEAR_MIN, cmpYearMax], floor: null, elev: isApartment.value ? null : cmpMyElev() });
 /** 고르기 → 조회하기 → 초기화 한 벌(composables/useFilterDraft — 다른 화면도 같은 부품을 끼운다) */
 const cmpF = useFilterDraft<CmpFilter>(
-  () => ({ range: cmpRange.value, months: cmpMonths.value, kind: cmpKind.value, area: [...cmpArea2.value] as [number, number], year: [...cmpYear2.value] as [number, number], floor: cmpFloorR.value, elev: cmpElevR.value }),
+  () => ({ range: cmpRange.value, months: cmpMonths.value, kind: cmpKind.value, mode: cmpModeR.value, sim: cmpSimR.value, area: [...cmpArea2.value] as [number, number], year: [...cmpYear2.value] as [number, number], floor: cmpFloorR.value, elev: cmpElevR.value }),
   (v) => {
     cmpRange.value = v.range; cmpMonths.value = v.months; cmpKind.value = v.kind;
-    cmpAreaR.value = cmpSame2(v.area, cmpAreaDef()) ? null : v.area; cmpYearR.value = cmpYearAll(v.year) ? null : v.year;
+    cmpModeR.value = v.mode; cmpSimR.value = v.sim;
+    cmpAreaR.value = v.mode === 'sim' || cmpSame2(v.area, cmpAreaDef()) ? null : v.area; cmpYearR.value = v.mode === 'sim' || cmpYearAll(v.year) ? null : v.year;
     cmpFloorR.value = v.floor; cmpElevR.value = v.elev;
     cmpQueried.value = true;
   },
@@ -5697,6 +5705,12 @@ const cmpAreaD = cmpDraftKey('area');
 const cmpYearD = cmpDraftKey('year');
 const cmpFloorD = cmpDraftKey('floor');
 const cmpElevD = cmpDraftKey('elev');
+const cmpSimD = computed<number>({ get: () => cmpDraft.value.sim, set: (v) => { cmpDraft.value = { ...cmpDraft.value, sim: v, area: cmpSimArea(v), year: cmpSimYear(v) }; } });
+/** 기준 바꾸기 — 직접범위로 가면 지금 유사도 범위에서 시작(시세분석과 같다), 유사도로 가면 유사도 범위로 */
+const cmpModeD = computed<'sim' | 'range'>({
+  get: () => cmpDraft.value.mode,
+  set: (m) => { const d = cmpDraft.value; cmpDraft.value = m === 'sim' ? { ...d, mode: m, area: cmpSimArea(d.sim), year: cmpSimYear(d.sim) } : { ...d, mode: m }; },
+});
 /** 거래 단추 옆 건수 — 지금 리스트(범위 · 기간 · 유사평형)에 든 매매 · 전세 실거래 수(시세분석 '매매 3'과 같은 꼴, 2026-11-12 사용자) */
 const cmpKindCount = (k: '매매' | '전세') => cmpRows.value.reduce((n, r) => n + r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length, 0).toLocaleString('ko-KR');
 // 고른 거르기는 그 물건 문서(DB)에 남긴다 — 바꾸면 리스트 · 평균가가 달라져, 다시 열어도 같은 숫자를 보게(2026-11-11 사용자). 처음엔 위 기본값
@@ -5704,7 +5718,7 @@ watch(() => auction.value?.id, (id) => {
   if (!id) return;
   // 저장본이 있으면 저장본의 거르기로 연다(조회만 하고 저장하지 않은 거르기는 남기지 않는다, 2026-11-12 사용자)
   const f = auction.value?.demandSnap?.filter ?? auction.value?.demandFilter;
-  cmpRange.value = f?.range && CMP_RANGES.value.some(([v]) => v === f.range) ? f.range : 1000; cmpMonths.value = f?.months ?? 6; cmpKind.value = f?.kind ?? '매매'; cmpAreaR.value = f?.area ?? null; cmpYearR.value = f?.year ?? null; cmpFloorR.value = f?.floor ?? null; cmpElevR.value = f ? (f.elev ?? null) : cmpDefaults().elev;   // 저장한 거르기가 없으면 기본값(빌라 엘베는 내 물건과 같게)   // 종류에 없는 범위(빌라의 2km 등)는 1km
+  cmpRange.value = f?.range && CMP_RANGES.value.some(([v]) => v === f.range) ? f.range : 1000; cmpMonths.value = f?.months ?? 6; cmpKind.value = f?.kind ?? '매매'; cmpAreaR.value = f?.area ?? null; cmpYearR.value = f?.year ?? null; cmpModeR.value = f?.mode ?? 'range'; cmpSimR.value = f?.sim ?? 80; cmpFloorR.value = f?.floor ?? null; cmpElevR.value = f ? (f.elev ?? null) : cmpDefaults().elev;   // 저장한 거르기가 없으면 기본값(빌라 엘베는 내 물건과 같게)   // 종류에 없는 범위(빌라의 2km 등)는 1km
 }, { immediate: true });
 // 거르기는 '저장하기'를 눌러야 저장본과 같이 DB 에 들어간다(바꾸는 즉시 적던 것은 뺐다, 2026-11-12 사용자)
 /** 단지 열쇠 — 동 · 지번(반경 범위에선 다른 동의 같은 지번이 있다). 선정물건은 'mine' */
@@ -5779,7 +5793,8 @@ const cmpMePt = computed(() => (supRegion.value?.lat ? { lat: supRegion.value.la
 const cmpSnap = computed<DemandSnap | null>(() => { const sn = auction.value?.demandSnap; return sn?.v === 1 && sn.rows.some((r) => !r.mine) ? sn : null; });
 const cmpSnapOn = computed(() => { const s = cmpSnap.value; return !!s && s.filter.range === cmpRange.value && s.filter.months === cmpMonths.value && s.filter.kind === cmpKind.value
   && JSON.stringify(s.filter.area ?? null) === JSON.stringify(cmpAreaR.value) && JSON.stringify(s.filter.year ?? null) === JSON.stringify(cmpYearR.value)
-  && (s.filter.floor ?? null) === cmpFloorR.value && (s.filter.elev ?? null) === cmpElevR.value; });
+  && (s.filter.floor ?? null) === cmpFloorR.value && (s.filter.elev ?? null) === cmpElevR.value
+  && (s.filter.mode ?? 'range') === cmpModeR.value && (cmpModeR.value !== 'sim' || (s.filter.sim ?? 80) === cmpSimR.value); });
 const cmpSnapRows = computed(() => { const m = new Map<string, DemandSnapRow>(); if (cmpSnapOn.value) cmpSnap.value!.rows.forEach((r) => m.set(cmpKeyOf(r), r)); return m; });
 const cmpList = computed<CompareComplex[]>(() => {
   const r = cmpRange.value; const me = cmpMePt.value;
@@ -6205,7 +6220,7 @@ const cmpSnapBuild = (): DemandSnap => {
       point: row?.point ?? null, supply: row?.supply ?? null, env: !!env, places, basisAll,
     };
   });
-  return JSON.parse(JSON.stringify({ v: 1, at: new Date().toISOString(), filter: { range: cmpRange.value, months: cmpMonths.value, kind: cmpKind.value, area: cmpAreaR.value, year: cmpYearR.value, floor: cmpFloorR.value, elev: cmpElevR.value }, tol: cmpTol.value, rows, all: cmpAll.value })) as DemandSnap;
+  return JSON.parse(JSON.stringify({ v: 1, at: new Date().toISOString(), filter: { range: cmpRange.value, months: cmpMonths.value, kind: cmpKind.value, area: cmpAreaR.value, year: cmpYearR.value, floor: cmpFloorR.value, elev: cmpElevR.value, mode: cmpModeR.value, sim: cmpSimR.value }, tol: cmpTol.value, rows, all: cmpAll.value })) as DemandSnap;
 };
 /** 저장하기 — 지금 보이는 리스트(조회한 결과)와 거르기를 물건 DB 에. 다 받았을 때만 누를 수 있다(2026-11-12 사용자) */
 const cmpSaving = ref(false);
@@ -9779,8 +9794,10 @@ const goBack = () => router.back();
               <!-- 면적 · 건축 상자(적는 칸), 조회하기 · 저장하기는 오른쪽 — 단추는 위 거르기까지 다 같이 쓴다(2026-11-12 사용자) -->
               <div class="cmp-bars-row">
               <div class="cmp-bars">
-                  <RangeInputBox label="면적 ㎡" :min="20" :max="cmpAreaBarMax" :lo="cmpAreaD[0]" :hi="cmpAreaD[1]" :base="supMyArea" :lo-text="String(cmpAreaD[0])" :base-text="String(Number((Math.floor(supMyArea * 100 + 1e-6) / 100).toFixed(2)))" :hi-text="String(cmpAreaD[1])" :sub="cmpPyTx(cmpAreaD[0], cmpAreaD[1])" @update="(lo, hi) => (cmpAreaD = [lo, hi])" />
-                  <RangeInputBox label="건축" :min="CMP_YEAR_MIN" :max="cmpYearMax" :lo="cmpYearD[0]" :hi="cmpYearD[1]" :base="cmpMyYear" :lo-text="String(cmpYearD[0])" :base-text="String(cmpMyYear || '')" :hi-text="String(cmpYearD[1])" :sub="`${cmpYearMax - cmpYearD[1] + 1}~${cmpYearMax - cmpYearD[0] + 1}년차`" @update="(lo, hi) => (cmpYearD = [lo, hi])" />
+                  <span class="pa-lab cmp-mode">기준<span class="pa-seg pa-out" role="radiogroup" aria-label="유사 조건 방식"><button v-for="[v, t] in ([['sim', '유사도'], ['range', '직접범위']] as const)" :key="v" type="button" role="radio" :class="{ on: cmpModeD === v }" :aria-checked="cmpModeD === v" :data-t="t" @click="cmpModeD = v">{{ t }}</button></span></span>
+                  <span v-if="cmpModeD === 'sim'" class="cmp-sim"><SimRangeBox :sim="cmpSimD" :text="`면적 ${cmpDraft.area[0]}~${cmpDraft.area[1]}㎡ · 건축 ${cmpDraft.year[0]}~${cmpDraft.year[1]}년`" @update="(v) => (cmpSimD = v)" /></span>
+                  <RangeInputBox v-if="cmpModeD === 'range'" label="면적 ㎡" :min="20" :max="cmpAreaBarMax" :lo="cmpAreaD[0]" :hi="cmpAreaD[1]" :base="supMyArea" :lo-text="String(cmpAreaD[0])" :base-text="String(Number((Math.floor(supMyArea * 100 + 1e-6) / 100).toFixed(2)))" :hi-text="String(cmpAreaD[1])" :sub="cmpPyTx(cmpAreaD[0], cmpAreaD[1])" @update="(lo, hi) => (cmpAreaD = [lo, hi])" />
+                  <RangeInputBox v-if="cmpModeD === 'range'" label="건축" :min="CMP_YEAR_MIN" :max="cmpYearMax" :lo="cmpYearD[0]" :hi="cmpYearD[1]" :base="cmpMyYear" :lo-text="String(cmpYearD[0])" :base-text="String(cmpMyYear || '')" :hi-text="String(cmpYearD[1])" :sub="`${cmpYearMax - cmpYearD[1] + 1}~${cmpYearMax - cmpYearD[0] + 1}년차`" @update="(lo, hi) => (cmpYearD = [lo, hi])" />
               </div>
               <span class="cmp-qbtns">
                   <button type="button" class="cmp-reset" :disabled="cmpIsDefault" title="거르기를 기본값(반경 1km · 6개월 · 매매 · 면적 ±3㎡ …)으로 — 조회하기를 눌러야 적용" @click="cmpReset"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button>
@@ -12614,7 +12631,13 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-conds > .pa-lab > .pa-seg > button { flex: 1 1 auto; padding: 0 8px; }
 @media (max-width: 1180px) { .cmp-conds { flex-wrap: wrap; } }
 .cmp-bars-row { display: flex; align-items: stretch; gap: 8px; margin: -2px 0 12px; }
-.cmp-bars { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }   /* 면적 · 건축 — 반경 · 기간과 같은 상자(막대 뺌, 2026-11-12 사용자) */
+.cmp-bars { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+.cmp-bars > .cmp-mode { display: inline-flex; align-items: center; gap: 10px; height: 42px; box-sizing: border-box; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 4px 12px; font-size: 14px; font-weight: 700; color: #6b7280; white-space: nowrap; }   /* 기준 — 반경 · 기간 상자와 같은 꼴 */
+.cmp-bars > .cmp-mode .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
+.cmp-bars > .cmp-mode .pa-seg button { border: none; background: transparent; border-radius: 5px; height: 26px; padding: 0 12px; font: inherit; font-size: 14px; font-weight: 400; color: #6b7280; cursor: pointer; }
+.cmp-bars > .cmp-mode .pa-seg button.on { background: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
+.cmp-sim { display: flex; align-items: center; width: 420px; height: 42px; box-sizing: border-box; padding: 2px 14px; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; }   /* 유사도 막대 상자 */
+.cmp-sim > * { flex: 1 1 auto; }   /* 면적 · 건축 — 반경 · 기간과 같은 상자(막대 뺌, 2026-11-12 사용자) */
 @media (max-width: 760px) { .cmp-bars-row { flex-wrap: wrap; } }
 .cmp-qbtns { display: flex; align-items: stretch; gap: 8px; margin-left: auto; }
 .cmp-qbtns > button { height: auto; min-width: 110px; }
