@@ -12895,8 +12895,21 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 :is(#sonUnitSlot, #appUnitSlot) .unit-tag { font-size: 13px; font-weight: 700; color: #2b4fd8; background: #eef2ff; border-radius: 5px; padding: 3px 8px; }   /* 시세분석 '결론 · 입력' 표와 같은 꼴 */
 /* 앱 — 폰 폭: 상자 안쪽 여백 줄이고, 개별성 표는 옆으로 밀어 본다(고르는 단추가 잘리지 않게) */
 #appUnitSlot .o-unit { padding: 14px 12px 16px !important; }
-#appUnitSlot .sup-tbl .adm-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-#appUnitSlot .sup-tbl .adm-table { min-width: 520px; }
+/* 개별성 표 — 옆으로 밀지 않고 폰 폭에 꽉(2026-11-13 사용자). 칸 폭 이름 19 · 내용 나머지 · 비율 17 · 보정 15, 글 · 단추 · 칸 작게 */
+#appUnitSlot .sup-tbl .adm-table { width: 100%; min-width: 0; table-layout: fixed; }
+#appUnitSlot .sup-tbl .adm-table col:nth-child(1) { width: 19% !important; }
+#appUnitSlot .sup-tbl .adm-table th:first-child { white-space: nowrap; letter-spacing: -0.3px; }
+#appUnitSlot .sup-tbl .adm-table col:nth-child(3) { width: 17% !important; }
+#appUnitSlot .sup-tbl .adm-table col:nth-child(4) { width: 15% !important; }
+#appUnitSlot .sup-tbl .adm-table :is(th, td) { padding: 6px 3px !important; font-size: 11.5px !important; white-space: normal; word-break: keep-all; }
+#appUnitSlot .sup-tbl .adm-table td.lft { padding-left: 5px !important; }
+#appUnitSlot .cmp-ind-seg { gap: 2px; padding: 2px; }
+#appUnitSlot .cmp-ind-seg button { height: 22px; padding: 0 5px; font-size: 11.5px; }
+#appUnitSlot .cmp-rate-in { gap: 1px; }
+#appUnitSlot .cmp-rate-in input { width: 34px; height: 24px; padding: 0 3px; font-size: 11.5px; }
+#appUnitSlot .cmp-ind-in input { width: 34px; height: 24px; padding: 0 3px; font-size: 11.5px; }
+#appUnitSlot .cmp-auto { display: none; }
+#appUnitSlot .adp-ind-adj small { display: block; font-size: 10px; }
 #appUnitSlot .cmp-two { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .cmp-zone-match { display: block; font-size: 12px; color: #9ca3af; }   /* 보정 0 — 시세분석에서 이미 같은 조건으로 걸렀다 */
 .cmp-th-hint { display: block; font-weight: 400; font-size: 12px; color: #2563eb; white-space: normal; }   /* '내용' 아래 줄 — 옆 칸과 겹치지 않게 */   /* 내용 머리 옆 파란 안내(2026-11-11 사용자) */
