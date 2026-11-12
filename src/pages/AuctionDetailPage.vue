@@ -6426,7 +6426,7 @@ const unitKind = computed(() => sonPriceOut?.value?.kind ?? cmpKind.value);
 const cmpFloorZero = computed(() => !!sonPriceOut?.value?.sameFloor);   // 시세분석 '같은 층' — 층은 이미 기준가에 담겨 있다
 const cmpBase = computed(() => {
   const o = sonPriceOut?.value;
-  if (!o || !(o.est > 0)) return { label: '시세분석 예상가', value: 0, note: '위 시세분석 표에 고른 거래가 없습니다', formula: '' };
+  if (!o || !(o.est > 0)) return { label: '시세분석 예상가', value: 0, note: '위 시세분석 표에 고른 거래가 없습니다', formula: '', med: 0, medFormula: '' };
   // 이름은 '시세분석 예상 매매가' 하나 — '기준가'는 화면에 뜻이 드러나지 않아 뺐다(2026-11-12 사용자)
   // 공식 한 줄 — '무지개마을 외 2건 평균 평당가 851만 × 전용 16.68평 = 1.42억'(고른 거래 목록 줄은 줄여 이 줄 앞에, 2026-11-12 사용자).
   // 전용 평은 소수 둘째 자리(맨 위 머리 16.7평은 반올림)
@@ -6434,7 +6434,10 @@ const cmpBase = computed(() => {
   const who = o.rows.length ? `${nm(o.rows[0])}${o.n > 1 ? ` 외 ${o.n - 1}건` : ''}` : `고른 ${o.n}건`;
   const per = o.kind === '월세' ? '평당 월세' : '평당가';
   const formula = o.avgPy && o.myPy ? `${who} ${o.n > 1 ? `평균 ${per}` : per} ${Math.round(o.avgPy / 1e4).toLocaleString('ko-KR')}만 × 전용 ${o.myPy.toFixed(2)}평 = ${cmpEok(o.est)}` : '';
-  return { label: `시세분석 예상 ${o.kind}가`, value: o.est, note: '', formula };
+  // 중간값 — 고른 거래가 2건 이상일 때 옆 칸에(평균을 한 건이 끌어내리는지 보이게, 2026-11-12 사용자)
+  const med = o.n >= 2 && o.med ? o.med : 0;
+  const medFormula = med && o.medPy && o.myPy ? `${o.medName ? `${o.medName} ${per}` : `가운데 2건 평균 ${per}`} ${Math.round(o.medPy / 1e4).toLocaleString('ko-KR')}만 × 전용 ${o.myPy.toFixed(2)}평 = ${cmpEok(med)}` : '';
+  return { label: `시세분석 예상 ${o.kind}가`, value: o.est, note: '', formula, med, medFormula };
 });
 const cmpUnitBase = computed(() => cmpBase.value.value);
 /** 구역 내 개별성 ± — 단지 자체의 장단점을 가격 %로(단지 내 개별성과 같은 방식, 2026-11-11 사용자). 1 가산 · 0 보통 · -1 감산 */
@@ -10039,7 +10042,9 @@ const goBack = () => router.back();
             <Teleport v-if="webEmbed && sonpumMode" defer to="#sonUnitSlot">
             <section class="adp-dm-block boxed cmp-box o-unit">
               <div class="cmp-est-h unit-h"><span class="unit-tag">보정</span><h3>선정물건 호실 예상가<span v-if="cmpMineRow" class="cmp-scope-chip">{{ cmpArea(cmpMineRow.supply, cmpMineRow.area) }}</span></h3><small class="cmp-q">{{ isApartment ? '같은 단지 안에서 내 호실의 가치는?' : '비슷한 빌라들 사이에서 내 호실의 가치는?' }}</small></div>
-              <div class="cmp-bases one"><div class="cmp-base on"><span class="k">{{ cmpBase.label }}</span><span class="v">{{ cmpEok(cmpBase.value) }}</span><small v-if="cmpBase.note">{{ cmpBase.note }}</small><small v-if="cmpBase.formula" class="cmp-base-f">{{ cmpBase.formula }}</small></div></div>
+              <div :class="['cmp-bases', { one: !cmpBase.med }]"><div class="cmp-base on"><span class="k">{{ cmpBase.label }}</span><span class="v">{{ cmpEok(cmpBase.value) }}</span><small v-if="cmpBase.note">{{ cmpBase.note }}</small><small v-if="cmpBase.formula" class="cmp-base-f">{{ cmpBase.formula }}</small></div>
+                <!-- 중간값 — 예상가는 위 평균 그대로, 참고로 옆에(2026-11-12 사용자) -->
+                <div v-if="cmpBase.med" class="cmp-base"><span class="k">중간값</span><span class="v">{{ cmpEok(cmpBase.med) }}</span><small class="cmp-base-f">{{ cmpBase.medFormula }}</small></div></div>
               <!-- 구역 내 · 단지 내 개별성 — 가로로 나란히(좁으면 위아래, 2026-11-11 사용자) -->
               <!-- 구역 내 개별성 — 위 표가 모두 이 단지 거래면 접어 둔다(이미 담겨 있다). 다른 단지 거래가 섞이면 열려 % 로 보정 -->
               <div v-if="!zoneApplied" :class="['cmp-zone-off', { warn: zoneMixed }]"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span v-if="zoneMixed">위 표에 다른 {{ isApartment ? '단지' : '건물' }} 거래 {{ zoneMixed }}건이 섞여 있습니다. 이 {{ isApartment ? '단지' : '건물' }} 거래만 쓰려면 그 줄을 제외하세요. 다른 {{ isApartment ? '단지' : '건물' }} 거래만 남으면 열려 연식 · 주차 · 엘베 · 현관 · 경사 · 용적률을 % 로 보정합니다.</span><span v-else>기준가가 모두 이 {{ isApartment ? '단지' : '건물' }} 거래라 쓰지 않습니다. 이 {{ isApartment ? '단지' : '건물' }} 거래가 없어 다른 {{ isApartment ? '단지' : '건물' }} 거래만 쓸 때 열려 연식 · 주차 · 엘베 · 현관 · 경사 · 용적률을 % 로 보정합니다.</span></div>

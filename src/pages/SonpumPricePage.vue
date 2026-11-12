@@ -360,12 +360,20 @@ const view = computed(() => {
 });
 // 손품조사 웹 — 아래 '선정물건 호실 예상가'가 이 예상가 · 고른 거래를 기준가로 쓴다(2026-11-11 사용자 시안)
 const sonPriceOut = inject<Ref<SonPriceOut | null> | null>('sonPriceOut', null);
+/** 중간값 — 고른 거래를 평당가 순으로 세워 가운데(짝수면 가운데 두 건 평균) × 이 물건 전용 평(2026-11-12 사용자 '중간값 박스') */
+const medOf = (rs: Array<{ perPy: number; name?: string; jibun: string }>) => {
+  const srt = [...rs].filter((r) => r.perPy > 0).sort((a, b) => a.perPy - b.perPy);
+  if (!srt.length || !(myPy.value > 0)) return {};
+  const odd = srt.length % 2 === 1; const mid = srt[(srt.length - 1) >> 1];
+  const medPy = odd ? mid.perPy : (srt[srt.length / 2 - 1].perPy + srt[srt.length / 2].perPy) / 2;
+  return { med: Math.round(medPy * myPy.value / 1e4) * 1e4, medPy, medName: odd ? (mid.name || mid.jibun) : '' };
+};
 if (sonPriceOut) {
   watch([view, kindF, () => rangeCond.value.floor, cond], () => {
     const v = view.value;
     const rs = kindF.value === '전세' ? jeonseRows.value : kindF.value === '월세' ? monthRows.value : saleRows.value;
     sonPriceOut.value = v ? {
-      kind: kindF.value, est: v.est, n: v.n, avgPy: v.avgPy, myPy: myPy.value, sameFloor: rangeCond.value.floor === 0, other: rs.some((r) => !r.same),
+      kind: kindF.value, est: v.est, n: v.n, avgPy: v.avgPy, myPy: myPy.value, ...medOf(rs), sameFloor: rangeCond.value.floor === 0, other: rs.some((r) => !r.same),
       elevFiltered: !!cond.value.elev, yearFiltered: cond.value.yMin > 1980 || cond.value.yMax < new Date().getFullYear(),
       rows: rs.map((r) => ({ same: !!r.same, name: r.name || r.jibun, dong: r.dong, floorNo: r.floorNo, price: r.price, areaM2: r.areaM2 })),
     } : null;
