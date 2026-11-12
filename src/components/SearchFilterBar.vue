@@ -138,7 +138,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .sfb.compact :deep(.rib) { display: grid; grid-template-columns: var(--lab) minmax(0, 1fr); gap: 0; padding: 4px 10px; }
 .sfb.compact :deep(.rib .vals) { justify-content: space-between; }
 .sfb.compact :deep(.rib .vals input.in.in) { flex: 1 1 0; width: auto; min-width: 0; }
-.sfb.compact :deep(.rib .vals .me) { flex: 0 0 auto; padding: 0 6px; }
+.sfb.compact :deep(.rib .vals .me) { flex: 0 0 64px; padding: 0; text-align: center; }   /* 기준값 칸 폭 고정 — 49.74 · 2014 처럼 글 길이가 달라도 양옆 적는 칸이 줄마다 같은 크기(2026-11-12 사용자) */
 /* 좁은 칸 — 전체화면 왼쪽 창(폭 ~400px). 반경 · 거래 · 기간 · 기준 · 유사도(면적 · 건축)는 한 줄씩, 엘베 · 층은 반씩, 단추 둘은 맨 아래 반씩 */
 .sfb.compact { margin: 0; padding: 8px 10px; }
 .sfb.compact > .cmp-conds { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 6px; }
