@@ -6161,15 +6161,27 @@ const cmpDraw = () => {
     if (k !== cmpFitted) { cmpFitted = k; if (rows.length > 1) mv.fitPoints(rows.map((r) => r.point!), 40, 17, false); else if (me) mv.fitRadius(me, 1000); }
   }
 };
+// 지도를 만든 칸 — F5 뒤 저장본으로 바로 그리면 칸이 아직 자리를 못 잡았거나(크기 0) 화면이 다시 그려져 칸이 바뀌어,
+// 지도가 빈 회색으로 남았다(2026-11-12 사용자 'F5 누르면 지도가 사라져'). 칸이 바뀌면 새로 만들고, 크기가 바뀌면 다시 잰다
+let cmpMapHost: HTMLElement | null = null;
+let cmpMapRO: ResizeObserver | null = null;
 const cmpEnsureMap = async () => {
   await nextTick();
+  const el = cmpMapEl.value;
+  if (cmpMvP && el && el !== cmpMapHost) { await cmpMvP; cmpMv?.destroy(); cmpMv = null; cmpMvP = null; cmpFitted = ''; cmpMapRO?.disconnect(); }
   // 조회하기 전에도 지도는 먼저 — 선정물건 좌표만 알면 그린다(2026-11-12 사용자)
-  if (!cmpMvP && cmpMapEl.value && (cmpRows.value.some((r) => r.point) || cmpMePt.value)) {
-    const el = cmpMapEl.value;
+  if (!cmpMvP && el && (cmpRows.value.some((r) => r.point) || cmpMePt.value)) {
+    cmpMapHost = el;
     cmpMvP = createMapView(el, { zoomControl: 'topright', kakaoTools: true, leaflet: { scrollWheelZoom: true, wheelPxPerZoomLevel: 120, zoomSnap: 0.25 } }).then((v) => { cmpMv = v; if (v.native) cmpTools.value = markRaw(v.native); });
+    if (typeof ResizeObserver !== 'undefined') {
+      let w0 = 0; let h0 = 0;
+      cmpMapRO = new ResizeObserver(([e]) => { const { width, height } = e.contentRect; if (width === w0 && height === h0) return; const wasZero = !w0 || !h0; w0 = width; h0 = height; if (width && height) { cmpMv?.relayout(); if (wasZero) { cmpFitted = ''; cmpDraw(); } } });
+      cmpMapRO.observe(el);
+    }
   }
   if (cmpMvP) { await cmpMvP; cmpDraw(); }
 };
+onBeforeUnmount(() => { cmpMapRO?.disconnect(); });
 watch(() => `${cmpMePt.value ? 1 : 0}|${cmpRange.value}|${cmpKind.value}|${cmpPick.value}|${cmpPicked.value ? cmpKeyOf(cmpPicked.value) : ''}|${cmpRows.value.map((r) => `${cmpKeyOf(r)}:${r.point ? 1 : 0}:${r.tot === null ? '' : Math.round(r.tot)}`).join(',')}`, () => { void cmpEnsureMap(); });
 if (sonpumTab) watch(sonpumTab, (t) => { if (t === 'demand') void nextTick(() => { cmpMv?.relayout(); cmpFitted = ''; cmpDraw(); }); });
 /** 지도 도구 막대(시세분석 지도와 같은 것 — 주변 · 로드뷰 · 거리재기 …) */
@@ -9902,7 +9914,7 @@ const goBack = () => router.back();
                   </template>
                 </div>
                 <!-- 근거 거래 한 줄 — 건물 · 단지를 고르면 칸 줄이 어느 거래로 계산됐는지. 고르기 전엔 안내만(자리를 늘 두어 지도가 위아래로 출렁이지 않게) -->
-                <p class="cmp-basis"><template v-if="cmpBasis"><b class="k">근거</b><template v-if="cmpBasis.n"><span v-for="(t, i) in cmpBasis.shown" :key="i" class="d"><i v-if="i" class="sep">|</i>{{ t }}</span><span v-if="cmpBasis.more" class="more">외 {{ cmpBasis.more }}건</span></template><span v-else class="d">기간 안 {{ cmpKind }} 거래 없음</span><span class="cmp-basis-nt">{{ cmpCondText }} 거래만 셌습니다{{ cmpBasis.out ? ` · 다른 평형 ${cmpBasis.out}건은 빠졌습니다` : '' }}</span></template><span v-else class="hint">{{ cmpN }}를 누르면 평균이 어느 거래로 계산됐는지 보입니다</span></p>
+                <p class="cmp-basis"><template v-if="cmpBasis"><b class="k">근거</b><template v-if="cmpBasis.n"><span v-for="(t, i) in cmpBasis.shown" :key="i" class="d"><i v-if="i" class="sep">|</i>{{ t }}</span><span v-if="cmpBasis.more" class="more">외 {{ cmpBasis.more }}건</span></template><span v-else class="d">기간 안 {{ cmpKind }} 거래 없음</span><span class="cmp-basis-nt">{{ cmpCondText }} 거래만 셌습니다{{ cmpBasis.out ? ` · 다른 평형 ${cmpBasis.out}건은 빠졌습니다` : '' }}</span></template><span v-else class="hint">리스트나 지도에서 {{ cmpN }}를 선택하세요</span></p>
               </div>
                           <!-- 칸 줄과 지도 · 표는 한 상자(2026-11-11) -->
               <div class="cmp-gap" />
