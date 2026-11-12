@@ -35,7 +35,7 @@ import { complexNameOf, totalParkingOf } from '../services/aptComplex';
 import { getComplexAreas, supplyRowsOf, areaUnitsOf, sameExclusiveCountOf, type ComplexAreas } from '../services/complexAreas';
 import { COMPLEX_BURDEN_LINE, DEMAND_PLAIN, dec1, demandFitText, demandGradeOf, demandOpinionOf, demandPassText, demandTip, type DemandMetric } from '../services/demandGrade';
 import { openNaverComplexListing, openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
-import { computed, defineAsyncComponent, inject, markRaw, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch, type Ref } from 'vue';
+import { computed, inject, markRaw, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
@@ -83,7 +83,6 @@ import { askRightsAnalysis, DOC_LABELS, type RightsAi, type RightsDocPart } from
 import { buildRightsFacts } from '../services/rightsFacts';
 import RightsPanel from '../components/RightsPanel.vue';
 import SonpumPricePage from './SonpumPricePage.vue';
-import WebScope from '../components/WebScope.vue';
 import type { CasePropertyType } from '../services/caseTradeAnalysis';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
 import { dongShapeOf, parcelShapeOf } from '../services/zoning';
@@ -101,8 +100,6 @@ import {
 import { buildCashOutPlan } from '../services/cashOutPlan';
 import { buildingAgeOf, buildingAgeText } from '../utils/buildingAge';
 
-// 앱 손품조사 탭 — 웹 손품조사 화면(SonpumAnalysisPage)을 그대로. 그 화면이 이 화면을 품고 있어 늦게 불러 서로 물고 물리지 않게 한다
-const SonpumAnalysisPage = defineAsyncComponent(() => import('./SonpumAnalysisPage.vue'));
 const props = defineProps<{
   mode?: 'create' | 'view' | 'edit';
   id?: string;
@@ -9205,11 +9202,7 @@ const goBack = () => router.back();
 
       </template>
 
-      <!-- 앱 손품조사 — 웹 손품조사(매매수요 · 시세분석) 화면을 그대로 띄운다. 지도만 뺀다(2026-11-12 사용자) -->
-      <div v-if="activeTab === 'survey' && auction && appPrice" class="app-market item-son app-son" data-k="dong" data-s="son">
-        <WebScope><SonpumAnalysisPage :item-id="auction.id" /></WebScope>
-      </div>
-      <template v-if="activeTab === 'survey' && auction && !appPrice">
+      <template v-if="activeTab === 'survey' && auction">
         <!-- 본건사진 — 전경 + 평면도 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('photos')">
