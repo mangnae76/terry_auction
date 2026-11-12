@@ -5594,8 +5594,6 @@ const autoRankNote = (cond: string) => {
 const rankOf = (cond: string) => auction.value?.realUserRanks?.[rankKey(cond)] ?? '';
 /** 화면·평균에 쓸 등수 — 손으로 적은 값이 있으면 그 값, 없으면 자동 */
 const rankValue = (cond: string) => rankOf(cond) || autoRankOf(cond);
-/** 손으로 적어 둔 등수가 하나라도 있나 — 되돌릴 게 없으면 단추를 띄우지 않는다 */
-const hasTypedRank = computed(() => rankConditions.value.some((c) => !!rankOf(c)));
 
 // ===== 웹 손품조사 — 단지 입지비교(2026-11-10 시안 그대로 · 웹 · 아파트만, 개별성 분석 아래) =====
 // 같은 동의 다른 단지를 내 물건과 같은 입지조건 · 같은 규칙(도보 5분 1등 · 10분 2등 · 그 밖 3등)으로 매기고,
@@ -6538,18 +6536,6 @@ const cmpEok = (w: number) => (w > 0 ? `${eokNum(w / 1e8)}억` : '-');
 const cmpPy = (w: number) => (w > 0 ? `${Math.round(w / 1e4).toLocaleString('ko-KR')}만/평` : '-');
 const cmpFsGo = (r: CmpRow) => { cmpToggle(cmpKeyOf(r)); if (cmpPick.value && r.point) cmpMv?.focus(r.point, 16); };
 onBeforeUnmount(() => { cmpMv?.destroy(); cmpMv = null; cmpMvP = null; });
-/** 손으로 적은 등수를 지운다 — 비우면 거리로 매긴 자동값이 다시 선다.
- *  칸을 하나씩 지우는 길은 원래 있었지만, 폰에서 지우기가 까다로워 보이지 않았다. */
-const resetRanks = async () => {
-  if (!auction.value) return;
-  const ranks = auction.value.realUserRanks;
-  if (!ranks) return;
-  // delete 로 지우면 안 된다 — 저장이 merge 라서 서버에 남은 값이 그대로 돌아온다.
-  // 빈 값으로 덮어야 다음에 열었을 때도 자동값이 선다.
-  rankConditions.value.forEach((c) => { ranks[rankKey(c)] = ''; });
-  await store.saveAuction(auction.value);
-  flashToast('자동 등수로 되돌렸습니다.', 'success');
-};
 const setRank = (cond: string, value: string) => {
   if (!auction.value) return;
   if (!auction.value.realUserRanks) auction.value.realUserRanks = {};
@@ -9275,7 +9261,7 @@ const goBack = () => router.back();
             <!-- ① 실사용자 + 입지등수 — 웹 · 아파트 손품조사에선 아래 단지 입지비교에 합쳤다(룸수 · 세대구성 · 등수 고치기, 2026-11-11 시안) -->
             <!-- 빌라 손품조사(personaOn)는 입지등수 표를 뺐다 — 빌라 입지비교의 입지점수 · 순위가 대신한다(2026-11-12 사용자) -->
             <div v-if="!cmpOn && !personaOn" class="adp-dm-block boxed o-rank">
-            <div class="adp-dm-sub"><template v-if="personaOn">입지등수</template><template v-else><span class="cmp-no">①</span>실사용자<small class="adp-ru-q">누구한테 팔까?</small></template> <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button></div>
+            <div class="adp-dm-sub"><template v-if="personaOn">입지등수</template><template v-else><span class="cmp-no">①</span>실사용자<small class="adp-ru-q">누구한테 팔까?</small></template> <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><span v-if="webEmbed" class="adp-rank-hint">기본 입지등수는 입지조건의 거리값에 따라 자동으로 산출됩니다.</span></div>
             <table :class="['adp-table adp-ruser-table', { tight: !webEmbed }]">
               <!-- 웹 손품조사 — 면적 · 룸수 · 세대구성은 맨 위 '① 실사용자' 줄에 있어 여기선 입지조건 · 등수만(2026-11-12) -->
               <colgroup v-if="webEmbed && personaOn">
@@ -12622,6 +12608,9 @@ tr.tone-take { background: #fff5f5; }
   padding: 10px 10px 4px; background: #fff;
 }
 .adp-dm-body > .adp-dm-head.sec2 { margin-top: 12px; }
+/* 앱 — 맨 위 ① 실사용자 상자는 혼자 온전한 상자, 그 아래 '1. 수요분석' 제목 줄이 새 단락의 위 테두리(2026-11-12) */
+.adp-dm-body > .adp-dm-block.boxed.o-rank:first-child { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 10px 12px; }
+.adp-dm-body > .o-rank:first-child + .adp-dm-head { margin-top: 12px; border: 1px solid #e5e7eb; border-bottom: 0; border-radius: 8px 8px 0 0; padding: 10px 10px 4px; background: #fff; }
 .adp-dm-body > .adp-dm-block,
 .adp-dm-body > .adp-dm-block.boxed {
   border: 1px solid #e5e7eb; border-top: 0; border-bottom: 0; border-radius: 0;
@@ -14056,7 +14045,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 /* 굵기도 한 가지 — 값은 모두 굵게(700), 강조 · 부서 · 전화까지 같게(아파트 · 빌라, 2026-11-10) */
 .adp-sum-rows dd, .adp-sum-rows dd * { font-weight: 700 !important; }
 /* 실사용자 표 — 아파트 전용 · 공급면적 두 줄(고르는 칸 대신) */
-.adp-ruser-table.tight th, .adp-ruser-table.tight td { padding-left: 2px; padding-right: 2px; }   /* 앱 — 좁은 폭에 다섯 칸 */
+.adp-ruser-table.tight th, .adp-ruser-table.tight td { padding-left: 4px; padding-right: 4px; }   /* 앱 — 좁은 폭에 네 칸(등수평균 뺌, 2026-11-12) */
+.adp-ruser-table.tight td:first-child { padding-left: 10px; padding-right: 10px; }   /* 전용 · 룸수 고르는 상자 — 양옆 칸 선에 닿지 않게 같은 간격 */
 .adp-ruser-area { display: grid; justify-items: center; align-content: center; gap: 4px; font-size: 12.5px; font-weight: 700; color: #111827; white-space: nowrap; text-align: center; }   /* 룸수(3룸) 글자와 같은 크기, 칸 가운데 */
 /* 줄 앞 '전용' · '공급' — 좁은 칸에 들어가게 작고 옅게 */
 .adp-ruser-area em { margin-right: 3px; font-style: normal; font-size: 11px; font-weight: 600; color: #6b7280; }
