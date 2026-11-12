@@ -75,6 +75,7 @@ import { simCond, type SonPriceOut } from '../services/priceAnalysis';
 import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
 import { addressParts, buildingNameOf, hasBuildingName, isUnitToken } from '../utils/addressName';
+import { caseLabelOf } from '../utils/caseLabel';
 import { stageDates, bidStageOf, stageLabelOf } from '../utils/stageLabel';
 import { useAuthStore } from '../stores/authStore';
 import { isAdminEmail } from '../services/accessControl';
@@ -91,7 +92,7 @@ import SearchFilterBar, { type SearchFilter } from '../components/SearchFilterBa
 import { useFilterDraft } from '../composables/useFilterDraft';
 import { bestPlaceOf, complexesOf, complexNearbyOf, complexPointOf, metersBetween, LOCATION_SOURCES, nearestPlaceOf, PLACE_ICON, placeRatio, placeRatioLabel, rankFromMeters, walkMinOf, WALK_DETOUR, WALK_M_PER_MIN, type CompareComplex, type ComplexNearby } from '../services/complexCompare';
 import KakaoMapTools from '../components/KakaoMapTools.vue';
-import { areaUnit, aptAreaText } from '../services/areaUnit';
+import { areaUnit, aptAreaText, toggleAreaUnit } from '../services/areaUnit';
 import { createMapView, type MapView } from '../services/mapView';
 import { geocodeAddress } from '../services/routeOptimizer';
 import {
@@ -128,6 +129,19 @@ const sonAskReady = inject<Ref<boolean> | null>('sonAskReady', null);
 const route = useRoute();
 const store = useAuctionStore();
 const authStore = useAuthStore();
+/** 물건카드 — 보관 · 숨김이 아닌 내 물건 전부(웹 salePicks 와 같다). 웹 목록과 같은 글: 사건번호 · 법원 · 감정가 / 매각기일 · 주소 · 건물 이름 */
+const cardOpen = ref(false);
+const cardWon = (n: number) => { if (!(n > 0)) return '-'; const man = Math.round(n / 1e4); const eok = Math.floor(man / 1e4); const rest = man % 1e4; return eok ? `${eok}억${rest ? ` ${rest.toLocaleString('ko-KR')}만` : ''}` : `${rest.toLocaleString('ko-KR')}만`; };
+const cardPicks = computed(() => store.auctions.filter((a) => !a.archived && !a.hidden).map((a) => {
+  const parts = addressParts(a.address || '', { ...summarySeedOf(a), ...Object.fromEntries(Object.entries(a.basicSummary || {}).filter(([, v]) => v)) }['sum.buildingName']);
+  return { id: a.id, caseNo: caseLabelOf(a), court: a.courtName || '', apr: cardWon(bidBaseValueOf(a)), date: a.eventDate ? a.eventDate.replace(/-/g, '.').slice(2) : '–', addr: parts.before.trim(), bld: parts.name };
+}));
+/** 다른 물건으로 — 보던 탭을 그대로(주소의 tab 을 같이 넘긴다) */
+const pickCard = (id: string) => {
+  cardOpen.value = false;
+  if (!id || id === auction.value?.id) return;
+  void router.replace({ path: `/auctions/${id}`, query: { ...route.query, tab: activeTab.value } });
+};
 /** 운영자 — 앱 손품조사 매각분석 카드는 운영자만(웹 agIsAdmin 과 같은 명단) */
 const isOperator = computed(() => isAdminEmail(authStore.email));
 
@@ -1551,6 +1565,16 @@ const publicTradePyeongAvg = computed(() => {
 // 사용승인은 날짜 전체 대신 '08년(18년차)'로 줄여 한 줄에 담는다.
 /** 사건번호 줄에 붙는 한 줄 기준값 — '66.11㎡ · 2008년' */
 const headMetaLine = computed(() => headMetaLineOf(auction.value, THIS_YEAR));
+/** 앱 고정카드 — 웹 고정카드와 같은 줄(2026-11-13 사용자): 연차 · 면적. 아파트는 '공급(전용) 공급㎡ (전용)' + 오른쪽 ↻ 평 / ㎡ 단추, 빌라는 '전용 ㎡/평' */
+const appHeadMeta = computed(() => {
+  const a = auction.value; if (!a) return '';
+  const yearOnly = headMetaLineOf({ ...a, buildingAreaM2: 0 }, THIS_YEAR);
+  const areaOnly = headMetaLineOf({ ...a, approvalDate: '', buildingHeader: { ...(a.buildingHeader ?? {}), approvalDate: '' } } as typeof a, THIS_YEAR);
+  const ex = Number(a.buildingAreaM2) || 0;
+  const aptArea = isApartment.value && ex > 0 ? aptAreaText(mySupplyM2.value || null, ex, areaUnit.value) : '';
+  const areaText = isApartment.value ? (aptArea && !/^전용/.test(aptArea) ? `공급(전용) ${aptArea}` : aptArea) : (areaOnly ? `전용 ${areaOnly}` : '');
+  return [yearOnly, areaText].filter(Boolean).join(' · ');
+});
 
 const formatWonSimple = (n: number) =>
   Number.isFinite(n) && n > 0 ? n.toLocaleString('ko-KR') : '-';
@@ -6859,6 +6883,19 @@ const goBack = () => router.back();
               </ul>
             </template>
           </span>
+          <!-- 앱 — 단계 단추 오른쪽 '물건카드 × N'(웹 물건상세와 같은 단추 · 목록). 고르면 그 물건으로, 보던 탭(임장조사까지) 그대로(2026-11-13 사용자) -->
+          <span v-if="!webEmbed && cardPicks.length" class="adp-card-wrap">
+            <button type="button" class="adp-card-btn" :aria-expanded="cardOpen" aria-haspopup="listbox" @click.stop="cardOpen = !cardOpen">물건카드 <i class="x">×</i>{{ cardPicks.length }}<img :src="chevronDownIcon" :class="['adp-chev sm', { up: !cardOpen }]" alt="" /></button>
+            <template v-if="cardOpen">
+              <div class="adp-stage-backdrop" @click="cardOpen = false" />
+              <div class="adp-card-list" role="listbox" aria-label="선정물건" @click.stop>
+                <button v-for="x in cardPicks" :key="x.id" type="button" role="option" :aria-selected="x.id === auction?.id" :class="['adp-card-opt', { on: x.id === auction?.id }]" @click="pickCard(x.id)">
+                  <span class="r1"><b class="case">{{ x.caseNo }}</b><i class="bar" /><span class="court">{{ x.court || '–' }}</span><span class="apr">감정가 <b>{{ x.apr }}</b></span></span>
+                  <span class="r2"><em>매각기일</em><b>{{ x.date }}</b><i class="bar" /><span class="addr">{{ x.addr }}<b v-if="x.bld"> {{ x.bld }}</b></span></span>
+                </button>
+              </div>
+            </template>
+          </span>
           <button type="button" class="adp-hide-btn" aria-label="보관함에 넣기" title="보관함에 넣기" @click="archiveThisAuction">
             <img :src="BOX_ICON" alt="" class="adp-hide-ico" />
           </button>
@@ -6905,8 +6942,11 @@ const goBack = () => router.back();
           <!-- 면적·연식을 매각구분과 한 줄로 이어 모든 탭에서 보여 준다.
                폭이 모자라면 뒤(매각구분)부터 말줄임된다 — 계속 참조하는 면적·연식이 남는다 -->
           <span class="adp-prop-sale">
-            {{ saleKind }}<template v-if="headMetaLine"> · {{ headMetaLine }}</template>
+            <!-- 앱 — 폰 폭엔 매각구분까지 다 안 들어가 면적이 잘렸다. 앱은 연차 · 면적만(2026-11-13) -->
+            <template v-if="webEmbed">{{ saleKind }}<template v-if="headMetaLine"> · {{ headMetaLine }}</template></template><template v-else>{{ appHeadMeta || saleKind }}</template>
           </span>
+          <!-- 앱 — 아파트 면적 단위 단추(웹 고정카드 '↻ 평 / ↻ ㎡'와 같은 단추 · 같은 값, 모든 탭이 같이 바뀐다) -->
+          <button v-if="!webEmbed && isApartment" type="button" class="adp-unit-btn" :aria-label="areaUnit === 'py' ? '면적을 ㎡로' : '면적을 평으로'" @click.stop="toggleAreaUnit"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7" /><path d="M20 5v6h-6" /></svg>{{ areaUnit === 'py' ? '㎡' : '평' }}</button>
         </span>
         <button
           type="button"
@@ -12574,6 +12614,26 @@ tr.tone-take { background: #fff5f5; }
 }
 /* 조사 대상 동 이름 — 제목 안에서 눈에 띄게 */
 .adp-dm-area { color: #2b6df3; }
+.adp-prop-line:has(.adp-unit-btn) .adp-prop-sale { font-size: min(12px, 2.95vw); letter-spacing: -0.3px; }   /* 앱 아파트 — 단위 단추가 들어가 좁다, 면적이 잘리지 않게 */
+.adp-unit-btn { flex: none; align-self: center; display: inline-flex; align-items: center; gap: 2px; height: 22px; margin-left: 6px; padding: 0 7px; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; color: #111827; font: inherit; font-size: 11.5px; white-space: nowrap; cursor: pointer; }   /* 고정카드 면적 단위 — 웹 .ih-unit 과 같은 꼴 */
+.adp-card-wrap { position: relative; display: inline-flex; }
+.adp-card-btn { display: inline-flex; align-items: center; gap: 1px; box-sizing: border-box; height: 26px; padding: 0 4px 0 8px; border: 1.5px solid #dde3ee; border-radius: 8px; background: #fff; color: #111827; font: inherit; font-size: 11px; font-weight: 700; line-height: 1.4; white-space: nowrap; cursor: pointer; }   /* 단계 단추와 같은 높이 · 글 크기 */
+.adp-topbar:has(.adp-card-wrap) .adp-page-title { font-size: min(16px, 3.9vw); letter-spacing: -0.4px; }   /* 물건카드 단추가 들어가 좁다 — 사건번호가 잘리지 않게 */
+.adp-topbar:has(.adp-card-wrap) .adp-top-right { gap: 4px; }
+.adp-card-btn[aria-expanded="true"] { border-color: #2b6df3; }
+.adp-card-btn .x { margin-left: 2px; font-style: normal; font-weight: 400; color: #9ca3af; }
+.adp-card-list { position: fixed; left: 12px; right: 12px; top: 56px; z-index: 80; max-height: 60vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 6px; border: 1px solid #e3e8f0; border-radius: 12px; background: #fff; box-shadow: 0 10px 28px rgba(17, 24, 39, .16); }
+.adp-card-opt { display: grid; gap: 4px; width: 100%; padding: 8px 10px; border: 1px solid #e3e8f0; border-radius: 10px; background: #fff; font: inherit; text-align: left; cursor: pointer; }
+.adp-card-opt.on { border-color: #2b6df3; background: #eef4ff; }
+.adp-card-opt :is(.r1, .r2) { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12.5px; color: #111827; }
+.adp-card-opt .bar { flex: none; width: 1px; height: 11px; background: #e3e8f0; }
+.adp-card-opt .case { color: #2b6df3; font-weight: 700; white-space: nowrap; }
+.adp-card-opt .court { white-space: nowrap; }
+.adp-card-opt .apr { margin-left: auto; color: #6b7280; white-space: nowrap; }
+.adp-card-opt .apr b { color: #111827; }
+.adp-card-opt em { font-style: normal; color: #6b7280; white-space: nowrap; }
+.adp-card-opt .r2 > b { white-space: nowrap; }
+.adp-card-opt .addr { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .adp-op-chip { display: inline-flex; align-items: center; height: 18px; margin-left: 6px; padding: 0 6px; border-radius: 5px; background: #fff1e6; color: #e8590c; font-size: 11px; font-weight: 700; }   /* 운영자만 보이는 카드 — 웹 '운영' 칩과 같은 주황 */
 .adp-dm-area-gap { margin-left: 6px; }
 .adp-dm-title.adp-dm-title-sm { font-size: 13px; }   /* ③ 제목 — 위 ① · ② 상자 제목(13 · 800)과 같은 크기, 동 이름까지 */
