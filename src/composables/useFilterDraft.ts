@@ -25,7 +25,15 @@ export type FilterDraft<T> = {
 export const useFilterDraft = <T extends object>(read: () => T, write: (v: T) => void, defaults: () => T): FilterDraft<T> => {
   const draft = ref(clone(read())) as Ref<T>;
   // 적용된 값이 바뀌면(물건을 바꾸거나 저장본을 열거나 조회하기) 고르는 값도 따라간다
-  watch(read, (v) => { draft.value = clone(v); }, { deep: true });
+  // 적용된 '값'이 정말 바뀌었을 때만 — 물건 문서가 다시 들어오기만 해도(다른 칸 저장 · 실시간 갱신) 읽기가 다시 돌아
+  // 고르던 면적 · 건축이 적용값으로 되돌아갔다(2026-11-12 사용자 '왜 자꾸 리셋해')
+  let last = JSON.stringify(read());
+  watch(read, (v) => {
+    const now = JSON.stringify(v);
+    if (now === last) return;
+    last = now;
+    draft.value = clone(v);
+  }, { deep: true });
   const dirty = computed(() => !same(draft.value, read()));
   const isDefault = computed(() => same(draft.value, defaults()));
   return {
