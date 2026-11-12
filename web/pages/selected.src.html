@@ -8005,6 +8005,9 @@ span.cal-day.has { cursor: help; }
     sxSaved = { snap: sxSnapNow(), at: Date.now() };
     try { localStorage.setItem(SXM_SAVED_KEY, JSON.stringify(sxSaved)); } catch (e) { /* 그만 */ }
     const el = document.querySelector('.sx-acts'); if (el) el.outerHTML = sxActsHtml();
+    /* 필터 부품의 저장 단추도 '저장됨'으로 — 옛 단추만 고치고 부품엔 알리지 않아 눌러도 그대로 '저장하기'였다(2026-11-12 사용자 '저장이 안 된다') */
+    if (SXF.app) SXF.app.set(sxFiltProps());
+    if (SXF2.app) SXF2.app.set({ ...sxFiltProps(), compact: true });
   }
   function sxResultsHtml() {
     sxKindSync();   /* 종류(아파트 · 빌라)에 맞는 엘베 · 층을 먼저 — 결과를 그 값으로 계산 */
