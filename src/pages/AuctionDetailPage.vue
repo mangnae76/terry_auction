@@ -5700,7 +5700,7 @@ const cmpSimRanges = (sim: number) => ({ area: cmpSimArea(sim), year: cmpSimYear
 /** 거래 단추 옆 건수 — 지금 리스트(범위 · 기간 · 유사평형)에 든 매매 · 전세 실거래 수(시세분석 '매매 3'과 같은 꼴, 2026-11-12 사용자) */
 /** 한 줄의 매매 · 전세 거래 건수 — 표 평균가 밑 'n건' */
 const cmpDealN = (r: { deals: Array<{ kind: string; price: number }> }, k: '매매' | '전세') => r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length;
-const cmpKindCount = (k: '매매' | '전세') => cmpRows.value.reduce((n, r) => n + r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length, 0).toLocaleString('ko-KR');
+const cmpKindCount = (k: '매매' | '전세') => cmpListAll.value.reduce((n, r) => n + r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length, 0).toLocaleString('ko-KR');
 // 고른 거르기는 그 물건 문서(DB)에 남긴다 — 바꾸면 리스트 · 평균가가 달라져, 다시 열어도 같은 숫자를 보게(2026-11-11 사용자). 처음엔 위 기본값
 watch(() => auction.value?.id, (id) => {
   if (!id) return;
@@ -5789,7 +5789,11 @@ const cmpSnapOn = computed(() => {
   return JSON.stringify(cmpNormFilter(s.filter)) === JSON.stringify(now);
 });
 const cmpSnapRows = computed(() => { const m = new Map<string, DemandSnapRow>(); if (cmpSnapOn.value) cmpSnap.value!.rows.forEach((r) => m.set(cmpKeyOf(r), r)); return m; });
-const cmpList = computed<CompareComplex[]>(() => {
+/** 거래 단추로 리스트까지 거른다 — 매매면 기간 안 매매(직거래 포함)가 있는 빌라 · 단지만, 전세면 전세가 있는 곳만. 선정물건은 늘(2026-11-12 사용자) */
+const cmpHasKind = (c: CompareComplex, k: '매매' | '전세') => c.deals.some((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0);
+const cmpList = computed<CompareComplex[]>(() => cmpListAll.value.filter((c) => c.mine || cmpHasKind(c, cmpKind.value)));
+/** 거래 단추로 거르기 전 — 매매 · 전세 건수(거래 단추 옆 숫자)는 여기서 센다 */
+const cmpListAll = computed<CompareComplex[]>(() => {
   const r = cmpRange.value; const me = cmpMePt.value;
   if (cmpSnapOn.value) return cmpSnap.value!.rows.map((r) => ({ jibun: r.jibun, name: r.name, umdNm: r.umdNm, area: r.area, jeonseAvg: r.jeonseAvg, saleAvg: r.saleAvg, mine: r.mine, buildYear: r.buildYear, deals: r.deals as unknown as CompareComplex['deals'] }));
   if (!cmpQueried.value) return [];   // 조회하기 전 — 저장본이 없으면 빈 표
@@ -12890,7 +12894,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .sup-tbl .adm-table tbody tr.cmp-row:hover td { background: #f7f9fc; }
 .sup-tbl .adm-table tbody tr.cmp-row.mine td { background: #fff5f5; box-shadow: inset 0 -2px 0 #efb7b7; }
 .sup-tbl .adm-table tbody tr.cmp-row.on td { background: #eef2ff; box-shadow: none; }
-.sup-tbl .adm-table tbody tr.cmp-row.on td:first-child { box-shadow: inset 3px 0 0 #2b6df3; }   /* 고른 줄 왼쪽 파란 막대 — 매각분석 표와 같게(2026-11-12) */   /* 고른 줄 연파랑 — 시세분석과 같게 */
+.sup-tbl .adm-table tbody tr.cmp-row.on td:first-child { box-shadow: inset 3px 0 0 #2b6df3; }
+.sup-tbl .adm-table tbody tr.cmp-row.mine.on td:first-child { box-shadow: inset 3px 0 0 #2b6df3, inset 0 -2px 0 #efb7b7; }   /* 선정물건을 고르면 첫 칸도 빨간 아래 줄 — 파란 막대가 덮어 첫 칸만 비었다(2026-11-12 사용자) */   /* 고른 줄 왼쪽 파란 막대 — 매각분석 표와 같게(2026-11-12) */   /* 고른 줄 연파랑 — 시세분석과 같게 */
 .cmp-tag { display: inline-block; flex: 0 0 auto; margin-left: 6px; padding: 1px 4px; border-radius: 3px; background: #e03e3e; color: #fff; font-size: 8.5px; font-weight: 400; vertical-align: 2px; }
 .cmp-basis { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 8px 0 0; padding: 8px 12px; border-radius: 8px; background: #eef2ff; font-size: 13px; color: #4b5563; min-height: 36px; box-sizing: border-box; }   /* 근거 거래 줄(2026-11-12 시안) */
 .cmp-basis .k { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 4px; background: #2b6df3; color: #fff; font-size: 12px; font-weight: 500; white-space: nowrap; }   /* 근거 칩(2026-11-12 사용자) */ .cmp-basis .d { font-variant-numeric: tabular-nums; } .cmp-basis .sep { font-style: normal; color: #9ca3af; margin-right: 10px; } .cmp-basis .more, .cmp-basis .hint { color: #6b7280; } .cmp-basis .cmp-basis-nt { margin-left: auto; font-size: 12px; color: #6b7280; }
