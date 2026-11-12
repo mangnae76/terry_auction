@@ -5629,10 +5629,6 @@ const cmpMonths = ref<3 | 6 | 12 | 24>(6);
 const CMP_PERIODS: Array<[3 | 6 | 12 | 24, string]> = [[3, '3개월'], [6, '6개월'], [12, '1년'], [24, '2년']];
 /** 평형 폭 — ±3㎡로 고정. ±1㎡로 좁혀 봤더니 같은 건물의 조금 다른 평형(정성드림빌 52.32㎡ ↔ 55.14㎡) 거래가 빠졌다 — 예외 처리 없이 ±3㎡ 하나로(2026-11-12 사용자) */
 const cmpTol = ref<1 | 3 | 5 | 10>(3);
-/** 필터 줄 오른쪽 · 위 설명 줄 — 기간 단추 이름 그대로(6개월 · 1년 · 2년) */
-const cmpPeriodText = computed(() => CMP_PERIODS.find(([v]) => v === cmpMonths.value)?.[1] ?? `${cmpMonths.value}개월`);
-/** 필터 설명 줄 맨 앞 — 고른 범위(반경 500m · 읍면동이면 그 동 이름, 2026-11-12 사용자) */
-const cmpRangeText = computed(() => (cmpRange.value === 'dong' ? `${supRegion.value?.dong || '읍면동'} 전체` : `반경 ${CMP_RANGES.value.find(([v]) => v === cmpRange.value)?.[1] ?? ''}`));
 const cmpKind = ref<'매매' | '전세'>('매매');   // 강의 — 단지 비교 기본 잣대는 매매
 /** 면적 · 건축 막대(2026-11-12 사용자) — null 이면 기본(면적 내 물건 ±3㎡ · 건축 전체) */
 const CMP_YEAR_MIN = 1980;
@@ -9802,7 +9798,7 @@ const goBack = () => router.back();
             <!-- 고른 단지 전세 칸 줄 — 시세분석 결론 칸 줄과 같은 꼴(2026-11-11). 아래 표 · 지도에서 고른 단지(처음엔 선정물건)의 같은 평형 전세 -->
             <section v-if="webEmbed && sonpumMode" class="adp-dm-block boxed cmp-box cmp-est-box o-est">
               <div class="cmp-est-h"><h3><span class="cmp-no">②</span>{{ cmpN }} 입지비교<span class="cmp-scope-chip">{{ [supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}<template v-if="cmpPick && cmpPicked"> · {{ cmpPicked.name || cmpPicked.jibun }}</template></span><span class="cmp-q">{{ isApartment ? '내가 선정한 아파트 단지는 몇 등일까?' : '내가 선정한 빌라는 주변 유사 빌라 중 몇 등일까?' }}</span></h3>
-                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">검색기준 · {{ cmpRangeText }} · 최근 {{ cmpPeriodText }} · {{ cmpCondText }} {{ cmpKind }} 실거래</span> · {{ cmpN }} {{ cmpRows.length }}곳 전체</span>
+                <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">필터 기준 검색</span></span>
               </div>
               <!-- 검색 거르기 — 부품 하나(components/SearchFilterBar, '필터 기본 부품 세트' 2026-11-12). 다른 화면은 이 부품을 그대로 끼우고 hide 로 뺄 항목만 끈다 -->
               <SearchFilterBar v-model:draft="cmpDraft" :range-options="CMP_RANGES" :period-options="CMP_PERIODS" :kind-count="cmpKindCount" :base-area="supMyArea" :base-year="cmpMyYear" :area-max="cmpAreaBarMax" :year-min="CMP_YEAR_MIN" :year-max="cmpYearMax" :sim-range="cmpSimRanges" :dirty="cmpDirty" :waiting="cmpWaiting" :is-default="cmpIsDefault" :can-save="cmpLiveReady" :loading="cmpLoading" :saving="cmpSaving" :saved="cmpSnapOn && !cmpDirty" :saved-day="cmpSnapDay" @apply="cmpApply" @reset="cmpReset" @save="cmpSave" />
