@@ -5684,7 +5684,7 @@ const cmpNormFilter = (f?: DemandFilter | null): CmpFilter => {
 const cmpF = useFilterDraft<CmpFilter>(
   () => ({ range: cmpRange.value, months: cmpMonths.value, kind: cmpKind.value, mode: cmpModeR.value, sim: cmpSimR.value, area: [...cmpAreaR.value] as [number | null, number | null], year: [...cmpYearR.value] as [number | null, number | null], floor: cmpFloorR.value, elev: cmpElevR.value }),
   (v) => {
-    cmpRange.value = v.range as CmpRange; cmpMonths.value = v.months as 3 | 6 | 12 | 24; cmpKind.value = v.kind;
+    cmpRange.value = v.range as CmpRange; cmpMonths.value = v.months as 3 | 6 | 12 | 24; cmpKind.value = v.kind === '전세' ? '전세' : '매매';
     cmpModeR.value = v.mode; cmpSimR.value = v.sim;
     cmpAreaR.value = [...v.area] as [number | null, number | null]; cmpYearR.value = [...v.year] as [number | null, number | null];
     cmpFloorR.value = v.floor; cmpElevR.value = v.elev;
@@ -5701,7 +5701,7 @@ const cmpSimRanges = (sim: number) => ({ area: cmpSimArea(sim), year: cmpSimYear
 /** 거래 단추 옆 건수 — 지금 리스트(범위 · 기간 · 유사평형)에 든 매매 · 전세 실거래 수(시세분석 '매매 3'과 같은 꼴, 2026-11-12 사용자) */
 /** 한 줄의 매매 · 전세 거래 건수 — 표 평균가 밑 'n건' */
 const cmpDealN = (r: { deals: Array<{ kind: string; price: number }> }, k: '매매' | '전세') => r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length;
-const cmpKindCount = (k: '매매' | '전세') => cmpListAll.value.reduce((n, r) => n + r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length, 0).toLocaleString('ko-KR');
+const cmpKindCount = (k: '매매' | '전세' | '월세') => cmpListAll.value.reduce((n, r) => n + r.deals.filter((d) => (k === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).length, 0).toLocaleString('ko-KR');
 // 고른 거르기는 그 물건 문서(DB)에 남긴다 — 바꾸면 리스트 · 평균가가 달라져, 다시 열어도 같은 숫자를 보게(2026-11-11 사용자). 처음엔 위 기본값
 watch(() => `${auction.value?.id ?? ''}|${auction.value?.demandSnap?.at ?? ''}`, () => {
   const id = auction.value?.id;
@@ -5710,7 +5710,7 @@ watch(() => `${auction.value?.id ?? ''}|${auction.value?.demandSnap?.at ?? ''}`,
   // 저장본이 있으면 저장본의 거르기로 연다(조회만 하고 저장하지 않은 거르기는 남기지 않는다, 2026-11-12 사용자)
   const f = auction.value?.demandSnap?.filter ?? auction.value?.demandFilter;
   const n = cmpNormFilter(f);
-  cmpRange.value = n.range as CmpRange; cmpMonths.value = n.months as 3 | 6 | 12 | 24; cmpKind.value = n.kind; cmpModeR.value = n.mode; cmpSimR.value = n.sim; cmpAreaR.value = n.area; cmpYearR.value = n.year; cmpFloorR.value = n.floor; cmpElevR.value = n.elev;
+  cmpRange.value = n.range as CmpRange; cmpMonths.value = n.months as 3 | 6 | 12 | 24; cmpKind.value = n.kind === '전세' ? '전세' : '매매'; cmpModeR.value = n.mode; cmpSimR.value = n.sim; cmpAreaR.value = n.area; cmpYearR.value = n.year; cmpFloorR.value = n.floor; cmpElevR.value = n.elev;
 }, { immediate: true });
 // 거르기는 '저장하기'를 눌러야 저장본과 같이 DB 에 들어간다(바꾸는 즉시 적던 것은 뺐다, 2026-11-12 사용자)
 /** 단지 열쇠 — 동 · 지번(반경 범위에선 다른 동의 같은 지번이 있다). 선정물건은 'mine' */

@@ -2,6 +2,7 @@
 import { clampAroundBase } from '../services/rangeClamp';
 import RangeInputBox from '../components/RangeInputBox.vue';
 import SimRangeBox from '../components/SimRangeBox.vue';
+import SearchFilterBar, { type SearchFilter } from '../components/SearchFilterBar.vue';
 import { userMessage } from '../services/userMessage';
 // 손품조사 › 시세분석 — 선정물건 둘레(반경) · 비슷한 조건(유사도)의 실거래로 「실거래가 예상」을 낸다.
 // 위→아래: ⓪ 조회 줄 → Ⓐ 실거래가 예상 띠 → Ⓑ 지도 · 조건 줄 · 유사물건 표 → Ⓒ 시세종합 → Ⓓ 호가 입력.
@@ -409,6 +410,21 @@ const setSimMode = (m: 'sim' | 'range') => {
   if (m === 'range') rangeCond.value = { ...simCond(sim.value, me.value), floor: rangeCond.value.floor === 0 ? 0 : null };   // 고른 '같은 층'은 그대로
   simMode.value = m;
 };
+/** 웹 — 아래 거르기는 매매수요와 같은 '필터 기본 부품 세트'(SearchFilterBar, 2026-11-12 사용자). 기간은 위 조회기간이 맡아 부품에선 뺀다.
+ *  부품 값 ↔ 이 화면 값(반경 · 거래 · 유사도/직접범위 · 면적 · 건축 · 층 · 엘베) — 누르면 바로 적용(받아 둔 실거래 안에서 거른다) */
+const sfDraft = computed<SearchFilter>(() => ({
+  range: radius.value, months: loadedMonths.value, kind: kindF.value, mode: simMode.value, sim: sim.value,
+  area: [rangeCond.value.mMin, rangeCond.value.mMax], year: [rangeCond.value.yMin, rangeCond.value.yMax],
+  floor: rangeCond.value.floor === 0 ? 'same' : null, elev: elevPick.value,
+}));
+const sfSet = (v: SearchFilter) => {
+  radius.value = Number(v.range); kindF.value = v.kind; sim.value = v.sim; elevPick.value = v.elev;
+  const c = rangeCond.value;
+  rangeCond.value = { mMin: v.area[0] ?? c.mMin, mMax: v.area[1] ?? c.mMax, yMin: v.year[0] ?? c.yMin, yMax: v.year[1] ?? c.yMax, floor: v.floor === 'same' ? 0 : null };
+  if (v.mode !== simMode.value) setSimMode(v.mode);   // 직접범위로 가면 유사도 범위에서 시작
+};
+const sfSimRange = (s: number) => { const c = simCond(s, me.value); return { area: [c.mMin, c.mMax] as [number, number], year: [c.yMin, c.yMax] as [number, number] }; };
+const sfRadii = RADII.map((r) => [r, radText(r)] as const);
 const AREA_MIN = 20; const AREA_MAX = 150;
 const yearMax = new Date().getFullYear();
 const YEAR_MIN = 1980;
@@ -901,7 +917,11 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         </button>
         <p v-if="!fsList.length" class="none">지도에 유사물건이 없습니다.</p>
       </div>
-      <div :class="['conds', { web: webEmbed }]">
+      <!-- 웹 — 매매수요와 같은 필터 부품(1줄 반경 · 거래 · 엘베 · 층, 2줄 기준 묶음 · 초기화 · 저장). 기간은 위 조회기간. 전체화면은 좁은 꼴 -->
+      <SearchFilterBar v-if="webEmbed && !props.app" :draft="sfDraft" :compact="fs" :hide="loose ? ['period', 'save'] : ['period']" :range-options="sfRadii" :period-options="[]" :kinds="KINDS" :kind-count="(k) => kindCount(k).toLocaleString('ko-KR')"
+        :base-area="me.areaM2" :base-year="me.year" :area-max="AREA_MAX" :year-min="YEAR_MIN" :year-max="yearMax" :sim-range="sfSimRange"
+        :is-default="false" :can-save="!loose" :saving="saving" :saved="!webDirty" :saved-day="stamp" @update:draft="sfSet" @reset="reset" @save="saveNow" />
+      <div v-else :class="['conds', { web: webEmbed }]">
         <span class="pa-lab">반경<span class="pa-seg pa-out" role="radiogroup" aria-label="반경">
           <button v-for="r in RADII" :key="r" type="button" role="radio" :class="{ on: radius === r }" :aria-checked="radius === r" @click="radius = r" :data-t="radText(r)">{{ radText(r) }}</button>
         </span></span>
@@ -1402,6 +1422,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa.fs .est { padding: 12px; }
 .pa.fs .tiles { gap: 6px; }
 .pa.fs .conds { grid-column: 1; grid-row: 3; padding: 12px 14px; }
+/* 전체화면 — 필터 부품(좁은 꼴)도 옛 조건 상자 자리(왼쪽 창 · 예상가 밑)에 같은 흰 카드로(2026-11-12) */
+.pa.fs .sfb.compact { grid-column: 1; grid-row: 3; position: relative; z-index: 2; margin: 0 0 0 12px; padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 20px rgba(17, 24, 39, .14); }
 .pa.fs .fs-list { grid-column: 1; grid-row: 4; margin-bottom: 12px; min-height: 0; overflow-y: auto; padding: 10px 10px 14px; display: grid; gap: 6px; align-content: start; }
 .fs-lh { padding: 0 4px; font-size: 13px; font-weight: 800; color: var(--fg); }
 .fs-it { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--soft); font: inherit; text-align: left; cursor: pointer; }

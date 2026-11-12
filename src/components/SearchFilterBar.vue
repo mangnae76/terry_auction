@@ -7,9 +7,11 @@ import { computed } from 'vue';
 import RangeInputBox from './RangeInputBox.vue';
 import SimRangeBox from './SimRangeBox.vue';
 
-export type SearchFilterKey = 'range' | 'kind' | 'period' | 'elev' | 'floor' | 'mode' | 'area' | 'year';
+export type SearchFilterKey = 'range' | 'kind' | 'period' | 'elev' | 'floor' | 'mode' | 'area' | 'year' | 'save';
+/** 거래 — 시세분석은 월세까지(kinds 로 넘긴다, 2026-11-12) */
+export type SearchKind = '매매' | '전세' | '월세';
 export type SearchFilter = {
-  range: string | number; months: number; kind: '매매' | '전세'; mode: 'sim' | 'range'; sim: number;
+  range: string | number; months: number; kind: SearchKind; mode: 'sim' | 'range'; sim: number;
   /** 직접범위 칸 — 비우면 null(제한 없음). 유사도와 따로 움직인다 */
   area: [number | null, number | null]; year: [number | null, number | null]; floor: 'same' | null; elev: 'yes' | 'no' | null;
 };
@@ -21,7 +23,9 @@ const props = defineProps<{
   /** 기간 단추 — [개월, 글] */
   periodOptions: ReadonlyArray<readonly [number, string]>;
   /** 거래 단추 옆 건수 */
-  kindCount: (k: '매매' | '전세') => string;
+  kindCount: (k: SearchKind) => string;
+  /** 거래 단추 — 기본 매매 · 전세(시세분석은 월세까지) */
+  kinds?: ReadonlyArray<SearchKind>;
   /** 내 물건 — 면적 · 건축 가운데 빨간 기준 */
   baseArea: number;
   baseYear: number;
@@ -81,7 +85,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
     <!-- 거르기 — 제목 · 검색기준 줄 바로 밑(2026-11-12 사용자). 단추는 고르기만, 조회하기를 눌러야 리스트 · 지도 · 칸 줄이 바뀌고 저장된다. (예전: 지도 밑 · 표 바로 위, 2026-11-11) 시세분석 조건 줄과 같은 단추 · 순서(범위 → 거래 → 기간 → 평형). 표 · 지도 · 위 칸 줄이 같이 바뀐다 -->
     <div class="cmp-conds">
       <span v-if="!off('range')" class="pa-lab">반경<span class="pa-seg pa-out" role="radiogroup" aria-label="반경"><button v-for="[v, t] in rangeOptions" :key="String(v)" type="button" role="radio" :class="{ on: rangeD === v }" :aria-checked="rangeD === v" :data-t="t" @click="rangeD = v">{{ t }}</button></span></span>
-      <span v-if="!off('kind')" class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in ['매매', '전세'] as const" :key="k" type="button" role="radio" :data-k="k" :class="{ on: kindD === k }" :aria-checked="kindD === k" @click="kindD = k">{{ k }} {{ kindCount(k) }}</button></span></span>
+      <span v-if="!off('kind')" class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in (kinds ?? ['매매', '전세'] as const)" :key="k" type="button" role="radio" :data-k="k" :class="{ on: kindD === k }" :aria-checked="kindD === k" @click="kindD = k">{{ k }} {{ kindCount(k) }}</button></span></span>
       <span v-if="!off('period')" class="pa-lab">기간<span class="pa-seg pa-out" role="radiogroup" aria-label="기간"><button v-for="[m, t] in periodOptions" :key="m" type="button" role="radio" :class="{ on: monthsD === m }" :aria-checked="monthsD === m" :data-t="t" @click="monthsD = m">{{ t }}</button></span></span>
       <span v-if="!off('elev')" class="pa-lab">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베"><button v-for="[v, t] in ([[null, '전체'], ['yes', '있음'], ['no', '없음']] as const)" :key="t" type="button" role="radio" :class="{ on: elevD === v }" :aria-checked="elevD === v" :data-t="t" @click="elevD = v">{{ t }}</button></span></span>
       <span v-if="!off('floor')" class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층"><button type="button" role="radio" :class="{ on: floorD !== 'same' }" :aria-checked="floorD !== 'same'" data-t="전체" @click="floorD = null">전체</button><button type="button" role="radio" :class="{ on: floorD === 'same' }" :aria-checked="floorD === 'same'" data-t="같은 층" @click="floorD = 'same'">같은 층</button></span></span>
@@ -98,7 +102,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
     </div>
     <span class="cmp-qbtns">
         <button type="button" class="cmp-reset" :disabled="isDefault" title="필터를 기본값으로" @click="emit('reset'); emit('apply')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>필터초기화</button>
-        <button type="button" :class="['cmp-save', { ready: canSave && !saved }]" :disabled="!canSave || saving || saved" :title="saved ? '저장된 리스트입니다' : canSave ? '지금 리스트를 저장합니다' : '건물 정보를 다 받으면 저장할 수 있습니다'" @click="emit('save')"><template v-if="saved">저장됨<small v-if="savedDay" class="cmp-save-day">{{ savedDay }}</small></template><template v-else>저장하기</template></button>
+        <button v-if="!off('save')" type="button" :class="['cmp-save', { ready: canSave && !saved }]" :disabled="!canSave || saving || saved" :title="saved ? '저장된 리스트입니다' : canSave ? '지금 리스트를 저장합니다' : '건물 정보를 다 받으면 저장할 수 있습니다'" @click="emit('save')"><template v-if="saved">저장됨<small v-if="savedDay" class="cmp-save-day">{{ savedDay }}</small></template><template v-else>저장하기</template></button>
       </span>
     </div>
   </div>
@@ -146,7 +150,9 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .sfb.compact :deep(.rib .vals input.in.in) { flex: 1 1 0; width: auto; min-width: 0; }
 .sfb.compact :deep(.rib .vals .me) { flex: 0 0 64px; padding: 0; text-align: center; }   /* 기준값 칸 폭 고정 — 49.74 · 2014 처럼 글 길이가 달라도 양옆 적는 칸이 줄마다 같은 크기(2026-11-12 사용자) */
 /* 좁은 칸 — 전체화면 왼쪽 창(폭 ~400px). 반경 · 거래 · 기간 · 기준 · 유사도(면적 · 건축)는 한 줄씩, 엘베 · 층은 반씩, 단추 둘은 맨 아래 반씩 */
-.sfb.compact { margin: 0; padding: 8px 10px; }
+.sfb.compact { margin: 0; padding: 8px 10px; container-type: inline-size; }
+.sfb.compact .cmp-conds .kindF button { min-width: 0; }   /* 좁은 칸 — 거래 단추(매매 · 전세 · 월세)가 칸을 넘지 않게 */
+
 .sfb.compact > .cmp-conds { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 6px; }
 .sfb.compact > .cmp-conds > .pa-lab { grid-column: 1 / -1; height: 38px; box-sizing: border-box; }
 .sfb.compact > .cmp-conds > .pa-lab:has([aria-label="엘베"]), .sfb.compact > .cmp-conds > .pa-lab:has([aria-label="층"]) { grid-column: auto; }
@@ -177,6 +183,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-conds .pa-seg.pa-out button:not(.on):hover { background: #e6eaf1; color: #374151; }
 .cmp-conds .kindF button:not(.on)[data-k="매매"]:hover { background: #dfe6fb; }
 .cmp-conds .kindF button:not(.on)[data-k="전세"]:hover { background: #f9e7c6; }
+.cmp-conds .kindF button:not(.on)[data-k="월세"]:hover { background: #dcf0e3; }
 .cmp-conds .kindF button.on:hover { filter: brightness(1.08); }
 .cmp-reset:not(:disabled):hover { background: #f3f5f9; border-color: #b8c2d3; color: #1f2937; }
 .cmp-save.ready:not(:disabled):hover { background: #1f5ad6; border-color: #1f5ad6; }
@@ -198,6 +205,8 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .cmp-conds .kindF button[data-k="전세"] { background: #fdf3e1; color: #b7791f; }
 .cmp-conds .kindF button.on[data-k="매매"] { background: #2b3a67; color: #fff; }
 .cmp-conds .kindF button.on[data-k="전세"] { background: #b7791f; color: #fff; }
+.cmp-conds .kindF button[data-k="월세"] { background: #eef7f1; color: #15803d; }   /* 월세 — 시세분석과 같은 초록 */
+.cmp-conds .kindF button.on[data-k="월세"] { background: #16a34a; color: #fff; }
 /* ===== 기준 묶음 한 상자(2026-11-12 사용자) — 바깥 테두리 하나, 안쪽 상자들은 테두리 · 바탕을 빼고 세로선으로만 나눈다. 기준을 바꿔도 상자 크기 그대로 ===== */
 .sfb .cmp-bars.joined { gap: 0; flex-wrap: nowrap; align-items: stretch; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; overflow: hidden; box-sizing: border-box; }
 .sfb .cmp-bars.joined > .cmp-mode, .sfb .cmp-bars.joined > .cmp-sim, .sfb .cmp-bars.joined > :deep(.rib) { border: 0; border-radius: 0; background: transparent; }
@@ -212,4 +221,8 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
   :root:not([data-theme="light"]) .sfb .cmp-bars.joined { background: #182031; border-color: #2a3449; }
   :root:not([data-theme="light"]) .sfb .cmp-bars.joined > * + * { border-left-color: #2a3449 !important; border-top-color: #2a3449 !important; }
 }
-</style>
+/* 아주 좁은 칸(시세분석 전체화면 340px) — 엘베 · 층도 한 줄씩 */
+@container (max-width: 380px) {
+  .sfb.compact > .cmp-conds > .pa-lab:has([aria-label="엘베"]), .sfb.compact > .cmp-conds > .pa-lab:has([aria-label="층"]) { grid-column: 1 / -1; display: grid; grid-template-columns: var(--lab) minmax(0, 1fr); gap: 0; padding: 4px 10px; }
+  .sfb.compact > .cmp-conds > .pa-lab:has([aria-label="엘베"]) > .pa-seg, .sfb.compact > .cmp-conds > .pa-lab:has([aria-label="층"]) > .pa-seg { display: flex; }
+}</style>
