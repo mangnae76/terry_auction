@@ -138,6 +138,8 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
 .sfb.compact > .cmp-bars-row { flex-direction: column; gap: 6px; }
 .sfb.compact .cmp-bars { flex-direction: column; flex-wrap: nowrap; gap: 6px; }
 .sfb.compact .cmp-bars > .cmp-mode { justify-content: space-between; height: 38px; }
+.sfb.compact .cmp-bars > .cmp-mode .pa-seg { flex: 1 1 auto; }   /* 기준 단추도 위 줄들처럼 줄 끝까지 넓게 */
+.sfb.compact .cmp-bars > .cmp-mode .pa-seg button { flex: 1 1 0; }
 .sfb.compact .cmp-bars > :is(.rib, .cmp-sim) { flex: 0 0 auto; width: 100%; }
 .sfb.compact .cmp-qbtns { margin-left: 0; }
 .sfb.compact .cmp-qbtns > button { flex: 1 1 0; min-width: 0; height: 38px; }
