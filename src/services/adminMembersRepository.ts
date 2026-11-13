@@ -14,6 +14,8 @@ export interface MemberRow {
   joinPathDetail: string;
   referralCode: string;
   createdAt: string;
+  /** 마지막 접속일 'YYYY-MM-DD' — 2026-11-13부터 적는다(그 전은 빈칸) */
+  lastSeenAt: string;
 }
 
 export interface LeaveRow {
@@ -40,7 +42,7 @@ export const loadMembers = async (): Promise<MemberRow[]> => {
     return {
       uid: s.id, email: str(d.email), nickname: str(d.nickname), realName: str(d.realName), phone: phoneOf(d),
       region: str(d.region), joinPath: str(d.joinPath), joinPathDetail: str(d.joinPathDetail), referralCode: str(d.referralCode),
-      createdAt: str(d.createdAt),
+      createdAt: str(d.createdAt), lastSeenAt: str(d.lastSeenAt),
     };
   }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 };

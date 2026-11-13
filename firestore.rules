@@ -429,6 +429,13 @@ service cloud.firestore {
         if isAllowedUser() && request.resource.data.uid == request.auth.uid;
     }
 
+    // 회원 이용 상태(차단 · 이용 기한) — 운영 › 회원 관리에서 운영자만 쓴다. 본인은 제 것만 읽는다(웹 · 앱이 로그인 때 읽어 막는다, 2026-11-13).
+    // 회원 문서(users)는 본인이 고칠 수 있어 따로 둔다
+    match /memberStatus/{uid} {
+      allow get: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow list, write: if isAdmin();
+    }
+
     // 그 외 컬렉션은 명시적 허용 없이는 거부 (기본 deny)
   }
 }

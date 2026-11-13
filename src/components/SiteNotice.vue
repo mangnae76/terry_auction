@@ -4,12 +4,13 @@
 //  - 점검 모드: 회원 · 손님에게는 화면 전체를 덮는 점검 안내(쓰기도 막힌다). 운영자에게는 위에 얇은 알림 띠만.
 //    운영자가 로그아웃 상태여도 끌 수 있게 '운영자 로그인' 단추를 둔다.
 //  - 시작 팝업: 기간 안이면 열 때 한 번. '오늘 하루 보지 않기'는 팝업을 고치면(version) 다시 풀린다.
-import { computed, inject, onUnmounted, ref } from 'vue';
+import { computed, inject, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { isAdminEmail } from '../services/accessControl';
 import { emptySiteConfig, popupLive, subscribeSiteConfig, type SiteConfig } from '../services/siteConfigRepository';
 import { todayStamp } from '../services/confirmBox';
+import { memberBlockOf, touchLastSeen } from '../services/memberStatus';
 
 const web = inject('webEmbed', false);
 const route = web ? null : useRoute();
@@ -22,6 +23,21 @@ const stop = subscribeSiteConfig((c) => { cfg.value = c; loaded.value = true; })
 onUnmounted(stop);
 
 const admin = computed(() => isAdminEmail(auth.email));
+/* 회원 이용 제한 — 운영 › 회원 관리에서 차단하거나 이용 기한이 지나면 화면 전체를 덮고 로그아웃만 남긴다(2026-11-13 사용자). 운영자는 늘 통과.
+   로그인할 때마다 한 번 읽고, 마지막 접속일도 하루 한 번 적는다 */
+const memberBlock = ref<Awaited<ReturnType<typeof memberBlockOf>>>(null);
+watch(() => auth.uid, async (uid) => {
+  memberBlock.value = null;
+  if (!uid) return;
+  void touchLastSeen(uid);
+  memberBlock.value = await memberBlockOf(uid, auth.email);
+}, { immediate: true });
+const memberOut = async () => {
+  if (web) { (document.getElementById('gOut') as HTMLButtonElement | null)?.click(); return; }
+  await auth.logout();
+  void router?.push('/login');
+};
+const memberUntil = computed(() => (memberBlock.value?.until ? memberBlock.value.until.replace(/-/g, '.') : ''));
 /* 운영자 로그인을 누르면 이번 창에서는 점검 화면을 잠깐 걷는다 — 로그인 창이 그 위에 떠야 해서.
    로그인했는데 운영자가 아니면 다시 덮는다 */
 const tryingLogin = ref(false);
@@ -79,6 +95,21 @@ const openLink = () => {
       <div class="sn-acts">
         <button type="button" class="pri" @click="reload">새로고침</button>
         <button type="button" class="ghost" @click="adminLogin">운영자로그인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 이용 제한 — 차단 · 이용 기한 만료(운영 › 회원 관리) -->
+  <div v-if="memberBlock && !blocked && !onLoginPage" class="sn-block" role="alertdialog" aria-modal="true" aria-labelledby="snMT">
+    <div class="sn-box">
+      <div class="sn-ic" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M5.7 5.7l12.6 12.6" /></svg>
+      </div>
+      <h2 id="snMT">{{ memberBlock.state === 'blocked' ? '이용이 제한된 계정입니다' : '이용 기한이 끝났습니다' }}</h2>
+      <p class="sn-msg"><template v-if="memberBlock.state === 'blocked'">{{ memberBlock.reason || '운영 정책에 따라 이 계정의 이용을 멈췄습니다.' }}</template><template v-else>{{ memberUntil }}까지 이용할 수 있는 계정입니다.</template></p>
+      <p class="sn-until">문의는 고객센터(이메일)로 보내 주세요.</p>
+      <div class="sn-acts">
+        <button type="button" class="pri" @click="memberOut">로그아웃</button>
       </div>
     </div>
   </div>
