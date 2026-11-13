@@ -6557,7 +6557,6 @@ const ZONE_UNIT_ITEMS = computed(() => indivGroups.value[0].items.filter((it) =>
 // 섞여 있으면 % 를 평균 전체에 붙여 이 단지 거래까지 부풀었다(+35~45%, 2026-11-11) — 섞임은 알리기만 한다
 // 빌라는 섞여 있어도 연다 — % 를 다른 건물 거래 몫(zoneShare)에만 붙여 같은 건물 거래는 그대로 둔다(2026-11-13 사용자)
 const zoneApplied = computed(() => { const rs = sonPriceOut?.value?.rows ?? []; return rs.some((r) => !r.same); });
-const zoneMixed = computed(() => { const rs = sonPriceOut?.value?.rows ?? []; return rs.some((r) => r.same) && rs.some((r) => !r.same) ? rs.filter((r) => !r.same).length : 0; });
 /** 기준가 가운데 다른 건물 거래 몫(0~1) — 평균이면 고른 거래 평당가 합에서, 중간값이면 가운데 거래(짝수면 두 건)에서 다른 건물 평당가가 차지하는 비율 */
 const zoneShare = computed(() => {
   const rs = (sonPriceOut?.value?.rows ?? []).filter((r) => (r.perPy ?? 0) > 0);
@@ -10201,11 +10200,12 @@ const goBack = () => router.back();
                 <button v-if="cmpBase.med" type="button" role="radio" :aria-checked="unitBasePick === 'med'" :class="['cmp-base', { on: unitBasePick === 'med' }]" @click="pickUnitBase('med')"><span class="k">중간값</span><span class="v">{{ cmpEok(cmpBase.med) }}</span><small class="cmp-base-f">{{ cmpBase.medFormula }}</small></button></div>
               <!-- 구역 내 · 단지 내 개별성 — 가로로 나란히(좁으면 위아래, 2026-11-11 사용자) -->
               <!-- 구역 내 개별성 — 위 표가 모두 이 단지 거래면 접어 둔다(이미 담겨 있다). 다른 단지 거래가 섞이면 열려 % 로 보정 -->
-              <div v-if="!zoneApplied" class="cmp-zone-off"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span>시세분석에서 고른 실거래가 모두 이 {{ isApartment ? '단지' : '건물' }} 거래라 보정에 들어가지 않습니다. 다른 {{ isApartment ? '단지' : '건물' }} 거래가 섞이면 켜집니다.</span></div>
-              <div v-if="zoneApplied" class="cmp-zone-off cmp-zone-guide"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span>{{ isApartment ? '이 단지를 기준으로 다른 단지와 비교해 고르세요. 이 단지가' : '경매빌라를 기준으로 다른 빌라와 비교해 고르세요. 경매빌라가' }} 나으면 +, 못하면 −, 같으면 0%입니다.{{ zoneMixed ? ` 같은 ${isApartment ? '단지' : '건물'} 거래는 조건이 같아 그대로 두고, 다른 ${isApartment ? '단지' : '건물'} 거래에만 붙습니다.` : '' }}</span></div>
               <div class="cmp-two pair">
+                <!-- 안내는 표마다 위에 한 칸씩 — 옆 표로 넘어가지 않게(2026-11-13 사용자). 좁으면 안내 · 표 순서로 -->
+                <div :class="['cmp-zone-off', 'cmp-guide', 'g-zone', { 'cmp-zone-guide': zoneApplied }]"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span v-if="zoneApplied">{{ isApartment ? '이 단지가 다른 단지보다' : '경매빌라가 다른 빌라보다' }} 나으면 +, 못하면 −. 다른 {{ isApartment ? '단지' : '건물' }} 거래에만 붙습니다.</span><span v-else>시세분석에서 고른 실거래가 모두 이 {{ isApartment ? '단지' : '건물' }} 거래라 꺼져 있습니다.</span></div>
+                <div class="cmp-zone-off cmp-zone-guide cmp-guide g-unit"><b>{{ isApartment ? '단지 내 개별성' : '호실 개별성' }}</b><span>{{ isApartment ? '내 호실이' : '경매호실이' }} 시세분석에서 고른 거래 호실보다 나으면 +, 못하면 −. 모든 거래에 붙습니다.</span></div>
                 <!-- 표는 늘 보인다 — 다른 단지(건물) 거래가 없으면 흐리게 막는다(2026-11-13 사용자) -->
-                <div :class="['son-demand', 'sup-tbl', 'cmp-zone-wrap', { off: !zoneApplied }]" :inert="!zoneApplied || undefined" :aria-disabled="!zoneApplied || undefined"><div class="adm-table-wrap"><table class="adm-table cmp-tbl cmp-tbl-zone">
+                <div :class="['son-demand', 'sup-tbl', 'cmp-zone-wrap', 't-zone', { off: !zoneApplied }]" :inert="!zoneApplied || undefined" :aria-disabled="!zoneApplied || undefined"><div class="adm-table-wrap"><table class="adm-table cmp-tbl cmp-tbl-zone">
                   <colgroup><col style="width: 16%" /><col /><col style="width: 15%" /><col style="width: 30%" /></colgroup>
                   <thead><tr><th>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</th><th>{{ isApartment ? '이 단지' : '경매빌라' }}</th><th>비율</th><th>{{ isApartment ? '다른 단지와 비교' : '다른 빌라와 비교' }}</th></tr></thead>
                   <tbody>
@@ -10220,7 +10220,7 @@ const goBack = () => router.back();
                       <td class="cmp-zone-cmp-td"><span v-if="zoneMatched(item.id)" class="cmp-zone-match">시세분석 조건으로 맞춤 · 0%</span><span v-else class="cmp-ind-seg cmp-zone-cmp" role="radiogroup" :aria-label="`${item.label} — ${isApartment ? '이 단지가 다른 단지보다' : '경매빌라가 다른 빌라보다'}`"><button v-for="c in ZONE_CMP" :key="c.v" type="button" role="radio" :aria-checked="zoneCmpOf(item.id) === c.sg" :class="[c.v, { on: zoneCmpOf(item.id) === c.sg }]"  @click="pickZoneCmp(item.id, c.v)"><span class="k">{{ c.label }}</span><small v-if="c.sg">{{ cmpPct(c.sg, item.id) }}</small></button></span></td></tr>
                   </tbody>
                 </table></div></div>
-                <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl cmp-tbl-zone">
+                <div class="son-demand sup-tbl t-unit"><div class="adm-table-wrap"><table class="adm-table cmp-tbl cmp-tbl-zone">
                   <colgroup><col style="width: 16%" /><col /><col style="width: 15%" /><col style="width: 30%" /></colgroup>
                   <thead><tr><th>{{ isApartment ? '단지 내 개별성' : '호실 개별성' }}</th><th>{{ isApartment ? '내 호실' : '경매호실' }}</th><th>비율</th><th>비교한 호실과 비교</th></tr></thead>
                   <tbody>
@@ -13196,6 +13196,11 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-zone-cmp button.down.on { color: #1d4ed8; box-shadow: inset 0 0 0 1px #1d4ed8; }
 .cmp-zone-off.cmp-zone-guide { color: #374151; }
 .cmp-floors { display: block; margin-top: 2px; font-size: 12px; color: #6b7280; }   /* 층 줄 — 비교한 거래 층 */
+.cmp-two > .cmp-guide { margin: 0; align-items: flex-start; }   /* 표마다 위 안내 — 두 칸 같은 높이(같은 줄) */
+.cmp-two > .cmp-guide b { white-space: nowrap; }
+.cmp-two > .g-zone { order: 1; } .cmp-two > .g-unit { order: 2; } .cmp-two > .t-zone { order: 3; } .cmp-two > .t-unit { order: 4; } .cmp-two > .cmp-ind-note { order: 5; }
+@media (max-width: 1100px) { .cmp-two > .t-zone { order: 2; } .cmp-two > .g-unit { order: 3; } }
+#appUnitSlot .cmp-two > .t-zone { order: 2; } #appUnitSlot .cmp-two > .g-unit { order: 3; }
 .cmp-zone-wrap.off { opacity: .45; user-select: none; }   /* 구역 내 · 빌라 개별성 — 다른 단지(건물) 거래가 없으면 보여만 준다 */
 .cmp-zone-off.warn { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
 .cmp-zone-off b { flex: 0 0 auto; font-size: 14px; font-weight: 800; color: #6b7280; }   /* 기준가 층 거르기 — 같은층 · ±1층 · 전체 */
