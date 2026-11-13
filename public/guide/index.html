@@ -445,6 +445,7 @@ main{flex:1;padding-block:24px 64px}
 .video-box{margin:0;border-radius:12px;overflow:hidden;background:var(--nav)}
 .video-frame{position:relative;aspect-ratio:16/9;background:#0b1220}
 .video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+.clip-box{margin:4px 0 16px}
 .video-frame:fullscreen{background:#000}
 .video-frame:-webkit-full-screen{background:#000}
 .video-box figcaption{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 16px;color:var(--nav-text)}
@@ -1497,6 +1498,18 @@ GUIDE.release({
     ] });
   },
 });
+/* v1.6.1 — 2026.11.13 화면 공통 구성에 안내 영상(1분 41초, 음성 안내). 그림 · 설명은 그대로 두고 영상을 위에 */
+GUIDE.release({
+  v: '1.6.1', date: '2026-11-13', base: '1.6.0', title: '화면 공통 구성 안내 영상',
+  notes: ['페이지 안내 › 화면 공통 구성에 1분 41초 안내 영상을 넣었습니다. 영상 안 「소리 · 음성 안내 켜기」를 누르면 음성 설명이 나옵니다', '머리띠의 공지를 걷었습니다 — 공지 · 이벤트 · 업데이트는 홈 화면 세 상자에서 봅니다'],
+  patch(c) {
+    const lay = c.sections.find((s) => s.id === 'pages').subs.find((x) => x.aid === 'help-layout');
+    const at = lay.blocks.findIndex((b) => b.t === 'shot');
+    const quick = ((lay.blocks.find((b) => b.t === 'shot') || {}).legend || []).find((x) => x[0] === '바로가기');
+    if (quick) quick[1] = '게시판 · 결제하기 · 이용가이드 · 알림(종) · 밤낮 화면 전환. 공지 · 이벤트 · 업데이트는 홈 화면 세 상자에서 봅니다.';   /* 머리띠 '공지'를 걷었다(2026-11-13) */
+    lay.blocks.splice(at < 0 ? 1 : at, 0, { t: 'clip', src: 'clip/layout.html', title: '화면 공통 구성 영상', len: '1분 41초', sub: '상단 메뉴 · 메뉴 펼치기 · 바로가기 · 내 계정 · 경로 · 하위 탭', since: '1.6.1' });
+  },
+});
 /* 다음 버전 예시 — 바뀐 곳만 patch 에서 고친다
 GUIDE.release({
   v: '1.1.0', date: '2026-12-01', base: '1.0.0', title: '앱 출시 반영',
@@ -1566,6 +1579,7 @@ const B = {
   go: (b) => `<div class="go">${b.items.map((g) => ext(g[1], g[0], 'open-app')).join('')}</div>`,
   shot: (b) => shotHtml(b),
   video: () => videoHtml(),
+  clip: (b) => clipHtml(b),
   scope: () => scopeHtml(),
   bi: () => biHtml(),
   board: () => boardHtml(),
@@ -1623,6 +1637,13 @@ function videoHtml() {
   return `<figure class="video-box"><div class="video-frame" id="promoFrame"><iframe src="${PROMO_PLAY_URL}" title="마이턴 소개 영상" loading="lazy" allow="autoplay; fullscreen" allowfullscreen></iframe></div>`
     + `<figcaption><span class="play">${I('play')}</span><span class="vt"><b>마이턴 소개 영상 · 46초</b><small>물건등록부터 손품조사 · 임장 · 수익분석 · 낙찰 이후까지</small></span>`
     + `<button type="button" class="video-full" data-act="video-full">${I('full')}전체 화면</button></figcaption></figure>`;
+}
+
+/* 화면별 짧은 안내 영상(HTML 영상 — 그림 · 음성이 파일 하나에 든 것). 가이드 옆 clip/ 폴더. 소리는 영상 안 '소리 켜기'로 */
+function clipHtml(b) {
+  return `<figure class="video-box clip-box"><div class="video-frame"><iframe src="${esc(b.src)}" title="${esc(b.title)}" loading="lazy" allow="autoplay; fullscreen" allowfullscreen></iframe></div>`
+    + `<figcaption><span class="play">${I('play')}</span><span class="vt"><b>${esc(b.title)} · ${esc(b.len)}</b><small>${esc(b.sub)}</small></span>`
+    + `<button type="button" class="video-full" data-act="video-full" data-src="${esc(b.src)}">${I('full')}전체 화면</button></figcaption></figure>`;
 }
 
 function scopeHtml() {
@@ -1908,10 +1929,12 @@ function filterFaq() {
 /* ---------- 이벤트 ---------- */
 document.addEventListener('click', (e) => {
   /* 소개 영상 전체 화면 — 틀째 화면 가득. 못 하는 기기(아이폰 사파리 등)는 영상 화면을 새 창으로 */
-  if (e.target.closest('[data-act="video-full"]')) {
-    const f = $('promoFrame'); const go = f && (f.requestFullscreen || f.webkitRequestFullscreen);
-    if (go) { try { const r = go.call(f); if (r && r.catch) r.catch(() => window.open(PROMO_PLAY_URL, '_blank', 'noopener')); } catch (err) { window.open(PROMO_PLAY_URL, '_blank', 'noopener'); } }
-    else window.open(PROMO_PLAY_URL, '_blank', 'noopener');
+  const vf = e.target.closest('[data-act="video-full"]');
+  if (vf) {   /* 화면별 안내 영상(clip)도 같은 단추 — 누른 단추의 영상 틀을 화면 가득 */
+    const box = vf.closest('.video-box'); const f = (box && box.querySelector('.video-frame')) || $('promoFrame'); const url = vf.dataset.src || PROMO_PLAY_URL;
+    const go = f && (f.requestFullscreen || f.webkitRequestFullscreen);
+    if (go) { try { const r = go.call(f); if (r && r.catch) r.catch(() => window.open(url, '_blank', 'noopener')); } catch (err) { window.open(url, '_blank', 'noopener'); } }
+    else window.open(url, '_blank', 'noopener');
     return;
   }
   const a = e.target.closest('a[href^="#"]');
