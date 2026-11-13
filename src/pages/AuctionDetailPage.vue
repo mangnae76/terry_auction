@@ -4780,7 +4780,7 @@ const sonConcLines = computed(() => {
   return [
     { key: 'caseSale', label: '경매지번 매매가', unit: perPyOf(mp?.caseSale?.price ?? 0, mp?.caseSale?.areaM2 ?? 0), price: mp?.caseSale?.price ?? 0 },
     { key: 'simSale', label: '경매 유사 매매가', unit: perPyOf(mp?.simSale?.price ?? 0, mp?.simSale?.areaM2 ?? 0), price: mp?.simSale?.price ?? 0 },
-    { key: 'condSale', label: '평균 매매가', unit: mp?.condSalePerPy ?? 0, price: mp?.condSaleAvg ?? 0 },
+    { key: 'condSale', label: '유사물건 평균 매매가', unit: mp?.condSalePerPy ?? 0, price: mp?.condSaleAvg ?? 0 },
     { key: 'askCase', label: lc.label, unit: ca?.unit ?? 0, price: ca?.price ?? 0 },
     { key: 'askSim', label: ls.label, unit: sa?.unit ?? 0, price: sa?.price ?? 0 },
   ];
