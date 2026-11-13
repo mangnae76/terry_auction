@@ -26,7 +26,7 @@ const fileMsg = ref('');
 /** 표에 올릴 동(주소에 이 글이 있는 줄만, 비우면 전부) */
 const dongFilter = ref((() => { try { return (JSON.parse(localStorage.getItem(STORE_KEY) || 'null') as { dong?: string } | null)?.dong ?? '검암동'; } catch { return '검암동'; } })());
 /** DB 기일 목록(계마다 + CSV)을 사건번호로 합친 것 — 조회수는 수집한 날짜별 */
-type DbRow = DayRow & { views: Record<string, number> };
+type DbRow = DayRow & { views: Record<string, number>; from: string };
 const dbRows = ref<DbRow[]>([]);
 const dbInfo = ref('');
 const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -54,10 +54,11 @@ const loadDb = async () => {
     const m = new Map<string, DbRow>();
     const put = (r: DayListRow, csv: boolean) => {
       const o = m.get(r.key);
-      const base: DbRow = o ?? { key: r.key, kind: '', addr: '', area: null, appr: 0, min: 0, sold: 0, second: 0, bids: 0, status: '', date: '', views: {} };
+      const base: DbRow = o ?? { key: r.key, kind: '', addr: '', area: null, appr: 0, min: 0, sold: 0, second: 0, bids: 0, status: '', date: '', views: {}, from: '' };
+      const from = base.from && base.from !== (csv ? 'CSV' : '도우미') ? '도우미 · CSV' : csv ? 'CSV' : '도우미';
       const pickN = (a: number | undefined, b: number) => (a && a > 0 ? a : b);
       m.set(r.key, { ...base, kind: base.kind || r.kind || '', addr: base.addr || r.addr || '', area: base.area ?? r.area ?? null, appr: pickN(r.appr, base.appr), min: csv && base.min ? base.min : pickN(r.min, base.min),
-        sold: pickN(r.sold, base.sold), second: pickN(r.second, base.second), bids: pickN(r.bids, base.bids), status: base.status || r.status || '', date: base.date || String((r as { date?: string }).date ?? ''), views: { ...base.views, ...(r.views ?? {}) } });
+        sold: pickN(r.sold, base.sold), second: pickN(r.second, base.second), bids: pickN(r.bids, base.bids), status: base.status || r.status || '', date: base.date || String((r as { date?: string }).date ?? ''), views: { ...base.views, ...(r.views ?? {}) }, from });
     };
     docs.filter((d) => d.by === 'agent').forEach((d) => d.rows.forEach((r) => put(r, false)));
     docs.filter((d) => d.by !== 'agent').forEach((d) => d.rows.forEach((r) => put(r, true)));
@@ -219,6 +220,14 @@ const rule = computed(() => {
   return { dots, line, vm, vMax, bMax, sx, sy, twice: vm ? 2 ** vm.c : null };
 });
 
+/** DB 에 들어 있는 이 날 목록(동 거르기) — 사건번호 · 주소 · 조회수 */
+const dbList = computed(() => {
+  const f = dongFilter.value.trim();
+  return dbRows.value.filter((d) => !f || d.addr.includes(f)).map((d) => {
+    const ks = Object.keys(d.views ?? {}).sort(); const k = ks[ks.length - 1];   // 목록에는 가장 늦게 모은 값(매각 뒤여도) — 예측은 viewOf(전날까지)만
+    return { ...d, v: k ? { n: d.views[k], at: k, after: k > dayDate.value } : null };
+  });
+});
 const nUnmatched = computed(() => items.value.filter((it) => !it.target).length);
 </script>
 
@@ -257,6 +266,27 @@ const nUnmatched = computed(() => items.value.filter((it) => !it.target).length)
           <p class="bpt-sub">{{ items.length.toLocaleString('ko-KR') }}건<template v-if="nUnmatched"> · 자료 못 찾음 {{ nUnmatched }}건</template> · 칸이 비어 있으면 DB 기일 목록에서 조회수가 있는 줄을 씁니다(매각기일 전날까지 가장 늦게 모은 값) · 조회수 규칙은 늘 그 사건을 뺀 나머지로 배웁니다</p>
         </div>
       </div>
+    </section>
+
+    <section v-if="dayDate" class="bpt-card">
+      <h3 class="bpt-h3">DB에 들어 있는 목록 <small>{{ dayDate }} · {{ dongFilter.trim() || '전체' }} {{ dbList.length.toLocaleString('ko-KR') }}건 / 이 날 전체 {{ dbRows.length.toLocaleString('ko-KR') }}건</small></h3>
+      <div v-if="dbList.length" class="bpt-tbl-wrap bpt-scroll">
+        <table class="bpt-tbl">
+          <thead><tr><th>사건번호</th><th class="l">주소</th><th>조회수</th><th>종류</th><th>진행상태</th><th>넣은 곳</th></tr></thead>
+          <tbody>
+            <tr v-for="d in dbList" :key="d.key" class="ro">
+              <td>{{ caseLabel(d.key) }}</td>
+              <td class="l addr">{{ d.addr || '—' }}</td>
+              <td class="r">{{ d.v ? d.v.n.toLocaleString('ko-KR') : '—' }}<small v-if="d.v" :class="['bpt-at', { after: d.v.after }]">{{ d.v.at === dayDate ? '당일' : d.v.at.slice(5).replace('-', '.') }}{{ d.v.after ? ' 매각 뒤' : '' }}</small></td>
+              <td>{{ d.kind || '—' }}</td>
+              <td>{{ d.status || '—' }}</td>
+              <td>{{ d.from }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-else class="bpt-sub">이 날짜로 DB에 들어간 목록이 없습니다. 파일넣기로 CSV를 올리거나 도우미로 기일목록수집을 하세요</p>
+      <p class="bpt-sub">조회수는 가장 늦게 모은 값이고, 아래 작은 글은 모은 날입니다. '매각 뒤'로 모은 값은 예측에 쓰지 않습니다(입찰 전날까지 모은 값만). CSV에는 조회수가 없어 도우미로 모은 줄에만 있습니다</p>
     </section>
 
     <section v-if="items.length" class="bpt-card">
@@ -385,6 +415,9 @@ const nUnmatched = computed(() => items.value.filter((it) => !it.target).length)
 .bpt-tbl td.addr { max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
 .bpt-tbl td.strong { font-weight: 800; color: #1f5fe0; }
 .bpt-tbl tbody tr { cursor: pointer; }
+.bpt-tbl tbody tr.ro { cursor: default; }
+.bpt-scroll { max-height: 420px; }
+.bpt-scroll thead th { position: sticky; top: 0; z-index: 1; }
 .bpt-tbl tbody tr.on td { background: #f5f8ff; }
 .bpt-tbl tbody tr.off td { color: #9ca3af; }
 .bpt-link { border: 0; background: none; padding: 0; font: inherit; color: #1f5fe0; cursor: pointer; }
@@ -433,6 +466,7 @@ const nUnmatched = computed(() => items.value.filter((it) => !it.target).length)
 .bpt-btn.line { background: #fff; color: #2b6df3; border: 1px solid #2b6df3; }
 .bpt-btn:disabled { opacity: .45; cursor: default; }
 .bpt-at { display: block; font-size: 12px; color: #6b7280; }
+.bpt-at.after { color: #c4392f; }
 .bpt-rule { margin: 0; font-size: 15px; font-weight: 700; color: #111827; }
 @media (max-width: 900px) { .bpt-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bpt-two { grid-template-columns: minmax(0, 1fr); } }
 </style>
