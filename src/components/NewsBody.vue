@@ -187,13 +187,13 @@ const webBoxes = computed(() => [
 .nws-pop-head { display: flex; align-items: center; gap: 10px; padding: 18px 20px 0; }
 .nws-pop-head .tag { flex: none; min-width: 40px; padding: 3px 8px; border-radius: 4px; background: #f1f3f8; color: #6b7280; font-size: 12px; font-weight: 700; text-align: center; }
 .nws-pop-head .star { flex: none; color: #2b6df3; font-size: 14px; }
-.nws-pop-head h3 { flex: 1 1 auto; min-width: 0; margin: 0; font-size: 16px; font-weight: 800; color: var(--text, #111827); word-break: keep-all; }
+.nws-pop-head h3 { flex: 1 1 auto; min-width: 0; margin: 0; font-size: 16px; font-weight: 800; color: var(--text, #111827); word-break: keep-all; overflow-wrap: anywhere; }
 .nws-pop-head .x { flex: none; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: #6b7280; cursor: pointer; }
 .nws-pop-head .x:hover { background: #f1f3f8; }
 .nws-pop-date { display: flex; justify-content: space-between; gap: 12px; margin: 8px 20px 0; padding-bottom: 14px; border-bottom: 1px solid var(--line, #e3e8f0); font-size: 12px; color: #a3adc2; }
 .nws-pop-body { padding: 16px 20px 22px; overflow-y: auto; }
 .nws-pop-body img { display: block; max-width: 100%; margin-bottom: 12px; border-radius: 8px; cursor: zoom-in; }
-.nws-pop-body p { margin: 0; font-size: 14px; line-height: 1.75; color: var(--text, #374151); white-space: pre-line; word-break: keep-all; }
+.nws-pop-body p { margin: 0; font-size: 14px; line-height: 1.75; color: var(--text, #374151); white-space: pre-line; word-break: keep-all; overflow-wrap: anywhere; }
 .nws-pop-body p.none { color: #9aa6c4; }
 
 /* 포인트 — 안내 화면과 같은 파란 상자 */

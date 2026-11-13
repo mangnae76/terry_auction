@@ -244,9 +244,9 @@ const whoOf = (x: { authorName: string; admin?: boolean }) => (x.admin ? '운영
 .sgb-pages button { width: 36px; height: 36px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; font-size: 14px; color: #374151; cursor: pointer; }
 .sgb-pages button.on { border-color: #2a3f8f; background: #2a3f8f; color: #fff; font-weight: 700; }
 .sgb-read-head { padding-bottom: 14px; border-bottom: 1px solid #eef0f5; }
-.sgb-read-head h3 { margin: 0 0 8px; font-size: 18px; font-weight: 800; color: #111827; }
+.sgb-read-head h3 { margin: 0 0 8px; font-size: 18px; font-weight: 800; color: #111827; overflow-wrap: anywhere; }
 .sgb-read-head .meta { display: flex; gap: 16px; margin: 0; font-size: 14px; color: #6b7280; }
-.sgb-body { margin: 0; padding: 20px 0 24px; min-height: 120px; font-size: 15px; line-height: 1.8; color: #111827; white-space: pre-line; word-break: keep-all; border-bottom: 1px solid #eef0f5; }
+.sgb-body { margin: 0; padding: 20px 0 24px; min-height: 120px; font-size: 15px; line-height: 1.8; color: #111827; white-space: pre-line; word-break: keep-all; overflow-wrap: anywhere; border-bottom: 1px solid #eef0f5; }   /* 띄어쓰기 없는 긴 글(ㅋㅋ… · 주소)도 상자 안에서 줄을 바꾼다 */
 .sgb-comments { padding-top: 16px; }
 .sgb-comments h4 { margin: 0 0 10px; font-size: 16px; font-weight: 800; color: #111827; }
 .sgb-comments ul { list-style: none; margin: 0 0 12px; padding: 0; }
@@ -256,7 +256,7 @@ const whoOf = (x: { authorName: string; admin?: boolean }) => (x.admin ? '운영
 .sgb-comments .who { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; font-size: 14px; color: #6b7280; }
 .sgb-comments .who b { color: #111827; }
 .sgb-comments li.admin .who b { color: #2a3f8f; }
-.sgb-comments .txt { margin: 0; font-size: 14px; line-height: 1.7; color: #111827; white-space: pre-line; }
+.sgb-comments .txt { margin: 0; font-size: 14px; line-height: 1.7; color: #111827; white-space: pre-line; overflow-wrap: anywhere; }
 .sgb-x { margin-left: auto; border: 0; background: none; font-size: 14px; color: #9ca3af; cursor: pointer; }
 .sgb-reply { display: flex; gap: 8px; }
 .sgb-reply .sgb-input { flex: 1 1 auto; }

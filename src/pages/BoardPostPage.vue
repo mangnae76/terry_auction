@@ -98,7 +98,7 @@ const web = inject('webEmbed', false);
 .bp-posted { margin: 8px 0 0; font-size: 10.5px; color: #9ca3af; }
 .bp-period { margin: 6px 0 14px; font-size: 12px; font-weight: 700; color: #374151; }
 .bp-img { width: 100%; border-radius: 10px; margin-bottom: 12px; cursor: zoom-in; }
-.bp-body { margin: 0; font-size: 12.5px; line-height: 1.8; color: #374151; white-space: pre-wrap; word-break: keep-all; }
+.bp-body { margin: 0; font-size: 12.5px; line-height: 1.8; color: #374151; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
 .bp-gone { margin: 24px 14px; font-size: 12.5px; color: #9ca3af; }
 
 /* 웹 — 공지 화면과 같은 흰 카드 하나, 글자는 웹 규칙(최소 12 · 제목 크게 · 본문 15) */
