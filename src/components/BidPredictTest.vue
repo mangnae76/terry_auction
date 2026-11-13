@@ -5,8 +5,8 @@
  * 사건마다 예상 낙찰가 · 입찰가별 낙찰확률을 내고, 결과가 있는 사건은 맞혀본 차이를 보인다.
  * 조회수 규칙은 늘 '그 사건을 뺀 나머지'로 배운다(자기 결과로 자기를 맞히지 않게).
  */
-import { computed, onMounted, ref, watch } from 'vue';
-import { loadAgentDataset } from '../services/agentRemote';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { agentOnline, loadAgentDataset, loadDayLists, saveDayCsv, sendAgentCommand, watchAgentStatus, type AgentStatus, type DayListRow } from '../services/agentRemote';
 import { readSheetRows } from '../services/saleExcel';
 import {
   BAND_NAMES, caseLabel, csvRows, dongOf, fitPriceModel, fitViewModel, parseViewLines, priceDist, readDayRows, roundOfRatio, similarBands, soldOf, viewBands,
@@ -23,13 +23,56 @@ const dayDate = ref('');
 const viewsText = ref('');
 const pick = ref('');
 const fileMsg = ref('');
+/** 표에 올릴 동(주소에 이 글이 있는 줄만, 비우면 전부) */
+const dongFilter = ref((() => { try { return (JSON.parse(localStorage.getItem(STORE_KEY) || 'null') as { dong?: string } | null)?.dong ?? '검암동'; } catch { return '검암동'; } })());
+/** DB 기일 목록(계마다 + CSV)을 사건번호로 합친 것 — 조회수는 수집한 날짜별 */
+type DbRow = DayRow & { views: Record<string, number> };
+const dbRows = ref<DbRow[]>([]);
+const dbInfo = ref('');
+const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const plusDays = (iso: string, n: number) => { const d = new Date(`${iso}T00:00:00`); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const colFrom = ref(todayIso());
+const colTo = ref(plusDays(todayIso(), 7));
+const colCourt = ref('인천-본원');
+const agent = ref<AgentStatus | null>(null);
+const agentNote = ref('');
+const agentOn = computed(() => agentOnline(agent.value));
+let stopAgent: (() => void) | null = null;
+onMounted(() => { stopAgent = watchAgentStatus('', (st) => { agent.value = st; }, () => { agent.value = null; }); });
+onBeforeUnmount(() => stopAgent?.());
+const sendCmd = async (name: 'open' | 'daylist') => {
+  try {
+    await sendAgentCommand('', name, name === 'open' ? { site: '탱크옥션' } : { site: '탱크옥션', from: colFrom.value, to: colTo.value, court: colCourt.value.trim() || '인천-본원' });
+    agentNote.value = name === 'open' ? '브라우저 열기를 보냈습니다. 크롬에서 탱크옥션 로그인을 확인해 주세요.' : '기일 목록 수집을 보냈습니다. 끝나면 매각기일을 골라 다시 읽습니다.';
+  } catch { agentNote.value = '명령을 보내지 못했습니다. 다시 해 주세요.'; }
+};
+/** 그 매각기일의 DB 목록 읽기 */
+const loadDb = async () => {
+  if (!dayDate.value) { dbRows.value = []; dbInfo.value = ''; return; }
+  try {
+    const docs = await loadDayLists(dayDate.value);
+    const m = new Map<string, DbRow>();
+    const put = (r: DayListRow, csv: boolean) => {
+      const o = m.get(r.key);
+      const base: DbRow = o ?? { key: r.key, kind: '', addr: '', area: null, appr: 0, min: 0, sold: 0, second: 0, bids: 0, status: '', date: '', views: {} };
+      const pickN = (a: number | undefined, b: number) => (a && a > 0 ? a : b);
+      m.set(r.key, { ...base, kind: base.kind || r.kind || '', addr: base.addr || r.addr || '', area: base.area ?? r.area ?? null, appr: pickN(r.appr, base.appr), min: csv && base.min ? base.min : pickN(r.min, base.min),
+        sold: pickN(r.sold, base.sold), second: pickN(r.second, base.second), bids: pickN(r.bids, base.bids), status: base.status || r.status || '', date: base.date || String((r as { date?: string }).date ?? ''), views: { ...base.views, ...(r.views ?? {}) } });
+    };
+    docs.filter((d) => d.by === 'agent').forEach((d) => d.rows.forEach((r) => put(r, false)));
+    docs.filter((d) => d.by !== 'agent').forEach((d) => d.rows.forEach((r) => put(r, true)));
+    dbRows.value = [...m.values()];
+    dbInfo.value = docs.length ? `DB ${docs.length}개 목록(${docs.map((d) => d.dept || 'CSV').join(' · ')}) · ${m.size.toLocaleString('ko-KR')}건` : 'DB에 이 날 목록이 없습니다';
+  } catch { dbInfo.value = 'DB 목록을 읽지 못했습니다'; }
+};
+watch(dayDate, () => { void loadDb(); }, { immediate: true });
 
 try {
   const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null') as { dayRows?: DayRow[]; dayName?: string; dayDate?: string; viewsText?: string; pick?: string } | null;
   if (s) { dayRows.value = s.dayRows ?? []; dayName.value = s.dayName ?? ''; dayDate.value = s.dayDate ?? ''; viewsText.value = s.viewsText ?? ''; pick.value = s.pick ?? ''; }
 } catch { /* 그만 */ }
-watch([dayRows, dayName, dayDate, viewsText, pick], () => {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify({ dayRows: dayRows.value, dayName: dayName.value, dayDate: dayDate.value, viewsText: viewsText.value, pick: pick.value })); } catch { /* 그만 */ }
+watch([dayRows, dayName, dayDate, viewsText, pick, dongFilter], () => {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ dayRows: dayRows.value, dayName: dayName.value, dayDate: dayDate.value, viewsText: viewsText.value, pick: pick.value, dong: dongFilter.value })); } catch { /* 그만 */ }
 });
 
 onMounted(async () => {
@@ -55,6 +98,11 @@ const onFile = async (e: Event) => {
     const sold = got.filter((d) => d.status === '매각' && d.date);
     const cnt = new Map<string, number>(); sold.forEach((d) => cnt.set(d.date, (cnt.get(d.date) ?? 0) + 1));
     dayDate.value = [...cnt.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? dayDate.value;
+    // DB 에도 — 그 매각기일의 '날짜_csv' 문서(입찰자수 · 2위는 CSV 에만 있다)
+    if (dayDate.value) {
+      try { await saveDayCsv(dayDate.value, got.map((d) => ({ key: d.key, kind: d.kind, addr: d.addr, area: d.area, appr: d.appr, min: d.min, sold: d.sold, second: d.second, bids: d.bids, status: d.status, date: d.date } as DayListRow))); await loadDb(); fileMsg.value = 'DB에 저장했습니다'; }
+      catch { fileMsg.value = 'DB에 저장하지 못했습니다(이 브라우저에만 남김)'; }
+    }
   } catch (err) { fileMsg.value = err instanceof Error ? err.message : '파일을 읽지 못했습니다.'; }
 };
 
@@ -63,7 +111,22 @@ const man = (n: number) => { const m = Math.round(n / 1e4); const e = Math.floor
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const sgn = (x: number) => `${x >= 0 ? '+' : '−'}${Math.abs(x * 100).toFixed(1)}%`;
 
-const dayMap = computed(() => new Map(dayRows.value.map((d) => [d.key, d])));
+/** DB 를 먼저, 없으면 이 브라우저에 읽어 둔 파일 */
+const dayMap = computed(() => { const m = new Map<string, DayRow & { views?: Record<string, number> }>(dayRows.value.map((d) => [d.key, d])); dbRows.value.forEach((d) => m.set(d.key, { ...(m.get(d.key) ?? {}), ...d, bids: d.bids || m.get(d.key)?.bids || 0, second: d.second || m.get(d.key)?.second || 0 })); return m; });
+/** 매각기일 전날까지 가장 늦게 모은 조회수(없으면 당일 값, 그것도 없으면 없음) */
+const viewOf = (v: Record<string, number> | undefined) => {
+  const ks = Object.keys(v ?? {}).sort(); const before = ks.filter((k) => k < dayDate.value); const same = ks.filter((k) => k === dayDate.value);
+  const k = before[before.length - 1] ?? same[0];
+  return k ? { n: v![k], at: k } : null;
+};
+/** 표에 올릴 줄 — 붙여넣은 글이 있으면 그것, 없으면 DB 목록(동 거르기)에서 조회수 있는 것 */
+const baseLines = computed(() => {
+  const pasted = parseViewLines(viewsText.value);
+  if (pasted.length) return pasted.map((l) => ({ ...l, viewAt: '붙여넣기' }));
+  const f = dongFilter.value.trim();
+  return dbRows.value.filter((d) => !f || d.addr.includes(f)).map((d) => { const v = viewOf(d.views); return v ? { key: d.key, addr: d.addr, views: v.n, viewAt: v.at } : null; })
+    .filter((x): x is { key: string; addr: string; views: number; viewAt: string } => !!x);
+});
 const soldMap = computed(() => { const m = new Map<string, Sold>(); recs.value.forEach((r) => { const o = m.get(r.key); if (!o || o.d < r.d) m.set(r.key, r); }); return m; });
 /** 같은 지번 다른 호실의 건축연도(기일 목록엔 연식이 없다) */
 const yearOfAddr = (addr: string) => {
@@ -72,29 +135,35 @@ const yearOfAddr = (addr: string) => {
   return hit?.year ?? null;
 };
 
-type Item = { key: string; addr: string; views: number; target: BidTarget | null; result: { sold: number; bids: number; second: number } | null; failed: boolean; src: string };
-const items = computed<Item[]>(() => parseViewLines(viewsText.value).map((l) => {
+type Item = { key: string; addr: string; views: number; viewAt: string; target: BidTarget | null; result: { sold: number; bids: number; second: number } | null; failed: boolean; src: string };
+const items = computed<Item[]>(() => baseLines.value.map((l) => {
   const d = dayMap.value.get(l.key); const s = soldMap.value.get(l.key);
   if (d) {
     const floor = Number(d.addr.match(/(\d+)층/)?.[1] ?? 0) || null; const year = yearOfAddr(d.addr);
-    if (d.status === '매각') {
-      return { key: l.key, addr: l.addr || d.addr, views: l.views, src: '기일 목록', failed: false,
+    if (d.status.includes('매각')) {
+      return { key: l.key, addr: l.addr || d.addr, views: l.views, viewAt: l.viewAt, src: '기일 목록', failed: false,
         target: { round: roundOfRatio(d.min / d.appr), appr: d.appr, min: d.min, area: d.area, year, floor, date: d.date || dayDate.value, dong: dongOf(d.addr) },
         result: { sold: d.sold, bids: d.bids, second: d.second } };
     }
     const n = Number(d.status.match(/유찰\s*(\d+)/)?.[1] ?? 0);
-    const round = Math.max(0, n - 1); const min = Math.round(d.appr * 0.7 ** round / 1000) * 1000;   // 그날 최저가(지금 칸은 다음 기일 값)
-    return { key: l.key, addr: l.addr || d.addr, views: l.views, src: '기일 목록', failed: n > 0,
-      target: { round, appr: d.appr, min, area: d.area, year, floor, date: dayDate.value, dong: dongOf(d.addr) }, result: n > 0 ? { sold: 0, bids: 0, second: 0 } : null };
+    // 입찰일자가 이 매각기일보다 뒤 = 그날 유찰돼 다음 기일로 넘어간 것(최저가 칸은 다음 기일 값). 같거나 없으면 아직 입찰 전
+    const failedHere = !!d.date && d.date > dayDate.value;
+    if (!failedHere) {
+      return { key: l.key, addr: l.addr || d.addr, views: l.views, viewAt: l.viewAt, src: '기일 목록', failed: false,
+        target: { round: n, appr: d.appr, min: d.min, area: d.area, year, floor, date: dayDate.value, dong: dongOf(d.addr) }, result: null };
+    }
+    const round = Math.max(0, n - 1); const min = Math.round(d.appr * 0.7 ** round / 1000) * 1000;   // 그날 최저가
+    return { key: l.key, addr: l.addr || d.addr, views: l.views, viewAt: l.viewAt, src: '기일 목록', failed: true,
+      target: { round, appr: d.appr, min, area: d.area, year, floor, date: dayDate.value, dong: dongOf(d.addr) }, result: { sold: 0, bids: 0, second: 0 } };
   }
   if (s) {
-    return { key: l.key, addr: l.addr || s.addr, views: l.views, src: '매각 자료', failed: false,
+    return { key: l.key, addr: l.addr || s.addr, views: l.views, viewAt: l.viewAt, src: '매각 자료', failed: false,
       target: { round: s.round, appr: s.appr, min: s.min, area: s.area, year: s.year, floor: s.floor, date: s.d, dong: s.dong }, result: s.bids != null ? { sold: s.sold, bids: s.bids, second: 0 } : null };
   }
-  return { key: l.key, addr: l.addr, views: l.views, src: '', failed: false, target: null, result: null };
+  return { key: l.key, addr: l.addr, views: l.views, viewAt: l.viewAt, src: '', failed: false, target: null, result: null };
 }));
 
-const pairs = computed<ViewPair[]>(() => items.value.filter((it) => it.result && it.views >= 0).map((it) => ({ key: it.key, views: it.views, bids: it.result!.bids })));
+const pairs = computed<ViewPair[]>(() => items.value.filter((it) => it.result && it.views >= 0 && it.result.bids >= 0 && (it.failed || it.result.bids > 0)).map((it) => ({ key: it.key, views: it.views, bids: it.result!.bids })));
 
 type Pred = { before: ReturnType<typeof priceDist>; after: ReturnType<typeof priceDist> | null; piBefore: number[]; piAfter: number[] | null; p0: number | null; simN: number; loose: boolean; vmN: number; expBids: number | null };
 const preds = computed(() => {
@@ -168,12 +237,24 @@ const nUnmatched = computed(() => items.value.filter((it) => !it.target).length)
           <p v-if="dayName" class="bpt-sub">{{ dayName }} · {{ dayRows.length.toLocaleString('ko-KR') }}건</p>
           <p v-else class="bpt-sub">기일별물건에서 받은 엑셀 · CSV(그날 결과 · 2위 · 입찰자수)</p>
           <label class="bpt-date">매각기일<input v-model="dayDate" type="date" /></label>
+          <p v-if="dbInfo" class="bpt-sub">{{ dbInfo }}</p>
           <p v-if="fileMsg" class="bpt-warn">{{ fileMsg }}</p>
+        </div>
+        <div class="bpt-box">
+          <h3>기일 목록 수집 <small :class="['bpt-on', { on: agentOn }]">{{ agentOn ? 'MyAgent 연결됨' : 'MyAgent 꺼짐' }}</small></h3>
+          <label class="bpt-date">법원<input v-model="colCourt" type="text" class="court" /></label>
+          <div class="bpt-range"><input v-model="colFrom" type="date" aria-label="시작일" /><span>~</span><input v-model="colTo" type="date" aria-label="끝일" /></div>
+          <div class="bpt-btns">
+            <button type="button" class="bpt-btn line" :disabled="!agentOn || !!agent?.busy" @click="sendCmd('open')">브라우저열기</button>
+            <button type="button" class="bpt-btn" :disabled="!agentOn || !agent?.ready || !!agent?.busy" @click="sendCmd('daylist')">기일목록수집</button>
+          </div>
+          <p class="bpt-sub">{{ agentNote || (agentOn ? agent?.message : '') || '집 PC 에서 agent.py 를 켜 두면 여기서 시킬 수 있습니다' }}</p>
         </div>
         <div class="bpt-box grow">
           <h3>사건번호 · 주소 · 조회수</h3>
-          <textarea v-model="viewsText" rows="6" spellcheck="false" placeholder="한 줄에 한 사건 — 2026타경501308 검암동 493-4 정성드림빌 500&#10;조회수는 매각 전일까지 누적(줄 맨 끝 숫자)" />
-          <p class="bpt-sub">{{ items.length.toLocaleString('ko-KR') }}건 읽음<template v-if="nUnmatched"> · 자료 못 찾음 {{ nUnmatched }}건</template> · 조회수 규칙은 늘 그 사건을 뺀 나머지로 배웁니다</p>
+          <textarea v-model="viewsText" rows="5" spellcheck="false" placeholder="손으로 넣을 때만 — 한 줄에 한 사건, 2026타경501308 검암동 493-4 정성드림빌 500&#10;조회수는 매각 전일까지 누적(줄 맨 끝 숫자)" />
+          <label class="bpt-date">동 거르기<input v-model="dongFilter" type="text" class="court" placeholder="비우면 전부" /></label>
+          <p class="bpt-sub">{{ items.length.toLocaleString('ko-KR') }}건<template v-if="nUnmatched"> · 자료 못 찾음 {{ nUnmatched }}건</template> · 칸이 비어 있으면 DB 기일 목록에서 조회수가 있는 줄을 씁니다(매각기일 전날까지 가장 늦게 모은 값) · 조회수 규칙은 늘 그 사건을 뺀 나머지로 배웁니다</p>
         </div>
       </div>
     </section>
@@ -187,7 +268,7 @@ const nUnmatched = computed(() => items.value.filter((it) => !it.target).length)
             <tr v-for="it in items" :key="it.key" :class="{ on: sel?.key === it.key, off: !preds.has(it.key) }" @click="pick = it.key">
               <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button></td>
               <td class="l addr">{{ it.addr || '—' }}</td>
-              <td class="r">{{ it.views.toLocaleString('ko-KR') }}</td>
+              <td class="r">{{ it.views.toLocaleString('ko-KR') }}<small class="bpt-at">{{ it.viewAt === dayDate ? '당일' : it.viewAt.slice(5).replace('-', '.') }}</small></td>
               <td>{{ it.target ? `${it.target.round + 1}차` : '—' }}</td>
               <td class="r">{{ it.target ? won(it.target.min) : '자료 없음' }}</td>
               <template v-if="preds.get(it.key)">
@@ -195,7 +276,7 @@ const nUnmatched = computed(() => items.value.filter((it) => !it.target).length)
                 <td class="r">{{ man((preds.get(it.key)!.after ?? preds.get(it.key)!.before).lo) }} ~ {{ man((preds.get(it.key)!.after ?? preds.get(it.key)!.before).hi) }}</td>
               </template>
               <template v-else><td>—</td><td>—</td></template>
-              <td class="r">{{ it.result ? (it.result.sold > 0 ? `${won(it.result.sold)} · ${it.result.bids}명` : '유찰') : '—' }}</td>
+              <td class="r">{{ it.result ? (it.result.sold > 0 ? `${won(it.result.sold)} · ${it.result.bids ? `${it.result.bids}명` : '인원 모름'}` : '유찰') : '입찰 전' }}</td>
               <td class="r">{{ it.result && it.result.sold > 0 && preds.get(it.key) ? sgn(it.result.sold / (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median - 1) : '—' }}</td>
             </tr>
           </tbody>
@@ -342,6 +423,16 @@ const nUnmatched = computed(() => items.value.filter((it) => !it.target).length)
 .bpt-svg .act { fill: #e8590c; stroke: #fff; stroke-width: 2; }
 .bpt-svg .mk { stroke: #e8590c; stroke-width: 1.5; stroke-dasharray: 4 4; }
 .bpt-svg .mk2 { stroke: #9aa6b8; stroke-width: 1; stroke-dasharray: 3 4; }
+.bpt-on { margin-left: 6px; font-size: 12px; font-weight: 700; color: #9ca3af; }
+.bpt-on.on { color: #15803d; }
+.bpt-date input.court { width: 120px; }
+.bpt-range { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.bpt-range input { height: 32px; border: 1px solid #d5dbe5; border-radius: 8px; padding: 0 8px; font: inherit; }
+.bpt-btns { display: flex; gap: 8px; }
+.bpt-btn { height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: #2b6df3; color: #fff; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.bpt-btn.line { background: #fff; color: #2b6df3; border: 1px solid #2b6df3; }
+.bpt-btn:disabled { opacity: .45; cursor: default; }
+.bpt-at { display: block; font-size: 12px; color: #6b7280; }
 .bpt-rule { margin: 0; font-size: 15px; font-weight: 700; color: #111827; }
 @media (max-width: 900px) { .bpt-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bpt-two { grid-template-columns: minmax(0, 1fr); } }
 </style>

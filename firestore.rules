@@ -172,8 +172,12 @@ service cloud.firestore {
     function validAgentCmd(c) {
       return c is map && c.keys().hasOnly(['id', 'name', 'args', 'at'])
         && c.id is string && c.id.size() <= 64
-        && c.name in ['open', 'screen', 'auto', 'enrich', 'queue']
-        && c.args is map && c.args.keys().hasOnly(['site', 'months', 'src', 'fresh'])
+        && c.name in ['open', 'screen', 'auto', 'enrich', 'queue', 'daylist']
+        && c.args is map && c.args.keys().hasOnly(['site', 'months', 'src', 'fresh', 'from', 'to', 'court'])
+        // daylist(기일 목록, 2026-11-14) — 기간 · 법원
+        && (!('from' in c.args) || (c.args.from is string && c.args.from.size() == 10))
+        && (!('to' in c.args) || (c.args.to is string && c.args.to.size() == 10))
+        && (!('court' in c.args) || (c.args.court is string && c.args.court.size() <= 20))
         && (!('site' in c.args) || c.args.site in ['옥션원', '탱크옥션'])
         && (!('months' in c.args) || c.args.months in [0, 6, 12, 24, 36])
         && (!('src' in c.args) || c.args.src in ['near', 'same'])
@@ -224,6 +228,15 @@ service cloud.firestore {
         && (!('cmd' in agentData()) || validAgentCmd(agentData().cmd))
         && (!('stop' in agentData()) || (agentData().stop is map && agentData().stop.keys().hasOnly(['id', 'at']) && agentData().stop.id is string && agentData().stop.id.size() <= 64))
         && (!('webSeenAt' in agentData()) || agentData().webSeenAt is timestamp);
+    }
+    // 기일 목록(탱크옥션 기일별물건) — 계마다 한 문서(날짜_법원_계, CSV 는 날짜_csv). 줄마다 조회수를 수집한 날짜별로(2026-11-14)
+    match /saleData/dayList/days/{day} {
+      allow read, delete: if isAdmin();
+      allow create, update: if isAdmin()
+        && agentData().keys().hasOnly(['date', 'court', 'dept', 'sptCd', 'dptCd', 'rows', 'at', 'by'])
+        && agentData().date is string && agentData().date.size() == 10
+        && agentData().rows is list && agentData().rows.size() <= 600
+        && agentData().by in ['web', 'agent'];
     }
     match /saleData/agentQueue {
       allow get: if isAdmin();

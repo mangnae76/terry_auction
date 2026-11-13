@@ -7,13 +7,14 @@
 //   saleData/coverage                도우미 → 웹 모은 동네 {dongs: {'인천 서구 검암동': {at(ms), n, site, src, months}}}
 //   saleData/main                    {count, chunks, version, by, updatedAt}
 //   saleData/main/chunks/{i}         {i, data: 레코드 JSON 글자, v}
+//   saleData/dayList/days/{날짜_법원_계}  기일 목록(탱크옥션 기일별물건) — 도우미가 조회수(views: {수집일: 값}), 웹 CSV 는 {날짜}_csv
 // 공용 자료는 관리자 누구나 쓰고 로그인한 모두가 읽는다. 명령 · 상태 · 대기열은 각자 집 PC 라 운영자 본인만(firestore.rules).
 // 예전에는 모은 자료도 users/{uid}/datasets · agent/coverage 에 계정마다 쌓였다 — migrateLegacyAgentData 가 한 번 옮긴다.
-import { collection, doc, getDoc, getDocFromServer, getDocs, onSnapshot, runTransaction, serverTimestamp, setDoc, type Unsubscribe } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocFromServer, getDocs, onSnapshot, query, runTransaction, serverTimestamp, setDoc, where, type Unsubscribe } from 'firebase/firestore';
 import { firestore } from './firebase';
 
-export type AgentCmdName = 'open' | 'screen' | 'auto' | 'enrich' | 'queue';
-export type AgentCmdArgs = { site?: '옥션원' | '탱크옥션'; months?: 0 | 6 | 12 | 24 | 36; src?: 'near' | 'same'; fresh?: boolean };
+export type AgentCmdName = 'open' | 'screen' | 'auto' | 'enrich' | 'queue' | 'daylist';
+export type AgentCmdArgs = { site?: '옥션원' | '탱크옥션'; months?: 0 | 6 | 12 | 24 | 36; src?: 'near' | 'same'; fresh?: boolean; from?: string; to?: string; court?: string };
 export type AgentStatus = {
   at?: { toMillis(): number } | null;
   version?: string;
@@ -197,4 +198,21 @@ export const migrateLegacyAgentData = async (uid: string): Promise<boolean> => {
     console.warn('[saleData] 대기열 옮기기 실패', e);
   }
   return moved;
+};
+
+/* ===== 기일 목록(탱크옥션 기일별물건) — 계마다 한 문서. 도우미가 조회수를, 웹이 CSV(입찰자수 · 2위)를 넣는다(2026-11-14) ===== */
+export type DayListRow = { key: string; tid?: string; kind?: string; addr?: string; area?: number | null; appr?: number; min?: number; sold?: number; second?: number; bids?: number; status?: string; views?: Record<string, number> };
+export type DayListDoc = { id: string; date: string; court: string; dept: string; rows: DayListRow[]; by: string; at: number };
+const dayCol = () => collection(db(), 'saleData', 'dayList', 'days');
+/** 그 매각기일의 문서 전부(계마다 + CSV) */
+export const loadDayLists = async (date: string): Promise<DayListDoc[]> => {
+  const snaps = await getDocs(query(dayCol(), where('date', '==', date)));
+  return snaps.docs.map((d) => {
+    const x = d.data() as Partial<DayListDoc> & { at?: { toMillis(): number } };
+    return { id: d.id, date: String(x.date ?? ''), court: String(x.court ?? ''), dept: String(x.dept ?? ''), rows: Array.isArray(x.rows) ? x.rows : [], by: String(x.by ?? ''), at: x.at?.toMillis?.() ?? 0 };
+  });
+};
+/** CSV(엑셀) 줄 — 그 매각기일의 '날짜_csv' 문서로 통째 저장 */
+export const saveDayCsv = async (date: string, rows: DayListRow[]): Promise<void> => {
+  await setDoc(doc(dayCol(), `${date}_csv`), { date, court: '', dept: '', sptCd: '', dptCd: '', rows: rows.slice(0, 600), by: 'web', at: serverTimestamp() });
 };
