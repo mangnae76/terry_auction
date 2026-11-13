@@ -8,6 +8,8 @@ import { dealCountTip } from '../services/tipRows';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
+import { isAdminEmail } from '../services/accessControl';
+import BidPredictTest from '../components/BidPredictTest.vue';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
 import { fetchDongTradeDetails, fetchDongTradeStats, tradeWindowOf, type DongTradeDetailRow } from '../services/publicDataApi';
 import { openNaverSpot, openPlanetSpot } from '../services/naverListing';
@@ -44,6 +46,8 @@ const router = useRouter();
 /** 웹 시장분석 › 지역분석에 띄웠는가 — 웹(shared.entry.js)이 넣어 준다. 분석 도구에서는 false */
 const webEmbed = inject<boolean>('webEmbed', false);
 const auth = useAuthStore();
+/** 운영자 — 시장분석 › 테스트(낙찰가 예측) 탭은 운영자만 */
+const isOperator = computed(() => isAdminEmail(auth.email));
 
 // 시도 → 시군구 → 읍면동 차례로 좁힌다. 여기는 한 시군구씩만 받는다 —
 // 줄 단위로 다 들고 있어야 해서 시도 전체는 너무 무겁다.
@@ -128,7 +132,7 @@ const runPrice = () => {
   try { localStorage.setItem(PRICE_Q_KEY, JSON.stringify(priceQ.value)); } catch { /* 그만 */ }
 };
 const priceAuction = computed(() => (priceQ.value ? ({ id: `market-price:${priceQ.value.kind}:${priceQ.value.address}:${priceQ.value.months ?? 12}:${priceQ.value.at ?? 0}`, address: priceQ.value.address } as AuctionDetail) : null));
-const listView = ref<'map' | 'top' | 'bld' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case'>(props.rankMode ? 'map' : props.sonMode ? 'supply' : 'table');
+const listView = ref<'map' | 'top' | 'bld' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case' | 'test'>(props.rankMode ? 'map' : props.sonMode ? 'supply' : 'table');
 // 웹 — 맨 앞 '지도' 탭(예전 시장분석 › 거래랭킹). 조회할 때마다 mapRun 이 늘어 지도도 같은 조건으로 받는다
 const mapRun = ref(0);
 const mapEmbed = computed(() => ({
@@ -144,11 +148,13 @@ const mapEmbed = computed(() => ({
 }));
 // 웹 — 보던 안 탭을 이 브라우저에 남겨 새로고침해도 그 탭으로(지역분석 · 랭킹분석 따로). 아래 예전 주소 표시가 있으면 그쪽이 이긴다
 const VIEW_KEY = `adm.view.${props.rankMode ? 'rank' : props.sonMode ? 'son' : 'dong'}`;
-const VIEWS_OF_MODE: string[] = props.rankMode ? ['map', 'top', 'bld'] : props.sonMode ? ['supply', 'case'] : ['table', 'dist', 'detail', 'deals'];
+const VIEWS_OF_MODE: string[] = props.rankMode ? ['map', 'top', 'bld'] : props.sonMode ? ['supply', 'case'] : ['table', 'dist', 'detail', 'deals', 'test'];
 if (webEmbed) {
   // 유사매물 탭은 뺐다 — 유사물건 찾기는 시세조사 안에서. 그 탭에 있던 사람은 시세조사로
   try { const raw = localStorage.getItem(VIEW_KEY); const v = raw === 'sim' ? 'case' : raw; if (v && VIEWS_OF_MODE.includes(v)) listView.value = v as typeof listView.value; } catch { /* 그만 */ }
 }
+// 운영자가 아닌데 테스트 탭이 남아 있으면 지역별분석으로
+watch(() => auth.email, (e) => { if (e && !isAdminEmail(e) && listView.value === 'test') listView.value = 'table'; }, { immediate: true });
 watch(listView, (v) => { if (webEmbed && VIEWS_OF_MODE.includes(v)) { try { localStorage.setItem(VIEW_KEY, v); } catch { /* 그만 */ } } });
 try { if (props.rankMode && sessionStorage.getItem('adm.dong.openMap') === '1') { sessionStorage.removeItem('adm.dong.openMap'); listView.value = 'map'; } } catch { /* 그만 */ }
 // 예전 시장분석 › 경매지번 분석 주소로 오면 경매지번 탭으로
@@ -1143,7 +1149,7 @@ const downloadCsv = () => {
               <button type="button" role="tab" :aria-selected="listView === 'top'" :class="{ on: listView === 'top' }" @click="listView = 'top'">거래랭킹</button>
               <button type="button" role="tab" :aria-selected="listView === 'bld'" :class="{ on: listView === 'bld' }" @click="listView = 'bld'">건물랭킹</button>
             </nav>
-        <nav v-else-if="all.length > 0 || listView === 'case'" class="adm-view-tabs" role="tablist">
+        <nav v-else-if="all.length > 0 || listView === 'case' || listView === 'test'" class="adm-view-tabs" role="tablist">
               <button v-if="props.sonMode" type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요분석</button>
               <!-- 경매지번 — 시장분석 › 경매지번 분석 화면을 그대로(주소 줄 · 종류 · 기간 · 내비 · 표 · 저장). 주소 줄은 위 고르는 줄 자리에 -->
               <button v-if="props.sonMode" type="button" role="tab" :aria-selected="listView === 'case'" :class="{ on: listView === 'case' }" @click="listView = 'case'">시세분석</button>
@@ -1156,6 +1162,8 @@ const downloadCsv = () => {
               </span></button>
               <button type="button" role="tab" :aria-selected="listView === 'detail'" :class="{ on: listView === 'detail' }" @click="listView = 'detail'">상세분포</button>
               <button type="button" role="tab" :aria-selected="listView === 'deals'" :class="{ on: listView === 'deals' }" @click="listView = 'deals'">거래상세</button>
+              <!-- 테스트(운영) — 낙찰가 예측 시험대. 운영자만 -->
+              <button v-if="isOperator" type="button" role="tab" :aria-selected="listView === 'test'" :class="{ on: listView === 'test' }" @click="listView = 'test'">테스트<span class="adm-chip">운영</span></button>
               </template>
             </nav>
         <div id="admCrumbSlot" class="adm-crumb-slot" />
@@ -1171,7 +1179,8 @@ const downloadCsv = () => {
       />
       <!-- 시세분석 — 선정물건 손품조사의 시세분석(지도 · 유사물건 · 예상 가격)을 위 주소 줄로 찾은 주소에. 선정물건에 없는 주소도 본다 -->
       <div v-if="webEmbed && listView === 'case'" class="son-price"><SonpumPricePage v-if="priceAuction && priceQ" :key="priceAuction.id" :auction="priceAuction" :kind="priceQ.kind" :months="priceQ.months ?? 12" loose /><p v-else class="son-msg">위 칸에 전체 주소를 넣고 종류를 고른 뒤 조회를 누르세요.</p></div>
-      <template v-if="all.length > 0 && listView !== 'map' && listView !== 'case'">
+      <BidPredictTest v-if="webEmbed && listView === 'test' && isOperator" />
+      <template v-if="all.length > 0 && listView !== 'map' && listView !== 'case' && listView !== 'test'">
         <!-- 웹 — 위 요약 상자 틀은 하나. 읍면동을 고르면 안의 상자만 셋(총 거래건수 · 실거래가 평균 · 평당가 평균)으로 -->
         <section v-if="webEmbed && listView !== 'supply'" class="adm-gunav">
           <div class="adm-gunav-head">

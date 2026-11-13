@@ -53,6 +53,23 @@ export async function readWorkbook(buf: ArrayBuffer): Promise<Rec[]> {
   return normalizeRecords(items)
 }
 
+/** 첫 시트를 칸 글 표로(기일별물건 목록처럼 머리 줄이 1줄이 아닌 파일용) */
+export async function readSheetRows(buf: ArrayBuffer): Promise<unknown[][]> {
+  if (buf.byteLength > MAX_FILE_BYTES) throw new Error('파일이 너무 큽니다 (15MB까지).')
+  const ExcelJS = await loadExcelJS()
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.load(buf)
+  const ws = wb.worksheets[0]
+  if (!ws) return []
+  const out: unknown[][] = []
+  ws.eachRow({ includeEmpty: false }, (row) => {
+    const cells: unknown[] = []
+    row.eachCell({ includeEmpty: true }, (c, col) => { cells[col - 1] = cellValue(c.value) })
+    out.push(cells)
+  })
+  return out
+}
+
 type ExcelNS = typeof import('exceljs')
 let excelP: Promise<ExcelNS> | null = null
 /** 한 번만 불러 둔다 — 실패하면 다음에 다시 해 본다 */
