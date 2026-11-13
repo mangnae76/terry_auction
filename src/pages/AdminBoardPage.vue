@@ -332,7 +332,8 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
         </div>
         <AdminTopTabs />
         <nav class="adm-top-nav">
-          <span class="adm-who">{{ who }}</span>
+          <!-- 사람 아이콘 — 웹 머리띠 내 계정과 같은 그림(2026-11-13 사용자) -->
+          <span class="adm-who"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.2" r="3.7" /><path d="M4.8 20.2c1.3-3.6 3.9-5.4 7.2-5.4s5.9 1.8 7.2 5.4" /></svg>{{ who }}</span>
         </nav>
       </div>
     </header>
@@ -641,7 +642,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   border: 1px solid #ffffff4d; background: #ffffff1a; border-radius: 8px;
   padding: 6px 12px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: #fff; cursor: pointer;
 }
-.adm-who { font-size: 12px; color: #c7d2ea; font-weight: 600; }
+.adm-who { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #c7d2ea; font-weight: 600; }
 
 .adm-body {
   max-width: 1200px; margin: 0 auto; padding: 28px 24px 60px;
