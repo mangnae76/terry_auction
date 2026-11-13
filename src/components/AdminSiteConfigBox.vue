@@ -90,8 +90,8 @@ const live = computed(() => popupLive(draft.value.popup));
         <span class="asc-area"><textarea v-model="draft.popup.body" rows="5" maxlength="500" placeholder="웹 · 앱을 열 때 한 번 보일 안내" /><small>{{ draft.popup.body.length }} / 500</small></span>
       </label>
       <label class="asc-row"><span class="asc-label">자세히보기</span><input v-model="draft.popup.linkUrl" type="url" placeholder="https:// (비우면 단추 없음)" /></label>
-      <div class="asc-row"><span class="asc-label">시작</span><DateTimeField v-model="draft.popup.startAt" /><small>비우면 바로</small></div>
-      <div class="asc-row"><span class="asc-label">끝</span><DateTimeField v-model="draft.popup.endAt" /><small>비우면 계속</small></div>
+      <div class="asc-row"><span class="asc-label">시작</span><DateTimeField v-model="draft.popup.startAt" now-btn /><small>비우면 바로</small></div>
+      <div class="asc-row"><span class="asc-label">끝</span><DateTimeField v-model="draft.popup.endAt" day-btn /><small>비우면 계속</small></div>
       <p class="asc-note">회원은 열 때 한 번 보고, '오늘 하루 보지 않기'를 고르면 그날은 다시 안 보입니다. 내용을 고쳐 저장하면 새 팝업으로 다시 보입니다.</p>
     </template>
 

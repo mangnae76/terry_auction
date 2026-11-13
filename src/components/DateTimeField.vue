@@ -5,7 +5,9 @@
 // 그래서 둘로 나누고, 날짜를 고르면 시각은 00:00(밤 12시)로 맞춰 둔다.
 import { computed } from 'vue';
 
-const props = defineProps<{ modelValue?: string; disabled?: boolean }>();
+/** nowBtn — 오른쪽에 '지금' 단추(누르면 지금 날짜 · 시각을 분까지, 운영 › 글 올릴 때, 2026-11-13 사용자) */
+/** dayBtn — '지금부터 하루' 단추(지금 시각 + 24시간, 앱 시작 팝업 끝, 2026-11-13 사용자) */
+const props = defineProps<{ modelValue?: string; disabled?: boolean; nowBtn?: boolean; dayBtn?: boolean }>();
 const emit = defineEmits<{ (e: 'update:modelValue', v: string): void }>();
 
 const date = computed(() => (props.modelValue ?? '').slice(0, 10));
@@ -25,6 +27,10 @@ const minutes = computed(() => {
   const list = Array.from({ length: 12 }, (_, i) => pad(i * 5));
   return list.includes(minute.value) ? list : [...list, minute.value].sort();
 });
+const setNow = (addDays = 0) => {
+  const d = new Date(Date.now() + addDays * 86400000);
+  emit('update:modelValue', `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
+};
 const setTime = (h: string, m: string) => {
   if (!date.value) { emit('update:modelValue', ''); return; }
   emit('update:modelValue', `${date.value}T${h}:${m}`);
@@ -42,6 +48,8 @@ const setTime = (h: string, m: string) => {
         <option v-for="m in minutes" :key="m" :value="m">{{ m }}분</option>
       </select>
     </span>
+    <button v-if="nowBtn" type="button" class="dtf-now" :disabled="disabled" @click="setNow()">지금</button>
+    <button v-if="dayBtn" type="button" class="dtf-now" :disabled="disabled" @click="setNow(1)">지금부터 하루</button>
   </span>
 </template>
 
@@ -58,6 +66,8 @@ const setTime = (h: string, m: string) => {
 /* 날짜는 '2026. 10. 01.' 만큼만, 남는 자리는 시각 칸이 가져간다 */
 .dtf-date { flex: 1 1 124px; min-width: 110px; }
 .dtf-time { flex: 1 1 124px; min-width: 120px; display: flex; gap: 4px; }
+.dtf-now { flex: none; height: 38px; padding: 0 10px; border: 1px solid #c9d6f5; border-radius: 8px; background: #fff; color: #2b6df3; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.dtf-now:disabled { color: #9ca3af; border-color: #e3e8f0; cursor: default; }
 .dtf-time select { flex: 1 1 0; cursor: pointer; }
 .dtf-time select:disabled { cursor: default; }
 </style>

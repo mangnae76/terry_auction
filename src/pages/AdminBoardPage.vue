@@ -462,7 +462,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
           <div class="adb-when-row">
             <div class="adb-field">
               <small>올릴 때 <em>(비우면 바로)</em></small>
-              <DateTimeField v-model="draft.startAt" @update:model-value="onDateChange" />
+              <DateTimeField v-model="draft.startAt" now-btn @update:model-value="onDateChange" />
             </div>
             <div v-if="hasEnd" class="adb-field">
               <small>내릴 때 <em>(비우면 계속)</em></small>
