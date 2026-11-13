@@ -312,6 +312,9 @@ main{flex:1;padding-block:24px 64px}
 /* 출처 */
 .src{margin:0;padding-left:20px;display:grid;gap:6px;font-size:14px;line-height:1.6;color:var(--text-2)}
 .src a{color:var(--blue);text-underline-offset:3px}
+.src-at{display:block;font-size:12.5px;color:var(--muted)}
+.ref{margin-left:3px;font-size:11.5px;font-weight:700;color:var(--blue);text-decoration:none;vertical-align:super;line-height:0}
+.ref:hover{text-decoration:underline}
 
 /* 바닥 */
 .foot{background:var(--foot);color:var(--foot-text);font-size:13px}
@@ -422,7 +425,7 @@ main{flex:1;padding-block:24px 64px}
       <div class="panel">
         <div class="chk-grid">
           <div class="chk"><h4>서류 열람</h4><ul><li>매각물건명세서 · 현황조사서 · 감정평가서</li><li>최신 등기사항증명서(갑구·을구)</li><li>건축물대장 — 위반건축물 표시</li><li>전입세대열람 · 토지이용계획</li></ul></div>
-          <div class="chk"><h4>권리</h4><ul><li>말소기준권리 찾기(가장 앞선 근저당·압류·가압류 등)</li><li>기준보다 앞선 권리 = 인수 가능성</li><li>임차인 전입일 vs 기준일, 배당요구 여부</li><li>명세서의 인수 권리 · 유치권 · 법정지상권 · 대지권 미등기 · 토지별도등기</li></ul></div>
+          <div class="chk"><h4>권리<a class="ref" href="#src1" aria-label="참고 1">[1]</a></h4><ul><li>말소기준권리 찾기(가장 앞선 근저당·압류·가압류 등)</li><li>기준보다 앞선 권리 = 인수 가능성</li><li>임차인 전입일 vs 기준일, 배당요구 여부</li><li>명세서의 인수 권리 · 유치권 · 법정지상권 · 대지권 미등기 · 토지별도등기</li></ul></div>
           <div class="chk"><h4>사건 상태</h4><ul><li>변경 · 취하 · 정지 여부(전날·당일 재확인)</li><li>특별매각조건 — 농취증, 보증금 20~30%(재매각 등)</li><li>유찰 횟수와 최저가</li></ul></div>
           <div class="chk"><h4>돈 계산</h4><ul><li>입찰 상한 = 매도 예상가 − 취득세·수리·명도·이자·세금 − 목표수익</li><li>잔금 대출 가능액 미리 상담</li><li>미납관리비(공용부분)·인수 보증금 반영</li></ul></div>
         </div>
@@ -474,8 +477,8 @@ main{flex:1;padding-block:24px 64px}
       <div class="panel">
         <div class="chk-grid">
           <div class="chk"><h4>출발 전</h4><ul><li>사건 진행 여부(변경 · 취하) 재확인</li><li>법원 · 경매법정 위치, 입찰 마감 시각</li><li>입찰가 미리 확정(현장에서 바꾸지 않기)</li></ul></div>
-          <div class="chk"><h4>준비물 · 본인</h4><ul><li>신분증</li><li>도장(막도장 가능)</li><li>입찰보증금 — 최저매각가격의 10%(특별매각조건이면 공고 금액), 자기앞수표 1장</li></ul></div>
-          <div class="chk"><h4>준비물 · 대리</h4><ul><li>위임장(본인 인감 날인)</li><li>본인 인감증명서(6개월 이내)</li><li>대리인 신분증 · 도장</li></ul></div>
+          <div class="chk"><h4>준비물 · 본인<a class="ref" href="#src3" aria-label="참고 3">[3]</a></h4><ul><li>신분증</li><li>도장(막도장 가능)</li><li>입찰보증금 — 최저매각가격의 10%(특별매각조건이면 공고 금액), 자기앞수표 1장</li></ul></div>
+          <div class="chk"><h4>준비물 · 대리<a class="ref" href="#src2" aria-label="참고 2">[2]</a></h4><ul><li>위임장(본인 인감 날인)</li><li>본인 인감증명서(6개월 이내)</li><li>대리인 신분증 · 도장</li></ul></div>
           <div class="chk"><h4>입찰표</h4><ul><li>사건번호 · 물건번호</li><li>입찰가 · 보증금 숫자, '0' 개수 다시 세기</li><li>보증금 봉투와 함께 제출, 영수증 받기</li><li>떨어지면 보증금 바로 돌려받기</li></ul></div>
         </div>
         <div class="note warn"><svg class="ic"><use href="#i-alert"/></svg><div><span class="nt">'0' 하나의 실수</span>입찰가를 잘못 높게 쓴 것은 매각불허가 사유가 아닙니다. 대금을 못 내면 보증금을 돌려받지 못합니다.</div></div>
@@ -500,10 +503,9 @@ main{flex:1;padding-block:24px 64px}
       <div class="sec-head"><span class="sec-no">07</span><h2>참고</h2></div>
       <div class="panel">
         <ol class="src">
-          <li><a href="https://glasswallet.com/calculate/auction-profit/beginner-checklist" target="_blank" rel="noopener">경매 초보 체크리스트 — 입찰부터 소유권 이전까지</a></li>
-          <li><a href="https://houseinfo.kr/blog/0515-budongsang-gyeongmae-daeri-daeri-ipchal-wiim-jeolcha-annae/" target="_blank" rel="noopener">부동산 경매 대리입찰 필수 서류</a></li>
-          <li><a href="https://landvalueup.hankyung.com/valueupguide-20260128-0700/" target="_blank" rel="noopener">한경 밸류업 · 권리관계 정리하는 법</a></li>
-          <li>입찰보증금: 민사집행규칙 제63조 (최저매각가격의 10%, 법원이 달리 정할 수 있음)</li>
+          <li id="src1"><a href="https://landvalueup.hankyung.com/valueupguide-20260128-0700/" target="_blank" rel="noopener">한경 밸류업 · 권리관계 정리하는 법</a><span class="src-at">01 서류·권리 체크 › 권리</span></li>
+          <li id="src2"><a href="https://houseinfo.kr/blog/0515-budongsang-gyeongmae-daeri-daeri-ipchal-wiim-jeolcha-annae/" target="_blank" rel="noopener">부동산 경매 대리입찰 필수 서류</a><span class="src-at">05 입찰 당일 체크 › 준비물 · 대리</span></li>
+          <li id="src3">입찰보증금 — 민사집행규칙 제63조 (최저매각가격의 10%, 법원이 달리 정할 수 있음)<span class="src-at">05 입찰 당일 체크 › 준비물 · 본인</span></li>
         </ol>
         <div class="note tip"><svg class="ic"><use href="#i-info"/></svg><div>2026. 11. 9. 기준 일반 정보입니다. 입찰 준비물과 마감 시각은 법원마다 다를 수 있으니 해당 법원 경매계 안내를 확인하세요.</div></div>
       </div>
