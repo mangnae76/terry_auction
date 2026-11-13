@@ -197,8 +197,8 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
 .web .nws-item .txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .web .nws-item .chev { margin-left: auto; }
 .web .nws-item .nws-open { padding: 4px 14px 14px 64px; background: #fff; }
-.web .nws-date { display: flex; justify-content: space-between; gap: 12px; margin: 10px 0 0; padding-top: 8px; border-top: 1px dashed #e3e8f0; font-size: 12.5px; color: #9aa6c4; }
-.web .nws-date .who { color: #6b7280; }
+.web .nws-date { display: flex; justify-content: space-between; gap: 12px; margin: 12px 0 0; padding-top: 8px; border-top: 1px dashed #e3e8f0; font-size: 12px; font-weight: 400; color: #a3adc2; }   /* 등록 · 작성자 — 본문(14)보다 작고 옅게, 웹 글자 하한 12 */
+.web .nws-date .who { color: #a3adc2; }
 
 /* 포인트 — 안내 화면과 같은 파란 상자 */
 .nws-blue { background: #4a7bd8; border-radius: 10px; padding: 14px 13px; color: #fff; }
