@@ -404,7 +404,7 @@ if (sonPriceOut) {
     sonPriceOut.value = v ? {
       kind: kindF.value, est: v.est, n: v.n, avgPy: v.avgPy, myPy: myPy.value, ...medOf(rs), sameFloor: rangeCond.value.floor === 0, other: rs.some((r) => !r.same),
       elevFiltered: !!cond.value.elev, yearFiltered: cond.value.yMin > 1980 || cond.value.yMax < new Date().getFullYear(),
-      rows: rs.map((r) => ({ same: !!r.same, name: r.name || r.jibun, dong: r.dong, floorNo: r.floorNo, price: r.price, areaM2: r.areaM2 })),
+      rows: rs.map((r) => ({ same: !!r.same, name: r.name || r.jibun, dong: r.dong, floorNo: r.floorNo, price: r.price, areaM2: r.areaM2, perPy: r.perPy })),
     } : null;
   }, { immediate: true });
 }
