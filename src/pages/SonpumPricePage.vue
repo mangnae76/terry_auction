@@ -865,6 +865,8 @@ const syncEstFix = () => {
   const z = zoneEl.value; const pa = z?.closest('.pa') as HTMLElement | null; const son = pa?.closest('.son') as HTMLElement | null;
   if (!z || !pa || !son || !webEmbed || props.app || fs.value) { if (estFix.value) estFix.value = null; return; }
   const top = stickTop(); const paR = pa.getBoundingClientRect();
+  // 시세분석 탭이 숨어 있으면(다른 탭 · 접힘) 상자 크기가 0 — 그때 재면 화면 왼쪽 끝에 폭 없이 붙었다(2026-11-13 사용자 화면). 숨어 있으면 풀어 둔다
+  if (!(paR.width > 0 && paR.height > 0)) { if (estFix.value) estFix.value = null; return; }
   const h = estFix.value?.h ?? z.offsetHeight;
   // 상자 아래 끝이 머리를 밀어 올리기 시작하면(상자 아래 여백 24 포함) 화면에 고정
   if (paR.top >= top || paR.bottom - 24 >= top + h) { if (estFix.value) estFix.value = null; return; }
@@ -878,7 +880,10 @@ if (typeof window !== 'undefined' && webEmbed && !props.app) {
   window.addEventListener('scroll', onEstScroll, { passive: true });
   const onEstResize = () => { stickTopPx = -1; onEstScroll(); };
   window.addEventListener('resize', onEstResize);
-  onBeforeUnmount(() => { window.removeEventListener('scroll', onEstScroll); window.removeEventListener('resize', onEstResize); if (estRaf) cancelAnimationFrame(estRaf); });
+  // 스크롤 없이 상자 크기 · 자리만 바뀌어도(탭 돌아옴 · 표가 늘고 줆) 다시 잰다
+  const estRo = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => onEstScroll()) : null;
+  watch(zoneEl, (z) => { estRo?.disconnect(); const pa = z?.closest('.pa'); const son = pa?.closest('.son'); if (pa) estRo?.observe(pa); if (son) estRo?.observe(son); }, { flush: 'post' });
+  onBeforeUnmount(() => { window.removeEventListener('scroll', onEstScroll); window.removeEventListener('resize', onEstResize); estRo?.disconnect(); if (estRaf) cancelAnimationFrame(estRaf); });
 }
 const fsList = computed(() => [...mapGroups.value].sort((a, b) => (orderOf.value[a.jibun] ?? 999) - (orderOf.value[b.jibun] ?? 999)));
 /** 표 줄을 누르면 지도의 그 점이 커지고 이름표가 뜬다 — 경매지번(같은 건물) 줄 · 맨 위 빨간 줄은 빨간 점(2026-11-10) */
