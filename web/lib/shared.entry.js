@@ -267,6 +267,13 @@ export const mountEbookManage = (el) => {
   app.mount(el);
   return () => app.unmount();
 };
+/* 홈 — 이벤트 · 공지사항 · 업데이트 세 상자(커뮤니티 › 공지와 같은 부품). 홈은 다시 그릴 때마다 칸을 새로 쓰므로 웹이 이 칸을 들고 있다가 자리에 다시 끼운다(2026-11-13) */
+export const mountHomeNews = (el) => {
+  const app = createApp(NewsBody);
+  app.provide('webEmbed', true);
+  app.mount(el);
+  return () => app.unmount();
+};
 /* 점검 화면 · 시작 팝업 — 앱 AppShell 과 같은 부품(SiteNotice)을 웹 맨 위에 붙인다. 운영자 로그인은 'myturn:login' 으로 웹 로그인 창을 연다 */
 import SiteNotice from '../../src/components/SiteNotice.vue';
 export const mountSiteNotice = (el) => {
