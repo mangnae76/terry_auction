@@ -5445,7 +5445,9 @@ span.cal-day.has { cursor: help; }
     $('gOut').hidden = !inNow;
     $('gJoin').hidden = inNow;
     /* 운영 바로가기 — 어드민 로그인일 때만(로그인 확인 전이나 아직 준비가 안 됐으면 숨김) */
-    { const a = $('gAdmin'); if (a) { try { a.hidden = !(S.authReady && S.loggedIn && agIsAdmin()); } catch (e) { a.hidden = true; } } }
+    { const a = $('gAdmin'); let adm = false; if (a) { try { adm = !!(S.authReady && S.loggedIn && agIsAdmin()); a.hidden = !adm; } catch (e) { a.hidden = true; } }
+      /* 이용가이드의 운영자 칸을 이 브라우저에서 보이게 — 가이드 페이지는 로그인을 따로 보지 않아 표시만 남긴다(화면 감추기, 보안 아님) */
+      if (S.authReady) { try { if (adm) localStorage.setItem('ta.web.admin', '1'); else localStorage.removeItem('ta.web.admin'); } catch (e) { /* 그만 */ } } }
     document.querySelector('.g-arrow').setAttribute('aria-expanded', String(S.pop === 'user'));
     /* 주황 ▼(회원정보 메뉴)는 로그인했을 때만 보인다 — 자리는 그대로 두어 옆 글자가 움직이지 않게 */
     { const ar = document.querySelector('.g-arrow'); ar.style.visibility = inNow ? '' : 'hidden'; ar.disabled = !S.loggedIn; }

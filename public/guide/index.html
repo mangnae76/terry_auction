@@ -1444,6 +1444,57 @@ GUIDE.release({
     const tp = page('help-trip');
     const tl = (tp.blocks.find((b) => b.t === 'shot') || {}).legend;
     if (tl) tl.push(['내비 단추', '네이버 · 카카오 단추로 고른 내비를 바로 엽니다. 시세분석에서 넣은 비교 물건은 정류장 아래 「현장 기록」에 붙습니다.']);
+    /* 운영자 가이드 — 맨 아래 칸. 운영자로 로그인한 브라우저에서만 보인다(SECS) */
+    c.sections.push({ id: 'admin', admin: true, label: '운영자', ic: 'shield', title: '운영자 가이드', desc: '운영자 계정에서만 보이는 칸입니다. 운영 툴과 운영자 전용 화면(매각분석)을 설명합니다.', subs: [
+      { id: 'ops-enter', label: '운영 툴 들어가기', title: '운영 툴 들어가기', ic: 'shield', path: '머리띠 오른쪽 위 › 운영', blocks: [
+        { t: 'p', html: '머리띠 오른쪽 위 <b>운영</b>(방패 아이콘)을 누르면 운영 툴이 열립니다. 운영자 계정에만 보입니다. 위 탭 <b>운영 · 플랫폼(웹)</b> 중 플랫폼(웹)을 누르면 서비스 화면으로 돌아갑니다.' },
+        { t: 'p', html: '왼쪽 메뉴는 <b>글 관리 · 서비스 값 · 회원 · 고객 응대 · 결제 · 알림 · 지표</b> 묶음입니다. 「준비 중」 딱지가 붙은 칸은 아직 쓸 수 없습니다.' },
+        { t: 'note', tone: 'tip', html: '운영 툴도 웹에서 고른 밤 · 낮 화면을 따라갑니다.' },
+      ] },
+      { id: 'ops-posts', label: '글 관리', title: '글 관리', ic: 'doc', blocks: [
+        { t: 'table', head: ['메뉴', '하는 일'], rows: [
+          ['이벤트 배너 관리', '이벤트 글 하나를 배너로 띄우거나 공지 탭 이벤트 목록에 줄로 넣습니다. ▲ ▼로 순서, 내리기 · 고치기 · 지우기.'],
+          ['공지 관리', '점검 · 정책처럼 알려야 하는 글을 올립니다.'],
+          ['업데이트 관리', '새로 붙은 기능 · 고친 것을 올립니다.'],
+          ['앱 시작 팝업', '웹 · 앱을 열 때 한 번 뜨는 안내를 정합니다.'],
+        ] },
+      ] },
+      { id: 'ops-values', label: '서비스 값', title: '서비스 값', ic: 'key', blocks: [
+        { t: 'table', head: ['메뉴', '하는 일'], rows: [
+          ['점검 모드', '점검 중 안내를 띄우고 쓰기를 막습니다.'],
+          ['FAQ 관리', '고객센터 · 커뮤니티 FAQ 질문과 답(분류 · 순서). 아직 저장한 적이 없으면 코드에 적힌 목록이 쓰입니다.'],
+          ['약관 관리', '이용약관 · 개인정보처리방침 · 환불 · 저작권 · 사업제휴 글을 고치고 판을 올립니다.'],
+          ['준비 중', '요금제 · 포인트 정책 · 무료체험 — 지금은 코드에 적힌 값을 씁니다.'],
+        ] },
+      ] },
+      { id: 'ops-members', label: '회원', title: '회원', ic: 'users', blocks: [
+        { t: 'table', head: ['메뉴', '하는 일'], rows: [
+          ['회원 관리', '회원 목록 보기 — 메일 · 닉네임 · 이름 · 연락처 찾기, 가입경로 거르기, 기간(전체 · 7일 · 30일), 새로고침. <b>보기만</b> 됩니다(차단 · 정지 같은 조치는 아직 없습니다).'],
+          ['접근 권한 관리', '운영자 계정을 더하고 뺍니다. 기본 운영자는 빼지 못합니다.'],
+          ['탈퇴 처리', '탈퇴 신청을 확인하고 처리완료를 적습니다.'],
+          ['준비 중', '이용권 · 포인트 지급 · 회수 · 쿠폰.'],
+        ] },
+      ] },
+      { id: 'ops-cs', label: '고객 응대', title: '고객 응대', ic: 'headset', blocks: [
+        { t: 'table', head: ['메뉴', '하는 일'], rows: [
+          ['문의함', '회원이 고객센터 › 1:1 문의에 남긴 글을 받고 답합니다.'],
+          ['제보 처리', '1:1 문의의 정보오류제보(경공매 정보 오류 신고)를 받습니다.'],
+          ['준비 중', '결제 내역 · 환불(PG 연동 뒤) · 푸시 발송(FCM 뒤) · 사용 통계.'],
+        ] },
+      ] },
+      { id: 'ops-sale', label: '매각분석', title: '매각분석(운영자 전용)', ic: 'gavel', path: '시장분석 › 매각분석 · 물건상세 › 손품조사 › 매각분석', blocks: [
+        { t: 'p', html: '모은 경매 매각사례로 이 물건을 얼마에 입찰할지 봅니다. 탭 이름 옆에 주황 <b>운영</b> 칩이 붙고, 운영자에게만 보입니다.' },
+        { t: 'table', head: ['자리', '쓰는 법'], rows: [
+          ['데이터수집', '시장분석 › 매각분석 맨 위. 수집할 컴퓨터에서 MyAgent(agent.py)를 켜고 읍면동 · 사건을 모읍니다. 모은 자료가 있어야 아래 분석이 나옵니다. 데이터로드 · 엑셀다운로드도 여기.'],
+          ['조회 기준', '시장분석은 <b>물건으로</b>(물건카드로 고른 물건 둘레) 또는 <b>지역으로</b>. 손품조사 › 매각분석은 늘 그 물건 둘레입니다.'],
+          ['필터', '반경 · 기간 · 엘베 · 층 · 기준(유사도 · 직접범위). <b>저장하기</b>를 누르면 그 물건에 남습니다(물건마다 따로).'],
+          ['결과 머리', '경매물건 감정가와 예상 입찰가 셋 — 평균 매각가율 · 중앙값 매각가율 · 평균 매각평당가 × 전용 평. 스크롤해도 위에 붙습니다.'],
+          ['지표 · 분포', '매각건수 · 평균 감정가 · 평균 · 중앙값 매각가 · 평균 응찰자수 · 최저 · 전체 · 평균 · 중앙값 · 최고 매각가율, 매각가율 분포 막대.'],
+          ['인근 유사 매각사례 표', '머리글로 정렬, <b>제외</b>를 체크하면 그 사례가 지표 · 예상 입찰가에서 빠집니다. 맨 위 빨간 줄은 이 물건. 아래에 PDF 인근 매각사례 평균.'],
+        ] },
+        { t: 'note', tone: 'tip', title: '앱 매각분석', html: '앱 물건상세 › 손품조사 › <b>매각분석</b> 탭은 웹이 계산한 결과를 보여 주기만 합니다. 웹 손품조사 › 매각분석을 그 물건으로 한 번 열면 결과가 저장되고, 앱 제목 줄 오른쪽에 「웹 매각분석 기준 날짜 시각」이 붙습니다. 아직 연 적 없는 물건은 안내 한 줄만 나옵니다.' },
+      ] },
+    ] });
   },
 });
 /* 다음 버전 예시 — 바뀐 곳만 patch 에서 고친다
@@ -1488,6 +1539,9 @@ const appHref = (r) => (r.startsWith('http') ? r : r.startsWith('#') ? APP_URL +
 const ext = (r, label, cls = 'mini') => `<a class="${cls}" href="${esc(appHref(r))}" target="_blank" rel="noopener">${esc(label)}${I('ext')}</a>`;
 const S = { rel: null, faqCat: '전체', lockSpy: 0, cur: '', curSub: '', mode: '', chapter: '' };
 const C = () => S.rel.content;
+/** 운영자 가이드(admin: true 칸)는 웹에 운영자로 로그인한 브라우저에서만 — 웹이 'ta.web.admin' 에 적는다(화면에서 감추기, 보안 아님. 2026-11-13) */
+const IS_ADMIN = (() => { try { return localStorage.getItem('ta.web.admin') === '1'; } catch (e) { return false; } })();
+const SECS = () => C().sections.filter((s) => !s.admin || IS_ADMIN);
 const isNew = (x) => !!(x && x.since && x.since === S.rel.v);
 const NEW = (x) => (isNew(x) ? '<span class="tag new">NEW</span>' : '');
 const tagOf = (t) => (t === 'plus' ? '<span class="tag plus">PRO</span>' : t === 'soon' ? '<span class="tag soon">준비 중</span>' : t === 'key' ? '<span class="tag key">핵심</span>' : '');
@@ -1724,18 +1778,18 @@ function route(h, instant) {
 
 /* ---------- 틀 ---------- */
 function renderNav() {
-  $('secnavIn').innerHTML = C().sections.map((s, i) => `<a href="#${s.id}" data-sec="${s.id}"><span class="no">${String(i + 1).padStart(2, '0')}</span>${esc(s.label)}</a>`).join('');
+  $('secnavIn').innerHTML = SECS().map((s, i) => `<a href="#${s.id}" data-sec="${s.id}"><span class="no">${String(i + 1).padStart(2, '0')}</span>${esc(s.label)}</a>`).join('');
   $('verBtn').innerHTML = `v${esc(S.rel.v)}${S.rel === GUIDE.latest() ? '' : '<span class="old"> (이전)</span>'}${I('chevD')}`;
   $('verBtn').setAttribute('aria-label', `가이드 버전 v${S.rel.v}, 다른 버전 보기`);
 }
 
 function renderSide() {
-  const sec = C().sections.find((s) => s.id === S.cur) || C().sections[0];
+  const sec = SECS().find((s) => s.id === S.cur) || SECS()[0];
   $('side').innerHTML = `<h6>${esc(sec.label)}</h6><ol>${sec.subs.map((x) => `<li><a href="#${subId(sec, x)}" data-sub="${subId(sec, x)}">${esc(x.label)}${x.key ? '<span class="star">★</span>' : ''}</a></li>`).join('')}</ol>`;
 }
 
 function renderContent() {
-  $('content').innerHTML = C().sections.map((sec, i) => {
+  $('content').innerHTML = SECS().map((sec, i) => {
     const panels = sec.subs.map((x) => {
       const id = subId(sec, x);
       return `<section class="panel${x.key ? ' key' : ''}" id="${id}" data-sub="${id}" aria-labelledby="h-${id}"><div class="panel-head"><h3 id="h-${id}">${I(x.ic || sec.ic)}${esc(priceTok(x.title || x.label))}${tagOf(x.tag)}${NEW(x)}</h3>${x.path ? `<span class="path">${esc(x.path)}</span>` : ''}${x.route ? ext(x.route, '화면 열기', 'open-app') : ''}</div><div class="panel-body">${x.blocks.map((b) => (B[b.t] ? B[b.t](b) : '')).join('')}</div></section>`;
