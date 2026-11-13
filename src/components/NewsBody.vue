@@ -11,7 +11,7 @@ const { events: EVENTS, notices: noticesAll, noticesDb, updates: UPDATES } = use
 /** 웹은 공지를 DB 글로만 보여 준다 — 앱은 예전처럼(글이 없으면 기본 글) */
 const web = inject('webEmbed', false);
 const NOTICES = computed(() => (web ? noticesDb.value : noticesAll.value));
-/** noticeOnly — 웹 공지는 공지사항만(이벤트 · 업데이트는 서비스 시작 뒤로 미뤘다, 2026-11-02) */
+/** noticeOnly — 웹 공지는 이벤트 목록을 뺀다(서비스 시작 뒤로 미뤘다, 2026-11-02). 업데이트는 2026-11-13부터 웹에도 */
 defineProps<{ noticeOnly?: boolean }>();
 
 const router = useRouter();
@@ -75,7 +75,8 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
       </template>
     </section>
 
-    <section v-if="!noticeOnly" class="nws-card" data-sec="update">
+    <!-- 업데이트는 웹 공지에도 보인다(2026-11-13 사용자 — 이벤트 목록만 서비스 시작 뒤로) -->
+    <section class="nws-card" data-sec="update">
       <h3 class="nws-h">업데이트<i v-if="updateNew" class="dot" /></h3>
       <template v-for="(u, i) in UPDATES" :key="`u${i}`">
         <button type="button" class="nws-row" @click="toggleRow(`u${i}`, u)">
