@@ -156,9 +156,11 @@ onBeforeUnmount(() => profitHeadRO?.disconnect());
 const isOperator = computed(() => isAdminEmail(authStore.email));
 /** 앱 매각분석 — 웹이 남긴 결과(saleSnap)를 보여 주기만(웹 sxResultsHtml 의 결과 머리 · 지표 · 표와 같은 값) */
 const saleSnap = computed(() => (auction.value?.saleSnap?.v === 1 ? auction.value.saleSnap : null));
+/** 조건 줄 — 앱은 동 이름부터(시군구 '서해구'는 뺀다, 매매수요 ② · ③ 제목과 같게, 2026-11-13 사용자) */
+const saleHead = computed(() => String(saleSnap.value?.head ?? '').replace(/^\S+(?:시|군|구)\s+(?=\S+(?:동|읍|면|가|리)(?:\s|$))/, '').replace(/\b20(\d{2})[.-](\d{2})[.-](\d{2})\b/g, '$1$2$3'));   // 날짜는 260813 꼴(2026-11-13 사용자)
 const saleWon = (n: number | null | undefined) => { if (n == null || !(n > 0)) return '-'; const man = Math.round(n / 1e4); const eok = Math.floor(man / 1e4); const rest = man % 1e4; return eok ? `${eok}억${rest ? ` ${rest.toLocaleString('ko-KR')}만` : ''}` : `${rest.toLocaleString('ko-KR')}만`; };
 const salePct = (x: number | null | undefined) => (x == null ? '-' : `${(x * 100).toFixed(1)}%`);
-const saleSnapAt = computed(() => { const t = saleSnap.value?.at; if (!t) return '-'; const d = new Date(t); const p2 = (n: number) => String(n).padStart(2, '0'); return `${String(d.getFullYear()).slice(2)}.${p2(d.getMonth() + 1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`; });
+const saleSnapAt = computed(() => { const t = saleSnap.value?.at; if (!t) return '-'; const d = new Date(t); const p2 = (n: number) => String(n).padStart(2, '0'); return `${String(d.getFullYear()).slice(2)}${p2(d.getMonth() + 1)}${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`; });
 const saleBids = computed(() => {
   const s0 = saleSnap.value; if (!s0) return [];
   const amt = (rate: number | null) => (s0.my > 0 && rate != null ? `${Math.round(s0.my * rate).toLocaleString('ko-KR')}원` : '-');
@@ -10548,13 +10550,12 @@ const goBack = () => router.back();
         <section v-if="appPrice && isOperator" v-show="sonSub === 'sale'" class="adp-card son-under">
           <!-- 탭으로 여는 카드라 접기는 뺐다 — 접힌 채로 남아 탭을 눌러도 안이 비어 보였다(2026-11-13 사용자) -->
           <header class="adp-card-head adp-survey-head">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" /></svg>매각분석<span class="adp-op-chip">운영</span></h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" /></svg>매각분석<span class="adp-op-chip">운영</span></h2><span v-if="saleSnap" class="sale-at">웹 매각분석 기준 {{ saleSnapAt }}</span>
           </header>
           <div class="adp-mkt-body">
             <!-- 웹 손품조사 › 매각분석을 열면 웹이 물건에 남긴 결과(saleSnap)를 그대로 보여 준다 — 앱엔 계산이 없다(2026-11-13 사용자) -->
             <template v-if="saleSnap">
-              <p class="sale-head"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ saleSnap.head }}</p>
-              <p class="sale-at">웹 매각분석 기준 · {{ saleSnapAt }}</p>
+              <p class="sale-head"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ saleHead }}</p>
               <div class="sale-bids">
                 <div class="sale-my"><span>경매물건 감정가</span><b>{{ saleSnap.my > 0 ? `${saleSnap.my.toLocaleString('ko-KR')}원` : '-' }}</b></div>
                 <div v-for="b in saleBids" :key="b.k" class="sale-bid"><span class="k">{{ b.k }}</span><b class="v">{{ b.v }}</b><small>{{ b.note }}</small></div>
@@ -10571,7 +10572,7 @@ const goBack = () => router.back();
                     <td class="l"><span class="a">{{ r.addr || r.full }}</span><small>{{ r.caseNo }}</small></td>
                     <td class="n">{{ saleWon(r.sold) }}</td>
                     <td :class="['n', r.rate >= 1 ? 'hi' : r.rate > 0 && r.rate < 0.75 ? 'lo' : '']">{{ r.rate > 0 ? `${(r.rate * 100).toFixed(1)}%` : '-' }}</td>
-                    <td class="n">{{ r.date ? r.date.replace(/-/g, '.').slice(2) : '-' }}</td>
+                    <td class="n">{{ r.date ? r.date.replace(/\D/g, '').slice(2, 8) : '-' }}</td>
                   </tr>
                   <tr v-if="!saleSnap.rows.length"><td colspan="4" class="empty">조건에 맞는 매각물건이 없습니다.</td></tr>
                 </tbody>
@@ -12710,11 +12711,11 @@ tr.tone-take { background: #fff5f5; }
 .adp-card-opt em { font-style: normal; color: #6b7280; white-space: nowrap; }
 .adp-card-opt .r2 > b { white-space: nowrap; }
 .adp-card-opt .addr { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sale-head { display: flex; align-items: center; gap: 4px; margin: 4px 0 0; font-size: 12px; color: #2b6df3; line-height: 1.45; }
+.sale-head { display: flex; align-items: center; gap: 4px; margin: 4px 0 10px; font-size: 12px; color: #2b6df3; line-height: 1.45; }
 .sale-head svg { flex: none; }
-.sale-at { margin: 2px 0 10px; font-size: 11.5px; color: #9ca3af; }
+.sale-at { margin-left: auto; font-size: 11.5px; font-weight: 400; color: #9ca3af; white-space: nowrap; }   /* 매각분석 제목 줄 오른쪽 끝 */
 .sale-bids { display: grid; gap: 6px; padding: 10px; border-radius: 10px; background: #f7f8fb; }
-.sale-my { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; color: #4b5563; }
+.sale-my { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 10px; border-radius: 8px; background: #fff; border: 1px solid #e8ecf3; font-size: 12.5px; color: #4b5563; }   /* 아래 입찰가 상자와 같은 테두리 · 같은 양끝 */
 .sale-my b { font-size: 15px; color: #111827; }
 .sale-bid { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 0 8px; padding: 8px 10px; border-radius: 8px; background: #fff; border: 1px solid #e8ecf3; }
 .sale-bid .k { font-size: 12px; color: #6b7280; }
