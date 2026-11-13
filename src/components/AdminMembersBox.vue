@@ -118,8 +118,8 @@ const saveEdit = async (r: MemberRow) => {
           <template v-for="r in page" :key="r.uid">
           <tr :class="{ editing: editUid === r.uid }">
             <td>{{ day(r.createdAt) }}</td>
-            <td class="l">{{ r.email || '(메일 없음)' }}</td>
-            <td>{{ r.nickname || '-' }}</td>
+            <td class="l cut" :title="r.email || undefined">{{ r.email || '(메일 없음)' }}</td>
+            <td class="cut nick" :title="r.nickname || undefined">{{ r.nickname || '-' }}</td>
             <td>{{ r.realName || '-' }}</td>
             <td>{{ r.phone || '-' }}</td>
             <td>{{ r.region || '-' }}</td>
@@ -173,9 +173,11 @@ const saveEdit = async (r: MemberRow) => {
 .amb-err { margin: 0; color: #dc2626; font-size: 14px; }
 .amb-table-wrap { overflow-x: auto; border: 1px solid #e8ebf1; border-radius: 8px; }
 .amb-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.amb-table th { padding: 10px 8px; background: #f6f8fc; color: #4b5563; font-weight: 700; white-space: nowrap; text-align: center; }
-.amb-table td { padding: 9px 8px; border-top: 1px solid #eef1f6; color: #1f2937; text-align: center; white-space: nowrap; }
+.amb-table th { padding: 10px 6px; background: #f6f8fc; color: #4b5563; font-weight: 700; white-space: nowrap; text-align: center; }
+.amb-table td { padding: 9px 6px; border-top: 1px solid #eef1f6; color: #1f2937; text-align: center; white-space: nowrap; }
 .amb-table td.l { text-align: left; }
+.amb-table td.cut { max-width: 180px; overflow: hidden; text-overflow: ellipsis; }   /* 긴 메일 · 닉네임은 말줄임(마우스 올리면 전체) — 표가 가로로 넘치지 않게 */
+.amb-table td.cut.nick { max-width: 110px; }
 .amb-empty { padding: 28px 0 !important; color: #9aa6c4 !important; }
 .amb-kind { display: inline-block; padding: 1px 7px; border-radius: 5px; background: #f1f3f8; color: #4b5563; font-size: 12px; font-weight: 700; }
 .amb-kind.op { background: #fff1e6; color: #e8590c; }

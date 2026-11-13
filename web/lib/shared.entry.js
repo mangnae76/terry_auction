@@ -342,7 +342,7 @@ const CommunityPage = {
     return () => h('div', { class: 'community-shell' }, route.query.tab === 'faq'
       ? [h(SupportBody, { only: 'faq' })]
       : route.query.tab === 'suggest' ? [h(SuggestBoard)]
-      : [h(EventBanner, { onOpen: (id) => router.push(id ? `/post/${id}` : '/community') }), h(NewsBody, { noticeOnly: true })]);   /* 이벤트 배너는 공지사항 위에 다시(2026-11-08) · 이벤트 · 업데이트 목록은 서비스 시작 뒤로(2026-11-02) */
+      : [h(EventBanner, { onOpen: (id) => router.push(id ? `/post/${id}` : '/community') }), h(NewsBody, { noticeOnly: true })]);   /* 이벤트 배너는 공지사항 위에 다시(2026-11-08) · 웹은 이벤트 · 공지사항 · 업데이트 세 상자(2026-11-13) */
   },
 };
 /** 게시판(웹만) — 오류및제안 · 가입인사 · 사용후기. 같은 게시판 틀(SuggestBoard)에 board 만 다르다(2026-11-05) */

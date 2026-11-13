@@ -2,19 +2,17 @@
 // 부가서비스 — 공지사항·이벤트·업데이트·포인트를 차례로 적는다.
 // 글은 services/boardNews·pointPolicy 에 있고 여기서는 그리기만 한다.
 import { computed, inject, onUnmounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
 import ImageLightbox from './ImageLightbox.vue';
 import { useBoardFeed, useBoardNew } from '../services/boardFeed';
 
 /** 관리자가 올린 글 — 아직 없으면 코드의 기본 글을 쓴다 */
-const { events: EVENTS, notices: noticesAll, noticesDb, updates: UPDATES } = useBoardFeed();
+const { events: eventsAll, eventsDb, notices: noticesAll, noticesDb, updates: UPDATES } = useBoardFeed();
 /** 웹은 공지를 DB 글로만 보여 준다 — 앱은 예전처럼(글이 없으면 기본 글) */
 const web = inject('webEmbed', false);
 const NOTICES = computed(() => (web ? noticesDb.value : noticesAll.value));
-/** noticeOnly — 웹 공지는 이벤트 목록을 뺀다(서비스 시작 뒤로 미뤘다, 2026-11-02). 업데이트는 2026-11-13부터 웹에도 */
+const EVENTS = computed(() => (web ? eventsDb.value : eventsAll.value));
+/** noticeOnly — 앱에서 이벤트 목록을 뺄 때. 웹은 2026-11-13부터 이벤트 · 공지사항 · 업데이트 세 상자 */
 defineProps<{ noticeOnly?: boolean }>();
-
-const router = useRouter();
 
 /* 새 글 알림 — 보는 동안에는 켜 두고, 탭을 떠날 때 본 것으로 적는다 */
 const { event: eventNew, notice: noticeNew, update: updateNew, markAllSeen } = useBoardNew();
@@ -23,107 +21,100 @@ onUnmounted(markAllSeen);
 /** 크게 볼 그림 ('' 이면 닫힘) */
 const zoom = ref('');
 
-/** 펼쳐 둔 줄 — 본문이나 그림이 있을 때만 열린다 */
-const openRow = ref('');
-const toggleRow = (key: string, row: { body?: string; imageUrl?: string }) => {
-  if (!row.body && !row.imageUrl) return;
-  openRow.value = openRow.value === key ? '' : key;
-};
-
-/* 웹 — 공지사항 · 업데이트를 좌우 두 상자로. 줄마다 제목 · 한 줄 보기 · 등록 | 작성자, 화살표는 상세 화면으로(2026-11-13 사용자) */
+/* 웹 — 이벤트 · 공지사항 · 업데이트 세 상자. 줄마다 제목 · 등록 | 작성자, 누르면 팝업(2026-11-13 사용자) */
 type NewsRow = { id?: string; tag?: string; star?: boolean; text: string; body?: string; imageUrl?: string; postedShort?: string; postedFull?: string; author?: string };
-const firstLine = (b?: string) => (b ?? '').split('\n').map((x) => x.trim()).find(Boolean) ?? '';
-const webBoxes = computed(() => [
-  { key: 'n', title: '공지사항', rows: NOTICES.value as NewsRow[], isNew: noticeNew.value, empty: '지금 올라온 공지사항이 없습니다' },
-  { key: 'u', title: '업데이트', rows: UPDATES.value as NewsRow[], isNew: updateNew.value, empty: '지금 올라온 업데이트가 없습니다' },
-]);
-/** 이벤트는 제목 줄을 누르면 상세 보기로 들어간다 (기본 글은 번호가 없어 그 자리에서 펼친다) */
-const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: string }) => {
-  if (row.id) { router.push(`/post/${row.id}`); return; }
-  toggleRow(key, row);
+/** 팝업으로 연 글 — 이벤트 · 공지 · 업데이트 줄을 누르면 연다(웹 · 앱) */
+const popRow = ref<NewsRow | null>(null);
+const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && popRow.value && !zoom.value) popRow.value = null; };
+window.addEventListener('keydown', onKey);
+onUnmounted(() => window.removeEventListener('keydown', onKey));
+/* 상자 제목 아이콘(흰 카드 제목) — 이벤트 선물 · 공지사항 확성기 · 업데이트 반짝임 */
+const ICO = {
+  e: '<path d="M20 12v9H4v-9" /><path d="M2 7h20v5H2z" /><path d="M12 21V7" /><path d="M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z" />',
+  n: '<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M18.5 5.5a9 9 0 0 1 0 13" />',
+  u: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" /><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" />',
 };
+const webBoxes = computed(() => [
+  { key: 'e', title: '이벤트', ico: ICO.e, rows: EVENTS.value as NewsRow[], isNew: eventNew.value, empty: '지금 진행 중인 이벤트가 없습니다' },
+  { key: 'n', title: '공지사항', ico: ICO.n, rows: NOTICES.value as NewsRow[], isNew: noticeNew.value, empty: '지금 올라온 공지사항이 없습니다' },
+  { key: 'u', title: '업데이트', ico: ICO.u, rows: UPDATES.value as NewsRow[], isNew: updateNew.value, empty: '지금 올라온 업데이트가 없습니다' },
+]);
 </script>
 
 <template>
   <div :class="['nws-wrap', { web }]">
-    <section v-if="!noticeOnly" class="nws-card" data-sec="event">
-      <h3 class="nws-h">이벤트<i v-if="eventNew" class="dot" /></h3>
-      <template v-for="(e, i) in EVENTS" :key="`e${i}`">
-        <button type="button" class="nws-row" @click="openEvent(`e${i}`, e)">
-          <span class="tag">{{ e.tag }}</span><span class="txt">{{ e.text }}</span>
-          <span v-if="e.postedShort" class="when">{{ e.postedShort }}</span>
-          <i v-if="e.id" class="chev">›</i>
-          <i v-else-if="e.body || e.imageUrl" class="chev">{{ openRow === `e${i}` ? '▴' : '▾' }}</i>
-        </button>
-        <div v-if="openRow === `e${i}`" class="nws-open">
-          <img v-if="e.imageUrl" :src="e.imageUrl" alt="" @click="zoom = e.imageUrl" />
-          <p v-if="e.body">{{ e.body }}</p>
-          <p v-if="e.postedFull" class="posted">{{ e.postedFull }}</p>
-        </div>
-      </template>
-    </section>
-
-    <!-- 웹 — 공지사항 · 업데이트 좌우 두 상자. 목록은 테두리 상자 하나, 줄마다 제목 · 한 줄 보기 · 등록 | 작성자.
-         오른쪽 화살표를 누르면 상세 화면(글 하나)으로 간다 — 그 자리에서 펼치지 않는다(2026-11-13 사용자) -->
+    <!-- 웹 — 이벤트 · 공지사항 · 업데이트 세 상자(좁으면 위아래). 목록은 테두리 상자 하나, 줄마다 제목 · 등록 | 작성자.
+         줄을 누르면 팝업으로 본문 전체 · 그림(2026-11-13 사용자) -->
     <div v-if="web" class="nws-two">
-      <section v-for="bx in webBoxes" :key="bx.key" class="nws-card" :data-sec="bx.key === 'n' ? 'notice' : 'update'">
-        <h3 class="nws-h">{{ bx.title }}<i v-if="bx.isNew" class="dot" /></h3>
+      <section v-for="bx in webBoxes" :key="bx.key" class="nws-card" :data-sec="bx.key === 'e' ? 'event' : bx.key === 'n' ? 'notice' : 'update'">
+        <h3 class="nws-h"><svg class="nws-h-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" v-html="bx.ico" />{{ bx.title }}<i v-if="bx.isNew" class="dot" /></h3>
         <p v-if="!bx.rows.length" class="nws-empty">{{ bx.empty }}</p>
         <div v-else class="nws-list">
-          <div v-for="(r, i) in bx.rows" :key="`${bx.key}${i}`" class="nws-item">
-            <div class="nws-row">
+          <button v-for="(r, i) in bx.rows" :key="`${bx.key}${i}`" type="button" class="nws-item" @click="popRow = r">
+            <span class="nws-row">
               <span v-if="r.star" class="star">✦</span><span v-else class="tag">{{ r.tag }}</span>
               <span class="txt">{{ r.text }}</span>
-              <button v-if="r.id" type="button" class="chev go" :aria-label="`${r.text} 자세히`" @click="router.push(`/post/${r.id}`)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></button>
-            </div>
-            <p v-if="firstLine(r.body)" class="nws-sum">{{ firstLine(r.body) }}</p>
-            <p class="nws-date"><span>{{ r.postedFull || r.postedShort }}</span><span class="who">작성자 {{ r.author || '운영자' }}</span></p>
-          </div>
+              <i class="chev go" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6" /></svg></i>
+            </span>
+            <span class="nws-date"><span>{{ r.postedFull || r.postedShort }}</span><span class="who">작성자 {{ r.author || '운영자' }}</span></span>
+          </button>
         </div>
       </section>
     </div>
 
     <template v-else>
+    <!-- 앱 — 줄을 누르면 웹과 같은 팝업으로 본문 전체(2026-11-13 사용자) -->
+    <section v-if="!noticeOnly" class="nws-card" data-sec="event">
+      <h3 class="nws-h">이벤트<i v-if="eventNew" class="dot" /></h3>
+      <button v-for="(e, i) in EVENTS" :key="`e${i}`" type="button" class="nws-row" @click="popRow = e">
+        <span class="tag">{{ e.tag }}</span><span class="txt">{{ e.text }}</span>
+        <span v-if="e.postedShort" class="when">{{ e.postedShort }}</span>
+        <i class="chev">›</i>
+      </button>
+    </section>
+
     <section class="nws-card" data-sec="notice">
       <h3 class="nws-h">공지사항<i v-if="noticeNew" class="dot" /></h3>
       <p v-if="!NOTICES.length" class="nws-empty">지금 올라온 공지사항이 없습니다</p>
-      <template v-for="(n, i) in NOTICES" :key="`n${i}`">
-        <button type="button" class="nws-row" @click="toggleRow(`n${i}`, n)">
+      <button v-for="(n, i) in NOTICES" :key="`n${i}`" type="button" class="nws-row" @click="popRow = n">
         <span v-if="n.star" class="star">✦</span><span v-else class="tag">{{ n.tag }}</span>
-          <span class="txt">{{ n.text }}</span>
-          <span v-if="n.postedShort" class="when">{{ n.postedShort }}</span>
-          <i v-if="(n.body || n.imageUrl) && web" :class="['chev', { up: openRow === `n${i}` }]" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg></i>
-          <i v-else-if="n.body || n.imageUrl" class="chev">{{ openRow === `n${i}` ? '▴' : '▾' }}</i>
-        </button>
-        <div v-if="openRow === `n${i}`" class="nws-open">
-          <img v-if="n.imageUrl" :src="n.imageUrl" alt="" @click="zoom = n.imageUrl" />
-          <p v-if="n.body">{{ n.body }}</p>
-          <p v-if="n.postedFull" class="posted">{{ n.postedFull }}</p>
-        </div>
-      </template>
+        <span class="txt">{{ n.text }}</span>
+        <span v-if="n.postedShort" class="when">{{ n.postedShort }}</span>
+        <i class="chev">›</i>
+      </button>
     </section>
 
-    <!-- 업데이트는 웹 공지에도 보인다(2026-11-13 사용자 — 이벤트 목록만 서비스 시작 뒤로) -->
     <section class="nws-card" data-sec="update">
       <h3 class="nws-h">업데이트<i v-if="updateNew" class="dot" /></h3>
-      <template v-for="(u, i) in UPDATES" :key="`u${i}`">
-        <button type="button" class="nws-row" @click="toggleRow(`u${i}`, u)">
-          <span class="tag">{{ u.tag }}</span><span class="txt">{{ u.text }}</span>
-          <span v-if="u.postedShort" class="when">{{ u.postedShort }}</span>
-          <i v-if="(u.body || u.imageUrl) && web" :class="['chev', { up: openRow === `u${i}` }]" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg></i>
-          <i v-else-if="u.body || u.imageUrl" class="chev">{{ openRow === `u${i}` ? '▴' : '▾' }}</i>
-        </button>
-        <div v-if="openRow === `u${i}`" class="nws-open">
-          <img v-if="u.imageUrl" :src="u.imageUrl" alt="" @click="zoom = u.imageUrl" />
-          <p v-if="u.body">{{ u.body }}</p>
-          <p v-if="u.postedFull" class="posted">{{ u.postedFull }}</p>
-        </div>
-      </template>
+      <button v-for="(u, i) in UPDATES" :key="`u${i}`" type="button" class="nws-row" @click="popRow = u">
+        <span class="tag">{{ u.tag }}</span><span class="txt">{{ u.text }}</span>
+        <span v-if="u.postedShort" class="when">{{ u.postedShort }}</span>
+        <i class="chev">›</i>
+      </button>
     </section>
 
     </template>
 
-    <ImageLightbox v-if="zoom" :src="zoom" @close="zoom = ''" />
+    <!-- 이벤트 · 공지 · 업데이트 팝업(웹 · 앱) — 제목 · 등록 | 작성자 · 그림 · 본문 전체 -->
+    <Teleport to="body">
+      <div v-if="popRow" class="nws-pop-bg" @click.self="popRow = null">
+        <div class="nws-pop" role="dialog" aria-modal="true" :aria-label="popRow.text">
+          <div class="nws-pop-head">
+            <span v-if="popRow.star" class="star">✦</span><span v-else class="tag">{{ popRow.tag }}</span>
+            <h3>{{ popRow.text }}</h3>
+            <button type="button" class="x" aria-label="닫기" @click="popRow = null"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></button>
+          </div>
+          <p class="nws-pop-date"><span>{{ popRow.postedFull || popRow.postedShort }}</span><span>작성자 {{ popRow.author || '운영자' }}</span></p>
+          <div class="nws-pop-body">
+            <img v-if="popRow.imageUrl" :src="popRow.imageUrl" alt="" @click="zoom = popRow.imageUrl!" />
+            <p v-if="popRow.body">{{ popRow.body }}</p>
+            <p v-else-if="!popRow.imageUrl" class="none">내용이 없습니다</p>
+          </div>
+        </div>
+        <ImageLightbox v-if="zoom" :src="zoom" @close="zoom = ''" />
+      </div>
+    </Teleport>
+    <ImageLightbox v-if="zoom && !popRow" :src="zoom" @close="zoom = ''" />
   </div>
 </template>
 
@@ -158,13 +149,6 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
 .nws-row .when { flex: none; font-size: 10px; color: #9aa6c4; letter-spacing: -0.2px; }
 .nws-empty { margin: 0; padding: 14px 0 8px; font-size: 12px; color: #9aa6c4; text-align: center; }
 /* 펼친 글 */
-.nws-open { padding: 4px 0 10px 37px; }
-.nws-open img { width: 100%; border-radius: 8px; margin-bottom: 7px; cursor: zoom-in; }
-.nws-open .posted { margin: 6px 0 0; font-size: 10.5px; color: #9aa6c4; }
-.nws-open p {
-  margin: 0; font-size: 11.5px; line-height: 1.75; color: #4b5563;
-  white-space: pre-line; word-break: keep-all;
-}
 
 /* 웹 — 글자 규칙(최소 12 · 카드 제목 16 · 줄 제목 15) 과 잘 보이는 펼침 화살표(2026-11-08) */
 .web .nws-card { padding: 18px 20px; }
@@ -179,22 +163,37 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
 .web .nws-row .chev svg { transition: transform .2s ease; } .web .nws-row .chev.up svg { transform: rotate(180deg); }
 .web .nws-row:hover .chev { background: #eef3ff; color: #2b6df3; }
 .web .nws-empty { font-size: 14px; }
-.web .nws-open { padding: 6px 4px 16px 54px; }
-.web .nws-open p { font-size: 14px; color: #374151; }
-.web .nws-open .posted { font-size: 13px; }
 
 /* 웹 두 상자 — 넓으면 좌우, 좁으면 위아래. 목록은 테두리 상자 하나(줄 사이는 가는 선) */
-.nws-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
-@media (max-width: 900px) { .nws-two { grid-template-columns: minmax(0, 1fr); } }
+.nws-two { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+@media (max-width: 1100px) { .nws-two { grid-template-columns: minmax(0, 1fr); } }
+.web .nws-h { display: flex; align-items: center; gap: 6px; }
+.web .nws-h-ico { flex: none; color: #2b6df3; }
 .web .nws-list { border: 1px solid #e3e8f0; border-radius: 10px; background: #fafbfd; overflow: hidden; }
-.web .nws-item { padding: 12px 14px; }
+.web .nws-item { display: block; width: 100%; padding: 12px 14px; border: 0; border-radius: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
 .web .nws-item + .nws-item { border-top: 1px solid #e8ebf1; }
-.web .nws-item .nws-row { padding: 0; border: none; cursor: default; }
+.web .nws-item:hover { background: #f3f6fc; }
+.web .nws-item .nws-row { padding: 0; border: none; }
 .web .nws-item .nws-row:hover { background: none; }
 .web .nws-item .txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.web .nws-item .chev.go { margin-left: auto; border: 0; padding: 0; cursor: pointer; }
-.web .nws-item .nws-sum { margin: 6px 0 0 50px; font-size: 14px; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.web .nws-item .nws-date { display: flex; justify-content: space-between; gap: 12px; margin: 6px 0 0 50px; font-size: 12px; color: #a3adc2; }   /* 등록 · 작성자 — 한 줄 보기(14)보다 작고 옅게, 웹 글자 하한 12 */
+.web .nws-item .chev.go { margin-left: auto; }
+.web .nws-item:hover .chev { background: #eef3ff; color: #2b6df3; }
+.web .nws-item .nws-date { display: flex; justify-content: space-between; gap: 12px; margin: 6px 0 0 50px; font-size: 12px; color: #a3adc2; }   /* 등록 · 작성자 — 작고 옅게, 웹 글자 하한 12 */
+
+/* 웹 공지 · 업데이트 팝업 — 본문 전체(길면 팝업 안에서 내린다) */
+.nws-pop-bg { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: 24px 16px; background: rgba(17, 24, 39, .45); }
+.nws-pop { width: 100%; max-width: 640px; max-height: 86vh; display: flex; flex-direction: column; border-radius: 14px; background: var(--surface, #fff); box-shadow: 0 20px 50px rgba(17, 24, 39, .25); overflow: hidden; }
+.nws-pop-head { display: flex; align-items: center; gap: 10px; padding: 18px 20px 0; }
+.nws-pop-head .tag { flex: none; min-width: 40px; padding: 3px 8px; border-radius: 4px; background: #f1f3f8; color: #6b7280; font-size: 12px; font-weight: 700; text-align: center; }
+.nws-pop-head .star { flex: none; color: #2b6df3; font-size: 14px; }
+.nws-pop-head h3 { flex: 1 1 auto; min-width: 0; margin: 0; font-size: 16px; font-weight: 800; color: var(--text, #111827); word-break: keep-all; }
+.nws-pop-head .x { flex: none; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: #6b7280; cursor: pointer; }
+.nws-pop-head .x:hover { background: #f1f3f8; }
+.nws-pop-date { display: flex; justify-content: space-between; gap: 12px; margin: 8px 20px 0; padding-bottom: 14px; border-bottom: 1px solid var(--line, #e3e8f0); font-size: 12px; color: #a3adc2; }
+.nws-pop-body { padding: 16px 20px 22px; overflow-y: auto; }
+.nws-pop-body img { display: block; max-width: 100%; margin-bottom: 12px; border-radius: 8px; cursor: zoom-in; }
+.nws-pop-body p { margin: 0; font-size: 14px; line-height: 1.75; color: var(--text, #374151); white-space: pre-line; word-break: keep-all; }
+.nws-pop-body p.none { color: #9aa6c4; }
 
 /* 포인트 — 안내 화면과 같은 파란 상자 */
 .nws-blue { background: #4a7bd8; border-radius: 10px; padding: 14px 13px; color: #fff; }

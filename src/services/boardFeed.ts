@@ -98,6 +98,8 @@ export const useBoardFeed = () => {
 
   return {
     events: rowsOf('event', EVENTS),
+    /** 웹 이벤트 — 관리자가 올린 글(DB)만(2026-11-13) */
+    eventsDb: rowsOf('event', []),
     notices: rowsOf('notice', NOTICES),
     /** 웹 공지 — 관리자가 올린 글(DB)만. 코드의 기본 글은 쓰지 않는다(2026-11-08) */
     noticesDb: rowsOf('notice', []),
