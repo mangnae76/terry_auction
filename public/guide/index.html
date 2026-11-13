@@ -445,7 +445,6 @@ main{flex:1;padding-block:24px 64px}
 .video-box{margin:0;border-radius:12px;overflow:hidden;background:var(--nav)}
 .video-frame{position:relative;aspect-ratio:16/9;background:#0b1220}
 .video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
-.clip-box{margin:4px 0 16px}
 .video-frame:fullscreen{background:#000}
 .video-frame:-webkit-full-screen{background:#000}
 .video-box figcaption{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 16px;color:var(--nav-text)}
@@ -1498,16 +1497,16 @@ GUIDE.release({
     ] });
   },
 });
-/* v1.6.1 — 2026.11.13 화면 공통 구성에 안내 영상(1분 41초, 음성 안내). 그림 · 설명은 그대로 두고 영상을 위에 */
+/* v1.6.1 — 2026.11.13 영상으로 보기 › 화면 공통 구성 장에 안내 영상(HTML 영상 1분 41초, 음성 안내). 장마다 따로 만든 영상(clip)은 그 장을 누르면 재생 칸에 뜬다 */
 GUIDE.release({
   v: '1.6.1', date: '2026-11-13', base: '1.6.0', title: '화면 공통 구성 안내 영상',
-  notes: ['페이지 안내 › 화면 공통 구성에 1분 41초 안내 영상을 넣었습니다. 영상 안 「소리 · 음성 안내 켜기」를 누르면 음성 설명이 나옵니다', '머리띠의 공지를 걷었습니다 — 공지 · 이벤트 · 업데이트는 홈 화면 세 상자에서 봅니다'],
+  notes: ['영상으로 보기 › 화면 공통 구성 장에 1분 41초 안내 영상을 올렸습니다. 영상 안 「소리 · 음성 안내 켜기」를 누르면 음성 설명이 나옵니다', '머리띠의 공지를 걷었습니다 — 공지 · 이벤트 · 업데이트는 홈 화면 세 상자에서 봅니다'],
   patch(c) {
     const lay = c.sections.find((s) => s.id === 'pages').subs.find((x) => x.aid === 'help-layout');
-    const at = lay.blocks.findIndex((b) => b.t === 'shot');
     const quick = ((lay.blocks.find((b) => b.t === 'shot') || {}).legend || []).find((x) => x[0] === '바로가기');
     if (quick) quick[1] = '게시판 · 결제하기 · 이용가이드 · 알림(종) · 밤낮 화면 전환. 공지 · 이벤트 · 업데이트는 홈 화면 세 상자에서 봅니다.';   /* 머리띠 '공지'를 걷었다(2026-11-13) */
-    lay.blocks.splice(at < 0 ? 1 : at, 0, { t: 'clip', src: 'clip/layout.html', title: '화면 공통 구성 영상', len: '1분 41초', sub: '상단 메뉴 · 메뉴 펼치기 · 바로가기 · 내 계정 · 경로 · 하위 탭', since: '1.6.1' });
+    const ch = c.video.chapters.find((x) => x.id === 'layout');
+    if (ch) { ch.clip = 'clip/layout.html'; ch.len = '1:41'; }
   },
 });
 /* 다음 버전 예시 — 바뀐 곳만 patch 에서 고친다
@@ -1579,7 +1578,6 @@ const B = {
   go: (b) => `<div class="go">${b.items.map((g) => ext(g[1], g[0], 'open-app')).join('')}</div>`,
   shot: (b) => shotHtml(b),
   video: () => videoHtml(),
-  clip: (b) => clipHtml(b),
   scope: () => scopeHtml(),
   bi: () => biHtml(),
   board: () => boardHtml(),
@@ -1637,13 +1635,6 @@ function videoHtml() {
   return `<figure class="video-box"><div class="video-frame" id="promoFrame"><iframe src="${PROMO_PLAY_URL}" title="마이턴 소개 영상" loading="lazy" allow="autoplay; fullscreen" allowfullscreen></iframe></div>`
     + `<figcaption><span class="play">${I('play')}</span><span class="vt"><b>마이턴 소개 영상 · 46초</b><small>물건등록부터 손품조사 · 임장 · 수익분석 · 낙찰 이후까지</small></span>`
     + `<button type="button" class="video-full" data-act="video-full">${I('full')}전체 화면</button></figcaption></figure>`;
-}
-
-/* 화면별 짧은 안내 영상(HTML 영상 — 그림 · 음성이 파일 하나에 든 것). 가이드 옆 clip/ 폴더. 소리는 영상 안 '소리 켜기'로 */
-function clipHtml(b) {
-  return `<figure class="video-box clip-box"><div class="video-frame"><iframe src="${esc(b.src)}" title="${esc(b.title)}" loading="lazy" allow="autoplay; fullscreen" allowfullscreen></iframe></div>`
-    + `<figcaption><span class="play">${I('play')}</span><span class="vt"><b>${esc(b.title)} · ${esc(b.len)}</b><small>${esc(b.sub)}</small></span>`
-    + `<button type="button" class="video-full" data-act="video-full" data-src="${esc(b.src)}">${I('full')}전체 화면</button></figcaption></figure>`;
 }
 
 function scopeHtml() {
@@ -1738,8 +1729,12 @@ function renderHome() {
 const toSec = (at) => { if (!at) return -1; const p = String(at).split(':').map(Number); return p.some(isNaN) ? -1 : p.reduce((a, b) => a * 60 + b, 0); };
 const ytId = (u) => { const m = String(u).match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/); return m ? m[1] : ''; };
 const ytSrc = (id, start, auto) => `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1${start > 0 ? `&start=${start}` : ''}${auto ? '&autoplay=1' : ''}`;
+/* 장 영상 — 전체 영상(src)이 아직 없을 때, 장마다 따로 만든 영상(clip). 고른 장이 없거나 영상이 없는 장이면 영상이 있는 첫 장 */
+const clipCh = () => { const ch = V().chapters; return ch.find((c) => c.id === S.chapter && c.clip) || ch.find((c) => c.clip) || null; };
 function playerHtml() {
   const v = V();
+  const cc = !vReady() && clipCh();
+  if (cc) return `<iframe id="vClip" src="${esc(cc.clip)}" title="${esc(cc.title)} 영상" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>`;
   if (!vReady()) return `<img src="${IMG}${esc(v.poster)}" alt=""><div class="player-cover"><span class="stamp">${I('play')}준비 중</span><strong>웹 사용법 영상을 만들고 있습니다</strong><p>영상이 올라오면 이 자리에서 바로 재생되고, 목차를 눌러 원하는 장면으로 건너뛸 수 있습니다.</p><p class="more">그동안 같은 내용을 웹으로 보기에서 실제 화면과 함께 볼 수 있어요.</p><a class="btn-accent" href="#web" data-mode="web">${I('doc')}웹으로 보기</a></div>`;
   const id = ytId(v.src);
   if (id) return `<iframe id="vFrame" src="${esc(ytSrc(id, 0, false))}" title="마이턴 웹 사용법 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe>`;
@@ -1747,22 +1742,28 @@ function playerHtml() {
 }
 function renderVideo() {
   const v = V(); const ready = vReady();
-  const info = ready ? [v.length && `길이 <b>${esc(v.length)}</b>`, v.updated && `만든 날 <b>${esc(dot(v.updated))}</b>`, `기준 <b>웹 가이드 v${esc(S.rel.v)}</b>`].filter(Boolean).join('') : `<span>목차는 영상 구성 예정안입니다. 각 장의 ${I('doc')} 단추로 웹 가이드의 같은 자리를 바로 열 수 있습니다.</span>`;
+  if (!ready && !(v.chapters.find((c) => c.id === S.chapter) || {}).clip) { const cc = clipCh(); if (cc) S.chapter = cc.id; }   /* 장 영상이 있으면 그 장을 골라 둔다 */
+  const info = ready ? [v.length && `길이 <b>${esc(v.length)}</b>`, v.updated && `만든 날 <b>${esc(dot(v.updated))}</b>`, `기준 <b>웹 가이드 v${esc(S.rel.v)}</b>`].filter(Boolean).join('') : `<span>${clipCh() ? '영상이 있는 장(길이가 적힌 장)을 누르면 이 자리에서 재생됩니다. 영상 안 「소리 · 음성 안내 켜기」로 음성 설명을 들을 수 있습니다. ' : '목차는 영상 구성 예정안입니다. '}각 장의 ${I('doc')} 단추로 웹 가이드의 같은 자리를 바로 열 수 있습니다.</span>`;
   $('vview').innerHTML = `<div class="wrap">
     <header class="vv-head"><div><span class="sec-no">VIDEO</span><h2 id="vTitle">${I('play')}영상으로 보기</h2><p>웹 화면을 따라 하며 보는 사용법 영상입니다.</p></div><a class="mini" href="#web" data-mode="web">${I('doc')}웹으로 보기</a></header>
     <div class="vv-grid">
       <div><div class="player" id="player">${playerHtml()}</div><div class="vv-info">${info}</div></div>
       <aside class="vv-toc" aria-labelledby="tocTitle"><div class="vv-toc-h"><h3 id="tocTitle">${I('layers')}영상 목차</h3><small>${v.chapters.length}개 장</small></div>
         <ol>${v.chapters.map((c, i) => {
-          const sec = toSec(c.at); const can = ready && sec >= 0;
-          const inner = `<span class="toc-no">${String(i + 1).padStart(2, '0')}</span><span class="toc-txt"><b>${esc(c.title)}${c.key ? tagOf('key') : ''}</b><small>${esc(c.desc)}</small></span><span class="toc-at${can ? '' : ' tbd'}">${can ? esc(c.at) : '예정'}</span>`;
-          return `<li class="${c.key ? 'key' : ''}${S.chapter === c.id ? ' on' : ''}" data-ch="${esc(c.id)}">${can ? `<button type="button" class="toc-item" data-seek="${esc(c.id)}" aria-label="${esc(c.title)} 장면으로 건너뛰기 (${esc(c.at)})">${inner}</button>` : `<div class="toc-item">${inner}</div>`}<a class="toc-web" href="#${esc(c.aid)}" title="웹으로 보기에서 열기" aria-label="${esc(c.title)} — 웹으로 보기에서 열기">${I('doc')}</a></li>`;
+          const sec = toSec(c.at); const clip = !ready && !!c.clip; const can = (ready && sec >= 0) || clip;
+          const inner = `<span class="toc-no">${String(i + 1).padStart(2, '0')}</span><span class="toc-txt"><b>${esc(c.title)}${c.key ? tagOf('key') : ''}</b><small>${esc(c.desc)}</small></span><span class="toc-at${can ? '' : ' tbd'}">${clip ? esc(c.len || '영상') : can ? esc(c.at) : '예정'}</span>`;
+          return `<li class="${c.key ? 'key' : ''}${S.chapter === c.id ? ' on' : ''}" data-ch="${esc(c.id)}">${can ? `<button type="button" class="toc-item" data-seek="${esc(c.id)}" aria-label="${esc(c.title)} ${clip ? '영상 보기' : `장면으로 건너뛰기 (${esc(c.at)})`}">${inner}</button>` : `<div class="toc-item">${inner}</div>`}<a class="toc-web" href="#${esc(c.aid)}" title="웹으로 보기에서 열기" aria-label="${esc(c.title)} — 웹으로 보기에서 열기">${I('doc')}</a></li>`;
         }).join('')}</ol></aside>
     </div></div>`;
 }
 function seekTo(id, auto) {
   const c = V().chapters.find((x) => x.id === id); if (!c) return;
   S.chapter = id; document.querySelectorAll('.vv-toc li').forEach((li) => li.classList.toggle('on', li.dataset.ch === id));
+  if (!vReady() && c.clip) {   /* 장 영상 — 재생 칸을 그 장 영상으로 바꾼다 */
+    const fr = $('vClip'); if (!fr || fr.getAttribute('src') !== c.clip) $('player').innerHTML = playerHtml();
+    if (auto) $('player').scrollIntoView({ behavior: reduce() ? 'auto' : 'smooth', block: 'nearest' });
+    return;
+  }
   const sec = toSec(c.at); if (!vReady() || sec < 0) return;
   const f = $('vFile'); const fr = $('vFrame');
   if (f) { try { f.currentTime = sec; if (auto) { const pr = f.play(); if (pr && pr.catch) pr.catch(() => {}); } } catch (e) { /* 메타데이터 전 — 무시 */ } }
@@ -1770,6 +1771,7 @@ function seekTo(id, auto) {
   if (auto) $('player').scrollIntoView({ behavior: reduce() ? 'auto' : 'smooth', block: 'nearest' });
 }
 function stopVideo() {
+  const vc = $('vClip'); if (vc) vc.src = 'about:blank';   /* 장 영상 — 소리째 멈춘다(돌아오면 다시 그린다) */
   const f = $('vFile'); if (f) { try { f.pause(); } catch (e) { /* 그만 */ } }
   const fr = $('vFrame'); if (fr) { const yid = ytId(V().src); if (yid) fr.src = ytSrc(yid, 0, false); }
 }
@@ -1929,12 +1931,10 @@ function filterFaq() {
 /* ---------- 이벤트 ---------- */
 document.addEventListener('click', (e) => {
   /* 소개 영상 전체 화면 — 틀째 화면 가득. 못 하는 기기(아이폰 사파리 등)는 영상 화면을 새 창으로 */
-  const vf = e.target.closest('[data-act="video-full"]');
-  if (vf) {   /* 화면별 안내 영상(clip)도 같은 단추 — 누른 단추의 영상 틀을 화면 가득 */
-    const box = vf.closest('.video-box'); const f = (box && box.querySelector('.video-frame')) || $('promoFrame'); const url = vf.dataset.src || PROMO_PLAY_URL;
-    const go = f && (f.requestFullscreen || f.webkitRequestFullscreen);
-    if (go) { try { const r = go.call(f); if (r && r.catch) r.catch(() => window.open(url, '_blank', 'noopener')); } catch (err) { window.open(url, '_blank', 'noopener'); } }
-    else window.open(url, '_blank', 'noopener');
+  if (e.target.closest('[data-act="video-full"]')) {
+    const f = $('promoFrame'); const go = f && (f.requestFullscreen || f.webkitRequestFullscreen);
+    if (go) { try { const r = go.call(f); if (r && r.catch) r.catch(() => window.open(PROMO_PLAY_URL, '_blank', 'noopener')); } catch (err) { window.open(PROMO_PLAY_URL, '_blank', 'noopener'); } }
+    else window.open(PROMO_PLAY_URL, '_blank', 'noopener');
     return;
   }
   const a = e.target.closest('a[href^="#"]');
