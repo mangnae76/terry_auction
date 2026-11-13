@@ -3563,6 +3563,8 @@ img.eb-cv { aspect-ratio: auto; height: auto; max-height: 260px; object-fit: con
 .hm-expl li b { color: inherit; font-weight: inherit; }
 .hm-two.even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 /* 홈 이벤트 · 공지사항 · 업데이트 — NewsBody 상자를 홈 카드 꼴로(테두리 · 모서리 16 · 안쪽 20/22, 상자 사이 18 · 같은 높이) */
+/* 시장분석 › 매각분석 맨 아래 — 부동산 투자 지표 · 실거래 동향(홈과 같은 상자) */
+.mk-index { margin-top: 18px; }
 #homeContent .hm-news .nws-two { gap: 18px; align-items: stretch; }
 #homeContent .hm-news .nws-card { min-width: 0; margin: 0; padding: 20px 22px; border: 1px solid var(--card-line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-card); }
 #homeContent .hm-news .nws-h { margin: 0 0 14px; font-size: 16px; font-weight: 800; color: var(--text); gap: 7px; }
@@ -4888,7 +4890,6 @@ span.cal-day.has { cursor: help; }
       <div class="g-util" aria-label="바로가기">
       <!-- 시험 — 소개 영상 대문. 아직 공개 전이라 이 컴퓨터(localhost)에서만 보인다 (확정되면 빼거나 자리를 옮긴다) -->
       <a class="u-link" href="/promo-test.html" id="promoTestLink" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m10 9.5 5 2.5-5 2.5z"/></svg>대문 시험</a>
-      <button type="button" class="u-link" data-act="go-community" data-name="공지"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>공지<span class="u-dot" id="noticeDot" hidden></span></button>
       <button type="button" class="u-link" data-act="go-board" data-name="오류및제안"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>게시판</button>
       <button type="button" class="u-link pay" data-act="go-more" data-name="결제하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>결제하기</button>
       <!-- 웹 이용가이드 — public/guide/index.html(/guide/)을 새 탭으로 연다. 주소는 WEB_GUIDE_URL 한곳 -->
@@ -5247,9 +5248,8 @@ span.cal-day.has { cursor: help; }
     const m = h.match(/^#\/([\w-]+)(?:\/([\w-]+))?(?:\/([\w-]+))?/) || [];
     const head = m[1] || '';
     if (head === 'item' && m[2]) return { route: 'item', itemId: m[2], itemTab: m[3] === 'verify' ? 'survey' : ITEM_TABS.includes(m[3]) ? m[3] : 'basic' };
-    if (head === 'community' && m[2] === 'faq') return { route: 'community', sub: 'notice' }; /* FAQ 탭을 뺐다 — 예전 주소는 공지로(FAQ 는 이용가이드) */
     if (head === 'community' && (m[2] === 'issue' || m[2] === 'suggest')) return { route: 'board', sub: 'suggest' }; /* 예전 공지 › 오류및제안 주소 — 게시판으로 옮겼다 */
-    if (head === 'more' && m[2] === 'news') return { route: 'community', sub: 'notice' }; /* 예전 마이페이지 › 공지 — 커뮤니티로 옮겼다 */
+    if (head === 'community' || (head === 'more' && m[2] === 'news')) return { route: 'home' }; /* 공지 화면을 걷었다 — 이벤트 · 공지사항 · 업데이트는 홈 세 상자로(2026-11-13 사용자). 예전 주소는 홈으로 */
     if (head === 'store' && m[2] === 'eb' && m[3]) return { route: 'store', storeTab: 'all', ebook: m[3] }; /* 콘텐츠 공유 링크 — 그 책 자세히보기 창을 연다(책 목록이 오면) */
     if (head === 'mobile') return { route: 'store', storeTab: 'mobile' };
     if (head === 'manual' || (head === 'postwin' && ['gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'gcheck'].includes(m[2]))) return { route: 'store', storeTab: 'manual', fromManual: true }; /* 예전 매뉴얼(위 메뉴 · 낙찰이후 가이드) — 이제 콘텐츠 › 매뉴얼로 서비스한다(2026-11-09) */ /* 모바일앱은 스토어 안 탭으로 옮겼다(2026-11-02) */
@@ -8715,7 +8715,7 @@ span.cal-day.has { cursor: help; }
     /* 경매사례는 운영자만 — 로그인 확인이 끝났는데 운영자가 아니면 지역분석으로(주소로 바로 들어와도) */
     if (key === 'sale' && S.authReady && !agIsAdmin()) { S.marketTab = 'dong'; writeHash(false); renderSubTabs(); renderMarket(); return; }
     if (key === 'sale') { const ss = $('sonSaleSlot'); if (ss) ss.innerHTML = '';   /* 숨은 물건상세 경매사례 그림을 비운다 — 지도 자리(#sxMapSlot) · 결과(#sxResults)가 둘이 되면 지도가 숨은 쪽으로 옮겨 붙었다(2026-11-08) */
-      closeAppMarket(); agStart(); box.innerHTML = agIsAdmin() ? saleCaseHtml() : itCard('chart', '매각분석', itEmpty('불러오는 중입니다…'), true); sxMountMap(); return; }
+      closeAppMarket(); agStart(); box.innerHTML = agIsAdmin() ? saleCaseHtml() + `<div class="mk-index">${hmIndexTradeHtml()}</div>` : itCard('chart', '매각분석', itEmpty('불러오는 중입니다…'), true); sxMountMap(); return; }
     if (!CLOUD.on || !T || !T.hasAppAdminScreen || !T.hasAppAdminScreen(key)) {
       closeAppMarket();
       const msg = !CLOUD.on ? (S.authReady ? '로그인하면 볼 수 있습니다.' : '불러오는 중입니다…') : '준비 중인 화면입니다.';
@@ -8818,6 +8818,7 @@ span.cal-day.has { cursor: help; }
         if (to === 'login') { openAppLogin(); return; }
         if (to === 'ai') { S.modal = { kind: 'aiset' }; renderModal(); return; }   /* AI 설정 창 */
         if (to === 'recent') { S.modal = { kind: 'recent' }; renderModal(); return; }   /* 마이페이지 최근 작성 › 전체보기 — 홈 최근 분석과 같은 창 */
+        if (to === 'community') { go('home'); return; }   /* 공지 화면을 걷었다 — 홈으로 */
         if (APP_PAGE_NAMES[to]) { S.tabForce = true; if (SUB_TAB_KEYS[to].includes(a)) S.pageTab[to] = a; go(to); return; }
         go(to);
       },
@@ -9508,8 +9509,6 @@ span.cal-day.has { cursor: help; }
       + `<div class="go">${btn(n.btn, 'main')}${n.alt ? btn(n.alt, 'alt') : ''}</div></section>`;
   };
   const homeHtml = () => {
-    const pct = (v) => `<em class="${v < 0 ? 'dn' : ''}">${v < 0 ? '▼' : '▲'} ${Math.abs(v).toFixed(2)}</em>`;
-    const ch = (v) => `<span class="hm-ch ${v < 0 ? 'dn' : 'up'}">${v > 0 ? '+' : ''}${v.toFixed(1)}%</span>`;
     const cont = hmContHtml();
     const day = S.homeDay || '';
     const sched = day ? hmDates().filter((x) => x.d === day) : hmSchedule(5);
@@ -9534,7 +9533,13 @@ span.cal-day.has { cursor: help; }
       + `</div>`
       + `<div id="hmNewsSlot"></div>`   /* 이벤트 · 공지사항 · 업데이트 세 상자 — 투자 지표 · 실거래 동향 위(2026-11-13 사용자) */
       /* 부동산 투자 지표 · 실거래 동향 — 공지사항 · 최근 분석 내역 아래, 반반 폭(2026-11-03) */
-      + `<div class="hm-two even">`
+      + hmIndexTradeHtml();
+  };
+  /* 부동산 투자 지표 · 실거래 동향 — 홈(투자 지표 · 실거래 동향)과 시장분석 › 매각분석 맨 아래(2026-11-13 사용자)가 같이 쓴다. 반반 폭 */
+  const hmIndexTradeHtml = () => {
+    const pct = (v) => `<em class="${v < 0 ? 'dn' : ''}">${v < 0 ? '▼' : '▲'} ${Math.abs(v).toFixed(2)}</em>`;
+    const ch = (v) => `<span class="hm-ch ${v < 0 ? 'dn' : 'up'}">${v > 0 ? '+' : ''}${v.toFixed(1)}%</span>`;
+    return `<div class="hm-two even">`
       + `<section class="hm-card"><div class="hm-h"><h2>${HM_SVG(HM_IC.trend)}부동산 투자 지표</h2><em class="hm-sample">예시</em><small>한국부동산원 · 연결 준비 중</small></div>`
       + HM_INDEX.map(([g, rows]) => `<div class="hm-ix-g">${g}</div><div class="hm-ix">${rows.map(([t, v, c]) => `<div><small>${t}</small><span class="v"><b>${v.toFixed(2)}</b>${pct(c)}</span></div>`).join('')}</div>`).join('')
       + `<div class="hm-notes"><p class="hm-tip">${HM_SVG(HM_IC.info)}<span>지수 <b>100</b>은 기준 시점과 같은 수준이라는 뜻입니다. 100보다 크면 상승, 작으면 하락이며 전월 대비 변동폭이 클수록 시장 변동성이 큰 것으로 봅니다.</span></p>`
@@ -9592,6 +9597,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
   const toTop = () => { window.scrollTo(0, 0); requestAnimationFrame(() => window.scrollTo(0, 0)); setTimeout(() => window.scrollTo(0, 0), 250); };
   /* 화면 바꾸기 — #/ 선정물건, #/register 선정물건등록 (뒤로가기로 돌아온다) */
   function go(route, id) {
+    if (route === 'community') route = 'home';   /* 공지 화면을 걷었다(2026-11-13) — 공지로 가는 길은 모두 홈 세 상자로 */
     if (S.route === route && (route !== 'item' || S.itemId === id)) { toTop(); return; }
     S.route = route; S.pop = ''; S.menu = null;
     if (route === 'item') { S.itemId = id; S.lastItemId = id; S.itemTab = S.itemTabNext || 'basic'; S.itemTabNext = ''; }
@@ -9856,7 +9862,6 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     window.addEventListener('myturn:login', () => { openAppLogin(); });   /* 점검 화면의 '운영자로그인' */
     window.addEventListener('admins:changed', () => { render(); });   /* 운영자 목록(DB adminConfig)이 오면 운영 단추 · 칩을 다시 그린다 */
     if (T.subscribeEbooks) { try { T.subscribeEbooks((rows) => { EB.list = Array.isArray(rows) ? rows : []; ebOpenShared(); if (S.route === 'home') renderHome(); if (S.route === 'store' && S.storeTab !== 'manage' && S.storeTab !== 'mine' && (S.storeTab !== 'mobile' || EB.list.some((b) => b.kind === 'mobile'))) renderInfo(); }, () => { /* 책 카드만 비어 보인다 */ }); } catch (e) { /* 책 카드만 비어 보인다 */ } }
-    if (T.useBoardNew) { try { const bn = T.useBoardNew(); T.watch(() => bn.any.value, (v) => { const d = $('noticeDot'); if (d) d.hidden = !v; }, { immediate: true }); } catch (e) { /* 점만 못 띄운다 */ } }
     const fromStore = () => {
       if (!CLOUD.on) return;
       const all = [...st.auctions, ...st.archivedAuctions, ...st.hiddenAuctions];
