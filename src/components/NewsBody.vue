@@ -82,7 +82,8 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
         <button type="button" class="nws-row" @click="toggleRow(`u${i}`, u)">
           <span class="tag">{{ u.tag }}</span><span class="txt">{{ u.text }}</span>
           <span v-if="u.postedShort" class="when">{{ u.postedShort }}</span>
-          <i v-if="u.body || u.imageUrl" class="chev">{{ openRow === `u${i}` ? '▴' : '▾' }}</i>
+          <i v-if="(u.body || u.imageUrl) && web" :class="['chev', { up: openRow === `u${i}` }]" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg></i>
+          <i v-else-if="u.body || u.imageUrl" class="chev">{{ openRow === `u${i}` ? '▴' : '▾' }}</i>
         </button>
         <div v-if="openRow === `u${i}`" class="nws-open">
           <img v-if="u.imageUrl" :src="u.imageUrl" alt="" @click="zoom = u.imageUrl" />
