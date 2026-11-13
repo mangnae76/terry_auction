@@ -92,6 +92,7 @@ export const useBoardFeed = () => {
       postedAt: p.postedAt ?? p.createdAt,
       postedShort: shortDayLabel(p.postedAt ?? p.createdAt),
       postedFull: postedLabel(p.postedAt ?? p.createdAt),
+      author: p.author ?? '',
     }));
   });
 

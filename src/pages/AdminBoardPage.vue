@@ -198,6 +198,8 @@ const save = async (publish: boolean) => {
       published: publish,
       // 등록 시각은 처음 올린 때 — 창을 연 때가 아니다
       postedAt: publish ? (d.postedAt || new Date().toISOString()) : d.postedAt,
+      // 작성자 — 처음 쓴 운영자 아이디(메일 @ 앞). 남이 고쳐도 처음 쓴 사람 그대로
+      author: d.author || (auth.email || '').split('@')[0],
       title: d.title.trim(),
       body: (d.body ?? '').trim(),
     });

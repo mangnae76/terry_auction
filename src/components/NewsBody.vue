@@ -30,11 +30,8 @@ const toggleRow = (key: string, row: { body?: string; imageUrl?: string }) => {
   openRow.value = openRow.value === key ? '' : key;
 };
 
-/* 웹 — 공지사항 · 업데이트를 좌우 두 상자로, 줄마다 제목 · 한 줄 설명 · 등록일까지 펼치지 않고 보인다(2026-11-13 사용자).
-   설명이 한 줄보다 길거나 그림이 있으면 오른쪽 화살표로 전체를 편다 */
-type NewsRow = { tag?: string; star?: boolean; text: string; body?: string; imageUrl?: string; postedShort?: string; postedFull?: string };
-const firstLine = (b?: string) => (b ?? '').split('\n').map((x) => x.trim()).find(Boolean) ?? '';
-const hasMore = (r: NewsRow) => !!r.imageUrl || (r.body ?? '').split('\n').map((x) => x.trim()).filter(Boolean).length > 1 || firstLine(r.body).length > 60;
+/* 웹 — 공지사항 · 업데이트를 좌우 두 상자로. 줄은 제목만, 화살표로 본문 · 등록일을 편다(2026-11-13 사용자) */
+type NewsRow = { tag?: string; star?: boolean; text: string; body?: string; imageUrl?: string; postedShort?: string; postedFull?: string; author?: string };
 const webBoxes = computed(() => [
   { key: 'n', title: '공지사항', rows: NOTICES.value as NewsRow[], isNew: noticeNew.value, empty: '지금 올라온 공지사항이 없습니다' },
   { key: 'u', title: '업데이트', rows: UPDATES.value as NewsRow[], isNew: updateNew.value, empty: '지금 올라온 업데이트가 없습니다' },
@@ -65,24 +62,26 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
       </template>
     </section>
 
-    <!-- 웹 — 공지사항 · 업데이트 좌우 두 상자. 줄마다 제목 · 한 줄 설명 · 등록일, 더 있으면 화살표로 펼친다 -->
+    <!-- 웹 — 공지사항 · 업데이트 좌우 두 상자. 제목 아래 목록을 테두리 상자 하나로 묶고, 줄은 꼬리표 · 제목만.
+         오른쪽 끝 화살표를 누르면 그 아래에 본문 · 그림 · 등록일(2026-11-13 사용자) -->
     <div v-if="web" class="nws-two">
       <section v-for="bx in webBoxes" :key="bx.key" class="nws-card" :data-sec="bx.key === 'n' ? 'notice' : 'update'">
         <h3 class="nws-h">{{ bx.title }}<i v-if="bx.isNew" class="dot" /></h3>
         <p v-if="!bx.rows.length" class="nws-empty">{{ bx.empty }}</p>
-        <div v-for="(r, i) in bx.rows" :key="`${bx.key}${i}`" class="nws-item">
-          <div class="nws-row">
-            <span v-if="r.star" class="star">✦</span><span v-else class="tag">{{ r.tag }}</span>
-            <span class="txt">{{ r.text }}</span>
-            <button v-if="bx.key === 'n' && hasMore(r)" type="button" :class="['chev', { up: openRow === `${bx.key}${i}` }]" :aria-label="openRow === `${bx.key}${i}` ? '접기' : '자세히'" :aria-expanded="openRow === `${bx.key}${i}`" @click="toggleRow(`${bx.key}${i}`, r)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
+        <div v-else class="nws-list">
+          <div v-for="(r, i) in bx.rows" :key="`${bx.key}${i}`" :class="['nws-item', { open: openRow === `${bx.key}${i}` }]">
+            <button type="button" class="nws-row" :aria-expanded="openRow === `${bx.key}${i}`" @click="openRow = openRow === `${bx.key}${i}` ? '' : `${bx.key}${i}`">
+              <span v-if="r.star" class="star">✦</span><span v-else class="tag">{{ r.tag }}</span>
+              <span class="txt">{{ r.text }}</span>
+              <i :class="['chev', { up: openRow === `${bx.key}${i}` }]" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg></i>
+            </button>
+            <div v-if="openRow === `${bx.key}${i}`" class="nws-open">
+              <img v-if="r.imageUrl" :src="r.imageUrl" alt="" @click="zoom = r.imageUrl!" />
+              <p v-if="r.body">{{ r.body }}</p>
+              <!-- 등록 날짜 · 시각, 오른쪽 끝에 작성자 아이디(2026-11-13 사용자) -->
+              <p class="nws-date"><span>{{ r.postedFull || r.postedShort }}</span><span class="who">작성자 {{ r.author || '운영자' }}</span></p>
+            </div>
           </div>
-          <!-- 업데이트는 접기 없이 본문 전체(2026-11-13 사용자), 공지사항은 한 줄 + 화살표 -->
-          <p v-if="bx.key === 'n' && firstLine(r.body) && openRow !== `${bx.key}${i}`" class="nws-sum">{{ firstLine(r.body) }}</p>
-          <div v-if="bx.key === 'u' ? !!(r.body || r.imageUrl) : openRow === `${bx.key}${i}`" class="nws-open">
-            <img v-if="r.imageUrl" :src="r.imageUrl" alt="" @click="zoom = r.imageUrl!" />
-            <p v-if="r.body">{{ r.body }}</p>
-          </div>
-          <p v-if="r.postedShort" class="nws-date">{{ r.postedShort }}</p>
         </div>
       </section>
     </div>
@@ -187,19 +186,19 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
 .web .nws-open p { font-size: 14px; color: #374151; }
 .web .nws-open .posted { font-size: 13px; }
 
-/* 웹 두 상자 — 넓으면 좌우, 좁으면 위아래 */
-.nws-two .nws-h { margin: 0 0 4px; padding-bottom: 12px; border-bottom: 1px solid #e8ebf1; }   /* 상자 제목 아래 구분선 */
+/* 웹 두 상자 — 넓으면 좌우, 좁으면 위아래. 목록은 테두리 상자 하나(줄 사이는 가는 선) */
 .nws-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
 @media (max-width: 900px) { .nws-two { grid-template-columns: minmax(0, 1fr); } }
-.web .nws-item { padding: 12px 4px; border-bottom: 1px solid #f1f3f7; }
-.web .nws-item:last-child { border-bottom: none; }
-.web .nws-item .nws-row { padding: 0; border: none; cursor: default; }
-.web .nws-item .nws-row:hover { background: none; }
+.web .nws-list { border: 1px solid #e3e8f0; border-radius: 10px; background: #fafbfd; overflow: hidden; }
+.web .nws-item + .nws-item { border-top: 1px solid #e8ebf1; }
+.web .nws-item .nws-row { padding: 12px 14px; border: none; }
+.web .nws-item .nws-row:hover { background: #f1f5fd; }
+.web .nws-item.open .nws-row { background: #eef3ff; }
 .web .nws-item .txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.web .nws-item button.chev { border: 0; padding: 0; cursor: pointer; }
-.web .nws-sum { margin: 6px 0 0 50px; font-size: 13.5px; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.web .nws-item .nws-open { padding: 8px 0 0 50px; }
-.web .nws-date { margin: 6px 0 0 50px; font-size: 12.5px; color: #9aa6c4; }
+.web .nws-item .chev { margin-left: auto; }
+.web .nws-item .nws-open { padding: 4px 14px 14px 64px; background: #fff; }
+.web .nws-date { display: flex; justify-content: space-between; gap: 12px; margin: 10px 0 0; padding-top: 8px; border-top: 1px dashed #e3e8f0; font-size: 12.5px; color: #9aa6c4; }
+.web .nws-date .who { color: #6b7280; }
 
 /* 포인트 — 안내 화면과 같은 파란 상자 */
 .nws-blue { background: #4a7bd8; border-radius: 10px; padding: 14px 13px; color: #fff; }

@@ -56,6 +56,8 @@ export interface BoardPost {
   published?: boolean;
   /** 처음 올린 때 — 사용자에게 보이는 '등록'은 이 시각이다 (창을 연 때가 아니다) */
   postedAt?: string;
+  /** 작성자 아이디 — 처음 올린 운영자 메일의 @ 앞(2026-11-13부터 적는다, 옛 글은 비어 '운영자'로 보인다) */
+  author?: string;
   /** 올릴 때 — 비우면 바로. 'YYYY-MM-DDTHH:mm' (현지 시각) */
   startAt?: string;
   /** 내릴 때 — 비우면 계속 둔다 */
