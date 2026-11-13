@@ -3042,8 +3042,7 @@ const repairMan = () => {
 const repairText = (man: number) => (man > 0 ? `+${man.toLocaleString('ko-KR')}만` : '0');
 const indivRateNum = (item: IndivItem) => {
   if (item.id === 'ind.floorNum') {
-    const auto = indivFloorRate();
-    if (auto) return auto;
+    return String(Math.abs(Number(floorRateOr())));
   }
   return rateDefaultOf(item.id) || '0';
 };
@@ -5963,7 +5962,8 @@ const rateRange = (raw: string): [number, number] => {
   if (!ns.length) return [0, 0];
   return [Math.min(...ns), Math.max(...ns)];
 };
-const rateOf = (id: string) => rateRange(indivValue(`${id}.rate`) || (id === 'ind.floorNum' ? indivFloorRate() : rateDefaultOf(id)));
+const floorRateOr = () => { const r = indivFloorRate(); return r && Number(r) !== 0 ? r : '5'; };   // 기준층도 비교한 집과 다르면 ±5%(강의 '층 · 동 · 타입 개별 편차 약 5%')
+const rateOf = (id: string) => rateRange(indivValue(`${id}.rate`) || (id === 'ind.floorNum' ? floorRateOr() : rateDefaultOf(id)));
 /** 구역 내 개별성 점수(0~100) — 단지끼리 잴 수 있는 항목만: 년식 · 주차수 · 엘베 · 경사 · 용적률(지하주차장 연결은 단지 내 개별성으로, 2026-11-11). 비중은 개별성 분석 '비율'(범위면 가운데).
  *  선정물건은 개별성 분석 값, 다른 단지는 년식(국토부 건축년도)만 — 건축물대장에 없는 값은 채우지 않는다 */
 /** 칸별 점수(0~100)와 비중 — 점수 팝업이 칸마다 보여 준다(2026-11-11 시안) */
@@ -5987,32 +5987,12 @@ const cmpZoneParts = (r: { mine: boolean; buildYear: number }) => {
  *  (다른 단지는 연식뿐이라 잣대가 달라 순위가 공평하지 않았다, 2026-11-11 사용자) */
 const cmpZoneScore = (r: { mine: boolean; buildYear: number }) => cmpZoneParts({ mine: false, buildYear: r.buildYear }).get('ind.age')?.v ?? null;
 /** 단지 내 개별성 + / − — 비율은 크기, 방향은 고른 내용으로(2026-11-11 사용자). 1 가산 · 0 없음 · -1 감산 */
+/** 단지 내(빌라는 호실) 개별성 — 시세분석에서 고른 거래 호실과 견준 것(나음 + · 같음 0 · 못함 −). 물건 문서 개별성 값 '<id>.cmp', 고르지 않으면 같음.
+ *  예전엔 내 호실 하나만 보고 정한 규칙(저층 −, 남향 + 등)이라 비교한 집들이 어떤지 보지 않았다(2026-11-13 사용자). 수리는 금액이라 따로 */
 const unitSign = (id: string): number => {
-  const v = indivValue(id);
-  if (id === 'ind.floorNum') {
-    const n = Number(sumVal('sum.floorCurrent').match(/\d+/)?.[0] ?? 0); const t = Number(sumVal('sum.floorTotal').match(/\d+/)?.[0] ?? 0);
-    if (!n || cmpFloorZero.value) return 0;   // 기준가가 같은 층 · ±1층 실거래면 층은 이미 담겨 있다(두 번 깎지 않게)
-    if (!isApartment.value) { const r = Number(indivFloorRate() || 0); return r < 0 ? -1 : r > 0 ? 1 : 0; }   // 빌라 — 엘베 · 층 표(indivFloorRate)대로
-    return n <= 3 || (t > 0 && n === t) ? -1 : 0;   // 1 ~ 3층 · 탑층은 감산, 4층 ~ 탑층 아래는 기준층이라 0(강의 2026-11-11)
-  }
-  if (!v) return 0;
-  const has = (...xs: string[]) => xs.some((x) => v.includes(x));
-  switch (id) {
-    case 'ind.direction': return has('남') ? 1 : has('북') && !has('동') && !has('서') ? -1 : 0;
-    case 'ind.type': {
-      if (isApartment.value) return has('판상형') ? 1 : has('타워형', '복층형') ? -1 : 0;   // 모양만(예전에 골라 둔 베이 · 방은 보지 않는다)
-      // 빌라 — 모양 · 베이를 더해 방향만(판상 · 3~4베이는 +, 타워 · 복층은 −)
-      const t = (has('판상형') ? 1 : has('타워형', '복층형') ? -1 : 0) + (has('3베이', '4베이') ? 1 : 0);
-      return Math.sign(t);
-    }
-    case 'ind.rooms': return Math.sign((has('3방', '4방') ? 1 : has('1방', '2방') ? -1 : 0) + (has('2화', '3화') ? 1 : has('1화') ? -1 : 0));   // 방 · 화장실을 더해 방향만
-    case 'ind.view': return has('뻥뷰', VIEW_LAKE) ? 1 : 0;
-    case 'ind.sunlight': return has('좋음') ? 1 : has('나쁨') ? -1 : 0;
-    case 'ind.repair': return 0;   // 수리는 % 가 아니라 금액(repairMan)
-    case 'ind.ugLink': return v === 'O' ? 1 : v === 'X' ? -1 : 0;
-    case 'ind.dongPos': return v === '로얄동' ? 1 : v === '외곽' ? -1 : 0;
-    default: return 0;
-  }
+  if (id === 'ind.repair') return 0;
+  if (id === 'ind.floorNum' && cmpFloorZero.value) return 0;   // 시세분석 '같은 층' · ±1층이면 층은 이미 담겨 있다
+  return zoneCmpOf(id);
 };
 /** 단지 내 개별성 한 줄의 보정(%) 범위 — 방향 × 비율 크기 */
 /** 비율을 어느 칸에서 읽나 — 뷰가 호수 · 강 · 공원뷰면 조망 비율(기본 20~25%) */
@@ -6550,6 +6530,13 @@ const cmpUnitBase = computed(() => (unitBasePick.value === 'med' ? cmpBase.value
 const zoneMatched = (id: string) => (id === 'ind.elevator' && !!sonPriceOut?.value?.elevFiltered) || (id === 'ind.age' && !!sonPriceOut?.value?.yearFiltered);
 /** 빌라 개별성 — 경매빌라를 기준으로 다른 빌라와 견준 것(나음 + · 같음 0 · 못함 −). 물건 문서 개별성 값 '<id>.cmp', 고르지 않으면 같음(2026-11-13 사용자 '달랐을 때만 ±') */
 const ZONE_CMP = [{ v: 'up', label: '나음', sg: 1 }, { v: 'eq', label: '같음', sg: 0 }, { v: 'down', label: '못함', sg: -1 }] as const;
+/** 시세분석에서 고른 거래의 층 — 층 줄에 '비교 3 · 7 · 12층'(많으면 '3~15층 · 가운데 8층') */
+const cmpFloorsText = computed(() => {
+  const fs = (sonPriceOut?.value?.rows ?? []).map((r) => r.floorNo).filter((n) => n > 0).sort((a, b) => a - b);
+  if (!fs.length) return '';
+  if (fs.length <= 4) return `비교 ${fs.join(' · ')}층`;
+  return `비교 ${fs[0]}~${fs[fs.length - 1]}층 · 가운데 ${fs[(fs.length - 1) >> 1]}층`;
+});
 const zoneCmpOf = (id: string) => (indivValue(`${id}.cmp`) === 'up' ? 1 : indivValue(`${id}.cmp`) === 'down' ? -1 : 0);
 const pickZoneCmp = (id: string, v: string) => { setIndivValue(`${id}.cmp`, v === 'eq' ? '' : v); persistSoon(); };
 const zoneSignOf = (id: string) => (zoneMatched(id) ? 0 : zoneCmpOf(id));   // 아파트도 손품으로 다른 단지를 알 수 있어 같은 방식(2026-11-13 사용자)
@@ -6558,6 +6545,8 @@ const adjOf = (sg: number, id: string): [number, number] => {
   return sg > 0 ? [Math.min(a, b), Math.max(a, b)] : sg < 0 ? [-Math.max(a, b), -Math.min(a, b)] : [0, 0];
 };
 const zoneAdj = (id: string): [number, number] => adjOf(zoneSignOf(id), id);
+/** 비교 단추 아래 % — 범위면 '+5~10%'처럼 짧게(좁은 칸에서 넘치지 않게) */
+const cmpPct = (sg: number, id: string) => { const [a, b] = rateOf(id).map((n) => Math.round(Math.abs(n) * 10) / 10).sort((x, y) => x - y); const g = sg > 0 ? '+' : '−'; return a === b ? `${g}${a}%` : `${g}${a}~${b}%`; };
 /** 구역 내(빌라는 '빌라 개별성') 칸 — 빌라는 건물외부 · 건물내부까지(빌라 개별성 표 그대로) */
 const zoneIdList = computed(() => (isApartment.value ? ZONE_IDS : ['ind.age', 'ind.parking', 'ind.elevator', 'ind.corridor', 'ind.slope', 'ind.mgmt', 'ind.inside']));
 const ZONE_UNIT_ITEMS = computed(() => indivGroups.value[0].items.filter((it) => zoneIdList.value.includes(it.id)));
@@ -10228,18 +10217,18 @@ const goBack = () => router.back();
                         <b v-else>{{ indivAutoText(item) }}</b>
                       </td>
                       <td class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
-                      <td class="cmp-zone-cmp-td"><span v-if="zoneMatched(item.id)" class="cmp-zone-match">시세분석 조건으로 맞춤 · 0%</span><span v-else class="cmp-ind-seg cmp-zone-cmp" role="radiogroup" :aria-label="`${item.label} — ${isApartment ? '이 단지가 다른 단지보다' : '경매빌라가 다른 빌라보다'}`"><button v-for="c in ZONE_CMP" :key="c.v" type="button" role="radio" :aria-checked="zoneCmpOf(item.id) === c.sg" :class="[c.v, { on: zoneCmpOf(item.id) === c.sg }]"  @click="pickZoneCmp(item.id, c.v)"><span class="k">{{ c.label }}</span><small v-if="c.sg">{{ pctText(adjOf(c.sg, item.id)) }}</small></button></span></td></tr>
+                      <td class="cmp-zone-cmp-td"><span v-if="zoneMatched(item.id)" class="cmp-zone-match">시세분석 조건으로 맞춤 · 0%</span><span v-else class="cmp-ind-seg cmp-zone-cmp" role="radiogroup" :aria-label="`${item.label} — ${isApartment ? '이 단지가 다른 단지보다' : '경매빌라가 다른 빌라보다'}`"><button v-for="c in ZONE_CMP" :key="c.v" type="button" role="radio" :aria-checked="zoneCmpOf(item.id) === c.sg" :class="[c.v, { on: zoneCmpOf(item.id) === c.sg }]"  @click="pickZoneCmp(item.id, c.v)"><span class="k">{{ c.label }}</span><small v-if="c.sg">{{ cmpPct(c.sg, item.id) }}</small></button></span></td></tr>
                   </tbody>
                 </table></div></div>
-                <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
-                  <colgroup><col style="width: 20%" /><col /><col style="width: 19%" /><col style="width: 22%" /></colgroup>
-                  <thead><tr><th>{{ isApartment ? '단지 내 개별성' : '호실 개별성' }}</th><th>내용</th><th>비율</th><th>보정</th></tr></thead>
+                <div class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl cmp-tbl-zone">
+                  <colgroup><col style="width: 16%" /><col /><col style="width: 15%" /><col style="width: 30%" /></colgroup>
+                  <thead><tr><th>{{ isApartment ? '단지 내 개별성' : '호실 개별성' }}</th><th>{{ isApartment ? '내 호실' : '경매호실' }}</th><th>비율</th><th>비교한 호실과 비교</th></tr></thead>
                   <tbody>
                     <template v-for="g in unitGroupsView" :key="g.title">
                     <tr v-for="item in g.items" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
                         <td class="lft cmp-ind-ct">
                           <!-- 자동 칸은 공식 자료 값 그대로(고치지 않는다). 자료에 없어 비었을 때만 직접 넣는다(2026-11-11 사용자) -->
-                          <template v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
+                          <template v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small><small v-if="item.id === 'ind.floorNum' && cmpFloorsText" class="cmp-floors">{{ cmpFloorsText }}</small></template>
                           <template v-else-if="INDIV_AUTO.has(item.id)"><span v-if="item.id === 'ind.floorNum'" class="cmp-ind-in"><input inputmode="numeric" :value="sumVal('sum.floorTotal')" placeholder="전체" aria-label="전체 층" @input="setSumVal('sum.floorTotal', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층 중<input inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" aria-label="해당 층" @input="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value.replace(/[^\d]/g, '')); persistSoon()" />층</span><span v-else-if="item.options" class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="optText(item.id, opt)" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ optText(item.id, opt) }}</button></span><span v-else class="cmp-ind-in"><input :inputmode="item.yearMonth ? 'text' : 'decimal'" :value="indivValue(item.id)" :placeholder="item.yearMonth ? '2004-05' : item.id === 'ind.parking' ? '총 주차대수' : '0'" :aria-label="item.label" @input="indivPickText(item.id, ($event.target as HTMLInputElement).value, !!item.yearMonth)" />{{ item.yearMonth ? '' : item.id === 'ind.parking' ? '대' : item.suffix ?? '' }}</span><small class="cmp-auto">자료에 없어 직접 넣습니다</small></template>
                           <span v-else-if="unitPickGroups[item.id]" class="cmp-type-pick"><span v-for="grp in unitPickGroups[item.id]" :key="grp.label" class="cmp-ind-seg" role="radiogroup" :aria-label="grp.label"><button v-for="opt in grp.opts" :key="opt" type="button" role="radio" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-checked="indivPicked(item, opt)" @click="indivPickOne(item.id, opt, grp.opts)">{{ opt }}</button></span></span>
                           <span v-else class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="optText(item.id, opt)" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ optText(item.id, opt) }}</button></span>
@@ -10248,12 +10237,12 @@ const goBack = () => router.back();
                         <td v-if="item.id === 'ind.repair'" class="n"><span class="cmp-rate-in"><input inputmode="numeric" :class="{ typed: !!indivValue('ind.repair.amt') }" :value="indivValue('ind.repair.amt') ? Number(indivValue('ind.repair.amt')).toLocaleString('ko-KR') : ''" :placeholder="repairDefaultMan().toLocaleString('ko-KR')" aria-label="수리 금액" @input="indivPickText('ind.repair.amt', ($event.target as HTMLInputElement).value)" />만</span></td>
                         <td v-else class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="indivValue(`${rateIdOf(item.id)}.rate`)" :placeholder="indivRateNum({ ...item, id: rateIdOf(item.id) })" :aria-label="`${item.label} 비율`" @input="indivRateInput(rateIdOf(item.id), ($event.target as HTMLInputElement).value)" />%</span></td>
                         <td v-if="item.id === 'ind.repair'" :class="['n', 'adp-ind-adj', repairMan() > 0 ? 'up' : 'zero']">{{ repairText(repairMan()) }}</td>
-                        <td v-else :class="['n', 'adp-ind-adj', unitSign(item.id) > 0 ? 'up' : unitSign(item.id) < 0 ? 'down' : 'zero']">{{ unitSign(item.id) === 0 ? '0%' : pctText(unitAdj(item.id)) }}</td></tr>
+                        <td v-else class="cmp-zone-cmp-td"><span v-if="item.id === 'ind.floorNum' && cmpFloorZero" class="cmp-zone-match">시세분석 조건으로 맞춤 · 0%</span><span v-else class="cmp-ind-seg cmp-zone-cmp" role="radiogroup" :aria-label="`${item.label} — 내 호실이 비교한 호실보다`"><button v-for="c in ZONE_CMP" :key="c.v" type="button" role="radio" :aria-checked="zoneCmpOf(item.id) === c.sg" :class="[c.v, { on: zoneCmpOf(item.id) === c.sg }]" @click="pickZoneCmp(item.id, c.v)"><span class="k">{{ c.label }}</span><small v-if="c.sg">{{ cmpPct(c.sg, rateIdOf(item.id)) }}</small></button></span></td></tr>
                     </template>
                     <tr class="cmp-sum"><td>합계</td><td /><td /><td :class="['n', 'adp-ind-adj', totalAdj[1] > 0 || repairMan() > 0 ? 'up' : totalAdj[0] < 0 ? 'down' : 'zero']"><b>{{ unitAdjText }}</b></td></tr>
                   </tbody>
                 </table></div></div>
-                <p class="cmp-ind-note"><template v-if="isApartment">비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 향/일조량 · 뷰 · 수리유무 · 동 위치는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다. 층은 4층부터 탑층 아래까지가 기준층이라 0%, 수리는 20평대 기준 금액입니다.</template><template v-else>비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 향 · 일조량 · 뷰 · 수리유무 · 건물외부 · 건물내부는 현장에서 직접 보고 고르는 것이 가장 정확하고 믿을 만합니다. 층은 엘베가 없으면 4 · 5층 −10% · 3층 −5% · 2층 0%, 엘베가 있으면 4층까지 0% · 5층 −10%입니다.</template></p>
+                <p class="cmp-ind-note"><template v-if="isApartment">비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 층 · 타입 · 향 · 뷰 · 동 위치는 시세분석에서 고른 거래 호실과 비교해 고르세요. 내 호실이 나으면 +, 못하면 −, 같으면 0%입니다. 향 · 뷰 · 동 위치는 현장에서 직접 보고 고르는 것이 가장 정확합니다. 수리는 20평대 기준 금액입니다.</template><template v-else>비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 층 · 타입 · 구조 · 향 · 일조량 · 뷰는 시세분석에서 고른 거래 호실과 비교해 고르세요. 경매호실이 나으면 +, 못하면 −, 같으면 0%입니다. 층 비율은 엘베가 없으면 4 · 5층 10% · 3층 5%, 엘베가 있으면 5층 10%이고 나머지는 5%입니다.</template></p>
               </div>
               <div class="cmp-est">
                 <!-- 기준가 칸은 뺐다 — 위 기준가 카드와 같은 값이라 겹친다(2026-11-11 사용자) -->
@@ -13206,6 +13195,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-zone-cmp button.up.on { color: #c22e2e; box-shadow: inset 0 0 0 1px #c22e2e; }
 .cmp-zone-cmp button.down.on { color: #1d4ed8; box-shadow: inset 0 0 0 1px #1d4ed8; }
 .cmp-zone-off.cmp-zone-guide { color: #374151; }
+.cmp-floors { display: block; margin-top: 2px; font-size: 12px; color: #6b7280; }   /* 층 줄 — 비교한 거래 층 */
 .cmp-zone-wrap.off { opacity: .45; user-select: none; }   /* 구역 내 · 빌라 개별성 — 다른 단지(건물) 거래가 없으면 보여만 준다 */
 .cmp-zone-off.warn { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
 .cmp-zone-off b { flex: 0 0 auto; font-size: 14px; font-weight: 800; color: #6b7280; }   /* 기준가 층 거르기 — 같은층 · ±1층 · 전체 */
