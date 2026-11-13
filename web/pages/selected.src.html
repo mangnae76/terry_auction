@@ -1549,6 +1549,9 @@ html.mk-map-lock :is(.foot, .foot-note) { display: none; }
 .app-detail .adp-profit-sticky {
   top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px)) !important; z-index: 20 !important;
 }
+/* 수익분석 두 단 — 짧은 쪽 단의 상자들(왼쪽 입찰정보 · 비용 · 수익)을 같은 만큼씩 늘려 아래 끝을 긴 쪽(오른쪽 계산 공식 상자)과 맞춘다(2026-11-13 사용자) */
+.app-detail .bida-grid > :is(.bida-col, .bida-right) { align-self: stretch; }
+.app-detail .bida-grid > :is(.bida-col, .bida-right) > * { flex: 1 1 auto; }
 /* 수익분석 내비게이터(입찰가 · 예상 매도가 · 실투자금 · 세후 순이익) — 위 고정 머리(수익분석 · 입찰일 · A안 B안) 바로 아래에 같이 붙는다(2026-11-13 사용자).
    머리 높이는 --profit-head-h(물건상세가 잰 값), 칸 사이 틈으로 아래가 비치지 않게 상자 바탕을 깔고 위아래 8 을 넓힌다 */
 .app-detail .bida > .bida-sum {
