@@ -1909,7 +1909,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
   border: 1px solid var(--line-2); background: var(--surface); transition: border-color .15s, box-shadow .15s, width .2s;
 }
 .search:hover { border-color: #b8c1d1; }
-.search:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); width: 380px; }   /* 눌러서 넓어져도 한 줄 — 330 → 380(유형 · 법원 칸 150 고정에 맞춤, 2026-11-07) */
+.search:focus-within, .search:has(input:not(:placeholder-shown)) { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); width: 380px; }   /* 눌러서 넓어져도 한 줄 — 330 → 380(유형 · 법원 칸 150 고정에 맞춤, 2026-11-07) · 글이 남아 있으면 다른 데를 눌러도 파란 테두리 유지(2026-11-13) */
 .search svg { width: 15px; height: 15px; color: var(--faint); flex: 0 0 auto; }
 .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 13px; }
 .search input::placeholder { color: var(--faint); }
@@ -4474,10 +4474,10 @@ html, body { overflow-x: clip; }
 }
 /* 두 줄 카드가 좁아지는 폭 — 앱처럼 법원을 줄여 쓰고 글자를 한 단계 내린다 */
 @media (max-width: 1300px) {
-  .search { width: 250px; } .search:focus-within { width: 300px; }   /* 1280 화면 — 넓어져도 한 줄 */
+  .search { width: 250px; } .search:focus-within, .search:has(input:not(:placeholder-shown)) { width: 300px; }   /* 1280 화면 — 넓어져도 한 줄 */
 }
 @media (max-width: 1240px) {
-  .search, .search:focus-within { width: 280px; }
+  .search, .search:focus-within, .search:has(input:not(:placeholder-shown)) { width: 280px; }
 }
 @media (max-width: 1100px) {
   .step { padding: 0 5px; font-size: 14px; }
@@ -4503,7 +4503,7 @@ html, body { overflow-x: clip; }
   .toolbar { padding: 10px 14px; row-gap: 8px; }
   .rg-results { padding-left: 14px; padding-right: 14px; }
   .search { width: 100%; margin-left: 0; }
-  .search:focus-within { width: 100%; }
+  .search:focus-within, .search:has(input:not(:placeholder-shown)) { width: 100%; }
   .tb-row2 { flex-wrap: wrap; }
   .tabs { flex: 1 1 100%; }
   .tools { padding: 0; margin-left: auto; }
