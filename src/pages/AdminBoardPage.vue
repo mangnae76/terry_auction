@@ -340,7 +340,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
       </div>
     </header>
 
-    <div :class="['adm-body', { wide: menu === 'members' }]">
+    <div class="adm-body">
       <!-- 왼쪽 메뉴 — 아직 만들지 않은 칸도 자리를 잡아 둔다 -->
       <nav class="ops-menu">
         <div v-for="g in OPS_MENU" :key="g.title" class="ops-group">
@@ -646,12 +646,10 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 }
 .adm-who { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #c7d2ea; font-weight: 600; }
 
-.adm-body {
-  max-width: 1200px; margin: 0 auto; padding: 28px 24px 60px;
+.adm-body {   /* 가로 폭은 머리띠(adm-top-in)와 같게 — 어느 메뉴든 같은 폭, 회원 관리 표도 가로로 넘치지 않는다(2026-11-13 사용자) */
+  max-width: 1480px; margin: 0 auto; padding: 28px 28px 60px;
   display: flex; align-items: flex-start; gap: 24px;
 }
-/* 회원 관리 — 표 칸이 많아 가로로 내리지 않게, 왼쪽 자리는 그대로 두고 오른쪽 끝까지 넓힌다(2026-11-13 사용자) */
-.adm-body.wide { max-width: none; margin-left: max(0px, calc((100% - 1200px) / 2)); margin-right: 0; }
 /* 왼쪽 메뉴 */
 .ops-menu { flex: 0 0 206px; position: sticky; top: 76px; }
 .ops-group + .ops-group { margin-top: 16px; }
