@@ -1737,8 +1737,7 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 /* 밤 — 선정물건 줄: 낮 연분홍 선(#f3c9c9)이 하얀 줄로 보였다. 매각분석 · 매매수요 내 물건 줄과 같은 색 */
 :root[data-theme="dark"] .pa-list tbody tr.mine { background: rgba(224, 62, 62, .1); box-shadow: inset 0 -2px 0 rgba(224, 62, 62, .35); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pa-list tbody tr.mine { background: rgba(224, 62, 62, .1); box-shadow: inset 0 -2px 0 rgba(224, 62, 62, .35); } }
-/* 웹 — 내비게이터(매도가 예상 · 평균 평당가 · 전용/연식 · 유사 거래건수)를 스크롤해도 위에 붙여 둔다. 매각분석 결과 머리(.sx-hero)와 같은 자리 · 같은 그림자(2026-11-13 사용자).
-   붙는 높이는 웹이 화면마다 --pa-stick-top 으로 준다. 결론 단락을 풀어(display: contents) 칸이 시세분석 상자 끝까지 붙어 있게 한다 */
-.pa.stick:not(.fs) > .zone-est { display: contents; }
-.pa.stick:not(.fs) .est { position: sticky; top: var(--pa-stick-top, 8px); z-index: 19; box-shadow: 0 6px 16px rgba(17, 24, 39, .08); }
+/* 웹 — 결론 단락(제목 줄 + 내비게이터 네 칸)을 스크롤해도 위에 붙여 둔다. 매각분석 결과 머리(.sx-hero)와 같은 자리 · 같은 그림자(2026-11-13 사용자).
+   붙는 높이는 웹이 화면마다 --pa-stick-top 으로 준다. 단락은 시세분석 상자(.pa) 바로 아래 칸이라 상자 끝까지 붙어 있다 */
+.pa.stick:not(.fs) > .zone-est { position: sticky; top: var(--pa-stick-top, 8px); z-index: 19; margin: -10px -22px 0; padding: 10px 22px 14px; border-radius: 12px; background: inherit; box-shadow: 0 6px 16px rgba(17, 24, 39, .08); }   /* 결론 제목 줄('이 물건 매도가 예상' · 조건 · 기간 · 조회)까지 한 덩어리로(2026-11-13 사용자) */
 </style>
