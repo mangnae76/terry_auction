@@ -47,8 +47,9 @@ const webBoxes = computed(() => [
          줄을 누르면 팝업으로 본문 전체 · 그림(2026-11-13 사용자) -->
     <div v-if="web" class="nws-two">
       <section v-for="bx in webBoxes" :key="bx.key" class="nws-card" :data-sec="bx.key === 'e' ? 'event' : bx.key === 'n' ? 'notice' : 'update'">
-        <h3 class="nws-h"><svg class="nws-h-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" v-html="bx.ico" />{{ bx.title }}<i v-if="bx.isNew" class="dot" /><span v-if="!bx.rows.length" class="nws-h-empty">{{ bx.empty }}</span></h3>
-        <div v-if="bx.rows.length" class="nws-list">
+        <h3 class="nws-h"><svg class="nws-h-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" v-html="bx.ico" />{{ bx.title }}<i v-if="bx.isNew" class="dot" /></h3>
+        <div class="nws-list">
+          <p v-if="!bx.rows.length" class="nws-list-empty">{{ bx.empty }}</p>
           <button v-for="(r, i) in bx.rows" :key="`${bx.key}${i}`" type="button" class="nws-item" @click="popRow = r">
             <span class="nws-row">
               <span v-if="r.star" class="star">✦</span><span v-else class="tag">{{ r.tag }}</span>
@@ -168,8 +169,7 @@ const webBoxes = computed(() => [
 @media (max-width: 1100px) { .nws-two { grid-template-columns: minmax(0, 1fr); } }
 .web .nws-h { display: flex; align-items: center; gap: 6px; }
 .web .nws-h-ico { flex: none; color: #2b6df3; }
-.web .nws-h-empty { margin-left: 4px; font-size: 13px; font-weight: 400; color: #9aa6c4; }   /* 글이 없을 때 — 제목 오른쪽에(2026-11-13 사용자) */
-.web .nws-card:has(.nws-h-empty) .nws-h { margin-bottom: 0; }
+.web .nws-list-empty { margin: 0; padding: 22px 14px; font-size: 14px; color: #9aa6c4; text-align: center; }   /* 글이 없을 때 — 공지사항과 같은 테두리 상자 안에(2026-11-13 사용자) */
 .web .nws-list { border: 1px solid #e3e8f0; border-radius: 10px; background: #fafbfd; overflow: hidden; }
 .web .nws-item { display: block; width: 100%; padding: 12px 14px; border: 0; border-radius: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
 .web .nws-item + .nws-item { border-top: 1px solid #e8ebf1; }
