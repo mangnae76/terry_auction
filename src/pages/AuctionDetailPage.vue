@@ -4761,7 +4761,7 @@ const concPriceValue = (col: string) => {
 };
 /* 손품결론(운영자만) — 손품조사 ④ 호가분석의 호가매물 아래에 예전 손품결론의 시세결론 · 급매가결론을 그대로 되살렸다(2026-11-13 사용자).
    시세결론: 시세분석에서 고른 값(경매지번 · 유사 매매가 · 평균 매매가)과 호가매물(가장 낮은 호가)의 가격 · 평당가, 체크를 푼 줄은 평균에서 뺀다.
-   급매가결론: 손으로 적는 칸(동일지번 매각물건 · 인근 매각 평균 · 급매가), 평당가는 적은 가격 ÷ 면적. 저장 자리는 예전 그대로 */
+   급매가: 평균 아래 한 줄(손으로 적는 칸 + 비고), 평당가는 적은 가격 ÷ 면적. 동일지번 · 인근 매각 줄은 뺐다. 저장 자리는 예전 그대로 */
 const perPyOf = (price: number, m2: number) => (price > 0 && m2 > 0 ? Math.round(price / (m2 / PYEONG_TO_M2)) : 0);
 const askMin = (sim: boolean) => {
   let best: { price: number; unit: number } | null = null;
@@ -4793,8 +4793,7 @@ const sonConcMean = computed(() => {
   return { unit: avg(on.map((l) => l.unit)), price: avg(on.map((l) => l.price)) };
 });
 const wonText = (n: number) => (n > 0 ? n.toLocaleString('ko-KR') : '-');
-const URGENT_LINES = [{ key: 'lot', label: '동일지번 매각물건' }, { key: 'near', label: '인근 매각 평균' }, { key: 'urgent', label: '급매가' }];
-/** 급매가결론 칸 적기 — 예전 필드(urgentSalePrice 등)는 그 자리, 나머지는 mktConcValues */
+/** 급매가 칸 적기 — 예전 필드(urgentSalePrice 등)는 그 자리, 나머지는 mktConcValues */
 const setConcOwn = (col: string, row: string, value: string) => {
   const sf = surveyForm.value as unknown as Record<string, unknown>;
   if (!sf) return;
@@ -10525,7 +10524,7 @@ const goBack = () => router.back();
               </template>
             </template>
             </div>
-            <!-- 손품결론 — 운영자만. 호가매물 바로 아래(손품조사 ④ 호가분석). 예전 손품결론의 시세결론 · 급매가결론(2026-11-13 사용자) -->
+            <!-- 손품결론 — 운영자만. 호가매물 바로 아래(손품조사 ④ 호가분석). 예전 손품결론의 시세결론 + 평균 아래 급매가(2026-11-13 사용자) -->
             <div v-if="sonpumMode && isOperator" class="adp-mkt-block son-conc-block">
               <div class="adp-mkt-block-head"><span class="t">손품결론</span><span class="adm-chip">운영</span></div>
               <h4 class="son-conc-h">시세결론</h4>
@@ -10542,20 +10541,14 @@ const goBack = () => router.back();
                     <td class="num mean"><span class="adp-conc-v">{{ wonText(sonConcMean.price) }}</span></td>
                     <td class="num mean"><span class="adp-conc-v">{{ wonText(sonConcMean.unit) }}</span></td>
                   </tr>
-                </tbody>
-              </table>
-              <p class="son-conc-tip">체크를 풀면 그 줄은 평균에서 빠집니다. 빈 칸(-)은 평균에 넣지 않습니다.</p>
-              <h4 class="son-conc-h">급매가결론</h4>
-              <table class="adp-table adp-mkt-table fit adp-dm-tbl adp-conc-table conc-urgent conc-vert">
-                <thead><tr><th class="adp-conc-corner">구분</th><th>조사가격</th><th>평당가</th></tr></thead>
-                <tbody>
-                  <tr v-for="l in URGENT_LINES" :key="l.key">
-                    <th :class="['adp-conc-side', 'mid', { red: l.key === 'urgent', big: l.key === 'urgent' }]">{{ l.label }}</th>
+                  <!-- 급매가 — 평균 바로 아래 한 줄(따로 있던 급매가결론 표를 줄였다, 2026-11-13 사용자). 손으로 적는 칸, 평당가는 적은 가격 ÷ 면적 -->
+                  <tr>
+                    <th class="adp-conc-side mid big red">급매가</th>
                     <td class="num">
-                      <FormattedNumberInput v-if="editingSurvey.listing" :model-value="concVal(l.key, 'price')" mode="string" class="adp-mkt-input" placeholder="가격" @update:model-value="setConcOwn(l.key, 'price', String($event ?? ''))" />
-                      <span v-else :class="['adp-conc-v', 'hi', { red: l.key === 'urgent' }]">{{ wonText(concPriceValue(l.key)) }}</span>
+                      <FormattedNumberInput v-if="editingSurvey.listing" :model-value="concVal('urgent', 'price')" mode="string" class="adp-mkt-input" placeholder="가격" @update:model-value="setConcOwn('urgent', 'price', String($event ?? ''))" />
+                      <span v-else class="adp-conc-v hi red">{{ wonText(concPriceValue('urgent')) }}</span>
                     </td>
-                    <td class="num"><span class="adp-conc-v">{{ wonText(parseDigits(concVal(l.key, 'unit'))) }}</span></td>
+                    <td class="num"><span class="adp-conc-v">{{ wonText(parseDigits(concVal('urgent', 'unit'))) }}</span></td>
                   </tr>
                   <tr>
                     <td class="adp-conc-note" colspan="3">
@@ -10565,6 +10558,7 @@ const goBack = () => router.back();
                   </tr>
                 </tbody>
               </table>
+              <p class="son-conc-tip">체크를 풀면 그 줄은 평균에서 빠집니다. 빈 칸(-)은 평균에 넣지 않습니다. 급매가는 평균에 들지 않습니다.</p>
             </div>
             </template>
             </Teleport>
@@ -12613,7 +12607,6 @@ tr.tone-take { background: #fff5f5; }
 .son-conc-block .son-conc-h { margin: 12px 0 6px; font-size: 15px; font-weight: 800; color: #111827; }
 .son-conc-block .adp-mkt-block-head + .son-conc-h { margin-top: 4px; }
 .son-conc-block .son-conc-tip { margin: 6px 0 4px; font-size: 12px; color: #6b7280; }
-.son-conc-block .adp-conc-note .adp-mkt-input { color: var(--text, #111827); }   /* 비고는 보통 글색 — 빨강 아님 */
 /* 시세 결론의 마지막 '가격' 줄 — 견주는 표의 결론이라 줄 전체를 굵게 */
 .adp-conc-table.bold-price .adp-conc-v.hi { font-weight: 800; }
 .adp-conc-table .adp-conc-v { font-size: 10.5px; font-weight: 400; color: #111827; white-space: nowrap; }
