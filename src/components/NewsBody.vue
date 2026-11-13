@@ -30,6 +30,15 @@ const toggleRow = (key: string, row: { body?: string; imageUrl?: string }) => {
   openRow.value = openRow.value === key ? '' : key;
 };
 
+/* 웹 — 공지사항 · 업데이트를 좌우 두 상자로, 줄마다 제목 · 한 줄 설명 · 등록일까지 펼치지 않고 보인다(2026-11-13 사용자).
+   설명이 한 줄보다 길거나 그림이 있으면 오른쪽 화살표로 전체를 편다 */
+type NewsRow = { tag?: string; star?: boolean; text: string; body?: string; imageUrl?: string; postedShort?: string; postedFull?: string };
+const firstLine = (b?: string) => (b ?? '').split('\n').map((x) => x.trim()).find(Boolean) ?? '';
+const hasMore = (r: NewsRow) => !!r.imageUrl || (r.body ?? '').split('\n').map((x) => x.trim()).filter(Boolean).length > 1 || firstLine(r.body).length > 60;
+const webBoxes = computed(() => [
+  { key: 'n', title: '공지사항', rows: NOTICES.value as NewsRow[], isNew: noticeNew.value, empty: '지금 올라온 공지사항이 없습니다' },
+  { key: 'u', title: '업데이트', rows: UPDATES.value as NewsRow[], isNew: updateNew.value, empty: '지금 올라온 업데이트가 없습니다' },
+]);
 /** 이벤트는 제목 줄을 누르면 상세 보기로 들어간다 (기본 글은 번호가 없어 그 자리에서 펼친다) */
 const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: string }) => {
   if (row.id) { router.push(`/post/${row.id}`); return; }
@@ -56,6 +65,28 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
       </template>
     </section>
 
+    <!-- 웹 — 공지사항 · 업데이트 좌우 두 상자. 줄마다 제목 · 한 줄 설명 · 등록일, 더 있으면 화살표로 펼친다 -->
+    <div v-if="web" class="nws-two">
+      <section v-for="bx in webBoxes" :key="bx.key" class="nws-card" :data-sec="bx.key === 'n' ? 'notice' : 'update'">
+        <h3 class="nws-h">{{ bx.title }}<i v-if="bx.isNew" class="dot" /></h3>
+        <p v-if="!bx.rows.length" class="nws-empty">{{ bx.empty }}</p>
+        <div v-for="(r, i) in bx.rows" :key="`${bx.key}${i}`" class="nws-item">
+          <div class="nws-row">
+            <span v-if="r.star" class="star">✦</span><span v-else class="tag">{{ r.tag }}</span>
+            <span class="txt">{{ r.text }}</span>
+            <button v-if="hasMore(r)" type="button" :class="['chev', { up: openRow === `${bx.key}${i}` }]" :aria-label="openRow === `${bx.key}${i}` ? '접기' : '자세히'" :aria-expanded="openRow === `${bx.key}${i}`" @click="toggleRow(`${bx.key}${i}`, r)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
+          </div>
+          <p v-if="firstLine(r.body) && openRow !== `${bx.key}${i}`" class="nws-sum">{{ firstLine(r.body) }}</p>
+          <div v-if="openRow === `${bx.key}${i}`" class="nws-open">
+            <img v-if="r.imageUrl" :src="r.imageUrl" alt="" @click="zoom = r.imageUrl!" />
+            <p v-if="r.body">{{ r.body }}</p>
+          </div>
+          <p v-if="r.postedShort" class="nws-date">{{ r.postedShort }}</p>
+        </div>
+      </section>
+    </div>
+
+    <template v-else>
     <section class="nws-card" data-sec="notice">
       <h3 class="nws-h">공지사항<i v-if="noticeNew" class="dot" /></h3>
       <p v-if="!NOTICES.length" class="nws-empty">지금 올라온 공지사항이 없습니다</p>
@@ -92,6 +123,8 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
         </div>
       </template>
     </section>
+
+    </template>
 
     <ImageLightbox v-if="zoom" :src="zoom" @close="zoom = ''" />
   </div>
@@ -152,6 +185,19 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
 .web .nws-open { padding: 6px 4px 16px 54px; }
 .web .nws-open p { font-size: 14px; color: #374151; }
 .web .nws-open .posted { font-size: 13px; }
+
+/* 웹 두 상자 — 넓으면 좌우, 좁으면 위아래 */
+.nws-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+@media (max-width: 900px) { .nws-two { grid-template-columns: minmax(0, 1fr); } }
+.web .nws-item { padding: 12px 4px; border-bottom: 1px solid #f1f3f7; }
+.web .nws-item:last-child { border-bottom: none; }
+.web .nws-item .nws-row { padding: 0; border: none; cursor: default; }
+.web .nws-item .nws-row:hover { background: none; }
+.web .nws-item .txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.web .nws-item button.chev { border: 0; padding: 0; cursor: pointer; }
+.web .nws-sum { margin: 6px 0 0 50px; font-size: 13.5px; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.web .nws-item .nws-open { padding: 8px 0 0 50px; }
+.web .nws-date { margin: 6px 0 0 50px; font-size: 12.5px; color: #9aa6c4; }
 
 /* 포인트 — 안내 화면과 같은 파란 상자 */
 .nws-blue { background: #4a7bd8; border-radius: 10px; padding: 14px 13px; color: #fff; }
