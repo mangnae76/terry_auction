@@ -9531,11 +9531,9 @@ span.cal-day.has { cursor: help; }
       + (recent.length ? `<ul class="hm-list hm-recent">${recent.map((r) => hmRecentRow(r, hmStamp(r.at))).join('')}</ul>` : '<p class="hm-none">아직 분석한 물건이 없습니다. 물건을 등록하고 분석을 시작해 보세요.</p>')
       + `</section>`
       + `</div>`
-      + `<div id="hmNewsSlot"></div>`   /* 이벤트 · 공지사항 · 업데이트 세 상자 — 투자 지표 · 실거래 동향 위(2026-11-13 사용자) */
-      /* 부동산 투자 지표 · 실거래 동향 — 공지사항 · 최근 분석 내역 아래, 반반 폭(2026-11-03) */
-      + hmIndexTradeHtml();
+      + `<div id="hmNewsSlot"></div>`;   /* 이벤트 · 공지사항 · 업데이트 세 상자가 홈 맨 아래. 부동산 투자 지표 · 실거래 동향은 홈에서 걷어 시장분석 › 매각분석 맨 아래에만(2026-11-13 사용자) */
   };
-  /* 부동산 투자 지표 · 실거래 동향 — 홈(투자 지표 · 실거래 동향)과 시장분석 › 매각분석 맨 아래(2026-11-13 사용자)가 같이 쓴다. 반반 폭 */
+  /* 부동산 투자 지표 · 실거래 동향 — 시장분석 › 매각분석 맨 아래(2026-11-13 사용자). 홈에서는 걷었다. 반반 폭 */
   const hmIndexTradeHtml = () => {
     const pct = (v) => `<em class="${v < 0 ? 'dn' : ''}">${v < 0 ? '▼' : '▲'} ${Math.abs(v).toFixed(2)}</em>`;
     const ch = (v) => `<span class="hm-ch ${v < 0 ? 'dn' : 'up'}">${v > 0 ? '+' : ''}${v.toFixed(1)}%</span>`;
