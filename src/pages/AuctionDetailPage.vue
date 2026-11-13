@@ -154,6 +154,15 @@ watch(profitStickyEl, (el) => {
 onBeforeUnmount(() => profitHeadRO?.disconnect());
 /** 운영자 — 앱 손품조사 매각분석 카드는 운영자만(웹 agIsAdmin 과 같은 명단) */
 const isOperator = computed(() => isAdminEmail(authStore.email));
+/** 앱 손품조사 하위 탭 — 매매수요 · 시세분석 · 매각분석(운영자만). 고른 탭은 이 기기에 남긴다(권리분석 탭과 같은 방식) */
+type SonSub = 'demand' | 'price' | 'sale';
+const SON_SUB_KEY = 'ta.app.sonTab';
+const sonSubSaved = ref<SonSub>((() => { try { const v = localStorage.getItem(SON_SUB_KEY); return v === 'price' || v === 'sale' ? v : 'demand'; } catch { return 'demand'; } })());
+const sonSub = computed<SonSub>({
+  get: () => (sonSubSaved.value === 'sale' && !isOperator.value ? 'demand' : sonSubSaved.value),
+  set: (v) => { sonSubSaved.value = v; try { localStorage.setItem(SON_SUB_KEY, v); } catch { /* 그만 */ } },
+});
+const sonSubTabs = computed(() => ([['demand', '매매수요'], ['price', '시세분석'], ...(isOperator.value ? [['sale', '매각분석']] : [])] as Array<[SonSub, string]>));
 
 type TabKey = 'basic' | 'rights' | 'profit' | 'verify' | 'survey' | 'field';
 const TAB_KEYS: TabKey[] = ['basic', 'rights', 'profit', 'verify', 'survey', 'field'];
@@ -9211,8 +9220,13 @@ const goBack = () => router.back();
       </template>
 
       <template v-if="activeTab === 'survey' && auction">
+        <!-- 앱 — 손품조사 하위 탭(권리분석 '요약 · 권리·세입자 · 확인할일'과 같은 꼴, 2026-11-13 사용자). 매각분석은 운영자만. 고른 탭은 다른 물건 · 다시 열어도 그대로.
+             카드는 v-show 로 숨긴다 — 탭을 오가도 받아 둔 시세 · 리스트를 다시 받지 않게 -->
+        <div v-if="appPrice" class="rp-tabs adp-son-tabs" role="tablist">
+          <button v-for="[k, t] in sonSubTabs" :key="k" type="button" role="tab" :aria-selected="sonSub === k" :class="{ on: sonSub === k }" @click="sonSub = k">{{ t }}<span v-if="k === 'sale'" class="adp-op-chip">운영</span></button>
+        </div>
         <!-- 본건사진 — 전경 + 평면도 -->
-        <section class="adp-card">
+        <section v-show="!appPrice || sonSub === 'demand'" class="adp-card">
           <header class="adp-card-head" @click="toggleSection('photos')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h4l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg>본건사진 + 기타사진<PhotoCountMark :n="photoAreaCount('photos')" /></h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('photos') }]" alt="" />
@@ -9248,7 +9262,7 @@ const goBack = () => router.back();
 
 
         <!-- 매매수요 — 동단위 수요·공급 (빌라) -->
-        <section class="adp-card">
+        <section v-show="!appPrice || sonSub === 'demand'" class="adp-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('demand')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V10M9 21V4M15 21v-7M21 21v-11"/></svg>매매수요 조사</h2>
             <!-- 단계 — 제목 옆(세로 길이를 아낀다, 2026-11-11 사용자). 눌러도 카드가 접히지 않게 -->
@@ -10102,7 +10116,7 @@ const goBack = () => router.back();
         <!-- 손품분석에서는 여기까지(본건사진 · 수요분석 · 입지/개별성) — 아래 카드들은 손품조사에서만 -->
         <!-- 실거래가 조사 — 손품분석에서는 이 카드의 네이버 매물조사만 시세조사 탭 아래(#sonNaverSlot)로 옮겨 보인다 -->
         <Teleport defer to="#sonNaverSlot" :disabled="!sonpumMode">
-        <section class="adp-card">
+        <section v-show="!appPrice || sonSub === 'price'" class="adp-card">
           <header v-if="!sonpumMode" class="adp-card-head adp-survey-head" @click="toggleSection('survPrice')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>시세분석</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survPrice') }]" alt="" />
@@ -10508,7 +10522,7 @@ const goBack = () => router.back();
         </section>
         </Teleport>
         <!-- 앱 매각분석 — 운영자만(웹 손품조사 › 매각분석 탭처럼 '운영' 칩, 2026-11-13 사용자). 시세분석 카드 아래 같은 꼴 · 같은 접기 -->
-        <section v-if="appPrice && isOperator" class="adp-card">
+        <section v-if="appPrice && isOperator" v-show="sonSub === 'sale'" class="adp-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('survSale')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" /></svg>매각분석<span class="adp-op-chip">운영</span></h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survSale') }]" alt="" />
@@ -12647,6 +12661,9 @@ tr.tone-take { background: #fff5f5; }
 .adp-card-opt em { font-style: normal; color: #6b7280; white-space: nowrap; }
 .adp-card-opt .r2 > b { white-space: nowrap; }
 .adp-card-opt .addr { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adp-son-tabs { display: flex; gap: 4px; margin: 4px 5px 10px; border-bottom: 1px solid #d6dbe6; }   /* 앱 손품조사 하위 탭 — 권리분석 결과 탭(.rp-tabs)과 같은 꼴 */
+.adp-son-tabs button { flex: 1; display: inline-flex; align-items: center; justify-content: center; padding: 7px 0; border: 0; border-radius: 8px 8px 0 0; background: #e6eaf2; font-family: inherit; font-size: 12.5px; font-weight: 700; color: #6b7280; cursor: pointer; }
+.adp-son-tabs button.on { background: #fff; color: #2b6df3; box-shadow: inset 0 1px 0 #d6dbe6, inset 1px 0 0 #d6dbe6, inset -1px 0 0 #d6dbe6; margin-bottom: -1px; }
 .adp-op-chip { display: inline-flex; align-items: center; height: 18px; margin-left: 6px; padding: 0 6px; border-radius: 5px; background: #fff1e6; color: #e8590c; font-size: 11px; font-weight: 700; }   /* 운영자만 보이는 카드 — 웹 '운영' 칩과 같은 주황 */
 .adp-dm-area-gap { margin-left: 6px; }
 .adp-dm-title.adp-dm-title-sm { font-size: 13px; }   /* ③ 제목 — 위 ① · ② 상자 제목(13 · 800)과 같은 크기, 동 이름까지 */
