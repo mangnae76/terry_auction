@@ -74,10 +74,11 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
           <div class="nws-row">
             <span v-if="r.star" class="star">✦</span><span v-else class="tag">{{ r.tag }}</span>
             <span class="txt">{{ r.text }}</span>
-            <button v-if="hasMore(r)" type="button" :class="['chev', { up: openRow === `${bx.key}${i}` }]" :aria-label="openRow === `${bx.key}${i}` ? '접기' : '자세히'" :aria-expanded="openRow === `${bx.key}${i}`" @click="toggleRow(`${bx.key}${i}`, r)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
+            <button v-if="bx.key === 'n' && hasMore(r)" type="button" :class="['chev', { up: openRow === `${bx.key}${i}` }]" :aria-label="openRow === `${bx.key}${i}` ? '접기' : '자세히'" :aria-expanded="openRow === `${bx.key}${i}`" @click="toggleRow(`${bx.key}${i}`, r)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
           </div>
-          <p v-if="firstLine(r.body) && openRow !== `${bx.key}${i}`" class="nws-sum">{{ firstLine(r.body) }}</p>
-          <div v-if="openRow === `${bx.key}${i}`" class="nws-open">
+          <!-- 업데이트는 접기 없이 본문 전체(2026-11-13 사용자), 공지사항은 한 줄 + 화살표 -->
+          <p v-if="bx.key === 'n' && firstLine(r.body) && openRow !== `${bx.key}${i}`" class="nws-sum">{{ firstLine(r.body) }}</p>
+          <div v-if="bx.key === 'u' ? !!(r.body || r.imageUrl) : openRow === `${bx.key}${i}`" class="nws-open">
             <img v-if="r.imageUrl" :src="r.imageUrl" alt="" @click="zoom = r.imageUrl!" />
             <p v-if="r.body">{{ r.body }}</p>
           </div>
@@ -187,6 +188,7 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
 .web .nws-open .posted { font-size: 13px; }
 
 /* 웹 두 상자 — 넓으면 좌우, 좁으면 위아래 */
+.nws-two .nws-h { margin: 0 0 4px; padding-bottom: 12px; border-bottom: 1px solid #e8ebf1; }   /* 상자 제목 아래 구분선 */
 .nws-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
 @media (max-width: 900px) { .nws-two { grid-template-columns: minmax(0, 1fr); } }
 .web .nws-item { padding: 12px 4px; border-bottom: 1px solid #f1f3f7; }
