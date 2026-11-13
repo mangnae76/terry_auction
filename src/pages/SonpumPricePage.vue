@@ -846,6 +846,40 @@ onMounted(() => { window.addEventListener('resize', onResize); void run(); });
 /* 전체화면은 새로고침 · 다른 물건에서도 그대로(고른 보기는 남긴다) — 닫기를 눌러야 풀린다 */
 const FS_KEY = 'son.price.fs';
 const fs = ref(webEmbed && !props.app && (() => { try { return localStorage.getItem(FS_KEY) === '1'; } catch { return false; } })());
+/** 웹 손품조사 — 결론 머리(제목 줄 + 네 칸)는 CSS sticky 라 시세분석 상자(.pa) 안에서만 붙는다.
+ *  아래 호실 예상가 · 호가매물(손품조사 화면의 다른 칸)까지 붙어 있게(2026-11-13 사용자 '끝까지'), 상자가 끝나면 화면에 고정하고
+ *  시세분석 탭의 마지막 칸이 끝날 때 함께 밀려 올라간다. 시장분석(그 아래 칸이 없다)은 CSS sticky 그대로 */
+const zoneEl = ref<HTMLElement | null>(null);
+const estFix = ref<{ h: number; style: Record<string, string> } | null>(null);
+let stickTopPx = -1;
+const stickTop = () => {
+  if (stickTopPx >= 0) return stickTopPx;
+  const host = zoneEl.value?.parentElement; if (!host) return 8;
+  const pr = document.createElement('div'); pr.style.cssText = 'position:absolute;visibility:hidden;height:var(--pa-stick-top, 8px)';
+  host.appendChild(pr); stickTopPx = pr.offsetHeight; pr.remove();
+  return stickTopPx;
+};
+let estRaf = 0;
+const syncEstFix = () => {
+  estRaf = 0;
+  const z = zoneEl.value; const pa = z?.closest('.pa') as HTMLElement | null; const son = pa?.closest('.son') as HTMLElement | null;
+  if (!z || !pa || !son || !webEmbed || props.app || fs.value) { if (estFix.value) estFix.value = null; return; }
+  const top = stickTop(); const paR = pa.getBoundingClientRect();
+  const h = estFix.value?.h ?? z.offsetHeight;
+  // 상자 아래 끝이 머리를 밀어 올리기 시작하면(상자 아래 여백 24 포함) 화면에 고정
+  if (paR.top >= top || paR.bottom - 24 >= top + h) { if (estFix.value) estFix.value = null; return; }
+  const ends = ['.son-price', '#sonUnitSlot', '#sonNaverSlot'].map((q) => son.querySelector(q) as HTMLElement | null).filter((e): e is HTMLElement => !!e && e.offsetHeight > 0);
+  const endB = Math.max(...ends.map((e) => e.getBoundingClientRect().bottom));
+  const t = Math.min(top, endB - h);
+  estFix.value = { h, style: { position: 'fixed', top: `${Math.round(t)}px`, left: `${Math.round(paR.left + 1)}px`, width: `${Math.round(paR.width - 2)}px`, margin: '0' } };
+};
+const onEstScroll = () => { if (!estRaf) estRaf = requestAnimationFrame(syncEstFix); };
+if (typeof window !== 'undefined' && webEmbed && !props.app) {
+  window.addEventListener('scroll', onEstScroll, { passive: true });
+  const onEstResize = () => { stickTopPx = -1; onEstScroll(); };
+  window.addEventListener('resize', onEstResize);
+  onBeforeUnmount(() => { window.removeEventListener('scroll', onEstScroll); window.removeEventListener('resize', onEstResize); if (estRaf) cancelAnimationFrame(estRaf); });
+}
 const fsList = computed(() => [...mapGroups.value].sort((a, b) => (orderOf.value[a.jibun] ?? 999) - (orderOf.value[b.jibun] ?? 999)));
 /** 표 줄을 누르면 지도의 그 점이 커지고 이름표가 뜬다 — 경매지번(같은 건물) 줄 · 맨 위 빨간 줄은 빨간 점(2026-11-10) */
 const pickMine = () => { focus.value = ''; meOpen.value = !meOpen.value; };
@@ -906,7 +940,9 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       </span>
     </div>
     <!-- Ⓐ 결론 — 제목 줄에 조회(지역은 물건 카드에서 온다, 기간만 고른다) -->
-    <div class="zone zone-est">
+    <!-- 붙는 머리가 시세분석 상자 밖(호실 예상가 · 호가매물)까지 이어 붙을 때 — 빠진 자리를 같은 높이로 받친다 -->
+    <div v-if="estFix" class="zone-ph" :style="{ height: `${estFix.h}px` }" aria-hidden="true" />
+    <div ref="zoneEl" class="zone zone-est" :style="estFix ? estFix.style : undefined">
       <div class="zone-h"><span class="pa-tag">결론</span><h3>{{ webEmbed ? '이 물건 매도가 예상' : '이 물건 실거래가 예상' }}</h3>
         <span :class="['bar-desc', { hi: webEmbed }]"><svg v-if="webEmbed" class="flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ regionText || '지역 확인 중' }}{{ webEmbed ? ` · 반경 ${radText(radius)} · ${periodText(loadedMonths)}` : '' }} · {{ KIND_LABEL[kind] }} 실거래</span>
         <span class="pa-load-r">
@@ -1740,4 +1776,5 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 /* 웹 — 결론 단락(제목 줄 + 내비게이터 네 칸)을 스크롤해도 위에 붙여 둔다. 매각분석 결과 머리(.sx-hero)와 같은 자리 · 같은 그림자(2026-11-13 사용자).
    붙는 높이는 웹이 화면마다 --pa-stick-top 으로 준다. 단락은 시세분석 상자(.pa) 바로 아래 칸이라 상자 끝까지 붙어 있다 */
 .pa.stick:not(.fs) > .zone-est { position: sticky; top: var(--pa-stick-top, 8px); z-index: 19; margin: -10px -22px 0; padding: 10px 22px 14px; border-radius: 12px; background: inherit; box-shadow: 0 6px 16px rgba(17, 24, 39, .08); }   /* 결론 제목 줄('이 물건 매도가 예상' · 조건 · 기간 · 조회)까지 한 덩어리로(2026-11-13 사용자) */
+.zone-ph { margin: -10px 0 0; }   /* 고정한 머리 자리 받침 — 머리의 위 여백(-10)과 같게 */
 </style>
