@@ -54,7 +54,7 @@ const web = inject('webEmbed', false);
         <span v-if="tag" class="bp-tag">{{ tag }}</span>
         <h2 class="bp-h">{{ titleOf(post) }}</h2>
       </div>
-      <p v-if="posted" class="bp-posted">{{ posted }}</p>
+      <p v-if="posted" class="bp-posted">{{ posted }}<span class="bp-who">작성자 {{ post.author || '운영자' }}</span></p>
       <p v-if="period" class="bp-period">기간 {{ period }}</p>
 
       <img
@@ -114,4 +114,6 @@ const web = inject('webEmbed', false);
 .web .bp-img { max-width: 760px; display: block; margin: 0 0 18px; }
 .web .bp-body { font-size: 15px; line-height: 1.85; }
 .web.bp-shell .bp-gone { margin: 24px 0; font-size: 14px; }
+.bp-posted { display: flex; justify-content: space-between; gap: 12px; }
+.bp-who { color: inherit; }
 </style>
