@@ -1500,11 +1500,8 @@ GUIDE.release({
 /* v1.6.1 — 2026.11.13 영상으로 보기 › 화면 공통 구성 장에 안내 영상(HTML 영상 1분 41초, 음성 안내). 장마다 따로 만든 영상(clip)은 그 장을 누르면 재생 칸에 뜬다 */
 GUIDE.release({
   v: '1.6.1', date: '2026-11-13', base: '1.6.0', title: '화면 공통 구성 안내 영상',
-  notes: ['영상으로 보기 › 화면 공통 구성 장에 1분 41초 안내 영상을 올렸습니다. 영상 안 「소리 · 음성 안내 켜기」를 누르면 음성 설명이 나옵니다', '머리띠의 공지를 걷었습니다 — 공지 · 이벤트 · 업데이트는 홈 화면 세 상자에서 봅니다'],
+  notes: ['영상으로 보기 › 화면 공통 구성 장에 1분 41초 안내 영상을 올렸습니다. 영상 안 「소리 · 음성 안내 켜기」를 누르면 음성 설명이 나옵니다'],
   patch(c) {
-    const lay = c.sections.find((s) => s.id === 'pages').subs.find((x) => x.aid === 'help-layout');
-    const quick = ((lay.blocks.find((b) => b.t === 'shot') || {}).legend || []).find((x) => x[0] === '바로가기');
-    if (quick) quick[1] = '게시판 · 결제하기 · 이용가이드 · 알림(종) · 밤낮 화면 전환. 공지 · 이벤트 · 업데이트는 홈 화면 세 상자에서 봅니다.';   /* 머리띠 '공지'를 걷었다(2026-11-13) */
     const ch = c.video.chapters.find((x) => x.id === 'layout');
     if (ch) { ch.clip = 'clip/layout.html'; ch.len = '1:41'; }
   },

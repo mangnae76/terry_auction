@@ -4890,6 +4890,7 @@ span.cal-day.has { cursor: help; }
       <div class="g-util" aria-label="바로가기">
       <!-- 시험 — 소개 영상 대문. 아직 공개 전이라 이 컴퓨터(localhost)에서만 보인다 (확정되면 빼거나 자리를 옮긴다) -->
       <a class="u-link" href="/promo-test.html" id="promoTestLink" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m10 9.5 5 2.5-5 2.5z"/></svg>대문 시험</a>
+      <button type="button" class="u-link" data-act="go-community" data-name="공지"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>공지<span class="u-dot" id="noticeDot" hidden></span></button>
       <button type="button" class="u-link" data-act="go-board" data-name="오류및제안"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>게시판</button>
       <button type="button" class="u-link pay" data-act="go-more" data-name="결제하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>결제하기</button>
       <!-- 웹 이용가이드 — public/guide/index.html(/guide/)을 새 탭으로 연다. 주소는 WEB_GUIDE_URL 한곳 -->
@@ -5249,7 +5250,8 @@ span.cal-day.has { cursor: help; }
     const head = m[1] || '';
     if (head === 'item' && m[2]) return { route: 'item', itemId: m[2], itemTab: m[3] === 'verify' ? 'survey' : ITEM_TABS.includes(m[3]) ? m[3] : 'basic' };
     if (head === 'community' && (m[2] === 'issue' || m[2] === 'suggest')) return { route: 'board', sub: 'suggest' }; /* 예전 공지 › 오류및제안 주소 — 게시판으로 옮겼다 */
-    if (head === 'community' || (head === 'more' && m[2] === 'news')) return { route: 'home' }; /* 공지 화면을 걷었다 — 이벤트 · 공지사항 · 업데이트는 홈 세 상자로(2026-11-13 사용자). 예전 주소는 홈으로 */
+    if (head === 'community' && m[2] === 'faq') return { route: 'community', sub: 'notice' }; /* FAQ 탭을 뺐다 — 예전 주소는 공지로(FAQ 는 이용가이드) */
+    if (head === 'more' && m[2] === 'news') return { route: 'community', sub: 'notice' }; /* 예전 마이페이지 › 공지 — 커뮤니티로 옮겼다 */
     if (head === 'store' && m[2] === 'eb' && m[3]) return { route: 'store', storeTab: 'all', ebook: m[3] }; /* 콘텐츠 공유 링크 — 그 책 자세히보기 창을 연다(책 목록이 오면) */
     if (head === 'mobile') return { route: 'store', storeTab: 'mobile' };
     if (head === 'manual' || (head === 'postwin' && ['gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'gcheck'].includes(m[2]))) return { route: 'store', storeTab: 'manual', fromManual: true }; /* 예전 매뉴얼(위 메뉴 · 낙찰이후 가이드) — 이제 콘텐츠 › 매뉴얼로 서비스한다(2026-11-09) */ /* 모바일앱은 스토어 안 탭으로 옮겼다(2026-11-02) */
@@ -8818,7 +8820,6 @@ span.cal-day.has { cursor: help; }
         if (to === 'login') { openAppLogin(); return; }
         if (to === 'ai') { S.modal = { kind: 'aiset' }; renderModal(); return; }   /* AI 설정 창 */
         if (to === 'recent') { S.modal = { kind: 'recent' }; renderModal(); return; }   /* 마이페이지 최근 작성 › 전체보기 — 홈 최근 분석과 같은 창 */
-        if (to === 'community') { go('home'); return; }   /* 공지 화면을 걷었다 — 홈으로 */
         if (APP_PAGE_NAMES[to]) { S.tabForce = true; if (SUB_TAB_KEYS[to].includes(a)) S.pageTab[to] = a; go(to); return; }
         go(to);
       },
@@ -9595,7 +9596,6 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
   const toTop = () => { window.scrollTo(0, 0); requestAnimationFrame(() => window.scrollTo(0, 0)); setTimeout(() => window.scrollTo(0, 0), 250); };
   /* 화면 바꾸기 — #/ 선정물건, #/register 선정물건등록 (뒤로가기로 돌아온다) */
   function go(route, id) {
-    if (route === 'community') route = 'home';   /* 공지 화면을 걷었다(2026-11-13) — 공지로 가는 길은 모두 홈 세 상자로 */
     if (S.route === route && (route !== 'item' || S.itemId === id)) { toTop(); return; }
     S.route = route; S.pop = ''; S.menu = null;
     if (route === 'item') { S.itemId = id; S.lastItemId = id; S.itemTab = S.itemTabNext || 'basic'; S.itemTabNext = ''; }
@@ -9853,6 +9853,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     auth.initialize();
     /* 새 공지 · 이벤트 · 업데이트 — 앱 공지 탭과 같은 셈으로 '공지' 옆 점 */
     if (T.useBoardFeed) { try { const feed = T.useBoardFeed(); T.watch(() => feed.notices.value, (v) => { HM.notices = Array.isArray(v) ? v : []; if (S.route === 'home') renderHome(); }, { immediate: true }); } catch (e) { /* 홈 공지만 비어 보인다 */ } }
+    if (T.useBoardNew) { try { const bn = T.useBoardNew(); T.watch(() => bn.any.value, (v) => { const d = $('noticeDot'); if (d) d.hidden = !v; }, { immediate: true }); } catch (e) { /* 점만 못 띄운다 */ } }
     /* 전자책 — 운영자가 올린 책(올린 것만). 바뀌면 콘텐츠 화면을 다시 그린다(관리 탭은 제 화면이 따로 본다) */
     if (T.startContentSync) { try { T.startContentSync(); } catch (e) { /* 코드 글 그대로 */ } }   /* FAQ · 약관 DB 판(운영 › FAQ 관리 · 약관 관리) */
     /* 점검 화면 · 시작 팝업(운영 › 점검 모드 · 앱 시작 팝업) — 앱과 같은 부품을 맨 위에 */
