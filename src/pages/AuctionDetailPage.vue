@@ -10206,7 +10206,7 @@ const goBack = () => router.back();
                 <div class="cmp-zone-off cmp-zone-guide cmp-guide g-unit"><b>{{ isApartment ? '단지 내 개별성' : '호실 개별성' }}</b><span>{{ isApartment ? '내 호실이' : '경매호실이' }} 시세분석에서 고른 거래 호실보다 나으면 +, 못하면 −. 모든 거래에 붙습니다.</span></div>
                 <!-- 표는 늘 보인다 — 다른 단지(건물) 거래가 없으면 흐리게 막는다(2026-11-13 사용자) -->
                 <div :class="['son-demand', 'sup-tbl', 'cmp-zone-wrap', 't-zone', { off: !zoneApplied }]" :inert="!zoneApplied || undefined" :aria-disabled="!zoneApplied || undefined"><div class="adm-table-wrap"><table class="adm-table cmp-tbl cmp-tbl-zone">
-                  <colgroup><col style="width: 16%" /><col /><col style="width: 15%" /><col style="width: 30%" /></colgroup>
+                  <colgroup><col style="width: 15%" /><col /><col style="width: 17%" /><col style="width: 29%" /></colgroup>
                   <thead><tr><th>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</th><th>{{ isApartment ? '이 단지' : '경매빌라' }}</th><th>비율</th><th>{{ isApartment ? '다른 단지와 비교' : '다른 빌라와 비교' }}</th></tr></thead>
                   <tbody>
                     <!-- 구역 내 개별성 — 단지 자체(연식 · 주차 · 엘베 · 현관구조 · 경사 · 용적률). 기준가가 단지 평균이면 이미 담겨 있어 0(2026-11-11 사용자) -->
@@ -10221,7 +10221,7 @@ const goBack = () => router.back();
                   </tbody>
                 </table></div></div>
                 <div class="son-demand sup-tbl t-unit"><div class="adm-table-wrap"><table class="adm-table cmp-tbl cmp-tbl-zone">
-                  <colgroup><col style="width: 16%" /><col /><col style="width: 15%" /><col style="width: 30%" /></colgroup>
+                  <colgroup><col style="width: 15%" /><col /><col style="width: 17%" /><col style="width: 29%" /></colgroup>
                   <thead><tr><th>{{ isApartment ? '단지 내 개별성' : '호실 개별성' }}</th><th>{{ isApartment ? '내 호실' : '경매호실' }}</th><th>비율</th><th>비교한 호실과 비교</th></tr></thead>
                   <tbody>
                     <template v-for="g in unitGroupsView" :key="g.title">
@@ -10242,7 +10242,7 @@ const goBack = () => router.back();
                     <tr class="cmp-sum"><td>합계</td><td /><td /><td :class="['n', 'adp-ind-adj', totalAdj[1] > 0 || repairMan() > 0 ? 'up' : totalAdj[0] < 0 ? 'down' : 'zero']"><b>{{ unitAdjText }}</b></td></tr>
                   </tbody>
                 </table></div></div>
-                <p class="cmp-ind-note"><template v-if="isApartment">비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 층 · 타입 · 향 · 뷰 · 동 위치는 시세분석에서 고른 거래 호실과 비교해 고르세요. 내 호실이 나으면 +, 못하면 −, 같으면 0%입니다. 향 · 뷰 · 동 위치는 현장에서 직접 보고 고르는 것이 가장 정확합니다. 수리는 20평대 기준 금액입니다.</template><template v-else>비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 층 · 타입 · 구조 · 향 · 일조량 · 뷰는 시세분석에서 고른 거래 호실과 비교해 고르세요. 경매호실이 나으면 +, 못하면 −, 같으면 0%입니다. 층 비율은 엘베가 없으면 4 · 5층 10% · 3층 5%, 엘베가 있으면 5층 10%이고 나머지는 5%입니다.</template></p>
+                <p class="cmp-ind-note"><template v-if="isApartment">왼쪽 내용 칸은 기록이고, 점수는 비교 단추로만 붙습니다. 비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 층 · 타입 · 향 · 뷰 · 동 위치는 시세분석에서 고른 거래 호실과 비교해 고르세요. 내 호실이 나으면 +, 못하면 −, 같으면 0%입니다. 향 · 뷰 · 동 위치는 현장에서 직접 보고 고르는 것이 가장 정확합니다. 수리는 20평대 기준 금액입니다.</template><template v-else>왼쪽 내용 칸은 기록이고, 점수는 비교 단추로만 붙습니다. 비율은 기본값이 들어가 있고 눌러서 바꿀 수 있습니다. 층 · 타입 · 구조 · 향 · 일조량 · 뷰는 시세분석에서 고른 거래 호실과 비교해 고르세요. 경매호실이 나으면 +, 못하면 −, 같으면 0%입니다. 층 비율은 엘베가 없으면 4 · 5층 10% · 3층 5%, 엘베가 있으면 5층 10%이고 나머지는 5%입니다.</template></p>
               </div>
               <div class="cmp-est">
                 <!-- 기준가 칸은 뺐다 — 위 기준가 카드와 같은 값이라 겹친다(2026-11-11 사용자) -->
@@ -13189,7 +13189,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-zone-cmp button small { font-size: 12px; font-weight: 400; white-space: nowrap; }
 .cmp-tbl-zone :is(th, td) { padding-left: 6px; padding-right: 6px; }
 .cmp-tbl-zone .cmp-rate-in { display: flex; width: 100%; gap: 2px; }
-.cmp-tbl-zone .cmp-rate-in input { flex: 1 1 0; width: auto; min-width: 0; padding: 0 4px; font-size: 12px; }
+.cmp-tbl-zone .cmp-rate-in input { flex: 1 1 0; width: auto; min-width: 0; padding: 0 3px; font-size: 12px; }   /* '20~30'도 다 보이게(2026-11-13) */
 .cmp-tbl-zone td.cmp-ind-ct .cmp-ind-seg button { padding: 0 6px; font-size: 12px; }
 .cmp-tbl-zone .cmp-zone-match { white-space: normal; text-align: center; }
 .cmp-zone-cmp button.up.on { color: #c22e2e; box-shadow: inset 0 0 0 1px #c22e2e; }
