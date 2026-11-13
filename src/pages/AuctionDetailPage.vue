@@ -142,6 +142,16 @@ const pickCard = (id: string) => {
   if (!id || id === auction.value?.id) return;
   void router.replace({ path: `/auctions/${id}`, query: { ...route.query, tab: activeTab.value } });
 };
+/** 수익분석 고정 머리 높이 — 웹은 그 바로 아래에 내비게이터(.bida-sum)를 같이 붙인다(--profit-head-h, 2026-11-13 사용자) */
+const profitStickyEl = ref<HTMLElement | null>(null);
+let profitHeadRO: ResizeObserver | null = null;
+watch(profitStickyEl, (el) => {
+  profitHeadRO?.disconnect(); profitHeadRO = null;
+  if (!el || typeof ResizeObserver === 'undefined') return;
+  profitHeadRO = new ResizeObserver(() => { el.parentElement?.style.setProperty('--profit-head-h', `${el.offsetHeight}px`); });
+  profitHeadRO.observe(el);
+});
+onBeforeUnmount(() => profitHeadRO?.disconnect());
 /** 운영자 — 앱 손품조사 매각분석 카드는 운영자만(웹 agIsAdmin 과 같은 명단) */
 const isOperator = computed(() => isAdminEmail(authStore.email));
 
@@ -7556,7 +7566,7 @@ const goBack = () => router.back();
         <section class="adp-card">
           <!-- 제목과 날짜 줄은 화면에 붙여 둔다 — 표를 한참 내려 보다가도
                어느 안(A·B)을 보고 있는지, 진행상황이 무엇인지 늘 보여야 한다 -->
-          <div :class="['adp-profit-sticky', { folded: isCollapsed('profit') }]">
+          <div ref="profitStickyEl" :class="['adp-profit-sticky', { folded: isCollapsed('profit') }]">
           <header class="adp-card-head adp-profit-head" @click="!webEmbed && toggleSection('profit')">
             <h2>
               <svg class="adp-profit-ico" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">

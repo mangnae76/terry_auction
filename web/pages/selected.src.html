@@ -1549,6 +1549,12 @@ html.mk-map-lock :is(.foot, .foot-note) { display: none; }
 .app-detail .adp-profit-sticky {
   top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px)) !important; z-index: 20 !important;
 }
+/* 수익분석 내비게이터(입찰가 · 예상 매도가 · 실투자금 · 세후 순이익) — 위 고정 머리(수익분석 · 입찰일 · A안 B안) 바로 아래에 같이 붙는다(2026-11-13 사용자).
+   머리 높이는 --profit-head-h(물건상세가 잰 값), 칸 사이 틈으로 아래가 비치지 않게 상자 바탕을 깔고 위아래 8 을 넓힌다 */
+.app-detail .bida > .bida-sum {
+  position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px) + var(--profit-head-h, 53px)); z-index: 19;
+  margin-top: -8px; padding: 8px 0; background: var(--surface, #fff); box-shadow: 0 10px 12px -10px rgba(17, 24, 39, .14);
+}
 .res > :not(.res-head) { margin-left: calc(var(--card-inset) / 2); margin-right: calc(var(--card-inset) / 2); }
 .app-detail .adp-field-next { display: none !important; }
 .fld-next { display: flex; justify-content: flex-end; margin: 12px 0 4px; }
