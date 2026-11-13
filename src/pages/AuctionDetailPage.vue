@@ -10546,11 +10546,11 @@ const goBack = () => router.back();
         </Teleport>
         <!-- 앱 매각분석 — 운영자만(웹 손품조사 › 매각분석 탭처럼 '운영' 칩, 2026-11-13 사용자). 시세분석 카드 아래 같은 꼴 · 같은 접기 -->
         <section v-if="appPrice && isOperator" v-show="sonSub === 'sale'" class="adp-card son-under">
-          <header class="adp-card-head adp-survey-head" @click="toggleSection('survSale')">
+          <!-- 탭으로 여는 카드라 접기는 뺐다 — 접힌 채로 남아 탭을 눌러도 안이 비어 보였다(2026-11-13 사용자) -->
+          <header class="adp-card-head adp-survey-head">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" /></svg>매각분석<span class="adp-op-chip">운영</span></h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survSale') }]" alt="" />
           </header>
-          <div v-if="!isCollapsed('survSale')" class="adp-mkt-body">
+          <div class="adp-mkt-body">
             <!-- 웹 손품조사 › 매각분석을 열면 웹이 물건에 남긴 결과(saleSnap)를 그대로 보여 준다 — 앱엔 계산이 없다(2026-11-13 사용자) -->
             <template v-if="saleSnap">
               <p class="sale-head"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ saleSnap.head }}</p>
