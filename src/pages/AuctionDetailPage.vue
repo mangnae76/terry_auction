@@ -6546,27 +6546,13 @@ const cmpBase = computed(() => {
 const unitBasePick = computed<'avg' | 'med'>(() => (indivValue('unit.base') === 'med' && cmpBase.value.med > 0 ? 'med' : 'avg'));
 const pickUnitBase = (v: 'avg' | 'med') => { if (unitBasePick.value === v) return; setIndivValue('unit.base', v === 'med' ? 'med' : ''); persistSoon(); };
 const cmpUnitBase = computed(() => (unitBasePick.value === 'med' ? cmpBase.value.med : cmpBase.value.value));
-/** 구역 내 개별성 ± — 단지 자체의 장단점을 가격 %로(단지 내 개별성과 같은 방식, 2026-11-11 사용자). 1 가산 · 0 보통 · -1 감산 */
 /** 시세분석 조건으로 이미 맞춘 개별성 — 엘베를 걸었으면 엘베, 건축 연도 범위를 걸었으면 연식은 보정 0(두 번 세지 않게, 2026-11-12 사용자) */
 const zoneMatched = (id: string) => (id === 'ind.elevator' && !!sonPriceOut?.value?.elevFiltered) || (id === 'ind.age' && !!sonPriceOut?.value?.yearFiltered);
-const zoneSign = (id: string): number => {
-  if (zoneMatched(id)) return 0;
-  const v = indivValue(id);
-  if (id === 'ind.age') { const y = Number((v.match(/^(\d{4})/) ?? [])[1] ?? 0); if (!y) return 0; const age = new Date().getFullYear() - y + 1; return age <= 10 ? 1 : age >= 30 ? -1 : 0; }   // 10년차 이하 신축 + · 30년차 이상 구축 −
-  if (id === 'ind.parking') { const n = Number((indivParkingPerHome.value || '').replace(/[^\d.]/g, '')); return !n ? 0 : n >= 1.2 ? 1 : n < 0.8 ? -1 : 0; }   // 세대당 1.2대 이상 + · 0.8대 미만 −
-  if (id === 'ind.elevator') return v === 'O' ? 1 : v === 'X' ? -1 : 0;
-  if (id === 'ind.corridor') return v === '복도식' ? -1 : 0;   // 계단식이 보통, 복도식은 춥고 안전 문제로 싸다(강의)
-  if (id === 'ind.slope') return v === 'O' ? -1 : 0;
-  // 빌라 건물외부 · 내부 — 나쁨 · 곰팡이 · 누수 · 결로는 감산, 좋음은 가산(양호 · 청결 등은 보통)
-  if (id === 'ind.mgmt' || id === 'ind.inside') { const has = (...xs: string[]) => xs.some((x) => v.includes(x)); return has('나쁨', '곰팡이', '누수', '결로') ? -1 : has('좋음') ? 1 : 0; }
-  if (id === 'ind.far') { const f = Number(indivDisplay({ id: 'ind.far', label: '용적률', text: true, suffix: '%' } as IndivItem).replace(/[^\d.]/g, '')); return !f ? 0 : f <= 200 ? 1 : f >= 300 ? -1 : 0; }
-  return 0;
-};
 /** 빌라 개별성 — 경매빌라를 기준으로 다른 빌라와 견준 것(나음 + · 같음 0 · 못함 −). 물건 문서 개별성 값 '<id>.cmp', 고르지 않으면 같음(2026-11-13 사용자 '달랐을 때만 ±') */
 const ZONE_CMP = [{ v: 'up', label: '나음', sg: 1 }, { v: 'eq', label: '같음', sg: 0 }, { v: 'down', label: '못함', sg: -1 }] as const;
 const zoneCmpOf = (id: string) => (indivValue(`${id}.cmp`) === 'up' ? 1 : indivValue(`${id}.cmp`) === 'down' ? -1 : 0);
 const pickZoneCmp = (id: string, v: string) => { setIndivValue(`${id}.cmp`, v === 'eq' ? '' : v); persistSoon(); };
-const zoneSignOf = (id: string) => (isApartment.value ? zoneSign(id) : zoneMatched(id) ? 0 : zoneCmpOf(id));
+const zoneSignOf = (id: string) => (zoneMatched(id) ? 0 : zoneCmpOf(id));   // 아파트도 손품으로 다른 단지를 알 수 있어 같은 방식(2026-11-13 사용자)
 const adjOf = (sg: number, id: string): [number, number] => {
   const [a, b] = rateOf(id).map(Math.abs) as [number, number];
   return sg > 0 ? [Math.min(a, b), Math.max(a, b)] : sg < 0 ? [-Math.max(a, b), -Math.min(a, b)] : [0, 0];
@@ -6581,7 +6567,7 @@ const ZONE_UNIT_ITEMS = computed(() => indivGroups.value[0].items.filter((it) =>
 // 구역 내 개별성 — 고른 거래가 모두 다른 단지일 때만(강의 '실거래 없을 때 시세조사 방법'). 이 단지 거래가 하나라도 있으면 이미 담겨 있다.
 // 섞여 있으면 % 를 평균 전체에 붙여 이 단지 거래까지 부풀었다(+35~45%, 2026-11-11) — 섞임은 알리기만 한다
 // 빌라는 섞여 있어도 연다 — % 를 다른 건물 거래 몫(zoneShare)에만 붙여 같은 건물 거래는 그대로 둔다(2026-11-13 사용자)
-const zoneApplied = computed(() => { const rs = sonPriceOut?.value?.rows ?? []; return rs.length > 0 && (isApartment.value ? rs.every((r) => !r.same) : rs.some((r) => !r.same)); });
+const zoneApplied = computed(() => { const rs = sonPriceOut?.value?.rows ?? []; return rs.some((r) => !r.same); });
 const zoneMixed = computed(() => { const rs = sonPriceOut?.value?.rows ?? []; return rs.some((r) => r.same) && rs.some((r) => !r.same) ? rs.filter((r) => !r.same).length : 0; });
 /** 기준가 가운데 다른 건물 거래 몫(0~1) — 평균이면 고른 거래 평당가 합에서, 중간값이면 가운데 거래(짝수면 두 건)에서 다른 건물 평당가가 차지하는 비율 */
 const zoneShare = computed(() => {
@@ -6598,8 +6584,8 @@ const totalAdj = computed<[number, number]>(() => [unitAdjSum.value[0] + zoneAdj
 /** 예상가 아래 한 줄 — '빌라 개별성 −10% × 다른 건물 몫 33% = −3.3%'(섞였을 때만) */
 const zoneShareNote = computed(() => {
   const s = zoneShare.value; const r = zoneAdjRaw.value;
-  if (isApartment.value || !zoneApplied.value || s >= 0.999 || (r[0] === 0 && r[1] === 0)) return '';
-  return `빌라 개별성 ${pctText(r)} × 다른 건물 몫 ${Math.round(s * 100)}% = ${pctText(zoneAdjSum.value)}`;
+  if (!zoneApplied.value || s >= 0.999 || (r[0] === 0 && r[1] === 0)) return '';
+  return `${isApartment.value ? '구역 내 개별성' : '빌라 개별성'} ${pctText(r)} × 다른 ${isApartment.value ? '단지' : '건물'} 몫 ${Math.round(s * 100)}% = ${pctText(zoneAdjSum.value)}`;
 });
 /** 같은 평형 고른 거래의 실거래 최저 · 최고(선정물건 단지) — 예상가가 이 범위를 넘지 않게 자른다(보정이 쌓여 12억이 넘던 것, 2026-11-11 사용자) */
 const cmpUnitRange = computed(() => {
@@ -10226,13 +10212,12 @@ const goBack = () => router.back();
                 <button v-if="cmpBase.med" type="button" role="radio" :aria-checked="unitBasePick === 'med'" :class="['cmp-base', { on: unitBasePick === 'med' }]" @click="pickUnitBase('med')"><span class="k">중간값</span><span class="v">{{ cmpEok(cmpBase.med) }}</span><small class="cmp-base-f">{{ cmpBase.medFormula }}</small></button></div>
               <!-- 구역 내 · 단지 내 개별성 — 가로로 나란히(좁으면 위아래, 2026-11-11 사용자) -->
               <!-- 구역 내 개별성 — 위 표가 모두 이 단지 거래면 접어 둔다(이미 담겨 있다). 다른 단지 거래가 섞이면 열려 % 로 보정 -->
-              <div v-if="!zoneApplied" :class="['cmp-zone-off', { warn: zoneMixed }]"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span v-if="zoneMixed">{{ isApartment ? '위 표에 다른 단지' : '유사건물표에 다른 건물' }} 거래 {{ zoneMixed }}건이 섞여 {{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}은 판단할 수 없습니다. 차이는 {{ isApartment ? '단지 내 개별성' : '호실 개별성' }}으로 보세요.</span><span v-else>기준가가 모두 이 {{ isApartment ? '단지' : '건물' }} 거래라 쓰지 않습니다. 이 {{ isApartment ? '단지' : '건물' }} 거래가 없어 다른 {{ isApartment ? '단지' : '건물' }} 거래만 쓸 때 열려 연식 · 주차 · 엘베 · 현관 · 경사 · 용적률을 % 로 보정합니다.</span></div>
-              <div v-if="zoneApplied && !isApartment" class="cmp-zone-off cmp-zone-guide"><b>빌라 개별성</b><span>경매빌라를 기준으로 다른 빌라와 비교해 고르세요. 경매빌라가 나으면 +, 못하면 −, 같으면 0%입니다.{{ zoneMixed ? ' 같은 건물 거래는 조건이 같아 그대로 두고, 다른 건물 거래에만 붙습니다.' : '' }}</span></div>
+              <div v-if="!zoneApplied" :class="['cmp-zone-off', { warn: zoneMixed }]"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span v-if="zoneMixed">{{ isApartment ? '위 표에 다른 단지' : '유사건물표에 다른 건물' }} 거래 {{ zoneMixed }}건이 섞여 {{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}은 판단할 수 없습니다. 차이는 {{ isApartment ? '단지 내 개별성' : '호실 개별성' }}으로 보세요.</span><span v-else>기준가가 모두 이 {{ isApartment ? '단지' : '건물' }} 거래라 쓰지 않습니다. 다른 {{ isApartment ? '단지' : '건물' }} 거래가 섞이면 열려 다른 {{ isApartment ? '단지' : '빌라' }}와 비교해 보정합니다.</span></div>
+              <div v-if="zoneApplied" class="cmp-zone-off cmp-zone-guide"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span>{{ isApartment ? '이 단지를 기준으로 다른 단지와 비교해 고르세요. 이 단지가' : '경매빌라를 기준으로 다른 빌라와 비교해 고르세요. 경매빌라가' }} 나으면 +, 못하면 −, 같으면 0%입니다.{{ zoneMixed ? ` 같은 ${isApartment ? '단지' : '건물'} 거래는 조건이 같아 그대로 두고, 다른 ${isApartment ? '단지' : '건물'} 거래에만 붙습니다.` : '' }}</span></div>
               <div :class="['cmp-two', zoneApplied ? 'pair' : 'solo']">
-                <div v-if="zoneApplied" class="son-demand sup-tbl"><div class="adm-table-wrap"><table :class="['adm-table', 'cmp-tbl', { 'cmp-tbl-zone': !isApartment }]">
-                  <colgroup v-if="isApartment"><col style="width: 20%" /><col /><template v-if="zoneApplied"><col style="width: 19%" /><col style="width: 22%" /></template></colgroup>
-                  <colgroup v-else><col style="width: 16%" /><col /><col style="width: 15%" /><col style="width: 30%" /></colgroup>
-                  <thead><tr><th>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</th><th>{{ isApartment ? '내용' : '경매빌라' }}</th><th v-if="zoneApplied">비율</th><th v-if="zoneApplied">{{ isApartment ? '보정' : '다른 빌라와 비교' }}</th></tr></thead>
+                <div v-if="zoneApplied" class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl cmp-tbl-zone">
+                  <colgroup><col style="width: 16%" /><col /><col style="width: 15%" /><col style="width: 30%" /></colgroup>
+                  <thead><tr><th>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</th><th>{{ isApartment ? '이 단지' : '경매빌라' }}</th><th>비율</th><th>{{ isApartment ? '다른 단지와 비교' : '다른 빌라와 비교' }}</th></tr></thead>
                   <tbody>
                     <!-- 구역 내 개별성 — 단지 자체(연식 · 주차 · 엘베 · 현관구조 · 경사 · 용적률). 기준가가 단지 평균이면 이미 담겨 있어 0(2026-11-11 사용자) -->
                     <tr v-for="item in ZONE_UNIT_ITEMS" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
@@ -10241,9 +10226,8 @@ const goBack = () => router.back();
                         <span v-else-if="item.options" class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="optText(item.id, opt)" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ optText(item.id, opt) }}</button></span>
                         <b v-else>{{ indivAutoText(item) }}</b>
                       </td>
-                      <td v-if="zoneApplied" class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
-                      <td v-if="zoneApplied && !isApartment" class="cmp-zone-cmp-td"><span v-if="zoneMatched(item.id)" class="cmp-zone-match">시세분석 조건으로 맞춤 · 0%</span><span v-else class="cmp-ind-seg cmp-zone-cmp" role="radiogroup" :aria-label="`${item.label} — 경매빌라가 다른 빌라보다`"><button v-for="c in ZONE_CMP" :key="c.v" type="button" role="radio" :aria-checked="zoneCmpOf(item.id) === c.sg" :class="[c.v, { on: zoneCmpOf(item.id) === c.sg }]"  @click="pickZoneCmp(item.id, c.v)"><span class="k">{{ c.label }}</span><small v-if="c.sg">{{ pctText(adjOf(c.sg, item.id)) }}</small></button></span></td>
-                      <td v-if="zoneApplied && isApartment" :class="['n', 'adp-ind-adj', !zoneApplied || zoneSign(item.id) === 0 ? 'zero' : zoneSign(item.id) > 0 ? 'up' : 'down']">{{ !zoneApplied || zoneSign(item.id) === 0 ? '0%' : pctText(zoneAdj(item.id)) }}<small v-if="isApartment && zoneMatched(item.id)" class="cmp-zone-match">시세분석 조건으로 맞춤</small></td></tr>
+                      <td class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
+                      <td class="cmp-zone-cmp-td"><span v-if="zoneMatched(item.id)" class="cmp-zone-match">시세분석 조건으로 맞춤 · 0%</span><span v-else class="cmp-ind-seg cmp-zone-cmp" role="radiogroup" :aria-label="`${item.label} — ${isApartment ? '이 단지가 다른 단지보다' : '경매빌라가 다른 빌라보다'}`"><button v-for="c in ZONE_CMP" :key="c.v" type="button" role="radio" :aria-checked="zoneCmpOf(item.id) === c.sg" :class="[c.v, { on: zoneCmpOf(item.id) === c.sg }]"  @click="pickZoneCmp(item.id, c.v)"><span class="k">{{ c.label }}</span><small v-if="c.sg">{{ pctText(adjOf(c.sg, item.id)) }}</small></button></span></td></tr>
                     <tr v-if="!zoneApplied" class="cmp-zone-note"><td colspan="2">손품 체크리스트 — 이 단지 실거래가 · 전세가에 이미 담겨 있어 가격 보정은 하지 않습니다</td></tr>
                   </tbody>
                 </table></div></div>
