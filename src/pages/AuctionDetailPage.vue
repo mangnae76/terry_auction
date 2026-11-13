@@ -154,6 +154,26 @@ watch(profitStickyEl, (el) => {
 onBeforeUnmount(() => profitHeadRO?.disconnect());
 /** 운영자 — 앱 손품조사 매각분석 카드는 운영자만(웹 agIsAdmin 과 같은 명단) */
 const isOperator = computed(() => isAdminEmail(authStore.email));
+/** 앱 매각분석 — 웹이 남긴 결과(saleSnap)를 보여 주기만(웹 sxResultsHtml 의 결과 머리 · 지표 · 표와 같은 값) */
+const saleSnap = computed(() => (auction.value?.saleSnap?.v === 1 ? auction.value.saleSnap : null));
+const saleWon = (n: number | null | undefined) => { if (n == null || !(n > 0)) return '-'; const man = Math.round(n / 1e4); const eok = Math.floor(man / 1e4); const rest = man % 1e4; return eok ? `${eok}억${rest ? ` ${rest.toLocaleString('ko-KR')}만` : ''}` : `${rest.toLocaleString('ko-KR')}만`; };
+const salePct = (x: number | null | undefined) => (x == null ? '-' : `${(x * 100).toFixed(1)}%`);
+const saleSnapAt = computed(() => { const t = saleSnap.value?.at; if (!t) return '-'; const d = new Date(t); const p2 = (n: number) => String(n).padStart(2, '0'); return `${String(d.getFullYear()).slice(2)}.${p2(d.getMonth() + 1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`; });
+const saleBids = computed(() => {
+  const s0 = saleSnap.value; if (!s0) return [];
+  const amt = (rate: number | null) => (s0.my > 0 && rate != null ? `${Math.round(s0.my * rate).toLocaleString('ko-KR')}원` : '-');
+  const pyV = s0.py && s0.myPy > 0 ? Math.round(s0.py * s0.myPy) : 0;
+  return [
+    { k: '예상 입찰가 · 평균 매각가율', v: amt(s0.avg), note: s0.avg != null ? `감정가 × ${salePct(s0.avg)}` : '' },
+    { k: '예상 입찰가 · 중앙값 매각가율', v: amt(s0.med), note: s0.med != null ? `감정가 × ${salePct(s0.med)}` : '' },
+    { k: '예상 입찰가 · 평균 매각평당가', v: pyV ? `${pyV.toLocaleString('ko-KR')}원` : '-', note: s0.py ? `평당 ${saleWon(s0.py)} × ${s0.myPy.toFixed(1)}평` : '매각평당가를 낼 매각사례가 없습니다' },
+  ];
+});
+const saleMetrics = computed<Array<[string, string, boolean?]>>(() => {
+  const s0 = saleSnap.value; if (!s0) return [];
+  return [['매각건수', `${s0.n.toLocaleString('ko-KR')}건`], ['평균 응찰자수', s0.bids != null ? `${s0.bids.toFixed(1)}명` : '-'], ['평균 감정가', saleWon(s0.appr)], ['평균 매각가', saleWon(s0.sold)],
+    ['중앙값 매각가', saleWon(s0.soldMed)], ['전체 매각가율', salePct(s0.all)], ['평균 매각가율', salePct(s0.avg), true], ['중앙값 매각가율', salePct(s0.med), true], ['최저 매각가율', salePct(s0.lo)], ['최고 매각가율', salePct(s0.hi)]];
+});
 /** 앱 손품조사 하위 탭 — 매매수요 · 시세분석 · 매각분석(운영자만). 고른 탭은 이 기기에 남긴다(권리분석 탭과 같은 방식) */
 type SonSub = 'demand' | 'price' | 'sale';
 const SON_SUB_KEY = 'ta.app.sonTab';
@@ -10531,7 +10551,33 @@ const goBack = () => router.back();
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survSale') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('survSale')" class="adp-mkt-body">
-            <p class="adp-sub-note">웹 손품조사 › 매각분석 화면을 이 자리로 옮기는 중입니다.</p>
+            <!-- 웹 손품조사 › 매각분석을 열면 웹이 물건에 남긴 결과(saleSnap)를 그대로 보여 준다 — 앱엔 계산이 없다(2026-11-13 사용자) -->
+            <template v-if="saleSnap">
+              <p class="sale-head"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ saleSnap.head }}</p>
+              <p class="sale-at">웹 매각분석 기준 · {{ saleSnapAt }}</p>
+              <div class="sale-bids">
+                <div class="sale-my"><span>경매물건 감정가</span><b>{{ saleSnap.my > 0 ? `${saleSnap.my.toLocaleString('ko-KR')}원` : '-' }}</b></div>
+                <div v-for="b in saleBids" :key="b.k" class="sale-bid"><span class="k">{{ b.k }}</span><b class="v">{{ b.v }}</b><small>{{ b.note }}</small></div>
+              </div>
+              <div class="sale-metrics">
+                <div v-for="m in saleMetrics" :key="m[0]" :class="['m', { key: m[2] }]"><span>{{ m[0] }}</span><b>{{ m[1] }}</b></div>
+              </div>
+              <p class="sale-list-h"><span class="pa-tag-like">근거</span><b>인근 유사 매각사례</b><small>{{ saleSnap.rows.length.toLocaleString('ko-KR') }}건<template v-if="saleSnap.n > saleSnap.rows.length"> · 전체 {{ saleSnap.n.toLocaleString('ko-KR') }}건 중</template></small></p>
+              <div class="sale-tbl"><table>
+                <colgroup><col style="width: 34%"><col style="width: 25%"><col style="width: 15%"><col style="width: 26%"></colgroup>
+                <thead><tr><th>주소</th><th>매각가</th><th>매각가율</th><th>매각일</th></tr></thead>
+                <tbody>
+                  <tr v-for="(r, i) in saleSnap.rows" :key="`${r.caseNo}-${i}`">
+                    <td class="l"><span class="a">{{ r.addr || r.full }}</span><small>{{ r.caseNo }}</small></td>
+                    <td class="n">{{ saleWon(r.sold) }}</td>
+                    <td :class="['n', r.rate >= 1 ? 'hi' : r.rate > 0 && r.rate < 0.75 ? 'lo' : '']">{{ r.rate > 0 ? `${(r.rate * 100).toFixed(1)}%` : '-' }}</td>
+                    <td class="n">{{ r.date ? r.date.replace(/-/g, '.').slice(2) : '-' }}</td>
+                  </tr>
+                  <tr v-if="!saleSnap.rows.length"><td colspan="4" class="empty">조건에 맞는 매각물건이 없습니다.</td></tr>
+                </tbody>
+              </table></div>
+            </template>
+            <p v-else class="adp-sub-note">웹 손품조사 › 매각분석에서 이 물건을 한 번 열면 그 결과가 여기에 나옵니다.</p>
           </div>
         </section>
         <!-- 손품결론 카드는 뺐다(2026-11-02) — 실거래가 예상은 손품조사 › 가격분석, 인근 매각사례는 물건정보 탭 -->
@@ -12664,6 +12710,34 @@ tr.tone-take { background: #fff5f5; }
 .adp-card-opt em { font-style: normal; color: #6b7280; white-space: nowrap; }
 .adp-card-opt .r2 > b { white-space: nowrap; }
 .adp-card-opt .addr { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sale-head { display: flex; align-items: center; gap: 4px; margin: 4px 0 0; font-size: 12px; color: #2b6df3; line-height: 1.45; }
+.sale-head svg { flex: none; }
+.sale-at { margin: 2px 0 10px; font-size: 11.5px; color: #9ca3af; }
+.sale-bids { display: grid; gap: 6px; padding: 10px; border-radius: 10px; background: #f7f8fb; }
+.sale-my { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; color: #4b5563; }
+.sale-my b { font-size: 15px; color: #111827; }
+.sale-bid { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 0 8px; padding: 8px 10px; border-radius: 8px; background: #fff; border: 1px solid #e8ecf3; }
+.sale-bid .k { font-size: 12px; color: #6b7280; }
+.sale-bid .v { font-size: 16px; font-weight: 800; color: #e03e3e; font-variant-numeric: tabular-nums; }
+.sale-bid small { grid-column: 1 / -1; font-size: 11px; color: #9ca3af; }
+.sale-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.sale-metrics .m { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 10px; border: 1px solid #e8ecf3; border-radius: 8px; font-size: 12px; color: #6b7280; }
+.sale-metrics .m b { font-size: 13.5px; color: #111827; font-variant-numeric: tabular-nums; }
+.sale-metrics .m.key { background: #eef4ff; border-color: #cfdcf8; }
+.sale-metrics .m.key b { color: #2b6df3; }
+.sale-list-h { display: flex; align-items: center; gap: 6px; margin: 14px 0 8px; padding-top: 14px; border-top: 1px solid #e5e7eb; font-size: 13.5px; }
+.sale-list-h small { font-size: 12px; color: #6b7280; }
+.pa-tag-like { padding: 2px 6px; border-radius: 5px; background: #eef1f8; color: #2b4fd8; font-size: 11px; font-weight: 800; }
+.sale-tbl { border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+.sale-tbl table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.sale-tbl th { padding: 7px 3px; background: #f3f5f9; color: #374151; font-weight: 700; }
+.sale-tbl td { padding: 7px 3px; border-top: 1px solid #eef1f6; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sale-tbl td.l { text-align: left; padding-left: 8px; }
+.sale-tbl td.l .a { display: block; overflow: hidden; text-overflow: ellipsis; }
+.sale-tbl td.l small { display: block; font-size: 10.5px; color: #9ca3af; }
+.sale-tbl td.hi { color: #e03e3e; font-weight: 700; }
+.sale-tbl td.lo { color: #2b6df3; }
+.sale-tbl td.empty { padding: 16px; color: #9ca3af; white-space: normal; }
 .adp-son-head { margin: 0 0 -8px; padding: 10px 8px 0; border-radius: 8px 8px 0 0; background: #fff; }   /* 탭 줄 — 아래 카드와 한 흰 상자(위 둥근 모서리, 몸통과 사이 틈 8 을 메운다) */
 .adp-card.son-under { border-radius: 0 0 8px 8px; }
 .adp-son-tabs { display: flex; gap: 4px; margin: 0; border-bottom: 1px solid #d6dbe6; }   /* 앱 손품조사 하위 탭 — 권리분석 결과 탭(.rp-tabs)과 같은 꼴 */

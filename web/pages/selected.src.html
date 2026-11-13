@@ -8067,6 +8067,35 @@ span.cal-day.has { cursor: help; }
     if (SXF.app) SXF.app.set(sxFiltProps());
     if (SXF2.app) SXF2.app.set({ ...sxFiltProps(), compact: true });
   }
+  /* 앱 손품조사 › 매각분석 — 웹에서 연 결과를 그 물건 문서(saleSnap)에 남긴다. 앱은 그걸 보여 주기만 한다(계산은 웹 한 곳, 2026-11-13 사용자).
+     화면 계산 · 그리기는 그대로 두고 다 그린 뒤 저장만 덧붙인다. 결과가 바뀔 때만, 1.5초 모아 한 번. 저장이 실패해도 화면엔 영향 없다 */
+  let sxSnapT = 0; let sxSnapLast = '';
+  function sxSnapSave(me, q, st, rows, head) {
+    try {
+      if (!me || me.__ref || !CLOUD.on || !CLOUD.raw.has(me.id) || !CLOUD.store) return;
+      const m2 = Number(me.bldg) || 0;
+      const nz = (v) => (v == null || !Number.isFinite(Number(v)) ? null : Number(v));
+      const view = rows.slice().sort((a, b) => { const x = sxVal(a, SX.sort); const y = sxVal(b, SX.sort); const c = typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'ko'); return SX.desc ? -c : c; });
+      const snap = {
+        v: 1, head, kind: q.kind || '', my: sxParseWon(SX.my) || 0, myPy: m2 > 0 ? m2 / 3.305785 : 0,   /* 평은 자르지 않는다 — 넷째 칸 금액이 웹과 원 단위까지 같게 */
+        n: st.n, appr: nz(st.appr), sold: nz(st.sold), soldMed: nz(st.soldMed), bids: nz(st.bids), lo: nz(st.lo), all: nz(st.all), avg: nz(st.avg), med: nz(st.med), hi: nz(st.hi), py: nz(st.py),
+        rows: view.slice(0, 60).map((r) => ({ caseNo: String(r['사건번호'] || ''), date: String(r['매각일'] || ''), addr: sxShortAddr(String(r['소재지'] || '')), full: String(r['소재지'] || ''),
+          appr: Number(r['감정가']) || 0, sold: Number(r['매각가']) || 0, rate: Number(r['매각가율']) || 0, bids: Number(r['응찰자수']) || 0, m2: Number(r['전용면적']) || 0,
+          built: agBuiltYear(r) || 0, floor: r['층'] != null && r['층'] !== '' ? String(r['층']) : '', dist: nz(sxDistM(r['소재지'])) })),
+      };
+      const key = JSON.stringify(snap);
+      if (key === sxSnapLast) return;
+      const a = CLOUD.raw.get(me.id);
+      /* 문서에서 온 값은 키 순서가 다를 수 있어 키를 정렬해 견준다 — 같으면 쓰지 않는다 */
+      const stable = (v) => (Array.isArray(v) ? `[${v.map(stable).join(',')}]` : v && typeof v === 'object' ? `{${Object.keys(v).filter((k) => k !== 'at' && v[k] !== undefined).sort().map((k) => `${JSON.stringify(k)}:${stable(v[k])}`).join(',')}}` : JSON.stringify(v));
+      if (a && a.saleSnap && stable(a.saleSnap) === stable(snap)) { sxSnapLast = key; return; }
+      sxSnapLast = key;
+      clearTimeout(sxSnapT);
+      sxSnapT = setTimeout(() => {
+        try { const cur = CLOUD.raw.get(me.id); if (cur) Promise.resolve(CLOUD.store.saveAuction({ ...cur, saleSnap: { ...snap, at: Date.now() } }, { silent: true })).catch(() => { sxSnapLast = ''; }); } catch (e) { sxSnapLast = ''; }
+      }, 1500);
+    } catch (e) { /* 저장 못 해도 화면은 그대로 */ }
+  }
   function sxResultsHtml() {
     sxKindSync();   /* 종류(아파트 · 빌라)에 맞는 엘베 · 층을 먼저 — 결과를 그 값으로 계산 */
     const rows = agIsAdmin() && AG.recs.length ? sxRows() : null;
@@ -8095,6 +8124,7 @@ span.cal-day.has { cursor: help; }
         : me ? `최근 ${q.period} ${inPeriod.toLocaleString('ko-KR')}건이 있지만, 물건카드 물건(${me.caseNo}) 둘레 반경 ${SXM.radius >= 1000 ? `${SXM.radius / 1000}km` : `${SXM.radius}m`} · 직접범위 · 엘베 · 층 조건에 맞는 물건이 없습니다.`
         : `최근 ${q.period} ${inPeriod.toLocaleString('ko-KR')}건이 있지만, 아래 직접범위 · 엘베 · 층 조건에 맞는 물건이 없습니다.`;
       /* 0건이어도 '근거 · 인근 유사 매각사례' 상자는 그대로 — 제목 · 0건 · 표 머리와 '조건에 맞는 매각물건이 없습니다' 한 줄, 그 아래 PDF '○○동 전체 매각사례 평균'(2026-11-12 사용자) */
+      sxSnapSave(me, q, st, rows, [where, q.kind || '전체', radTx, conds].filter(Boolean).join(' · '));
       return `<div class="sx-results" id="sxResults">${hero}<section class="sx-card sx-wait"><b>${esc(place)} · ${esc(q.kind || '전체')} — 0건</b><span>${esc(msg)}</span></section>${sxMapCardHtml()}<section class="sx-card sx-list" aria-label="인근 유사 매각사례">${sxListHtml(rows)}</section></div>`;
     }
     /* 지표 배치(2026-11-06) — 위 줄은 건수 · 금액, 아래 줄은 매각가율. 세로로 짝을 맞춘다:
@@ -8105,6 +8135,7 @@ span.cal-day.has { cursor: help; }
     const dist = st.rates.length
       ? `<section class="sx-card sx-dist" aria-label="매각가율 분포"><div class="sx-dist-h"><h3 class="sx-sec">매각가율 분포 · ${st.rates.length.toLocaleString('ko-KR')}건</h3><div class="sx-legend"><span>평균</span><span class="med">중앙값</span><span class="over">100% 이상</span></div></div>${sxChart(st)}</section>`
       : '';
+    sxSnapSave(me, q, st, rows, [where, q.kind || '전체', radTx, conds].filter(Boolean).join(' · '));
     return `<div class="sx-results" id="sxResults">${hero}<section class="sx-card" aria-label="지표결과"><div class="sx-metrics">${metrics}</div></section>${dist}${sxMapCardHtml()}<section class="sx-card sx-list" aria-label="인근 유사 매각사례">${sxListHtml(rows)}</section></div>`;
   }
   /* 동일지번 — 따로 긁지 않는다. 인근 목록에 같은 지번 물건이 이미 들어 있어(거리 0) 소재지의 '동 + 지번'으로 묶어 고른다.

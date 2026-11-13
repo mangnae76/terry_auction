@@ -634,6 +634,8 @@ export interface AuctionDetail {
   demandSnap?: DemandSnap;
   /** 웹 손품조사 › 매각분석 저장 조건(반경 · 엘베 · 층 · 기준 · 유사도 · 직접범위 · 매각기간 · 제외 체크) — 물건마다 따로(2026-11-12 사용자) */
   saleFilter?: { snap: Record<string, unknown>; at: number };
+  /** 매각분석 결과 저장본 — 웹 손품조사 › 매각분석을 열면 웹이 적는다. 앱은 보여 주기만 한다(2026-11-13) */
+  saleSnap?: SaleSnap;
   /** @deprecated 자유입력 방식이던 시절의 필드 — 남은 데이터 보존용 */
   realUserArea?: string;
   realUserRooms?: string;
@@ -894,3 +896,12 @@ export type DemandSnap = {
 };
 /** 매매수요 입지비교 거르기 — area · year 가 없으면 기본(면적 내 물건 ±3㎡ · 건축 전체) */
 export type DemandFilter = { range: 'dong' | 100 | 300 | 500 | 1000 | 2000; months: 3 | 6 | 12 | 24; kind: '매매' | '전세'; area?: [number | null, number | null] | null; year?: [number | null, number | null] | null; floor?: 'same' | null; elev?: 'yes' | 'no' | null; mode?: 'sim' | 'range'; sim?: number };
+
+/** 매각분석 결과 저장본(웹 계산 그대로) — 금액은 원, 비율은 0~1(매각가율) */
+export type SaleSnapRow = { caseNo: string; date: string; addr: string; full: string; appr: number; sold: number; rate: number; bids: number; m2: number; built: number; floor: string; dist: number | null };
+export type SaleSnap = {
+  v: 1; at: number; head: string; kind: string; my: number; myPy: number;
+  n: number; appr: number | null; sold: number | null; soldMed: number | null; bids: number | null;
+  lo: number | null; all: number | null; avg: number | null; med: number | null; hi: number | null; py: number | null;
+  rows: SaleSnapRow[];
+};
