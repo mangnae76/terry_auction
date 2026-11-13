@@ -5,6 +5,8 @@ describe('bidPredict', () => {
   it('사건번호 두 꼴을 같게', () => {
     expect(caseKey('2026타경501308')).toBe('2026-501308');
     expect(caseKey('2026-501308')).toBe('2026-501308');
+    expect(caseKey('2024-5754(1)')).toBe('2024-5754(1)');
+    expect(caseKey('2024타경5754(2)')).toBe('2024-5754(2)');
   });
   it('최저가 비율 → 유찰 횟수', () => {
     expect(roundOfRatio(1)).toBe(0);

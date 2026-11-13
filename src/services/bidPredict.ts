@@ -25,8 +25,9 @@ export const bandOf = (n: number) => (n <= 1 ? 0 : n <= 3 ? 1 : n <= 6 ? 2 : n <
 
 /** 사건번호 → '2026-501308' 꼴(2026타경501308 · 2026-501308 모두) */
 export const caseKey = (s: unknown): string => {
-  const m = String(s ?? '').match(/(\d{4})\s*(?:타경|-)\s*0*(\d+)/);
-  return m ? `${m[1]}-${m[2]}` : '';
+  // 물건번호가 여럿인 사건은 '2024-5754(1)' 꼴로 따로 둔다(한 사건에 물건 여럿 — 5계 11-13)
+  const m = String(s ?? '').match(/(\d{4})\s*(?:타경|-)\s*0*(\d+)(?:\s*\(\s*(\d+)\s*\))?/);
+  return m ? `${m[1]}-${m[2]}${m[3] ? `(${m[3]})` : ''}` : '';
 };
 export const caseLabel = (k: string) => k.replace('-', '타경');
 
@@ -169,7 +170,7 @@ export const csvRows = (text: string): string[][] => {
 export const parseViewLines = (text: string): Array<{ key: string; addr: string; views: number }> =>
   text.split(/\r?\n/).map((line) => {
     const key = caseKey(line); if (!key) return null;
-    const rest = line.replace(/\d{4}\s*(?:타경|-)\s*\d+/, '').replace(/\t/g, ' ').trim();
+    const rest = line.replace(/\d{4}\s*(?:타경|-)\s*\d+(?:\s*\(\s*\d+\s*\))?/, '').replace(/\t/g, ' ').trim();
     const m = rest.match(/([\d,]+)\s*(?:회)?\s*$/); if (!m) return null;
     return { key, addr: rest.slice(0, m.index).replace(/[,\s]+$/, '').trim(), views: Number(m[1].replace(/,/g, '')) };
   }).filter((x): x is { key: string; addr: string; views: number } => !!x);
