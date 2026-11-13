@@ -7628,17 +7628,17 @@ const goBack = () => router.back();
           <!-- 앱 — 요약 상자 넷(웹과 같은 값). 표 위 안 이름 · 비고 · 초기화 줄은 뺐다(위 안 고르기 줄에 있다, 2026-11-09) -->
           <div v-if="!isCollapsed('profit') && !webNew && si === selectedPlan" class="bida app-bida">
             <div class="bida-sum">
-              <div class="bida-kpi">
+              <div class="bida-kpi k-bid">
                 <span class="lab">입찰가</span>
                 <strong>{{ formatMoney(scBid(sc)) }}<small>원</small></strong>
                 <span class="sub">감정가의 {{ formatPct(scBidPct(sc)) }}</span>
               </div>
-              <div class="bida-kpi">
+              <div class="bida-kpi k-sale">
                 <span class="lab">예상 매도가</span>
                 <strong>{{ formatMoney(scSale(sc)) }}<small>원</small></strong>
                 <span class="sub">필요한 내 돈 {{ cashMoney(scCashOut(sc).total) }}</span>
               </div>
-              <div class="bida-kpi">
+              <div class="bida-kpi k-cash">
                 <span class="lab">실투자금</span>
                 <strong>{{ formatMoney(scNetInvestment(sc)) }}<small>원</small></strong>
                 <span class="sub">대출 {{ cashMoney(sc.cost.loanAmount ?? 0) }}({{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}) 제외</span>
@@ -7878,17 +7878,17 @@ const goBack = () => router.back();
             <!-- 왼쪽 입찰정보 · 비용 · 수익과 줄을 맞춰 돈이 나가는 순서를 나눈다 — 오른쪽은 세로 선으로 이어진 타임라인
                  (입찰정보 ↔ 1 입찰 당일, 비용 ↔ 2 잔금 납부일, 수익 ↔ 3 명도·수리 · 합계 · 그 다음). 빈 자리는 선이 이어 준다 -->
             <div class="bida-sum">
-              <div class="bida-kpi">
+              <div class="bida-kpi k-bid">
                 <span class="lab">입찰가</span>
                 <strong>{{ formatMoney(scBid(sc)) }}<small>원</small></strong>
                 <span class="sub">감정가의 {{ formatPct(scBidPct(sc)) }}</span>
               </div>
-              <div class="bida-kpi">
+              <div class="bida-kpi k-sale">
                 <span class="lab">예상 매도가</span>
                 <strong>{{ formatMoney(scSale(sc)) }}<small>원</small></strong>
                 <span class="sub">필요한 내 돈 {{ cashMoney(scCashOut(sc).total) }}</span>
               </div>
-              <div class="bida-kpi">
+              <div class="bida-kpi k-cash">
                 <span class="lab">실투자금</span>
                 <strong>{{ formatMoney(scNetInvestment(sc)) }}<small>원</small></strong>
                 <span class="sub">대출 {{ cashMoney(sc.cost.loanAmount ?? 0) }}({{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}) 제외</span>
@@ -14696,6 +14696,9 @@ select.adp-pub-input option { text-align: center; }
 .bida-kpi .lab, .bida-kpi .sub { font-size: 14px; color: #4b5563; }
 .bida-kpi strong { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #111827; white-space: nowrap; }
 .bida-kpi strong small { margin-left: 4px; font-size: 15px; font-weight: 700; }
+.bida-kpi.k-bid { background: #f5f8ff; border-color: #dbe5fa; }    /* 내비게이터 세 칸 — 살짝 다른 색(입찰가 파랑 · 매도가 초록 · 실투자금 주황, 2026-11-13 사용자) */
+.bida-kpi.k-sale { background: #f4fbf7; border-color: #d4ecdd; }
+.bida-kpi.k-cash { background: #fffaf3; border-color: #f2e3cb; }
 .bida-kpi.navy { background: #1f2a44; border-color: #1f2a44; }
 .bida-kpi.navy .lab { color: #c9d3ea; }
 .bida-kpi.navy strong { color: #fff; }

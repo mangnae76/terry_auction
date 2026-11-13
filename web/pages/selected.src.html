@@ -2725,6 +2725,17 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 ) { font-size: 14px !important; }
 /* 입찰가산정 요약 카드의 큰 숫자는 마이너스여도 같은 크기 — 위 14 맞춤의 strong.neg 에서 빼낸다 */
 .app-detail .bida-kpi strong.neg { font-size: 26px !important; }
+/* 수익분석 내비게이터 — 세로 폭 약 20% 줄임(위아래 20 → 10, 줄 사이 6 → 3, 132 → 106px, 2026-11-13 사용자). 네 칸 모두 */
+.app-detail .bida-kpi { padding-top: 10px !important; padding-bottom: 10px !important; gap: 3px !important; }
+/* 밤 — 세 칸 살짝 다른 색(낮은 AuctionDetailPage 의 k-bid · k-sale · k-cash) */
+:root[data-theme="dark"] .app-detail .bida-kpi.k-bid { background: rgba(91, 140, 255, .1) !important; border-color: rgba(91, 140, 255, .3) !important; }
+:root[data-theme="dark"] .app-detail .bida-kpi.k-sale { background: rgba(52, 180, 110, .1) !important; border-color: rgba(52, 180, 110, .3) !important; }
+:root[data-theme="dark"] .app-detail .bida-kpi.k-cash { background: rgba(245, 158, 11, .1) !important; border-color: rgba(245, 158, 11, .3) !important; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .app-detail .bida-kpi.k-bid { background: rgba(91, 140, 255, .1) !important; border-color: rgba(91, 140, 255, .3) !important; }
+  :root:not([data-theme="light"]) .app-detail .bida-kpi.k-sale { background: rgba(52, 180, 110, .1) !important; border-color: rgba(52, 180, 110, .3) !important; }
+  :root:not([data-theme="light"]) .app-detail .bida-kpi.k-cash { background: rgba(245, 158, 11, .1) !important; border-color: rgba(245, 158, 11, .3) !important; }
+}
 /* 웹 손품조사 — 글자는 14 아래로 내려가지 않는다 (앱 화면을 그대로 띄우므로 웹에서 덮어쓴다. ▾ 같은 기호는 그대로) */
 .app-detail.tab-survey :where(
   .adp-conc-note > span,
