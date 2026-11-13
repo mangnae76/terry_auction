@@ -6575,25 +6575,14 @@ const zoneShareNote = computed(() => {
   if (!zoneApplied.value || s >= 0.999 || (r[0] === 0 && r[1] === 0)) return '';
   return `${isApartment.value ? '구역 내 개별성' : '빌라 개별성'} ${pctText(r)} × 다른 ${isApartment.value ? '단지' : '건물'} 몫 ${Math.round(s * 100)}% = ${pctText(zoneAdjSum.value)}`;
 });
-/** 같은 평형 고른 거래의 실거래 최저 · 최고(선정물건 단지) — 예상가가 이 범위를 넘지 않게 자른다(보정이 쌓여 12억이 넘던 것, 2026-11-11 사용자) */
-const cmpUnitRange = computed(() => {
-  const me = cmpRows.value.find((r) => r.mine); if (!me) return null;
-  const ps = me.deals.filter((d) => (unitKind.value === '전세' ? d.kind === '전세' : d.kind !== '전세' && d.kind !== '월세') && d.price > 0).map((d) => d.price);
-  return ps.length ? { min: Math.min(...ps), max: Math.max(...ps) } : null;
-});
 const cmpUnitRaw = computed<[number, number] | null>(() => {
   const b = cmpUnitBase.value; if (!(b > 0)) return null;
   const add = repairMan() * 1e4; const [lo, hi] = totalAdj.value;
   return [b * (1 + lo / 100) + add, b * (1 + hi / 100) + add];
 });
-const cmpUnitClamp = computed(() => {
-  const raw = cmpUnitRaw.value; const r = isApartment.value ? cmpUnitRange.value : null;   // 빌라는 자르지 않는다 — 같은 건물 거래가 몇 건뿐이라 그 최고가로 잘리면 보정이 사라졌다(2026-11-12)
-  if (!raw) return null;
-  if (!r) return { lo: raw[0], hi: raw[1], cut: '' };
-  const c = (v: number) => Math.min(r.max, Math.max(r.min, v));
-  const cut = raw[1] > r.max ? `실거래 최고가 ${cmpEok(r.max)}를 넘어 잘랐습니다` : raw[0] < r.min ? `실거래 최저가 ${cmpEok(r.min)}보다 낮아 잘랐습니다` : '';
-  return { lo: c(raw[0]), hi: c(raw[1]), cut };
-});
+// 실거래 최고 · 최저가로 자르지 않는다 — 개별성이 더 좋은 집은 지금까지 거래보다 비쌀 수 있다(2026-11-13 사용자).
+// 11-11에 보정이 쌓여 12억이 넘던 것을 자르기로 막았는데, 보정이 '같음'에서 시작하는 지금은 고른 만큼만 붙는다
+const cmpUnitClamp = computed(() => { const raw = cmpUnitRaw.value; return raw ? { lo: raw[0], hi: raw[1], cut: '' } : null; });
 const cmpUnitEst = computed(() => {
   const v = cmpUnitClamp.value; if (!v) return '-';
   const a = v.lo / 1e8; const z = v.hi / 1e8;
