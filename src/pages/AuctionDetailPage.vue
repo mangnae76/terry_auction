@@ -10229,9 +10229,9 @@ const goBack = () => router.back();
               <div v-if="!zoneApplied" :class="['cmp-zone-off', { warn: zoneMixed }]"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span v-if="zoneMixed">{{ isApartment ? '위 표에 다른 단지' : '유사건물표에 다른 건물' }} 거래 {{ zoneMixed }}건이 섞여 {{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}은 판단할 수 없습니다. 차이는 {{ isApartment ? '단지 내 개별성' : '호실 개별성' }}으로 보세요.</span><span v-else>기준가가 모두 이 {{ isApartment ? '단지' : '건물' }} 거래라 쓰지 않습니다. 이 {{ isApartment ? '단지' : '건물' }} 거래가 없어 다른 {{ isApartment ? '단지' : '건물' }} 거래만 쓸 때 열려 연식 · 주차 · 엘베 · 현관 · 경사 · 용적률을 % 로 보정합니다.</span></div>
               <div v-if="zoneApplied && !isApartment" class="cmp-zone-off cmp-zone-guide"><b>빌라 개별성</b><span>경매빌라를 기준으로 다른 빌라와 비교해 고르세요. 경매빌라가 나으면 +, 못하면 −, 같으면 0%입니다.{{ zoneMixed ? ' 같은 건물 거래는 조건이 같아 그대로 두고, 다른 건물 거래에만 붙습니다.' : '' }}</span></div>
               <div :class="['cmp-two', zoneApplied ? 'pair' : 'solo']">
-                <div v-if="zoneApplied" class="son-demand sup-tbl"><div class="adm-table-wrap"><table class="adm-table cmp-tbl">
+                <div v-if="zoneApplied" class="son-demand sup-tbl"><div class="adm-table-wrap"><table :class="['adm-table', 'cmp-tbl', { 'cmp-tbl-zone': !isApartment }]">
                   <colgroup v-if="isApartment"><col style="width: 20%" /><col /><template v-if="zoneApplied"><col style="width: 19%" /><col style="width: 22%" /></template></colgroup>
-                  <colgroup v-else><col style="width: 17%" /><col /><col style="width: 12%" /><col style="width: 42%" /></colgroup>
+                  <colgroup v-else><col style="width: 16%" /><col /><col style="width: 15%" /><col style="width: 30%" /></colgroup>
                   <thead><tr><th>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</th><th>{{ isApartment ? '내용' : '경매빌라' }}</th><th v-if="zoneApplied">비율</th><th v-if="zoneApplied">{{ isApartment ? '보정' : '다른 빌라와 비교' }}</th></tr></thead>
                   <tbody>
                     <!-- 구역 내 개별성 — 단지 자체(연식 · 주차 · 엘베 · 현관구조 · 경사 · 용적률). 기준가가 단지 평균이면 이미 담겨 있어 0(2026-11-11 사용자) -->
@@ -10242,7 +10242,7 @@ const goBack = () => router.back();
                         <b v-else>{{ indivAutoText(item) }}</b>
                       </td>
                       <td v-if="zoneApplied" class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%</span></td>
-                      <td v-if="zoneApplied && !isApartment" class="cmp-zone-cmp-td"><span v-if="zoneMatched(item.id)" class="cmp-zone-match">시세분석 조건으로 맞춤 · 0%</span><span v-else class="cmp-ind-seg cmp-zone-cmp" role="radiogroup" :aria-label="`${item.label} — 경매빌라가 다른 빌라보다`"><button v-for="c in ZONE_CMP" :key="c.v" type="button" role="radio" :aria-checked="zoneCmpOf(item.id) === c.sg" :class="[c.v, { on: zoneCmpOf(item.id) === c.sg }]" :data-t="c.sg ? `${c.label} ${pctText(adjOf(c.sg, item.id))}` : c.label" @click="pickZoneCmp(item.id, c.v)">{{ c.sg ? `${c.label} ${pctText(adjOf(c.sg, item.id))}` : c.label }}</button></span></td>
+                      <td v-if="zoneApplied && !isApartment" class="cmp-zone-cmp-td"><span v-if="zoneMatched(item.id)" class="cmp-zone-match">시세분석 조건으로 맞춤 · 0%</span><span v-else class="cmp-ind-seg cmp-zone-cmp" role="radiogroup" :aria-label="`${item.label} — 경매빌라가 다른 빌라보다`"><button v-for="c in ZONE_CMP" :key="c.v" type="button" role="radio" :aria-checked="zoneCmpOf(item.id) === c.sg" :class="[c.v, { on: zoneCmpOf(item.id) === c.sg }]"  @click="pickZoneCmp(item.id, c.v)"><span class="k">{{ c.label }}</span><small v-if="c.sg">{{ pctText(adjOf(c.sg, item.id)) }}</small></button></span></td>
                       <td v-if="zoneApplied && isApartment" :class="['n', 'adp-ind-adj', !zoneApplied || zoneSign(item.id) === 0 ? 'zero' : zoneSign(item.id) > 0 ? 'up' : 'down']">{{ !zoneApplied || zoneSign(item.id) === 0 ? '0%' : pctText(zoneAdj(item.id)) }}<small v-if="isApartment && zoneMatched(item.id)" class="cmp-zone-match">시세분석 조건으로 맞춤</small></td></tr>
                     <tr v-if="!zoneApplied" class="cmp-zone-note"><td colspan="2">손품 체크리스트 — 이 단지 실거래가 · 전세가에 이미 담겨 있어 가격 보정은 하지 않습니다</td></tr>
                   </tbody>
@@ -13207,8 +13207,18 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 #appUnitSlot .cmp-two { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .cmp-zone-match { display: block; font-size: 12px; color: #9ca3af; }   /* 보정 0 — 시세분석에서 이미 같은 조건으로 걸렀다 */
 .cmp-th-hint { display: block; font-weight: 400; font-size: 12px; color: #2563eb; white-space: normal; }   /* '내용' 아래 줄 — 옆 칸과 겹치지 않게 */   /* 내용 머리 옆 파란 안내(2026-11-11 사용자) */
-.cmp-zone-cmp { flex-wrap: nowrap; gap: 2px; }   /* 빌라 개별성 — 나음 +% · 같음 · 못함 −% (2026-11-13) */
-.cmp-zone-cmp button { padding: 0 7px; font-size: 12px; }
+/* 빌라 개별성 — 나음 +% · 같음 · 못함 −% (2026-11-13). 좁은 칸에서도 넘치지 않게 세 칸 같은 폭, 이름 위 · % 아래 두 줄 */
+.cmp-ind-seg.cmp-zone-cmp { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; width: 100%; box-sizing: border-box; }
+.cmp-ind-seg.cmp-zone-cmp button { height: auto; min-height: 34px; padding: 3px 2px; display: grid; justify-items: center; align-content: center; gap: 1px; font-size: 12px; line-height: 1.2; }
+.cmp-ind-seg.cmp-zone-cmp button::after { display: none; }
+.cmp-zone-cmp button .k { font-weight: 700; }
+.cmp-zone-cmp button:not(.on) .k { font-weight: 400; }
+.cmp-zone-cmp button small { font-size: 12px; font-weight: 400; white-space: nowrap; }
+.cmp-tbl-zone :is(th, td) { padding-left: 6px; padding-right: 6px; }
+.cmp-tbl-zone .cmp-rate-in { display: flex; width: 100%; gap: 2px; }
+.cmp-tbl-zone .cmp-rate-in input { flex: 1 1 0; width: auto; min-width: 0; padding: 0 4px; font-size: 12px; }
+.cmp-tbl-zone td.cmp-ind-ct .cmp-ind-seg button { padding: 0 6px; font-size: 12px; }
+.cmp-tbl-zone .cmp-zone-match { white-space: normal; text-align: center; }
 .cmp-zone-cmp button.up.on { color: #c22e2e; box-shadow: inset 0 0 0 1px #c22e2e; }
 .cmp-zone-cmp button.down.on { color: #1d4ed8; box-shadow: inset 0 0 0 1px #1d4ed8; }
 .cmp-zone-off.cmp-zone-guide { color: #374151; }
