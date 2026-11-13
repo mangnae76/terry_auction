@@ -4759,6 +4759,50 @@ const concPriceValue = (col: string) => {
   const manual = parseDigits(concVal(col, 'price'));
   return manual > 0 ? manual : concPriceAuto(col);
 };
+/* 손품결론(운영자만) — 손품조사 ④ 호가분석의 호가매물 아래에 예전 손품결론의 시세결론 · 급매가결론을 그대로 되살렸다(2026-11-13 사용자).
+   시세결론: 시세분석에서 고른 값(경매지번 · 유사 매매가 · 평균 매매가)과 호가매물(가장 낮은 호가)의 가격 · 평당가, 체크를 푼 줄은 평균에서 뺀다.
+   급매가결론: 손으로 적는 칸(동일지번 매각물건 · 인근 매각 평균 · 급매가), 평당가는 적은 가격 ÷ 면적. 저장 자리는 예전 그대로 */
+const perPyOf = (price: number, m2: number) => (price > 0 && m2 > 0 ? Math.round(price / (m2 / PYEONG_TO_M2)) : 0);
+const askMin = (sim: boolean) => {
+  let best: { price: number; unit: number } | null = null;
+  for (let i = 0; i < lowRowCountG(sim); i += 1) {
+    const price = parseDigits(mktVal(lowKeyG(sim, i, 'saleAsk')));
+    if (!price) continue;
+    const unit = parseDigits(mktVal(lowKeyG(sim, i, 'unit'))) || lowUnitAutoG(sim, i);
+    if (!best || price < best.price) best = { price, unit };
+  }
+  return best;
+};
+const sonConcLines = computed(() => {
+  const mp = auction.value?.marketPicks;
+  const ca = askMin(false); const sa = askMin(true);
+  const [lc, ls] = LOW_GROUPS.value;
+  return [
+    { key: 'caseSale', label: '경매지번 매매가', unit: perPyOf(mp?.caseSale?.price ?? 0, mp?.caseSale?.areaM2 ?? 0), price: mp?.caseSale?.price ?? 0 },
+    { key: 'simSale', label: '유사 매매가', unit: perPyOf(mp?.simSale?.price ?? 0, mp?.simSale?.areaM2 ?? 0), price: mp?.simSale?.price ?? 0 },
+    { key: 'condSale', label: '평균 매매가', unit: mp?.condSalePerPy ?? 0, price: mp?.condSaleAvg ?? 0 },
+    { key: 'askCase', label: lc.label, unit: ca?.unit ?? 0, price: ca?.price ?? 0 },
+    { key: 'askSim', label: ls.label, unit: sa?.unit ?? 0, price: sa?.price ?? 0 },
+  ];
+});
+const sonConcOff = (key: string) => mktVal(`son.conc.off.${key}`) === '1';
+const toggleSonConc = (key: string) => { setMktVal(`son.conc.off.${key}`, sonConcOff(key) ? '' : '1'); persistSoon(); };
+const sonConcMean = computed(() => {
+  const on = sonConcLines.value.filter((l) => !sonConcOff(l.key));
+  const avg = (xs: number[]) => { const v = xs.filter((x) => x > 0); return v.length ? Math.round(v.reduce((t, x) => t + x, 0) / v.length) : 0; };
+  return { unit: avg(on.map((l) => l.unit)), price: avg(on.map((l) => l.price)) };
+});
+const wonText = (n: number) => (n > 0 ? n.toLocaleString('ko-KR') : '-');
+const URGENT_LINES = [{ key: 'lot', label: '동일지번 매각물건' }, { key: 'near', label: '인근 매각 평균' }, { key: 'urgent', label: '급매가' }];
+/** 급매가결론 칸 적기 — 예전 필드(urgentSalePrice 등)는 그 자리, 나머지는 mktConcValues */
+const setConcOwn = (col: string, row: string, value: string) => {
+  const sf = surveyForm.value as unknown as Record<string, unknown>;
+  if (!sf) return;
+  const legacy = MKT_CONC_LEGACY[`${col}.${row}`];
+  if (legacy) sf[legacy] = value;
+  else sf.mktConcValues = { ...((sf.mktConcValues as Record<string, string> | undefined) ?? {}), [`${col}.${row}`]: value };
+  persistSoon();
+};
 // 부동산 정보 — 최소 3줄은 항상 보이게 채워 둔다 (computed 안에서 고치면 순환이 생겨 watch로 뺀다)
 const emptyAgencyRow = (): AgencyRow => ({ name: '', phone: '', info: '', monthly: '', jeonse: '', real: '', urgent: '', note: '' });
 watch(
@@ -10481,6 +10525,47 @@ const goBack = () => router.back();
               </template>
             </template>
             </div>
+            <!-- 손품결론 — 운영자만. 호가매물 바로 아래(손품조사 ④ 호가분석). 예전 손품결론의 시세결론 · 급매가결론(2026-11-13 사용자) -->
+            <div v-if="sonpumMode && isOperator" class="adp-mkt-block son-conc-block">
+              <div class="adp-mkt-block-head"><span class="t">손품결론</span><span class="adm-chip">운영</span></div>
+              <h4 class="son-conc-h">시세결론</h4>
+              <table class="adp-table adp-mkt-table fit adp-dm-tbl adp-conc-table bold-price conc-vert">
+                <thead><tr><th class="adp-conc-corner">구분</th><th>조사가격</th><th>평당가</th></tr></thead>
+                <tbody>
+                  <tr v-for="l in sonConcLines" :key="l.key">
+                    <th :class="['adp-conc-side', { off: sonConcOff(l.key) }]"><label class="adp-conc-pick inline"><input type="checkbox" :checked="!sonConcOff(l.key)" @change="toggleSonConc(l.key)" /></label>{{ l.label }}</th>
+                    <td :class="['num', { off: sonConcOff(l.key) }]"><span class="adp-conc-v">{{ wonText(l.price) }}</span></td>
+                    <td :class="['num', { off: sonConcOff(l.key) }]"><span class="adp-conc-v">{{ wonText(l.unit) }}</span></td>
+                  </tr>
+                  <tr>
+                    <th class="adp-conc-side mid big">평균</th>
+                    <td class="num mean"><span class="adp-conc-v">{{ wonText(sonConcMean.price) }}</span></td>
+                    <td class="num mean"><span class="adp-conc-v">{{ wonText(sonConcMean.unit) }}</span></td>
+                  </tr>
+                </tbody>
+              </table>
+              <p class="son-conc-tip">체크를 풀면 그 줄은 평균에서 빠집니다. 빈 칸(-)은 평균에 넣지 않습니다.</p>
+              <h4 class="son-conc-h">급매가결론</h4>
+              <table class="adp-table adp-mkt-table fit adp-dm-tbl adp-conc-table conc-urgent conc-vert">
+                <thead><tr><th class="adp-conc-corner">구분</th><th>조사가격</th><th>평당가</th></tr></thead>
+                <tbody>
+                  <tr v-for="l in URGENT_LINES" :key="l.key">
+                    <th :class="['adp-conc-side', 'mid', { red: l.key === 'urgent', big: l.key === 'urgent' }]">{{ l.label }}</th>
+                    <td class="num">
+                      <FormattedNumberInput v-if="editingSurvey.listing" :model-value="concVal(l.key, 'price')" mode="string" class="adp-mkt-input" placeholder="가격" @update:model-value="setConcOwn(l.key, 'price', String($event ?? ''))" />
+                      <span v-else :class="['adp-conc-v', 'hi', { red: l.key === 'urgent' }]">{{ wonText(concPriceValue(l.key)) }}</span>
+                    </td>
+                    <td class="num"><span class="adp-conc-v">{{ wonText(parseDigits(concVal(l.key, 'unit'))) }}</span></td>
+                  </tr>
+                  <tr>
+                    <td class="adp-conc-note" colspan="3">
+                      <input v-if="editingSurvey.listing" class="adp-mkt-input" placeholder="비고" :value="fieldVal('fs.urgentSale.note')" @input="setExtraNote('urgentSale', ($event.target as HTMLInputElement).value)" />
+                      <span v-else :class="{ filled: !!fieldVal('fs.urgentSale.note') }">{{ fieldVal('fs.urgentSale.note') || '비고' }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             </template>
             </Teleport>
 
@@ -12524,6 +12609,11 @@ tr.tone-take { background: #fff5f5; }
 .adp-conc-pick input { width: 13px; height: 13px; margin: 0; accent-color: #2b6df3; }
 /* 평균 칸 — 여러 칸을 모아 낸 값이라 금액처럼 파랗게, 굵게 세운다 */
 .adp-conc-table td.mean .adp-conc-v { color: #2b6df3; font-weight: 800; }
+/* 손품결론(운영자만, 손품조사 ④ 호가분석 아래) — 상자 안 표 제목 15 · 800, 아이콘 없음 */
+.son-conc-block .son-conc-h { margin: 12px 0 6px; font-size: 15px; font-weight: 800; color: #111827; }
+.son-conc-block .adp-mkt-block-head + .son-conc-h { margin-top: 4px; }
+.son-conc-block .son-conc-tip { margin: 6px 0 4px; font-size: 12px; color: #6b7280; }
+.son-conc-block .adp-conc-note .adp-mkt-input { color: var(--text, #111827); }   /* 비고는 보통 글색 — 빨강 아님 */
 /* 시세 결론의 마지막 '가격' 줄 — 견주는 표의 결론이라 줄 전체를 굵게 */
 .adp-conc-table.bold-price .adp-conc-v.hi { font-weight: 800; }
 .adp-conc-table .adp-conc-v { font-size: 10.5px; font-weight: 400; color: #111827; white-space: nowrap; }
