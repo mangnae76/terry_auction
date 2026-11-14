@@ -7,6 +7,8 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useAuctionStore } from '../stores/auctionStore';
+import { getBuildingFacts } from '../services/buildingFacts';
+import { buildingAgeOf } from '../utils/buildingAge';
 import { agentOnline, loadAgentDataset, loadDayLists, loadHits, saveDayCsv, sendAgentCommand, sendAgentStop, watchAgentStatus, type AgentStatus, type DayListRow, type HitDoc } from '../services/agentRemote';
 import { readSheetRows } from '../services/saleExcel';
 import {
@@ -194,6 +196,21 @@ const copyAddr = async (it: Item) => {
   try { await navigator.clipboard.writeText(text); }
   catch { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 그만 */ } ta.remove(); }
   copiedKey.value = it.key; if (copyTimer) clearTimeout(copyTimer); copyTimer = setTimeout(() => { copiedKey.value = ''; }, 1500);
+};
+/** 엘베 — 건축물대장 승강기 수(매각사례 표와 같은 출처). 표에 보이는 줄의 지번만, 한 번 받은 건 이 화면에 남긴다 */
+const elevs = ref<Record<string, number | null>>({});
+const lotOf = (addr: string) => addr.replace(/\s*\(.*$/, '').replace(/\s*외\s*\d+필지.*$/, '').match(/^(.*?(?:동|가|읍|면|리)\s+(?:산\s*)?\d+(?:-\d+)?)/)?.[1]?.replace(/\s+/g, ' ') ?? '';
+const elevOf = (addr: string): number | null | undefined => { const k = lotOf(addr); return k ? elevs.value[k] : null; };
+let elevBusy = false;
+const fillElevs = async () => {
+  if (elevBusy) return; elevBusy = true;
+  try {
+    const want = [...new Set(shownItems.value.map((it) => lotOf(it.addr)).filter((k) => k && !(k in elevs.value)))].slice(0, 400);
+    for (let i = 0; i < want.length; i += 3) {
+      await Promise.all(want.slice(i, i + 3).map(async (k) => { const f = await getBuildingFacts(k); elevs.value = { ...elevs.value, [k]: f ? f.elevator : null }; }));
+    }
+  } finally { elevBusy = false; }
+  if (shownItems.value.some((it) => { const k = lotOf(it.addr); return k && !(k in elevs.value); })) void fillElevs();
 };
 /** 차이 금액 — '+4,660,000' · '−1,020,000' */
 const signWon = (x: number) => `${x >= 0 ? '+' : '−'}${won(Math.abs(x))}`;
@@ -475,6 +492,8 @@ const nMine = computed(() => items.value.filter((it) => mineKeys.value.has(it.ke
 /** 단추로 거른 줄 */
 const shownItems = computed(() => listItems.value.filter((it) => (!fMine.value || mineKeys.value.has(it.key)) && (!fDept.value || deptOf(it.key) === fDept.value) && (!fStat.value || statOf(it) === fStat.value) && (!fKind.value || kindOf(it) === fKind.value)));
 const FR = { dept: fDept, stat: fStat, kind: fKind } as const;
+// 엘베 — 표에 보이는 줄이 바뀌면 그 지번만 더 받는다(shownItems 다음에 둬야 한다)
+watch(() => shownItems.value.map((it) => it.key).join(','), () => { void fillElevs(); }, { immediate: true });
 const pickF = (w: keyof typeof FR, v: string) => { FR[w].value = FR[w].value === v ? '' : v; };
 /** 내 관심 물건 = 물건카드(선정물건)에 올린 사건 — 사건번호로 맞춘다 */
 const auctions = useAuctionStore();
@@ -608,13 +627,16 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
           <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게(검암동 · 모든동 · 11-13 · 16 · 19 에서 잰 가장 넓은 값, 주소는 남는 폭) -->
-          <colgroup><col style="width: 80px" /><col style="width: 136px" /><col /><col style="width: 86px" /><col style="width: 44px" /><col style="width: 106px" /><col style="width: 66px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 96px" /><col style="width: 182px" /></colgroup>
-          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
+          <colgroup><col style="width: 80px" /><col style="width: 128px" /><col /><col style="width: 64px" /><col style="width: 80px" /><col style="width: 58px" /><col style="width: 80px" /><col style="width: 44px" /><col style="width: 100px" /><col style="width: 66px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 92px" /><col style="width: 100px" /></colgroup>
+          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th>연식</th><th>전용</th><th>엘베</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
           <tbody>
             <tr v-for="it in shownItems" :key="it.key" :class="{ on: sel?.key === it.key, off: !preds.has(it.key) }" @click="pick = it.key">
               <td>{{ bidDay(it.target?.date || dayDate).slice(3) }}</td>
               <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button></td>
               <td class="l addr" :data-tip="it.addr || undefined" data-tip-trunc><button v-if="it.addr" type="button" :class="['bpt-copy', { done: copiedKey === it.key }]" :data-tip="copiedKey === it.key ? '복사됨' : '주소복사'" :aria-label="`${caseLabel(it.key)} 주소 복사`" @click.stop="copyAddr(it)"><svg v-if="copiedKey !== it.key" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg><svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg></button>{{ it.addr || '—' }}</td>
+              <td>{{ it.target?.year ? `${it.target.year}` : '—' }}<small v-if="it.target?.year" class="bpt-at">{{ buildingAgeOf(it.target.year) }}년차</small></td>
+              <td><template v-if="it.target?.area">{{ /아파트/.test(kindOf(it)) ? '—' : `${it.target.area.toFixed(2)}㎡` }}<small class="bpt-at">{{ /아파트/.test(kindOf(it)) ? `(${it.target.area.toFixed(2)})` : `${(it.target.area / 3.305785).toFixed(2)}평` }}</small></template><template v-else>—</template></td>
+              <td><span v-if="elevOf(it.addr) === undefined" class="ev u">·</span><span v-else-if="elevOf(it.addr) === null" class="ev u" title="건축물대장을 찾지 못했습니다">-</span><span v-else-if="elevOf(it.addr)! > 0" class="ev o two">{{ elevOf(it.addr) }}대<br>있음</span><span v-else class="ev x">없음</span></td>
               <td v-if="!it.viewAt" class="r">—</td>
               <td v-else class="r">{{ it.views.toLocaleString('ko-KR') }}<small :class="['bpt-at', { after: stale(it.viewAt) }]">{{ it.viewAt === dayDate ? '당일' : it.viewAt.slice(5).replace('-', '.') }}{{ stale(it.viewAt) ? ' 덜 모음' : '' }}</small></td>
               <td>{{ it.target ? `${it.target.round + 1}차` : '—' }}</td>
@@ -627,7 +649,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td class="r act-sold">{{ it.result && it.result.sold > 0 ? won(it.result.sold) : '—' }}</td>
               <td v-if="it.result && it.result.sold > 0 && preds.get(it.key)" class="r">{{ signWon(it.result.sold - (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small class="bpt-at">{{ sgn(it.result.sold / (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median - 1) }}</small></td>
               <td v-else class="r">—</td>
-              <td v-if="preds.get(it.key)" class="r">{{ man((preds.get(it.key)!.after ?? preds.get(it.key)!.before).lo) }} ~ {{ man((preds.get(it.key)!.after ?? preds.get(it.key)!.before).hi) }}</td>
+              <td v-if="preds.get(it.key)" class="r two">{{ man((preds.get(it.key)!.after ?? preds.get(it.key)!.before).lo) }} ~<small>{{ man((preds.get(it.key)!.after ?? preds.get(it.key)!.before).hi) }}</small></td>
               <td v-else>—</td>
             </tr>
           </tbody>
@@ -759,6 +781,12 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl.fixed { table-layout: fixed; }
 .bpt-tbl.fixed td { overflow: hidden; text-overflow: ellipsis; }
 .bpt-tbl.fixed td.addr { max-width: none; }
+.bpt-tbl td.two small { display: block; font-size: inherit; color: inherit; }   /* 두 줄 칸 — 아래 줄도 같은 크기 · 같은 색(매각사례 표 전용 칸과 같게) */
+.bpt-tbl .ev { font-size: 12px; border-radius: 4px; padding: 1px 6px; white-space: nowrap; }   /* 엘베 — 매각사례 · 시세분석 표와 같은 칩 */
+.bpt-tbl .ev.two { display: inline-block; text-align: center; line-height: 1.3; padding: 2px 7px; }
+.bpt-tbl .ev.o { background: #e7f6ed; color: #1f7a4a; font-weight: 600; }
+.bpt-tbl .ev.x { background: #fdecec; color: #dc2626; }
+.bpt-tbl .ev.u { color: #9ca3af; }
 .bpt-copy { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 6px; padding: 0; border: 1px solid #d5dbe5; border-radius: 6px; background: #fff; color: #4b5563; cursor: pointer; vertical-align: -5px; }
 .bpt-copy:hover { border-color: #2b6df3; color: #2b6df3; }
 .bpt-copy.done { border-color: #15803d; color: #15803d; }   /* 주소 내용만 왼쪽 줄 맞춤(머리는 가운데) */   /* 사건별 예측은 칸이 많다 — 1440 화면에서도 옆으로 안 구르게 */

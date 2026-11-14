@@ -390,8 +390,8 @@ button { cursor: pointer; }
   background: var(--bg); box-shadow: 0 0 0 100vmax var(--bg); clip-path: inset(-12px -100vmax 0 -100vmax); }
 /* 아래 바닥 띠(.foot)가 표 바로 밑에 붙어 올라와 보였다 — 표 한 줄쯤 띄운다 */
 #marketView:has(.app-market:is([data-k="dong"], [data-k="case"])) .market-content { padding-bottom: 56px; }
-/* 매각분석 › 낙찰가예측 — 사건별 예측 표가 칸이 많아 1280 에서는 옆으로 굴렀다. 이 탭만 표가 딱 들어가는 폭(칸 너비 고정 · 주소 칸에 남는 폭 → 1480)으로(2026-11-14 사용자 — 1920은 너무 넓고 주소는 조금 더) */
-#marketContent:has(#bidPredictMount) { max-width: calc(1480px + 64px); padding-bottom: 56px; }
+/* 매각분석 › 낙찰가예측 — 사건별 예측 표가 칸이 많아 1280 에서는 옆으로 굴렀다. 이 탭만 표가 딱 들어가는 폭(칸 너비 고정 · 주소 칸에 남는 폭 → 1560, 엘베 · 연식 · 전용 칸이 늘어서)으로(2026-11-14 사용자 — 1920은 너무 넓고 주소는 조금 더) */
+#marketContent:has(#bidPredictMount) { max-width: calc(1560px + 64px); padding-bottom: 56px; }
 /* 화면 끝까지 긋는 선 — transform 으로 옮기면 반 픽셀에 걸려 선이 흐려지고 파란 밑줄과 1px 어긋났다. left 로 옮긴다 */
 .app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 0; width: 100vw; height: 1px; background: var(--subtab-line); }
 .app-market[data-k="dong"] .adm-view-tabs button { position: relative; z-index: 1; }
