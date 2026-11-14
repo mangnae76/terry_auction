@@ -297,18 +297,13 @@ const COLS: Array<ColumnDef<PriceRow>> = [
   { key: 'year', label: '건축', text: (r) => (r.buildYear ? `${r.buildYear}년` : '-'), order: (r) => r.buildYear ?? 0 },
   { key: 'dist', label: '거리', text: (r) => `${Math.floor((r.dist ?? 0) / 100) * 100}m대`, order: (r) => -(r.dist ?? 0) },
   { key: 'floor', label: '층', text: (r) => `${r.floorNo}층`, order: (r) => r.floorNo },
-  // 호 — 실거래(국토부)에는 호가 없다(개인정보). 선정물건만 주소에서, 거래 줄은 '모름'(2026-11-14 사용자)
-  { key: 'ho', label: '호', text: () => '모름' },
   { key: 'name', label: '주소', text: (r) => r.name || r.jibun },
 ];
 const colFilter = useColumnFilters<PriceRow>(kindRows, COLS);
-/** 선정물건 호 — 주소의 '201호' */
-const myHo = computed(() => { const m = String(props.auction?.address ?? '').match(/(?:^|\s|층)(\d{2,5})\s*호/); return m ? `${m[1]}호` : '모름'; });
 if (sv?.keep) colFilter.picked.value = { ...colFilter.picked.value, ...sv.keep };
 // 웹 — 머리글 ▾ 거르기 대신 줄마다 '제외' 체크(처음엔 비어 있다 · 체크하면 실거래가 예상 · 평균 · 건수에서 빠지고 표엔 흐리게 남는다) · 머리글은 오름 · 내림 정렬(2026-11-05). 앱은 그대로
 const webEmbed = inject<boolean>('webEmbed', false) || !!props.app;
-/** 웹만 '호' 칸(앱은 지금 손대지 않는다) */
-const shownCols = webEmbed ? COLS : COLS.filter((c) => c.key !== 'ho');
+const shownCols = COLS;
 /** 앱 손품조사 탭이 띄운 웹 시세분석 — 지도만 뺀다(2026-11-12 사용자 '앱에서는 지도 기능만 없이') */
 const sonApp = inject<boolean>('sonApp', false);
 /** 줄 열쇠 — 다시 불러와도 같은 줄이 같은 열쇠(순번 id 는 불러올 때마다 바뀐다) */
@@ -786,7 +781,6 @@ const evenCols = () => {
       year: ['2026년'],
       dist: ['9,999m'],
       floor: ['99층'],
-      ho: ['9999호', '모름'],
     };
     const natOf = (pad: number) => ths.map((th) => {
       if (th.classList.contains('ck-th')) return 44;
@@ -1192,7 +1186,6 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td class="pa-num">{{ me.year || '-' }}</td>
               <td class="r pa-num">0m</td>
               <td class="pa-num">{{ me.floor || '-' }}</td>
-              <td v-if="webEmbed" class="pa-num">{{ myHo }}</td>
               <td class="l" :data-tip="webEmbed ? myAddr : undefined" data-tip-pos="right"><div class="pa-addr"><span class="addr">{{ myAddr }}</span><span class="chips"><span class="same">경매지번</span></span></div></td>
               <td class="acts-td"><span class="acts">
                 <button type="button" class="ab n" title="네이버 부동산에서 이 빌라 보기" aria-label="네이버 부동산에서 보기" @click="goNaver(props.auction.address)">N</button>
@@ -1225,7 +1218,6 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td class="pa-num">{{ r.buildYear || '-' }}</td>
               <td class="r pa-num">{{ r.dist ?? '-' }}m</td>
               <td class="pa-num">{{ r.floorNo || '-' }}</td>
-              <td v-if="webEmbed" class="pa-num ho-u">모름</td>
               <td class="l" :data-tip="webEmbed ? addrOf(r) : undefined" data-tip-pos="right"><div class="pa-addr"><span class="addr"><i v-if="orderOf[r.jibun]" class="no" :title="`임장 순서 ${orderOf[r.jibun]}번 — 지도 번호와 같다`">{{ orderOf[r.jibun] }}</i>{{ addrOf(r) }}</span><span v-if="r.same" class="chips"><span class="same">경매지번</span><span v-if="Math.abs(r.areaM2 - me.areaM2) <= 0.05" class="same eq">같은면적</span></span><span v-else-if="fieldChips(r.jibun).length" class="chips"><span v-for="c in fieldChips(r.jibun)" :key="c.t" :class="['pa-fc', c.k]">{{ c.t }}</span></span></div></td>
               <td class="acts-td" @click.stop><span class="acts">
                 <button type="button" class="ab n" title="네이버 부동산에서 이 빌라 보기 — 그 건물을 가운데 두고 지도를 바로 엽니다" aria-label="네이버 부동산에서 보기" @click="goNaver(fullAddr(r))">N</button>
