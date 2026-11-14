@@ -1551,6 +1551,15 @@ GUIDE.release({
     rows('권리분석 결과').forEach((r) => { if (!r[1].includes('건축물대장')) r[1] += ' 위반건축물은 경매지나 건축물대장을 떼어 지정 여부를 확인하라고 알려 줍니다.'; });
   },
 });
+/* v1.6.4 — 2026.11.15 영상으로 보기 10장 이름 '설정' → '개인정보 설정'. 바뀐 곳만 patch */
+GUIDE.release({
+  v: '1.6.4', date: '2026-11-15', base: '1.6.3', title: '영상 10장 이름',
+  notes: ['영상으로 보기 — 10장 이름을 「개인정보 설정」으로 바꿨습니다'],
+  patch(c) {
+    const ch = c.video.chapters.find((x) => x.id === 'setup');
+    if (ch) ch.title = '개인정보 설정';
+  },
+});
 /* 다음 버전 예시 — 바뀐 곳만 patch 에서 고친다
 GUIDE.release({
   v: '1.1.0', date: '2026-12-01', base: '1.0.0', title: '앱 출시 반영',
