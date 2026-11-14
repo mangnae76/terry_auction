@@ -4794,7 +4794,7 @@ const sonConcLines = computed(() => {
     line('caseSale', '경매지번 매매가', perPyOf(mp?.caseSale?.price ?? 0, mp?.caseSale?.areaM2 ?? 0), mp?.caseSale?.price ?? 0, '실거래 평당가'),
     line('simSale', '유사물건 매매가', perPyOf(mp?.simSale?.price ?? 0, mp?.simSale?.areaM2 ?? 0), mp?.simSale?.price ?? 0, '실거래 평당가'),
     line('condSale', '유사물건 평균 매매가', mp?.condSalePerPy ?? 0, mp?.condSaleAvg ?? 0, '평균 평당가'),
-    line('askCase', lc.label, ca?.unit ?? 0, ca?.price ?? 0, '최저 호가 평당가'),
+    { key: 'askCase', label: lc.label, unit: ca?.unit ?? 0, price: ca?.price ?? 0, how: '' },   // 경매빌라 호가는 파는 사람이 부른 값 그대로 — 평수로 바꾸지 않는다(2026-11-15 사용자)
     line('askSim', ls.label, sa?.unit ?? 0, sa?.price ?? 0, '최저 호가 평당가'),
   ];
 });
@@ -12621,6 +12621,8 @@ tr.tone-take { background: #fff5f5; }
 .adp-mkt-table.adp-conc-table.conc-vert tbody td .adp-conc-v { font-size: 13.2px; }
 .adp-mkt-table.adp-conc-table.conc-vert tbody td .adp-conc-area { font-size: 11px; }
 .adp-conc-table.conc-vert .adp-mkt-input { font-size: 13.2px; }
+/* 급매가 칸 — 숫자를 오른쪽에, 일의 자리를 위 조사가격 숫자와 같은 세로줄에(칸 안 여백 3 + 테두리 1 만큼 오른쪽으로 넓힌다, 2026-11-15 사용자) */
+.adp-conc-table.conc-vert td.num .adp-mkt-input { box-sizing: border-box; display: block; width: calc(100% + 4px); margin-right: -4px; text-align: right; }
 /* 평균에서 뺀 줄은 이름까지 흐리게 — 표 전체가 같은 신호를 쓴다 */
 .adp-conc-table.conc-vert th.adp-conc-side.off { opacity: 0.45; }
 /* 줄 이름 왼쪽의 체크 — 머리줄과 달리 이름과 한 줄에 선다 */
