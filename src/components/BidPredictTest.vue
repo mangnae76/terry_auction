@@ -701,7 +701,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td class="r act-sold"><span v-if="it.result && it.result.sold > 0" class="bpt-nb">{{ won(it.result.sold) }}</span><template v-else>—</template></td>
               <td v-if="it.result && it.result.sold > 0 && preds.get(it.key)" class="r"><span class="bpt-nb">{{ signWon(it.result.sold - (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small class="bpt-at bpt-nb">{{ sgn(it.result.sold / (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median - 1) }}</small></span></td>
               <td v-else class="r">—</td>
-              <td v-if="preds.get(it.key)" class="r two"><span class="bpt-nb rng">{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).lo) }} ~<small>{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).hi) }}</small></span></td>
+              <td v-if="preds.get(it.key)" class="r two"><span class="bpt-nb rng">{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).lo) }} ~<small>{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).hi) }}<i class="ghost" aria-hidden="true"> ~</i></small></span></td>
               <td v-else>—</td>
             </tr>
           </tbody>
@@ -833,9 +833,10 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl.fixed { table-layout: fixed; }
 .bpt-tbl.fixed td { overflow: hidden; text-overflow: ellipsis; }
 .bpt-tbl.fixed td.addr { max-width: none; }
-.bpt-tbl .bpt-nb { display: inline-block; min-width: 11ch; text-align: right; font-variant-numeric: tabular-nums; }   /* 금액 — 가운데 칸 안에서 끝자리 세로 맞춤 */
+.bpt-tbl .bpt-nb { display: inline-block; min-width: min(11ch, 100%); max-width: 100%; text-align: right; font-variant-numeric: tabular-nums; }   /* 칸보다 넓으면 줄임표(…)가 붙었다 — 칸 안에서만   /* 금액 — 가운데 칸 안에서 끝자리 세로 맞춤 */
 .bpt-tbl .bpt-nb small { display: block; text-align: right; }
-.bpt-tbl .bpt-nb.rng { min-width: 8.5ch; }
+.bpt-tbl .bpt-nb.rng { min-width: min(10ch, 100%); }
+.bpt-tbl .bpt-nb .ghost { visibility: hidden; font-style: normal; }   /* 아랫줄에도 ' ~' 자리를 비워 둬 두 줄 금액의 끝자리가 세로로 맞는다 */
 .bpt-tbl td.two small { display: block; font-size: inherit; color: inherit; }   /* 두 줄 칸 — 아래 줄도 같은 크기 · 같은 색(매각사례 표 전용 칸과 같게) */
 .bpt-tbl .ev { font-size: 12px; border-radius: 4px; padding: 1px 6px; white-space: nowrap; }   /* 엘베 — 매각사례 · 시세분석 표와 같은 칩 */
 .bpt-tbl .ev.two { display: inline-block; text-align: center; line-height: 1.3; padding: 2px 7px; }
