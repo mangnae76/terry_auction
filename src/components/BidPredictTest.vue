@@ -165,9 +165,20 @@ onMounted(async () => {
   } catch { recsInfo.value = '매각 자료를 읽지 못했습니다. 운영자 계정인지 확인해 주세요.'; }
 });
 
-const onFile = async (e: Event) => {
+const onFile = (e: Event) => {
   const f = (e.target as HTMLInputElement).files?.[0]; (e.target as HTMLInputElement).value = '';
+  if (f) void readDayFile(f);
+};
+/** 파일 칸에 끌어다 놓기 — 권리분석 서류 올리기 칸과 같은 꼴 */
+const dropOver = ref(false);
+const onDrop = (e: DragEvent) => {
+  dropOver.value = false;
+  const f = e.dataTransfer?.files?.[0];
   if (!f) return;
+  if (!/\.(xlsx|csv)$/i.test(f.name)) { fileMsg.value = '엑셀(.xlsx) · CSV 파일만 넣을 수 있습니다.'; return; }
+  void readDayFile(f);
+};
+const readDayFile = async (f: File) => {
   try {
     const buf = await f.arrayBuffer();
     // CSV 는 UTF-8 이 아니면 한글 윈도 글(EUC-KR)로 읽는다
@@ -568,9 +579,12 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="bpt-in">
         <div class="bpt-box">
           <h3>기일 목록 파일</h3>
-          <label class="bpt-file"><input type="file" accept=".xlsx,.csv" @change="onFile" />파일넣기</label>
+          <label :class="['bpt-drop', { over: dropOver }]" @dragover.prevent="dropOver = true" @dragleave="dropOver = false" @drop.prevent="onDrop">
+            <span class="ic" aria-hidden="true">📂</span>
+            <b>엑셀 · CSV 파일 선택하기</b><span>또는 기일별물건 엑셀 · CSV를 이 칸에 끌어다 넣어 주세요.</span>
+            <input type="file" accept=".xlsx,.csv" hidden @change="onFile" />
+          </label>
           <p v-if="dayName" class="bpt-sub">{{ dayName }} · {{ dayRows.length.toLocaleString('ko-KR') }}건</p>
-          <p v-else class="bpt-sub">기일별물건 엑셀 · CSV</p>
           <label class="bpt-date">매각기일<input v-model="dayDate" type="date" /></label>
           <div v-if="dayChips.length" class="bpt-chips" role="group" aria-label="매각기일 고르기">
             <button v-for="c in dayChips" :key="c.d" type="button" :class="['bpt-chip', { on: c.d === dayDate, ahead: c.ahead }]" :title="`${c.d} · 검암동 ${c.n}건`" @click="dayDate = c.d">{{ c.label }}<small>{{ c.n }}</small></button>
@@ -797,7 +811,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           </tbody>
         </table>
       </div>
-      <p v-else class="bpt-sub">이 날 목록 없음 · 기일목록수집 또는 CSV 파일넣기</p>
+      <p v-else class="bpt-sub">이 날 목록 없음 · 기일목록수집 또는 CSV 파일 넣기</p>
       <p class="bpt-sub">조회수 · 가장 늦게 모은 값(아래 모은 날) · 매각 뒤 값은 예측에 안 씀 · CSV엔 조회수 없음</p>
     </section>
   </div>
@@ -816,8 +830,13 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-h3 small { margin-left: 6px; font-size: 12px; font-weight: 400; color: #4b5563; }
 .bpt-sub { margin: 0; font-size: 12px; color: #4b5563; }
 .bpt-warn { margin: 0; font-size: 12px; color: #c4392f; }
-.bpt-file { align-self: flex-start; display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 8px; background: #2b6df3; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
-.bpt-file input { display: none; }
+/* 기일 목록 파일 칸 — 권리분석 서류 올리기(.rt-drop)와 같은 꼴(2026-11-15 사용자) */
+.bpt-drop { display: grid; justify-items: center; gap: 6px; padding: 22px 12px; border: 1.5px dashed var(--line-2, #d5dbe5); border-radius: 10px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; }
+.bpt-drop .ic { font-size: 32px; line-height: 1; filter: grayscale(1); opacity: .55; transition: filter .15s, opacity .15s; }
+.bpt-drop:hover .ic, .bpt-drop.over .ic { filter: none; opacity: 1; }
+.bpt-drop b { font-size: 14px; font-weight: 700; color: var(--text, #111827); }
+.bpt-drop span:not(.ic) { font-size: 12px; line-height: 1.6; color: var(--muted, #6b7280); }
+.bpt-drop:hover, .bpt-drop.over { border-color: var(--blue, #2b6df3); background: var(--blue-soft, #eef3ff); }
 .bpt-date { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #374151; }
 .bpt-date input { height: 32px; border: 1px solid #d5dbe5; border-radius: 8px; padding: 0 8px; font: inherit; }
 .bpt textarea { width: 100%; box-sizing: border-box; border: 1px solid #d5dbe5; border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 13px; line-height: 1.6; resize: vertical; }
