@@ -231,7 +231,7 @@ const items = computed<Item[]>(() => useHits.value ? dayRounds.value.map((r) => 
 const pairs = computed<ViewPair[]>(() => items.value.filter((it) => it.result && it.views >= 0 && it.result.bids >= 0 && (it.failed || it.result.bids > 0)).map((it) => ({ key: it.key, views: it.views, bids: it.result!.bids })));
 
 type Pred = { before: ReturnType<typeof priceDist>; after: ReturnType<typeof priceDist> | null; piBefore: number[]; piAfter: number[] | null; p0: number | null; simN: number; loose: boolean; vmN: number; expBids: number | null };
-/** 차트 모드 — 입찰자 있을확률 · 예상인원(신건도) */
+/** 차트 모드 — 입찰자 있을확률 · 예상응찰(신건도) */
 const sellMap = computed(() => {
   const m = new Map<string, { pSold: number; pi: number[]; expBids: number }>(); const rm = roundModel.value;
   if (rm) dayRounds.value.forEach((r) => m.set(r.key, predictRound(rm, r)));
@@ -384,7 +384,7 @@ const dayChips = computed(() => {
   return [...all.filter(([d]) => d < today).slice(-6), ...all.filter(([d]) => d >= today).slice(0, 6)].map(chip);
 });
 
-/** 표의 입찰자 있을확률 · 예상인원 */
+/** 표의 입찰자 있을확률 · 예상응찰 */
 const sellOf = (key: string) => { const s = sellMap.value.get(key); if (s) return s; const p = preds.value.get(key); return p && p.p0 != null ? { pSold: 1 - p.p0, expBids: p.expBids ?? 0 } : null; };
 /** 누적이 매각 전날까지 안 닿았으면(덜 모음) */
 const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.value, -1);
@@ -478,7 +478,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             </tbody>
           </table>
         </div>
-        <p class="bpt-sub">{{ grade.from }} ~ {{ grade.to }} · 기일 {{ grade.days.length }}개. 줄을 누르면 그날 사건별 예측으로 갑니다. 실제인원을 다 알아도 낙찰가 평균 차이는 7% 가까이 남습니다(1등이 써 낸 금액은 사람마다 달라서)</p>
+        <p class="bpt-sub">{{ grade.from }} ~ {{ grade.to }} · 기일 {{ grade.days.length }}개. 줄을 누르면 그날 사건별 예측으로 갑니다. 실제응찰을 다 알아도 낙찰가 평균 차이는 7% 가까이 남습니다(1등이 써 낸 금액은 사람마다 달라서)</p>
       </template>
     </section>
 
@@ -507,7 +507,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <h3 class="bpt-h3">사건별 예측 <small v-if="useHits">사건 차트의 매각 전날까지 누적 조회수 · {{ roundModel ? `그날 이전 ${roundModel.n.toLocaleString('ko-KR')}회차(매각 ${roundModel.nSold.toLocaleString('ko-KR')})로 배움` : '배울 회차가 모자랍니다' }}{{ leadDays ? ` · 조회수가 매각 ${leadDays + 1}일 전까지라 배울 때도 ${leadDays + 1}일 전 값으로 맞춤` : '' }}</small></h3>
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl">
-          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상인원</th><th class="r">예상 낙찰가</th><th class="r">실제인원</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
+          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
           <tbody>
             <tr v-for="it in items" :key="it.key" :class="{ on: sel?.key === it.key, off: !preds.has(it.key) }" @click="pick = it.key">
               <td>{{ bidDay(it.target?.date || dayDate) }}</td>
@@ -529,7 +529,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           </tbody>
         </table>
       </div>
-      <p v-if="useHits" class="bpt-sub">조회수 아래 작은 글은 누적에 넣은 마지막 날입니다. 매각 전날까지 안 닿으면 '덜 모음' — 그날 조회수수집을 한 번 더 누르세요. 예상인원은 매각된다고 칠 때, 신건은 입찰자 있을확률만 냅니다. 줄을 누르면 아래에 자세히 나옵니다</p>
+      <p v-if="useHits" class="bpt-sub">조회수 아래 작은 글은 누적에 넣은 마지막 날입니다. 매각 전날까지 안 닿으면 '덜 모음' — 그날 조회수수집을 한 번 더 누르세요. 예상응찰은 매각된다고 칠 때, 신건은 입찰자 있을확률만 냅니다. 줄을 누르면 아래에 자세히 나옵니다</p>
       <p v-else class="bpt-sub">예상 낙찰가는 조회수 규칙이 있으면 반영한 값, 없으면 비슷한 물건 인원 비율로 낸 값입니다. 줄을 누르면 아래에 자세히 나옵니다</p>
     </section>
 
