@@ -6632,6 +6632,13 @@ const cmpUnitRaw = computed<[number, number] | null>(() => {
 // 실거래 최고 · 최저가로 자르지 않는다 — 개별성이 더 좋은 집은 지금까지 거래보다 비쌀 수 있다(2026-11-13 사용자).
 // 11-11에 보정이 쌓여 12억이 넘던 것을 자르기로 막았는데, 보정이 '같음'에서 시작하는 지금은 고른 만큼만 붙는다
 const cmpUnitClamp = computed(() => { const raw = cmpUnitRaw.value; return raw ? { lo: raw[0], hi: raw[1], cut: '' } : null; });
+/** 보정 뒤 선정물건 예상 매매가를 물건에 남긴다(가운데 값, 원) — 낙찰가예측이 이 값을 매매가로 쓴다(2026-11-15 사용자 '보정이 안 들어간 건 시스템 문제'). 바뀔 때만 적는다 */
+watch(() => cmpUnitClamp.value, (v) => {
+  if (!v || !auction.value) return;
+  const mid = String(Math.round((v.lo + v.hi) / 2));
+  if (indivValue('unit.est') === mid) return;
+  setIndivValue('unit.est', mid); persistSoon();
+});
 const cmpUnitEst = computed(() => {
   const v = cmpUnitClamp.value; if (!v) return '-';
   const a = v.lo / 1e8; const z = v.hi / 1e8;
@@ -10289,7 +10296,7 @@ const goBack = () => router.back();
                 <!-- 기준가 칸은 뺐다 — 위 기준가 카드와 같은 값이라 겹친다(2026-11-11 사용자) -->
                 <div class="cmp-tiles two">
                   <div class="cmp-tile"><span class="k">보정</span><span class="v">{{ unitAdjText }}</span></div>
-                  <div class="cmp-tile key"><span class="k">선정물건 예상 {{ unitKind }}가</span><span class="v">{{ cmpUnitEst }}</span><span v-if="cmpUnitFormula" class="s cut">{{ cmpUnitFormula }}</span><span v-if="zoneShareNote" class="s cut">{{ zoneShareNote }}</span><span v-if="cmpUnitClamp?.cut" class="s cut">{{ cmpUnitClamp.cut }}</span></div>
+                  <div class="cmp-tile key est2"><span class="k">{{ webEmbed ? '매도가 예상 2 · 개별성 보정' : `선정물건 예상 ${unitKind}가` }}</span><span class="v">{{ cmpUnitEst }}</span><span v-if="cmpUnitFormula" class="s cut">{{ cmpUnitFormula }}</span><span v-if="zoneShareNote" class="s cut">{{ zoneShareNote }}</span><span v-if="cmpUnitClamp?.cut" class="s cut">{{ cmpUnitClamp.cut }}</span></div>
                 </div>
               </div>
             </section>
@@ -13315,6 +13322,14 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-deals .cmp-tbl th small.inl, .cmp-tbl th small.inl { display: inline !important; margin-left: 2px; }   /* 말머리 한 줄 — 보고 있는 단지 표 */
 .cmp-tile.off .v { font-size: 12.5px; font-weight: 400; color: #9ca3af; }   /* 동 전체일 때 비워 둔 칸 */
 .cmp-tile.key .s.cut { font-size: 12px; font-weight: 400; color: rgba(255, 255, 255, .9); }
+/* 매도가 예상 2(개별성 보정 뒤) — 초록(매도가 예상 1) 다음 흐린 노랑으로 구분(2026-11-15 사용자) */
+.cmp-tile.key.est2 { background: #fdf6d6; box-shadow: 0 0 0 1.5px #ecd77e inset; }
+.cmp-tile.key.est2 .k { color: #7a5d00; }
+.cmp-tile.key.est2 .v { color: #3f3200; }
+.cmp-tile.key.est2 .s, .cmp-tile.key.est2 .s.cut { color: #6b5a1e; }
+:root[data-theme="dark"] .cmp-tile.key.est2 { background: rgba(234, 179, 8, .14); box-shadow: 0 0 0 1.5px rgba(234, 179, 8, .45) inset; }
+:root[data-theme="dark"] .cmp-tile.key.est2 .k, :root[data-theme="dark"] .cmp-tile.key.est2 .s, :root[data-theme="dark"] .cmp-tile.key.est2 .s.cut { color: #f5d77a; }
+:root[data-theme="dark"] .cmp-tile.key.est2 .v { color: #fde68a; }
 .cmp-two.one { grid-template-columns: minmax(0, 1fr); }
 .cmp-deals td.two small { display: block; font-size: 12px; color: #6b7280; }   /* 공시가 아래 매매가율 · 전세 아래 갭 — 시세분석 표와 같게 */
 .cmp-deals td.two small.neg { color: #dc2626; }

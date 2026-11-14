@@ -355,7 +355,7 @@ const preds = computed(() => {
 /** 새 방식(k) — 표의 매매 실거래가 · 새 예상 낙찰가 칸 */
 const predsK = computed(() => {
   const out = new Map<string, NonNullable<ReturnType<typeof kPredOf>>>();
-  if (!recs.value.length || !extReady.value) return out;
+  if (!recs.value.length || !extTrades.value.length) return out;
   for (const it of items.value) {
     if (!it.target || it.target.round < 1) continue;
     const pi = sellMap.value.get(it.key)?.pi ?? similarBands(recs.value, it.target).pi;
@@ -471,13 +471,13 @@ const tradeAt = (addr: string, area: number | null, year: number | null, d: stri
   const v = saleTradeAt(extTrades.value, extRents.value, addr, area, f?.year || year || yearOfAddr(addr) || null, d);
   tradeMemo.set(key, v); return v;
 };
-watch(extReady, () => tradeMemo.clear());
+watch([extTrades, extRents, extFacts], () => tradeMemo.clear());   // 건축물대장이 들어오는 대로 연식이 채워진다
 const soldTrade = (r: { addr: string; area: number | null; year: number | null; d: string }) => tradeAt(r.addr, r.area, r.year, r.d)?.price ?? null;
 /** 그 물건 · 그날 새 방식 예측 — 매매 실거래가 · 분포. 못 잡으면 null */
-/** 선정물건 — 손품조사 시세분석에서 잡은 매매가(매도가 예상). 급매가가 아니다(2026-11-15 사용자) */
-const mineSale = computed(() => new Map(auctions.auctions.map((a) => [caseKey(a.caseNumber), Number(a.marketPicks?.price?.estSale) || 0] as const).filter(([k, v]) => k && v > 0)));
+/** 선정물건 — 손품조사에서 잡은 매매가(빌라 · 호실 개별성 보정 뒤). 급매가가 아니다(2026-11-15 사용자) */
+const mineSale = computed(() => new Map(auctions.auctions.map((a) => [caseKey(a.caseNumber), Number(a.surveyForm?.indivValues?.['unit.est']) || Number(a.marketPicks?.price?.estSale) || 0] as const).filter(([k, v]) => k && v > 0)));   // 개별성 보정 뒤 값(선정물건 호실 예상가)이 먼저, 없으면 시세분석 매도가 예상
 const kPredOf = (tg: BidTarget & { addr: string; key?: string }, pi: number[]) => {
-  if (!extReady.value || tg.round < 1) return null;
+  if (!extTrades.value.length || tg.round < 1) return null;   // 실거래만 들어오면 바로(건축물대장 399곳을 다 기다리지 않는다, 2026-11-15 사용자)
   const own = tg.key ? mineSale.value.get(tg.key) : 0;
   const base = own ? { price: own, how: '손품 매매가', n: 0, drop: 0, months: 12 as const } : tradeAt(tg.addr, tg.area, tg.year, tg.date); if (!base) return null;
   const km = fitKModel(recs.value, tg, soldTrade); if (!km) return null;
