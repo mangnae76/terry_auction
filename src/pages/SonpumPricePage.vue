@@ -877,13 +877,17 @@ const fs = ref(webEmbed && !props.app && (() => { try { return localStorage.getI
  *  시세분석 탭의 마지막 칸이 끝날 때 함께 밀려 올라간다. 시장분석(그 아래 칸이 없다)은 CSS sticky 그대로 */
 const zoneEl = ref<HTMLElement | null>(null);
 const estFix = ref<{ h: number; style: Record<string, string> } | null>(null);
-let stickTopPx = -1;
+// 붙는 높이는 매번 잰다 — 처음 한 번만 재 두면 고정카드 높이(--item-shell-h)가 아직 0일 때 값이 남아
+// 끝 구간(화면 고정)에서 머리가 고정카드 밑으로 반쯤 잠겼다(2026-11-15 사용자). 숨은 받침 하나를 두고 높이만 읽는다
+let stickProbe: HTMLElement | null = null;
 const stickTop = () => {
-  if (stickTopPx >= 0) return stickTopPx;
   const host = zoneEl.value?.parentElement; if (!host) return 8;
-  const pr = document.createElement('div'); pr.style.cssText = 'position:absolute;visibility:hidden;height:var(--pa-stick-top, 8px)';
-  host.appendChild(pr); stickTopPx = pr.offsetHeight; pr.remove();
-  return stickTopPx;
+  if (!stickProbe || stickProbe.parentElement !== host) {
+    stickProbe?.remove(); stickProbe = document.createElement('div');
+    stickProbe.style.cssText = 'position:absolute;top:0;left:0;width:0;visibility:hidden;pointer-events:none;height:var(--pa-stick-top, 8px)';
+    host.appendChild(stickProbe);
+  }
+  return stickProbe.offsetHeight;
 };
 let estRaf = 0;
 const syncEstFix = () => {
@@ -904,12 +908,12 @@ const syncEstFix = () => {
 const onEstScroll = () => { if (!estRaf) estRaf = requestAnimationFrame(syncEstFix); };
 if (typeof window !== 'undefined' && webEmbed && !props.app) {
   window.addEventListener('scroll', onEstScroll, { passive: true });
-  const onEstResize = () => { stickTopPx = -1; onEstScroll(); };
+  const onEstResize = () => onEstScroll();
   window.addEventListener('resize', onEstResize);
   // 스크롤 없이 상자 크기 · 자리만 바뀌어도(탭 돌아옴 · 표가 늘고 줆) 다시 잰다
   const estRo = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => onEstScroll()) : null;
   watch(zoneEl, (z) => { estRo?.disconnect(); const pa = z?.closest('.pa'); const son = pa?.closest('.son'); if (pa) estRo?.observe(pa); if (son) estRo?.observe(son); }, { flush: 'post' });
-  onBeforeUnmount(() => { window.removeEventListener('scroll', onEstScroll); window.removeEventListener('resize', onEstResize); estRo?.disconnect(); if (estRaf) cancelAnimationFrame(estRaf); });
+  onBeforeUnmount(() => { window.removeEventListener('scroll', onEstScroll); window.removeEventListener('resize', onEstResize); estRo?.disconnect(); if (estRaf) cancelAnimationFrame(estRaf); stickProbe?.remove(); stickProbe = null; });
 }
 /** 전체화면 유사물건 — 그 건물 거래들의 호(확정 · 후보), 서로 다른 것만 */
 const hosOf = (g: { list: PriceRow[] }) => [...new Set(g.list.filter((r) => !isOff(r)).map((r) => r.ho || hoCand(r)).filter(Boolean))].join(' · ');
