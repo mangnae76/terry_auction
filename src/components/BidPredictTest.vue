@@ -231,7 +231,7 @@ const items = computed<Item[]>(() => useHits.value ? dayRounds.value.map((r) => 
 const pairs = computed<ViewPair[]>(() => items.value.filter((it) => it.result && it.views >= 0 && it.result.bids >= 0 && (it.failed || it.result.bids > 0)).map((it) => ({ key: it.key, views: it.views, bids: it.result!.bids })));
 
 type Pred = { before: ReturnType<typeof priceDist>; after: ReturnType<typeof priceDist> | null; piBefore: number[]; piAfter: number[] | null; p0: number | null; simN: number; loose: boolean; vmN: number; expBids: number | null };
-/** 차트 모드 — 입찰자 있을 확률 · 예상 인원(신건도) */
+/** 차트 모드 — 입찰자 있을 확률 · 예상인원(신건도) */
 const sellMap = computed(() => {
   const m = new Map<string, { pSold: number; pi: number[]; expBids: number }>(); const rm = roundModel.value;
   if (rm) dayRounds.value.forEach((r) => m.set(r.key, predictRound(rm, r)));
@@ -375,7 +375,7 @@ const dayChips = computed(() => {
   return [...all.filter(([d]) => d < today).slice(-6), ...all.filter(([d]) => d >= today).slice(0, 6)].map(chip);
 });
 
-/** 표의 입찰자 있을 확률 · 예상 인원 */
+/** 표의 입찰자 있을 확률 · 예상인원 */
 const sellOf = (key: string) => { const s = sellMap.value.get(key); if (s) return s; const p = preds.value.get(key); return p && p.p0 != null ? { pSold: 1 - p.p0, expBids: p.expBids ?? 0 } : null; };
 /** 누적이 매각 전날까지 안 닿았으면(덜 모음) */
 const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.value, -1);
@@ -451,11 +451,11 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <div class="bpt-tile key"><span>매각 · 유찰 맞힘</span><b>{{ rate(grade.total.sell[1], grade.total.n) }}</b><small>조회수 없이 {{ rate(grade.total.sell[0], grade.total.n) }}</small></div>
           <div class="bpt-tile key"><span>인원 구간 맞힘(매각된 것)</span><b>{{ rate(grade.total.band[1], grade.total.nb) }}</b><small>조회수 없이 {{ rate(grade.total.band[0], grade.total.nb) }}</small></div>
           <div class="bpt-tile key"><span>낙찰가 평균 차이</span><b>{{ errPct(grade.total.err[1], grade.total.np) }}</b><small>조회수 없이 {{ errPct(grade.total.err[0], grade.total.np) }} · {{ grade.total.np }}건</small></div>
-          <div class="bpt-tile key"><span>예상 범위 안</span><b>{{ rate(grade.total.inR[1], grade.total.np) }}</b><small>조회수 없이 {{ rate(grade.total.inR[0], grade.total.np) }} · 50%가 정상</small></div>
+          <div class="bpt-tile key"><span>예상범위 안</span><b>{{ rate(grade.total.inR[1], grade.total.np) }}</b><small>조회수 없이 {{ rate(grade.total.inR[0], grade.total.np) }} · 50%가 정상</small></div>
         </div>
         <div class="bpt-tbl-wrap bpt-scroll">
           <table class="bpt-tbl">
-            <thead><tr><th>매각기일</th><th class="r">회차</th><th class="r">매각</th><th class="r">매각 · 유찰 맞힘</th><th class="r">인원 구간 맞힘</th><th class="r">낙찰가 평균 차이</th><th class="r">예상 범위 안</th></tr></thead>
+            <thead><tr><th>매각기일</th><th class="r">회차</th><th class="r">매각</th><th class="r">매각 · 유찰 맞힘</th><th class="r">인원 구간 맞힘</th><th class="r">낙찰가 평균 차이</th><th class="r">예상범위 안</th></tr></thead>
             <tbody>
               <tr v-for="g in grade.days" :key="g.date" :class="{ on: g.date === dayDate }" @click="goDay(g.date)">
                 <td><button type="button" class="bpt-link" @click.stop="goDay(g.date)">{{ g.date }}</button></td>
@@ -469,7 +469,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             </tbody>
           </table>
         </div>
-        <p class="bpt-sub">{{ grade.from }} ~ {{ grade.to }} · 기일 {{ grade.days.length }}개. 줄을 누르면 그날 사건별 예측으로 갑니다. 실제 인원을 다 알아도 낙찰가 평균 차이는 7% 가까이 남습니다(1등이 써 낸 금액은 사람마다 달라서)</p>
+        <p class="bpt-sub">{{ grade.from }} ~ {{ grade.to }} · 기일 {{ grade.days.length }}개. 줄을 누르면 그날 사건별 예측으로 갑니다. 실제인원을 다 알아도 낙찰가 평균 차이는 7% 가까이 남습니다(1등이 써 낸 금액은 사람마다 달라서)</p>
       </template>
     </section>
 
@@ -498,7 +498,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <h3 class="bpt-h3">사건별 예측 <small v-if="useHits">사건 차트의 매각 전날까지 누적 조회수 · {{ roundModel ? `그날 이전 ${roundModel.n.toLocaleString('ko-KR')}회차(매각 ${roundModel.nSold.toLocaleString('ko-KR')})로 배움` : '배울 회차가 모자랍니다' }}{{ leadDays ? ` · 조회수가 매각 ${leadDays + 1}일 전까지라 배울 때도 ${leadDays + 1}일 전 값으로 맞춤` : '' }}</small></h3>
       <div class="bpt-tbl-wrap">
         <table class="bpt-tbl">
-          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th class="r">입찰자<br>있을 확률</th><th class="r">예상 인원</th><th class="r">예상 낙찰가</th><th class="r">실제 인원</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상 범위</th></tr></thead>
+          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th class="r">입찰자<br>있을 확률</th><th class="r">예상인원</th><th class="r">예상 낙찰가</th><th class="r">실제인원</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
           <tbody>
             <tr v-for="it in items" :key="it.key" :class="{ on: sel?.key === it.key, off: !preds.has(it.key) }" @click="pick = it.key">
               <td>{{ bidDay(it.target?.date || dayDate) }}</td>
@@ -520,7 +520,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           </tbody>
         </table>
       </div>
-      <p v-if="useHits" class="bpt-sub">조회수 아래 작은 글은 누적에 넣은 마지막 날입니다. 매각 전날까지 안 닿으면 '덜 모음' — 그날 조회수수집을 한 번 더 누르세요. 예상 인원은 매각된다고 칠 때, 신건은 입찰자 있을 확률만 냅니다. 줄을 누르면 아래에 자세히 나옵니다</p>
+      <p v-if="useHits" class="bpt-sub">조회수 아래 작은 글은 누적에 넣은 마지막 날입니다. 매각 전날까지 안 닿으면 '덜 모음' — 그날 조회수수집을 한 번 더 누르세요. 예상인원은 매각된다고 칠 때, 신건은 입찰자 있을 확률만 냅니다. 줄을 누르면 아래에 자세히 나옵니다</p>
       <p v-else class="bpt-sub">예상 낙찰가는 조회수 규칙이 있으면 반영한 값, 없으면 비슷한 물건 인원 비율로 낸 값입니다. 줄을 누르면 아래에 자세히 나옵니다</p>
     </section>
 
@@ -529,7 +529,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="bpt-flow">
         <div class="bpt-tile"><span>전일까지 누적 조회수</span><b>{{ sel.views.toLocaleString('ko-KR') }}회</b><small>{{ useHits ? `${sel.viewAt.slice(5).replace('-', '.')}까지 · 그날 이전 ${selP.vmN.toLocaleString('ko-KR')}회차로 배움` : selP.vmN ? `조회수 규칙 ${selP.vmN}건으로 배움` : '조회수 규칙 없음(6건 이상 필요)' }}</small></div>
         <div class="bpt-tile"><span>예상 응찰 인원</span><b>{{ selP.expBids != null ? `약 ${Math.round(selP.expBids)}명` : BAND_NAMES[selP.piBefore.indexOf(Math.max(...selP.piBefore))] + ' 가장 흔함' }}</b><small>{{ selP.p0 != null ? `${useHits ? '매각된다고 칠 때 · ' : ''}유찰 확률 ${pct(selP.p0)}` : `비슷한 물건 ${selP.simN}건${selP.loose ? '(조건 넓힘)' : ''}` }}</small></div>
-        <div class="bpt-tile key"><span>예상 낙찰가(가운데)</span><b>{{ won((selP.after ?? selP.before).median) }}</b><small>예상 범위 {{ won((selP.after ?? selP.before).lo) }} ~ {{ won((selP.after ?? selP.before).hi) }}</small></div>
+        <div class="bpt-tile key"><span>예상 낙찰가(가운데)</span><b>{{ won((selP.after ?? selP.before).median) }}</b><small>예상범위 {{ won((selP.after ?? selP.before).lo) }} ~ {{ won((selP.after ?? selP.before).hi) }}</small></div>
         <div class="bpt-tile"><span>낙찰확률 60%로 쓰려면</span><b>{{ won((selP.after ?? selP.before).q(0.6)) }}</b><small>50% {{ won((selP.after ?? selP.before).q(0.5)) }} · 70% {{ won((selP.after ?? selP.before).q(0.7)) }}</small></div>
       </div>
       <div class="bpt-two">
@@ -569,8 +569,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
     <section v-if="score.rows.length" class="bpt-card">
       <h3 class="bpt-h3">맞혀보기 <small>결과가 있는 매각 {{ score.rows.length }}건 · {{ useHits ? '그날 이전 회차로만 배운 규칙(그날 결과는 안 봄)' : '그날 이전 자료와 자기 사건을 뺀 조회수 규칙만 사용' }}</small></h3>
       <div class="bpt-score">
-        <div v-if="score.before" class="bpt-tile"><span>조회수 반영 전</span><b>평균 차이 {{ (score.before.mae * 100).toFixed(1) }}%</b><small>예상 범위 안 {{ score.before.inR }} / {{ score.before.n }}</small></div>
-        <div v-if="score.after" class="bpt-tile key"><span>조회수 반영 후</span><b>평균 차이 {{ (score.after.mae * 100).toFixed(1) }}%</b><small>예상 범위 안 {{ score.after.inR }} / {{ score.after.n }}</small></div>
+        <div v-if="score.before" class="bpt-tile"><span>조회수 반영 전</span><b>평균 차이 {{ (score.before.mae * 100).toFixed(1) }}%</b><small>예상범위 안 {{ score.before.inR }} / {{ score.before.n }}</small></div>
+        <div v-if="score.after" class="bpt-tile key"><span>조회수 반영 후</span><b>평균 차이 {{ (score.after.mae * 100).toFixed(1) }}%</b><small>예상범위 안 {{ score.after.inR }} / {{ score.after.n }}</small></div>
         <div v-else class="bpt-tile"><span>조회수 반영 후</span><b>—</b><small>결과 있는 사건 조회수가 6건 이상이면 나옵니다</small></div>
       </div>
       <div v-if="rule" class="bpt-two">
