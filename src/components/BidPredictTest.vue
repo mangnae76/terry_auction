@@ -274,6 +274,14 @@ const score = computed(() => {
   return { rows, before: e((p) => p.before), after: e((p) => p.after) };
 });
 
+/** 내 낙찰확률 — 아무도 안 올 확률 + (누가 올 확률 × 그 사람들보다 높게 쓸 확률). 예전엔 '누가 온다'고만 쳐서
+ *  입찰자 있을 확률이 2%인 물건도 최저가에서 0%로 그렸다(2026-11-14 사용자 — 파인힐타운이면 최저가를 쓰면 된다) */
+const myWin = (p: Pred) => { const d = p.after ?? p.before; const p0 = p.p0 ?? 0; return (w: number) => p0 + (1 - p0) * d.win(w); };
+const myQ = (p: Pred, prob: number, min: number) => {
+  const f = myWin(p); if (f(min) >= prob) return min;
+  let lo = min, hi = min * 2.5; for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (f(mid) < prob) lo = mid; else hi = mid; }
+  return Math.round(hi / 10_000) * 10_000;
+};
 /* 곡선 — 최저가 ~ 최저가 1.8배 */
 const curve = computed(() => {
   const it = sel.value; const p = selP.value; if (!it?.target || !p) return null;
@@ -281,12 +289,13 @@ const curve = computed(() => {
   const sx = (w: number) => 50 + ((w - x0) / (x1 - x0)) * 570; const sy = (v: number) => 250 - v * 230;
   const ws = Array.from({ length: 37 }, (_, i) => x0 + ((x1 - x0) * i) / 36);
   const line = (d: ReturnType<typeof priceDist>) => ws.map((w, i) => `${i ? 'L' : 'M'}${sx(w).toFixed(1)} ${sy(d.win(w)).toFixed(1)}`).join(' ');
-  const main = p.after ?? p.before;
+  const mw = myWin(p);
   const ticks = Array.from({ length: 5 }, (_, i) => x0 + ((x1 - x0) * i) / 4).map((w) => ({ x: sx(w), label: man(w) }));
-  const pts = ws.filter((_, i) => i % 3 === 0).map((w) => ({ x: sx(w), y: sy(main.win(w)), tip: `${man(w)} 원 → 낙찰확률 ${pct(main.win(w))}` }));
-  const act = it.result && it.result.sold > 0 ? { x: sx(it.result.sold), y: sy(main.win(it.result.sold)), label: `실제 ${man(it.result.sold)} · ${pct(main.win(it.result.sold))}` } : null;
+  const pts = ws.filter((_, i) => i % 3 === 0).map((w) => ({ x: sx(w), y: sy(mw(w)), tip: `${man(w)} 원 → 낙찰확률 ${pct(mw(w))}` }));
+  const act = it.result && it.result.sold > 0 ? { x: sx(it.result.sold), y: sy(mw(it.result.sold)), label: `실제 ${man(it.result.sold)} · ${pct(mw(it.result.sold))}` } : null;
   const second = it.result && it.result.second > 0 ? { x: sx(it.result.second), label: `2위 ${man(it.result.second)}` } : null;
-  return { before: line(p.before), after: p.after ? line(p.after) : '', ticks, pts, act, second, sy };
+  const myLine = ws.map((w, i) => `${i ? 'L' : 'M'}${sx(w).toFixed(1)} ${sy(mw(w)).toFixed(1)}`).join(' ');
+  return { before: line(p.before), after: p.after ? myLine : '', ticks, pts, act, second, sy };
 });
 
 /* 조회수 규칙 그림 — 가로 조회수(로그), 세로 인원 */
@@ -530,7 +539,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
         <div class="bpt-tile"><span>전일까지 누적 조회수</span><b>{{ sel.views.toLocaleString('ko-KR') }}회</b><small>{{ useHits ? `${sel.viewAt.slice(5).replace('-', '.')}까지 · 그날 이전 ${selP.vmN.toLocaleString('ko-KR')}회차로 배움` : selP.vmN ? `조회수 규칙 ${selP.vmN}건으로 배움` : '조회수 규칙 없음(6건 이상 필요)' }}</small></div>
         <div class="bpt-tile"><span>예상 응찰 인원</span><b>{{ selP.expBids != null ? `약 ${Math.round(selP.expBids)}명` : BAND_NAMES[selP.piBefore.indexOf(Math.max(...selP.piBefore))] + ' 가장 흔함' }}</b><small>{{ selP.p0 != null ? `${useHits ? '매각된다고 칠 때 · ' : ''}유찰 확률 ${pct(selP.p0)}` : `비슷한 물건 ${selP.simN}건${selP.loose ? '(조건 넓힘)' : ''}` }}</small></div>
         <div class="bpt-tile key"><span>예상 낙찰가(가운데)</span><b>{{ won((selP.after ?? selP.before).median) }}</b><small>예상범위 {{ won((selP.after ?? selP.before).lo) }} ~ {{ won((selP.after ?? selP.before).hi) }}</small></div>
-        <div class="bpt-tile"><span>낙찰확률 60%로 쓰려면</span><b>{{ won((selP.after ?? selP.before).q(0.6)) }}</b><small>50% {{ won((selP.after ?? selP.before).q(0.5)) }} · 70% {{ won((selP.after ?? selP.before).q(0.7)) }}</small></div>
+        <div class="bpt-tile"><span>낙찰확률 60%로 쓰려면</span><b>{{ won(myQ(selP, 0.6, sel.target.min)) }}</b><small>50% {{ won(myQ(selP, 0.5, sel.target.min)) }} · 70% {{ won(myQ(selP, 0.7, sel.target.min)) }}{{ selP.p0 != null && selP.p0 >= 0.5 ? ' · 아무도 안 올 확률이 커 최저가 근처' : '' }}</small></div>
       </div>
       <div class="bpt-two">
         <div class="bpt-box">
