@@ -809,7 +809,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-dayinfo td.chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .bpt-fchip { height: 30px; padding: 0 10px; border: 1px solid #d5dbe5; border-radius: 8px; background: #fff; color: #374151; font: inherit; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
 .bpt-fchip b { color: #1f5fe0; font-weight: 700; }
-.bpt-fchip small { font-size: 13px; color: #374151; }   /* 법원 전체 수 — 회색이면 안 보인다(2026-11-14 사용자) */
+.bpt-fchip small { font-size: 13px; color: #111827; }   /* 법원 전체 수 — 회색이면 안 보인다(2026-11-14 사용자) */
 .bpt-fchip.on { border-color: #2b6df3; background: #eef3ff; }
 .bpt-fchip:disabled { opacity: .5; cursor: default; }
 .bpt-rule { margin: 0; font-size: 15px; font-weight: 700; color: #111827; }
