@@ -813,9 +813,9 @@ const evenCols = () => {
     const others = () => nat.reduce((a, w, i) => (i === ai ? a : a + w), 0);
     if (cw - others() < ADDR_MIN) { t.classList.add('tight'); nat = natOf(10); }   // 좁으면 칸 안 여백을 줄인다
     if (cw - others() < 100) { t.classList.add('tighter'); nat = natOf(4); }   // 더 좁으면 한 번 더(창이 좁을 때 표가 상자 밖으로 넘치지 않게)
-    let gap = (cw - others() - ADDR_MIN) / ths.length;
-    let addrW = ADDR_MIN;
-    if (gap < 0) { gap = 0; addrW = Math.max(100, cw - others()); }
+    // 남는 폭은 모두 주소 칸에(2026-11-14 사용자 — 호 칸을 빼고 남은 자리를 주소가 쓰게). 예전엔 모든 칸에 똑같이 나눠 더했다
+    const gap = 0;
+    const addrW = Math.max(100, cw - others());
     const widths = ths.map((_, i) => Math.floor((i === ai ? addrW : nat[i]) + gap));
     let over = widths.reduce((a, b) => a + b, 0) - cw;
     if (over > 0 && ai >= 0) { const cut = Math.min(over + 1, widths[ai] - 80); widths[ai] -= Math.max(0, cut); over = widths.reduce((a, b) => a + b, 0) - cw; }
@@ -900,6 +900,8 @@ if (typeof window !== 'undefined' && webEmbed && !props.app) {
   watch(zoneEl, (z) => { estRo?.disconnect(); const pa = z?.closest('.pa'); const son = pa?.closest('.son'); if (pa) estRo?.observe(pa); if (son) estRo?.observe(son); }, { flush: 'post' });
   onBeforeUnmount(() => { window.removeEventListener('scroll', onEstScroll); window.removeEventListener('resize', onEstResize); estRo?.disconnect(); if (estRaf) cancelAnimationFrame(estRaf); });
 }
+/** 전체화면 유사물건 — 그 건물 거래들의 호(확정 · 후보), 서로 다른 것만 */
+const hosOf = (g: { list: PriceRow[] }) => [...new Set(g.list.filter((r) => !isOff(r)).map((r) => r.ho || hoCand(r)).filter(Boolean))].join(' · ');
 const fsList = computed(() => [...mapGroups.value].sort((a, b) => (orderOf.value[a.jibun] ?? 999) - (orderOf.value[b.jibun] ?? 999)));
 /** 표 줄을 누르면 지도의 그 점이 커지고 이름표가 뜬다 — 경매지번(같은 건물) 줄 · 맨 위 빨간 줄은 빨간 점(2026-11-10) */
 const pickMine = () => { focus.value = ''; meOpen.value = !meOpen.value; };
@@ -1042,7 +1044,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <b class="fs-lh">유사물건 {{ fsList.length }}곳</b>
         <button v-for="g in fsList" :key="g.jibun" type="button" :class="['fs-it', { on: focus === g.jibun, off: g.list.every((r) => isOff(r)) }]" @click="fsGo(g)">
           <i class="n">{{ orderOf[g.jibun] ?? '' }}</i>
-          <span class="nm">{{ g.name }}<small>{{ g.list.filter((r) => !isOff(r)).length || g.list.length }}건 · {{ Math.round(g.dist) }}m</small></span>
+          <span class="nm">{{ g.name }}<small v-if="hosOf(g)" class="ho">{{ hosOf(g) }}</small><small>{{ g.list.filter((r) => !isOff(r)).length || g.list.length }}건 · {{ Math.round(g.dist) }}m</small></span>
           <span class="pr pa-num">{{ g.range }}</span>
         </button>
         <p v-if="!fsList.length" class="none">지도에 유사물건이 없습니다.</p>
@@ -1606,6 +1608,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .fs-it .n { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #2b4fd8; color: #fff; font-size: 11px; font-weight: 800; font-style: normal; }
 .fs-it .nm { display: grid; min-width: 0; font-size: 13px; font-weight: 700; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fs-it .nm small { font-size: 12px; font-weight: 400; color: var(--sub); }
+.fs-it .nm small.ho { color: #374151; font-weight: 600; }   /* 그 건물 거래의 호(확정 · 후보) — 건물 이름 바로 아래 */
 .fs-it .pr { font-size: 12.5px; font-weight: 800; color: var(--fg); white-space: nowrap; }
 .fs-list .none { margin: 0; padding: 12px; font-size: 13px; color: var(--sub); text-align: center; }
 /* 전체화면에선 표 · 알림 · 지도 위 단추(임장경로 추가)는 감춘다 — 닫으면 그대로 */
