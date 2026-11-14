@@ -170,6 +170,8 @@ const onFile = async (e: Event) => {
 const won = (n: number) => Math.round(n).toLocaleString('ko-KR');
 const man = (n: number) => { const m = Math.round(n / 1e4); const e = Math.floor(m / 1e4); const r = m % 1e4; return e ? `${e}억${r ? ` ${r.toLocaleString('ko-KR')}만` : ''}` : `${r.toLocaleString('ko-KR')}만`; };
 const pct = (x: number) => `${Math.round(x * 100)}%`;
+/** 차이 금액 — '+4,660,000' · '−1,020,000' */
+const signWon = (x: number) => `${x >= 0 ? '+' : '−'}${won(Math.abs(x))}`;
 const sgn = (x: number) => `${x >= 0 ? '+' : '−'}${Math.abs(x * 100).toFixed(1)}%`;
 
 /** DB 를 먼저, 없으면 이 브라우저에 읽어 둔 파일 */
@@ -522,7 +524,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td v-else>—</td>
               <td class="r">{{ it.result ? (it.result.sold > 0 ? (it.result.bids ? `${it.result.bids}명` : '모름') : '유찰') : '입찰 전' }}</td>
               <td class="r act-sold">{{ it.result && it.result.sold > 0 ? won(it.result.sold) : '—' }}</td>
-              <td class="r">{{ it.result && it.result.sold > 0 && preds.get(it.key) ? sgn(it.result.sold / (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median - 1) : '—' }}</td>
+              <td v-if="it.result && it.result.sold > 0 && preds.get(it.key)" class="r">{{ signWon(it.result.sold - (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small class="bpt-at">{{ sgn(it.result.sold / (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median - 1) }}</small></td>
+              <td v-else class="r">—</td>
               <td v-if="preds.get(it.key)" class="r">{{ man((preds.get(it.key)!.after ?? preds.get(it.key)!.before).lo) }} ~ {{ man((preds.get(it.key)!.after ?? preds.get(it.key)!.before).hi) }}</td>
               <td v-else>—</td>
             </tr>
