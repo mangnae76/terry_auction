@@ -366,6 +366,8 @@ const goDay = (d: string) => { dayDate.value = d; requestAnimationFrame(() => do
 
 /** 기일 칩 — 사건 차트에 있는 매각기일. 다가오는 기일과 최근 지난 기일 */
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
+/** 표 맨 왼쪽 입찰일 — '26.11.19(목)' */
+const bidDay = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? `${d.slice(2, 4)}.${d.slice(5, 7)}.${d.slice(8)}(${WD[new Date(`${d}T00:00:00`).getDay()]})` : '—');
 const dayChips = computed(() => {
   const cnt = new Map<string, number>(); hitRounds.value.forEach((r) => cnt.set(r.date, (cnt.get(r.date) ?? 0) + 1));
   const all = [...cnt.entries()].sort((a, b) => a[0].localeCompare(b[0])); const today = todayIso();
@@ -496,9 +498,10 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <h3 class="bpt-h3">사건별 예측 <small v-if="useHits">사건 차트의 매각 전날까지 누적 조회수 · {{ roundModel ? `그날 이전 ${roundModel.n.toLocaleString('ko-KR')}회차(팔림 ${roundModel.nSold.toLocaleString('ko-KR')})로 배움` : '배울 회차가 모자랍니다' }}{{ leadDays ? ` · 조회수가 매각 ${leadDays + 1}일 전까지라 배울 때도 ${leadDays + 1}일 전 값으로 맞춤` : '' }}</small></h3>
       <div class="bpt-tbl-wrap">
         <table class="bpt-tbl">
-          <thead><tr><th>사건번호</th><th class="l">주소</th><th>조회수</th><th>차수</th><th>최저가</th><th>팔릴 확률</th><th>예상 인원</th><th>예상 낙찰가</th><th>흔한 범위</th><th>실제</th><th>차이</th></tr></thead>
+          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th>조회수</th><th>차수</th><th>최저가</th><th>팔릴 확률</th><th>예상 인원</th><th>예상 낙찰가</th><th>흔한 범위</th><th>실제</th><th>차이</th></tr></thead>
           <tbody>
             <tr v-for="it in items" :key="it.key" :class="{ on: sel?.key === it.key, off: !preds.has(it.key) }" @click="pick = it.key">
+              <td>{{ bidDay(it.target?.date || dayDate) }}</td>
               <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button></td>
               <td class="l addr">{{ it.addr || '—' }}</td>
               <td class="r">{{ it.views.toLocaleString('ko-KR') }}<small :class="['bpt-at', { after: stale(it.viewAt) }]">{{ it.viewAt === dayDate ? '당일' : it.viewAt.slice(5).replace('-', '.') }}{{ stale(it.viewAt) ? ' 덜 모음' : '' }}</small></td>
