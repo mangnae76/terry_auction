@@ -498,7 +498,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <h3 class="bpt-h3">사건별 예측 <small v-if="useHits">사건 차트의 매각 전날까지 누적 조회수 · {{ roundModel ? `그날 이전 ${roundModel.n.toLocaleString('ko-KR')}회차(팔림 ${roundModel.nSold.toLocaleString('ko-KR')})로 배움` : '배울 회차가 모자랍니다' }}{{ leadDays ? ` · 조회수가 매각 ${leadDays + 1}일 전까지라 배울 때도 ${leadDays + 1}일 전 값으로 맞춤` : '' }}</small></h3>
       <div class="bpt-tbl-wrap">
         <table class="bpt-tbl">
-          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th>조회수</th><th>차수</th><th>최저가</th><th>팔릴 확률</th><th>예상 인원</th><th>예상 낙찰가</th><th>흔한 범위</th><th>실제</th><th>차이</th></tr></thead>
+          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th>조회수</th><th>차수</th><th>최저가</th><th>팔릴 확률</th><th>예상 인원</th><th>예상 낙찰가</th><th>실제 인원</th><th>실제 낙찰가</th><th>차이</th><th>흔한 범위</th></tr></thead>
           <tbody>
             <tr v-for="it in items" :key="it.key" :class="{ on: sel?.key === it.key, off: !preds.has(it.key) }" @click="pick = it.key">
               <td>{{ bidDay(it.target?.date || dayDate) }}</td>
@@ -509,13 +509,13 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td class="r">{{ it.target ? won(it.target.min) : '자료 없음' }}</td>
               <td class="r">{{ sellOf(it.key) ? pct(sellOf(it.key)!.pSold) : '—' }}</td>
               <td class="r">{{ sellOf(it.key) ? `${sellOf(it.key)!.expBids.toFixed(1)}명` : '—' }}</td>
-              <template v-if="preds.get(it.key)">
-                <td class="r strong">{{ won((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}</td>
-                <td class="r">{{ man((preds.get(it.key)!.after ?? preds.get(it.key)!.before).lo) }} ~ {{ man((preds.get(it.key)!.after ?? preds.get(it.key)!.before).hi) }}</td>
-              </template>
-              <template v-else><td>—</td><td>—</td></template>
-              <td class="r">{{ it.result ? (it.result.sold > 0 ? `${won(it.result.sold)} · ${it.result.bids ? `${it.result.bids}명` : '인원 모름'}` : '유찰') : '입찰 전' }}</td>
+              <td v-if="preds.get(it.key)" class="r strong">{{ won((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}</td>
+              <td v-else>—</td>
+              <td class="r">{{ it.result ? (it.result.sold > 0 ? (it.result.bids ? `${it.result.bids}명` : '모름') : '유찰') : '입찰 전' }}</td>
+              <td class="r">{{ it.result && it.result.sold > 0 ? won(it.result.sold) : '—' }}</td>
               <td class="r">{{ it.result && it.result.sold > 0 && preds.get(it.key) ? sgn(it.result.sold / (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median - 1) : '—' }}</td>
+              <td v-if="preds.get(it.key)" class="r">{{ man((preds.get(it.key)!.after ?? preds.get(it.key)!.before).lo) }} ~ {{ man((preds.get(it.key)!.after ?? preds.get(it.key)!.before).hi) }}</td>
+              <td v-else>—</td>
             </tr>
           </tbody>
         </table>
@@ -619,9 +619,10 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl th { background: #f4f6fa; font-weight: 700; color: #374151; padding: 8px 10px; white-space: nowrap; border-bottom: 1px solid #e3e7ee; }
 .bpt-tbl td { padding: 7px 10px; border-bottom: 1px solid #eef1f6; text-align: center; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .bpt-tbl tr:last-child td { border-bottom: 0; }
+.bpt-day .bpt-tbl th, .bpt-day .bpt-tbl td { padding-left: 8px; padding-right: 8px; }   /* 사건별 예측은 칸이 많다 — 1440 화면에서도 옆으로 안 구르게 */
 .bpt-tbl .l { text-align: left; }
 .bpt-tbl .r { text-align: right; }
-.bpt-tbl td.addr { max-width: min(420px, 22vw); overflow: hidden; text-overflow: ellipsis; }
+.bpt-tbl td.addr { max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
 .bpt-tbl td.strong { font-weight: 800; color: #1f5fe0; }
 .bpt-tbl tbody tr { cursor: pointer; }
 .bpt-tbl tbody tr.ro { cursor: default; }
