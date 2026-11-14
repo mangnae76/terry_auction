@@ -595,7 +595,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
         <tbody>
           <tr><th>매각기일</th><td class="chips date-row"><b class="date">{{ dayDate ? `${dayDate.slice(0, 4)}년 ${Number(dayDate.slice(5, 7))}월 ${Number(dayDate.slice(8))}일 (${WD[new Date(`${dayDate}T00:00:00`).getDay()]})` : '' }}</b>
             <button type="button" :class="['bpt-fchip', 'big', { on: !fDept && !fDong }]" :disabled="!daySum.total" @click="fDept = ''; fDong = ''">전체보기<b class="all">{{ daySum.total ? daySum.total.toLocaleString('ko-KR') : daySum.mineN }}</b></button>
-            <button v-for="d in daySum.depts" :key="d.k" type="button" :class="['bpt-fchip', 'big', { on: fDept === d.k && !fDong }]" @click="fDept = d.k; fDong = ''">{{ d.label }}<b class="all">{{ d.all.toLocaleString('ko-KR') }}</b></button>
+            <button v-for="d in daySum.depts" :key="d.k" type="button" :class="['bpt-fchip', 'big', { on: fDept === d.k && !fDong }]" @click="fDept = d.k; fDong = ''">{{ d.label }}<b class="all">{{ d.all.toLocaleString('ko-KR') }}</b><small>/ {{ daySum.total.toLocaleString('ko-KR') }}</small></button>
             <select v-model="fDong" :class="['bpt-dongsel', { on: !!fDong }]" aria-label="동 고르기">
               <option value="">모든동 {{ allDayItems.filter((it) => !fDept || deptOf(it.key) === fDept).length.toLocaleString('ko-KR') }}</option>
               <option v-for="[d, n] in dongOpts" :key="d" :value="d">{{ d }} {{ n.toLocaleString('ko-KR') }}{{ d === daySum.dong ? ' · 예측' : '' }}</option>
