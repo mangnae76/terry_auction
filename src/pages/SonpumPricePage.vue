@@ -1817,6 +1817,7 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pa-list tbody tr.mine { background: rgba(224, 62, 62, .1); box-shadow: inset 0 -2px 0 rgba(224, 62, 62, .35); } }
 /* 웹 — 결론 단락(제목 줄 + 내비게이터 네 칸)을 스크롤해도 위에 붙여 둔다. 매각분석 결과 머리(.sx-hero)와 같은 자리 · 같은 그림자(2026-11-13 사용자).
    붙는 높이는 웹이 화면마다 --pa-stick-top 으로 준다. 단락은 시세분석 상자(.pa) 바로 아래 칸이라 상자 끝까지 붙어 있다 */
-.pa.stick:not(.fs) > .zone-est { position: sticky; top: var(--pa-stick-top, 8px); z-index: 19; margin: -10px -22px 0; padding: 10px 22px 14px; border-radius: 12px; background: inherit; box-shadow: 0 6px 16px rgba(17, 24, 39, .08); }   /* 결론 제목 줄('이 물건 매도가 예상' · 조건 · 기간 · 조회)까지 한 덩어리로(2026-11-13 사용자) */
-.zone-ph { margin: -10px 0 0; }   /* 고정한 머리 자리 받침 — 머리의 위 여백(-10)과 같게 */
+.pa.stick:not(.fs) > .zone-est { position: sticky; top: var(--pa-stick-top, 8px); z-index: 19; margin: -18px -22px 0; padding: 18px 22px 14px; border-radius: 12px; background: inherit; box-shadow: 0 6px 16px rgba(17, 24, 39, .08); }   /* 결론 제목 줄('이 물건 매도가 예상' · 조건 · 기간 · 조회)까지 한 덩어리로(2026-11-13 사용자) */
+.zone-ph { margin: -18px 0 0; }   /* 고정한 머리 자리 받침 — 머리의 위 여백(-18)과 같게 */
+/* 붙는 자리는 머리띠 · 고정카드 바로 아래(틈 0) — 8px 틈으로 아래 필터 줄이 반쯤 걸쳐 보였다. 대신 위 안쪽 여백을 18 로 늘려 글 자리는 그대로(2026-11-15 사용자) */
 </style>
