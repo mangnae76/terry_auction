@@ -6,7 +6,7 @@
  * 조회수 규칙은 늘 '그 사건을 뺀 나머지'로 배운다(자기 결과로 자기를 맞히지 않게).
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { agentOnline, loadAgentDataset, loadDayLists, loadHits, saveDayCsv, sendAgentCommand, watchAgentStatus, type AgentStatus, type DayListRow, type HitDoc } from '../services/agentRemote';
+import { agentOnline, loadAgentDataset, loadDayLists, loadHits, saveDayCsv, sendAgentCommand, sendAgentStop, watchAgentStatus, type AgentStatus, type DayListRow, type HitDoc } from '../services/agentRemote';
 import { readSheetRows } from '../services/saleExcel';
 import {
   BAND_NAMES, caseLabel, csvRows, dongOf, fitPriceModel, fitRoundModel, fitViewModel, parseViewLines, predictRound, priceDist, readDayRows, roundOfRatio, roundsOf, similarBands, soldOf, viewBands,
@@ -38,8 +38,15 @@ const agent = ref<AgentStatus | null>(null);
 const agentNote = ref('');
 const agentOn = computed(() => agentOnline(agent.value));
 let stopAgent: (() => void) | null = null;
-onMounted(() => { stopAgent = watchAgentStatus('', (st) => { agent.value = st; }, () => { agent.value = null; }); });
-onBeforeUnmount(() => stopAgent?.());
+/** 매각분석 수집 화면과 같은 연결 알약 — 'N초 전'은 1초마다 */
+const nowMs = ref(Date.now());
+let tick: ReturnType<typeof setInterval> | null = null;
+onMounted(() => { stopAgent = watchAgentStatus('', (st) => { agent.value = st; }, () => { agent.value = null; }); tick = setInterval(() => { nowMs.value = Date.now(); }, 1000); });
+onBeforeUnmount(() => { stopAgent?.(); if (tick) clearInterval(tick); });
+const agentAgo = computed(() => { const at = agent.value?.at?.toMillis?.(); return at ? Math.max(0, Math.round((nowMs.value - at) / 1000)) : 0; });
+/** 'web-agent 2026.11.14-2' → 'ver.26.11.14-2'(매각분석과 같게) */
+const verLabel = (v: string) => { const m = /(\d{4})\.(\d{2})\.(\d{2})(-\d+)?/.exec(v); return m ? `ver.${m[1].slice(2)}.${m[2]}.${m[3]}${m[4] || ''}` : v.replace(/^web-agent\s*/, ''); };
+const stopCmd = async () => { try { await sendAgentStop(''); agentNote.value = '중지를 보냈습니다. 지금 사건까지 저장하고 멈춥니다.'; } catch { agentNote.value = '중지를 보내지 못했습니다. 다시 해 주세요.'; } };
 const sendCmd = async (name: 'open' | 'daylist' | 'hits') => {
   try {
     const range = { site: '탱크옥션' as const, from: colFrom.value, to: colTo.value, court: colCourt.value.trim() || '인천-본원' };
@@ -80,6 +87,23 @@ const loadHitDocs = async () => {
 };
 watch(dongFilter, () => { void loadHitDocs(); }, { immediate: true });
 watch(() => agent.value?.message, (m, o) => { if (m && m !== o && m.startsWith('조회수 수집 끝')) void loadHitDocs(); });
+/** 마이 진행 — 상태 글의 '기일 목록 i/n' · '사건 차트 i/n'을 읽는다(목록 20% · 차트 80%) */
+const prog = ref<{ kind: 'hits' | 'daylist'; stage: 'list' | 'chart'; i: number; n: number; done: boolean } | null>(null);
+watch(() => agent.value?.message, (m) => {
+  if (!m) return;
+  const hits = m.startsWith('조회수 '); const day = m.startsWith('기일 목록 ');
+  if (m.startsWith('조회수 수집 끝') || m.startsWith('기일 목록 수집 끝')) { if (prog.value) prog.value = { ...prog.value, done: true }; return; }
+  const g = m.match(/(기일 목록|사건 차트) (\d+)\/(\d+)/);
+  if (g && (hits || day)) prog.value = { kind: hits ? 'hits' : 'daylist', stage: g[1] === '사건 차트' ? 'chart' : 'list', i: Number(g[2]), n: Number(g[3]), done: false };
+}, { immediate: true });
+const progView = computed(() => {
+  const p = prog.value; if (!p) return null;
+  const f = p.done ? 1 : p.kind === 'daylist' ? p.i / p.n : p.stage === 'list' ? 0.2 * (p.i / p.n) : 0.2 + 0.8 * (p.i / p.n);
+  // 남은 시간 — 목록은 하나에 2초 남짓, 차트는 사건마다 3 ~ 6초 쉬어 가며 연다(차트 수는 목록이 끝나야 안다)
+  const left = p.done ? 0 : p.kind === 'daylist' ? (p.n - p.i) * 6 : p.stage === 'list' ? (p.n - p.i) * 2 : (p.n - p.i) * 5;
+  const what = p.done ? '끝' : p.kind === 'daylist' ? `기일 목록 ${p.i}/${p.n}` : p.stage === 'list' ? `1단계 기일 목록 ${p.i.toLocaleString('ko-KR')}/${p.n.toLocaleString('ko-KR')}` : `2단계 사건 차트 ${p.i.toLocaleString('ko-KR')}/${p.n.toLocaleString('ko-KR')}`;
+  return { pct: Math.round(f * 100), what, left: p.done ? '' : left >= 60 ? `남은 시간 약 ${Math.ceil(left / 60)}분${p.kind === 'hits' && p.stage === 'list' ? ' + 차트' : ''}` : '곧 끝' };
+});
 const hitRounds = computed<Round[]>(() => hitDocs.value.flatMap((h) => roundsOf(h)));
 /** 이 매각기일 회차 — 붙여넣은 글이 없고 차트 자료가 있으면 이것으로 맞힌다 */
 const dayRounds = computed(() => (parseViewLines(viewsText.value).length ? [] : hitRounds.value.filter((r) => r.date === dayDate.value)));
@@ -293,13 +317,26 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <p v-if="fileMsg" class="bpt-warn">{{ fileMsg }}</p>
         </div>
         <div class="bpt-box">
-          <h3>기일 목록 · 조회수 수집 <small :class="['bpt-on', { on: agentOn }]">{{ agentOn ? 'MyAgent 연결됨' : 'MyAgent 꺼짐' }}</small></h3>
+          <h3 class="bpt-colh">기일 목록 · 조회수 수집
+            <span :class="['bpt-conn', agentOn ? 'on' : 'off']"><i aria-hidden="true" />{{ agentOn ? 'MyAgent Connecting · ' : 'MyAgent Disconnected' }}<template v-if="agentOn"><span class="ago">{{ agentAgo }}</span>초 전</template></span>
+            <span v-if="agentOn && agent?.version" class="bpt-ver">{{ verLabel(agent.version) }}</span>
+          </h3>
           <label class="bpt-date">법원<input v-model="colCourt" type="text" class="court" /></label>
           <div class="bpt-range"><input v-model="colFrom" type="date" aria-label="시작일" /><span>~</span><input v-model="colTo" type="date" aria-label="끝일" /></div>
           <div class="bpt-btns">
             <button type="button" class="bpt-btn line" :disabled="!agentOn || !!agent?.busy" @click="sendCmd('open')">브라우저열기</button>
             <button type="button" class="bpt-btn" :disabled="!agentOn || !agent?.ready || !!agent?.busy" @click="sendCmd('daylist')">기일목록수집</button>
             <button type="button" class="bpt-btn" :disabled="!agentOn || !agent?.ready || !!agent?.busy || !/(동|가|읍|면|리)$/.test(dongFilter.trim())" @click="sendCmd('hits')">조회수수집</button>
+          </div>
+          <div class="bpt-prog">
+            <p v-if="agentOn && agent?.busy && agent?.target" class="bpt-target">수집 중인 곳 <b>{{ agent.target }}</b></p>
+            <div class="row" role="progressbar" :aria-valuenow="agent?.busy && progView ? progView.pct : 0" aria-valuemin="0" aria-valuemax="100">
+              <span class="bar"><b :style="{ width: `${agent?.busy && progView ? progView.pct : progView?.pct === 100 ? 100 : 0}%` }" /></span>
+              <span>{{ agentOn && agent?.busy ? '데이터 수집 중' : '대기 중' }}</span>
+              <span v-if="progView && (agent?.busy || progView.pct === 100)" class="num"><b>{{ progView.pct }}%</b></span>
+              <button type="button" class="bpt-stop" :disabled="!agentOn || !agent?.busy" @click="stopCmd">중지</button>
+            </div>
+            <p v-if="progView && agent?.busy" class="bpt-sub num">{{ progView.what }}<template v-if="progView.left"> · {{ progView.left }}</template></p>
           </div>
           <p class="bpt-sub">조회수수집은 동 거르기에 적은 동의 주택 사건마다 차트(날짜별 조회수)를 모읍니다. 처음 한 번은 시작일을 2025-06-15로(조회 기록이 그날부터)</p>
           <p v-if="hitInfo" class="bpt-sub">{{ hitInfo }}</p>
@@ -507,6 +544,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-svg .mk2 { stroke: #9aa6b8; stroke-width: 1; stroke-dasharray: 3 4; }
 .bpt-on { margin-left: 6px; font-size: 12px; font-weight: 700; color: #9ca3af; }
 .bpt-on.on { color: #15803d; }
+
 .bpt-date input.court { width: 120px; }
 .bpt-range { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 .bpt-range input { height: 32px; border: 1px solid #d5dbe5; border-radius: 8px; padding: 0 8px; font: inherit; }
@@ -516,6 +554,26 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-btn:disabled { opacity: .45; cursor: default; }
 .bpt-at { display: block; font-size: 12px; color: #6b7280; }
 .bpt-at.after { color: #c4392f; }
+/* 매각분석 › 인근매각사례 데이터수집과 같은 꼴(연결 알약 · 진행 막대 · 중지) — selected.src.html .sx-conn · .sx-prog */
+.bpt-colh { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bpt-conn { display: inline-flex; align-items: center; gap: 4px; height: 16px; padding: 0 7px; line-height: 16px; border-radius: 999px; background: #eef1f6; color: #6b7280; font-size: 12px; font-weight: 400; white-space: nowrap; }
+.bpt-conn i { width: 5px; height: 5px; border-radius: 50%; background: radial-gradient(circle at 34% 30%, #d5d9e0 0 10%, #9aa3b0 35%, #6b7482 70%, #4f5763 100%); }
+.bpt-conn.on { background: #213366; color: #fff; }
+.bpt-conn.on i { background: radial-gradient(circle at 34% 30%, #ffffff 0 12%, #b6ffcf 26%, #3dff7a 55%, #16b84c 100%); box-shadow: 0 0 2px 0 rgba(61, 255, 122, .8), 0 0 5px 1px rgba(61, 255, 122, .3); animation: bpt-live 2.4s ease-in-out infinite; }
+.bpt-conn .ago { display: inline-block; min-width: 2ch; text-align: right; font-variant-numeric: tabular-nums; }
+@keyframes bpt-live { 50% { box-shadow: 0 0 3px 1px rgba(61, 255, 122, .9), 0 0 7px 1px rgba(61, 255, 122, .4); } }
+@media (prefers-reduced-motion: reduce) { .bpt-conn.on i { animation: none; } }
+.bpt-ver { font-size: 12px; font-weight: 400; color: #6b7280; white-space: nowrap; }
+.bpt-prog { display: grid; gap: 2px; }
+.bpt-target { margin: 0; font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bpt-target b { color: #2b6df3; font-weight: 700; }
+.bpt-prog .row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6b7280; white-space: nowrap; }
+.bpt-prog .bar { flex: 1 1 auto; min-width: 96px; height: 6px; border-radius: 3px; background: #e3e7ee; overflow: hidden; }
+.bpt-prog .bar b { display: block; height: 100%; background: #2b6df3; transition: width .3s; }
+.bpt-prog .num { font-variant-numeric: tabular-nums; }
+.bpt-prog .num b { color: #1f5fe0; }
+.bpt-stop { height: 34px; padding: 0 14px; border: 1px solid #c22e2e; border-radius: 8px; background: none; color: #c22e2e; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.bpt-stop:disabled { border-color: #e3e7ee; color: #c4c9d2; cursor: default; }
 .bpt-rule { margin: 0; font-size: 15px; font-weight: 700; color: #111827; }
 @media (max-width: 900px) { .bpt-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bpt-two { grid-template-columns: minmax(0, 1fr); } }
 </style>
