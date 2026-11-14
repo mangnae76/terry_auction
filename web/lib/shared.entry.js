@@ -31,6 +31,7 @@ export { TERMS_CHAPTERS, TERMS_EFFECTIVE, PRIVACY_SECTIONS, PRIVACY_OFFICER, PRI
 export { legalDoc } from '../../src/services/legalDocs';
 export { startContentSync } from '../../src/services/contentRepository';   /* FAQ · 약관 DB 판 — 껍데기가 켜 둔다 */
 export { POINT_CAUTIONS } from '../../src/services/pointPolicy';
+export { rightsCheckText } from '../../src/services/rightsCheckText';   /* 권리분석 주의 항목 글 — 앱 RightsPanel 과 같게 */
 // 새 공지 · 이벤트 · 업데이트가 있는지(앱 공지 탭의 빨간 점과 같은 셈) — 머리띠 '공지' 옆 점
 export { useBoardNew, useBoardFeed } from '../../src/services/boardFeed';   /* useBoardFeed — 웹 홈 공지사항 */
 

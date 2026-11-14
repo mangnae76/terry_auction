@@ -815,6 +815,10 @@ const toggleSection = (key: string) => {
             <button type="button" class="pg-back-shared" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
             낙찰이후
           </h1>
+          <!-- 낙찰목록 — 자금관리 제목 줄의 낙찰목록처럼 오른쪽 끝(2026-11-14 사용자) -->
+          <button type="button" :class="['pw-objpick', 'pw-titlepick', { off: !ownedAuctions.length }]" @click.stop="togglePickList">
+            낙찰목록 <i class="pw-x">×</i>{{ ownedAuctions.length }}<img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
+          </button>
           <!-- ⓘ(낙찰 후 진행 순서)는 뺐다 — 같은 내용이 명도 탭 맨 위 상자에 펼쳐져 있다 -->
           <!-- 표 고치기 — 다 다듬고 나면 POST_WIN_EDITABLE 로 잠근다 -->
           <template v-if="canEdit && hasTable">
@@ -906,11 +910,8 @@ const toggleSection = (key: string) => {
           </p>
         </article>
         <p v-else class="pw-obj empty">낙찰한 물건이 없습니다</p>
-        <!-- 띠 오른쪽 끝 — 낙찰목록과 전체 접기를 나란히 둔다 -->
+        <!-- 띠 오른쪽 끝 — 전체 접기. 낙찰목록은 제목 줄 오른쪽으로 올렸다(주소가 잘려서, 자금관리처럼 2026-11-14 사용자) -->
         <div class="pw-objctrl">
-          <button type="button" :class="['pw-objpick', { off: !ownedAuctions.length }]" @click.stop="togglePickList">
-            낙찰목록 <i class="pw-x">×</i>{{ ownedAuctions.length }}<img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
-          </button>
           <button
             v-if="hasTable && !editing"
             type="button"
@@ -2103,6 +2104,7 @@ const toggleSection = (key: string) => {
 .pw-title-row .pw-ebtn { margin-left: 6px; }
 /* 제목 바로 옆에 ⓘ 가 붙고, 나머지 단추는 오른쪽 끝으로 밀린다 */
 .pw-title-row .pw-page-title { flex: 0 0 auto; padding-right: 0; border-bottom: none; }
+.pw-title-row .pw-titlepick { margin-left: auto; }
 /* 전체 접기 — 물건상세의 전체 접기(.adp-fold-all)와 같은 네모 상자에 꺾쇠 */
 .pw-foldall {
   flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;

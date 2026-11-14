@@ -1714,7 +1714,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .rr-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: 700; white-space: nowrap; background: var(--surface-3); color: var(--text-2); }
 .rr-tag svg { width: 12px; height: 12px; }
 .rr-tag.ok, .rr-tag.gone { background: color-mix(in srgb, #0f766e 15%, var(--surface)); color: #0f766e; }
-.rr-tag.warn, .rr-tag.base { background: color-mix(in srgb, var(--nav-orange) 15%, var(--surface)); color: #c2410c; }
+.rr-tag.warn { background: color-mix(in srgb, var(--nav-orange) 15%, var(--surface)); color: #c2410c; }
+.rr-tag.base { background: #e03131; color: #fff; }   /* 말소기준권리 — 빨강(앱 같게, 2026-11-14 사용자) */
 .rr-tag.bad, .rr-tag.take { background: color-mix(in srgb, #be123c 13%, var(--surface)); color: #be123c; }
 .rr-head h4 { margin-top: 12px; font-size: 16px; color: var(--blue); }   /* 한 줄 제목 — 판정에 따라 색: 인수 위험 없음 초록 · 주의 파랑 · 위험 빨강(2026-11-06) */
 .rr-head.ok h4 { color: #15803d; }
@@ -8953,7 +8954,7 @@ span.cal-day.has { cursor: help; }
     } else if (rtTab === 'todo') {
       const risks = (ai.risk && ai.risk.items) || [];
       body = `<section class="rr-card"><h4>주의 항목 점검</h4><p class="rr-sub">올린 서류에서 찾은 내용 기준입니다. 서류에 없다고 문제가 없다는 뜻은 아닙니다.</p>
-          ${!checks || !checks.length ? RT_AGAIN('확인할 일 여섯 가지') : `<ul class="rr-checks">${checks.map((c) => { const k = rtTone(c.status); return `<li class="${k}"><i aria-hidden="true">${k === 'ok' ? RT_IC.ok : RT_IC.warn}</i><div><b>${esc(c.item)}</b><p>${esc(c.text)}</p></div><span class="rr-tag ${k}">${esc(c.status)}</span></li>`; }).join('')}</ul>`}
+          ${!checks || !checks.length ? RT_AGAIN('확인할 일 여섯 가지') : `<ul class="rr-checks">${checks.map((c) => { const k = rtTone(c.status); return `<li class="${k}"><i aria-hidden="true">${k === 'ok' ? RT_IC.ok : RT_IC.warn}</i><div><b>${esc(c.item)}</b><p>${esc(window.TAPdf && TAPdf.rightsCheckText ? TAPdf.rightsCheckText(c.item, c.text) : c.text)}</p></div><span class="rr-tag ${k}">${esc(c.status)}</span></li>`; }).join('')}</ul>`}
           ${risks.length ? `<div class="rr-gray"><b>그 밖에 걸리는 것</b><ul>${risks.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''}</section>`;
     } else {
       const need = checks ? checks.filter((c) => c.status === '확인 필요').length : null;

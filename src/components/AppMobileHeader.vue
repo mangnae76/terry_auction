@@ -78,7 +78,7 @@ const onLogout = async () => {
   <header class="amh">
     <div class="amh-row amh-row-top">
       <div class="amh-brand">
-        <BrandLogo :size="40" tone="white" />
+        <BrandLogo :size="32" tone="white" />
       </div>
     </div>
     <div class="amh-row amh-row-bottom">
@@ -157,9 +157,9 @@ const onLogout = async () => {
 .amh { --amh-text: #50c3fc; }
 /* 날짜를 누르면 입찰 캘린더로 — 글자는 옆 결제하기와 같게 */
 .amh-cal-btn {
-  border: none; background: transparent; padding: 2px 0; margin: 0 9px 0 0;
+  border: none; background: transparent; padding: 2px 0; margin: 0 5px 0 0;
   display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;
-  font-family: inherit; font-size: 12px; font-weight: 400; color: #fff; cursor: pointer;
+  font-family: inherit; font-size: 11px; font-weight: 400; color: #fff; cursor: pointer;
 }
 .amh {
   background: linear-gradient(180deg, #1f3a72 0%, #15295b 100%);
@@ -174,8 +174,9 @@ const onLogout = async () => {
 /* 윗줄 높이를 못 박아 둔다 — 로고를 키워도 띠(52px)가 따라 커지지 않는다.
    로고가 줄보다 크면 위아래로 조금 넘치되, 아래 마진 셈으로 띠 한가운데에 선다 */
 .amh-row-top { justify-content: space-between; height: 36px; }
+/* 로고 32 · 글 11 · 간격 줄임 — 오른쪽 단추들이 로고를 덮었다(2026-11-14 사용자) */
 /* 공지 ~ 닉네임 줄은 로고와 같은 세로 가운데(띠 한가운데)에 — 올린 만큼 아래 마진으로 돌려줘 띠 높이(52px)는 그대로 */
-.amh-row-bottom { justify-content: flex-end; gap: 6px; padding-right: 4px; margin-top: -22.5px; margin-bottom: 11.5px; margin-right: -7px; }
+.amh-row-bottom { justify-content: flex-end; gap: 3px; padding-right: 4px; margin-top: -22.5px; margin-bottom: 11.5px; margin-right: -7px; }
 
 /* 로고는 띠 한가운데에 선다. 아래 인사줄이 16px 끌어올려져 있어
    윗줄만 보면 로고가 위로 치우친다 — 아래위 마진을 같은 값으로 주고 받아
@@ -197,7 +198,7 @@ const onLogout = async () => {
 
 
 /* 인사말과 종 사이도 종·사람 사이와 같은 만큼 띄운다 */
-.amh-greet { font-size: 12px; color: var(--amh-text); font-weight: 400; white-space: nowrap; flex-shrink: 0; }
+.amh-greet { font-size: 11px; color: var(--amh-text); font-weight: 400; white-space: nowrap; flex-shrink: 0; }
 .amh-greet strong { color: inherit; font-weight: 400; margin: 0 1px 0 0; }
 .amh-greet-nim { color: inherit; }
 .amh-greet-icon { width: 19px; height: 19px; flex-shrink: 0; display: block; }
@@ -213,14 +214,14 @@ const onLogout = async () => {
 /* 결제하기 */
 .amh-pay {
   border: none; background: transparent; padding: 2px 0; cursor: pointer;
-  font-family: inherit; font-size: 12px; font-weight: 400; color: #fff;
-  margin-right: 9px;
+  font-family: inherit; font-size: 11px; font-weight: 400; color: #fff;
+  margin-right: 5px;
 }
 
 /* 종과 사람은 손가락이 닿을 자리를 넉넉히 두고 서로 떨어뜨린다 */
 .amh-bell {
   position: relative; border: none; background: transparent; padding: 3px; cursor: pointer;
-  display: inline-flex; align-items: center; color: #fff; margin-right: 9px;
+  display: inline-flex; align-items: center; color: #fff; margin-right: 3px;
 }
 .amh-bell-dot {
   position: absolute; top: 2px; right: 2px; width: 7px; height: 7px; border-radius: 50%;
@@ -289,14 +290,21 @@ const onLogout = async () => {
 
 /* 넓은 폰(420px 이상) — 로고에 닿지 않는 만큼 날짜 · 결제하기 · 닉네임을 13px로 */
 @media (min-width: 420px) {
-  .amh-cal-btn, .amh-pay, .amh-greet { font-size: 13px; }
+  .amh-cal-btn, .amh-pay, .amh-greet { font-size: 12px; }
 }
 
 @media (max-width: 400px) {
-  /* 좁은 손전화 */
-  /* 아랫줄이 로고에 닿지 않게 틈을 줄인다 */
+  /* 좁은 손전화 — 아랫줄이 로고에 닿지 않게 틈 · 여백을 줄인다(2026-11-14 사용자 '로고를 침범') */
   .amh-row-bottom { gap: 3px; }
-  .amh-cal-btn, .amh-pay, .amh-bell { margin-right: 4px; }
-  .amh-greet { font-size: 12px; }
+  .amh-cal-btn, .amh-pay, .amh-bell { margin-right: 1px; }
+  .amh-bell { padding: 3px 2px; }
+  .amh-cal-btn { gap: 2px; }
+  .amh-greet { font-size: 11px; }
+  .amh-greet-icon { width: 17px; height: 17px; }
+  .amh-user-btn { padding: 3px 1px; }
+}
+@media (max-width: 370px) {
+  /* 360 폰 — 로고도 한 단계 작게 */
+  .amh-brand .brand { height: 24px !important; width: 72.7px !important; }
 }
 </style>

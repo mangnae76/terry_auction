@@ -4,6 +4,7 @@
 // 파일 올리기 · AI 분석 · 저장은 물건상세(AuctionDetailPage)가 하던 그대로 — 여기서는 그리고 단추만 알린다.
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { RIGHTS_STAGE_EVENT, type RightsAi } from '../services/geminiRights';
+import { rightsCheckText } from '../services/rightsCheckText';
 
 const props = defineProps<{
   ai: RightsAi | null;
@@ -244,7 +245,7 @@ const evLevelTone = computed(() => { const l = res.value?.evict.level; return l 
             <p v-if="!checks || !checks.length" class="rp-again">다시 분석하면 확인할 일 여섯 가지가 채워집니다.</p>
             <ul v-else class="rp-checks">
               <li v-for="(c, i) in checks" :key="i" :class="toneOf(c.status)">
-                <div><b>{{ c.item }}</b><p>{{ c.text }}</p></div>
+                <div><b>{{ c.item }}</b><p>{{ rightsCheckText(c.item, c.text) }}</p></div>
                 <span :class="['rp-tag', toneOf(c.status)]">{{ c.status }}</span>
               </li>
             </ul>
@@ -268,7 +269,7 @@ const evLevelTone = computed(() => { const l = res.value?.evict.level; return l 
 .rp-tag.ok { background: #e6f4ea; color: #1b7f3b; }
 .rp-tag.warn { background: #fff4e5; color: #b45309; }
 .rp-tag.bad { background: #fde8e8; color: #dc2626; }
-.rp-tag.base { background: #2a3f8f; color: #fff; }
+.rp-tag.base { background: #e03131; color: #fff; }   /* 말소기준권리 — 빨강(웹 같게, 2026-11-14 사용자) */
 .rp-tag.must { margin-left: auto; color: #ff0000; box-shadow: inset 0 0 0 1px #ff0000; background: #fff5f5; }
 
 /* 서류 올리기 */

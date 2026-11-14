@@ -5538,12 +5538,12 @@ const toggleRightsCheck = async (id: string, checked: boolean) => {
 // 권리분석 테이블 6개 케이스.
 // summary는 선택 목록에 작게 붙는 요약, detail은 선택 후 아래에 크게 보여줄 설명이다.
 const RIGHTS_CASES = [
-  { id: '1', title: '권리분석 케이스1', summary: '특수물건 3자권리인수 있음, 가등기/가처분' },
-  { id: '2', title: '권리분석 케이스2', summary: '기본물건 3자권리인수 없음, 임차인 없음' },
-  { id: '3', title: '권리분석 케이스3', summary: '기본물건 3자권리인수 없음, 임차인 있음, 대항력 없음' },
-  { id: '4', title: '권리분석 케이스4', summary: '기본물건 임차인 있음, 대항력 없음, 우선변제' },
-  { id: '5', title: '권리분석 케이스5', summary: '대항력 물건 대항력 있음, 우선변제권 없음' },
-  { id: '6', title: '권리분석 케이스6', summary: '미배당인수 대항력 있음, 우선변제권 있음' },
+  { id: '1', title: '권리분석 케이스1', summary: '특수물건 3자권리인수있음, 가등기/가처분' },
+  { id: '2', title: '권리분석 케이스2', summary: '기본물건 3자권리인수없음, 임차인없음' },
+  { id: '3', title: '권리분석 케이스3', summary: '기본물건 3자권리인수없음, 임차인있음, 대항력없음' },
+  { id: '4', title: '권리분석 케이스4', summary: '기본물건 임차인있음, 대항력없음, 우선변제' },
+  { id: '5', title: '권리분석 케이스5', summary: '대항력 물건 대항력있음, 우선변제권없음' },
+  { id: '6', title: '권리분석 케이스6', summary: '미배당인수 대항력있음, 우선변제권있음' },
 ];
 
 const selectedRightsCase = computed(() =>
@@ -9528,7 +9528,7 @@ const goBack = () => router.back();
                     <tbody>
                       <tr v-for="r in cmpRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine }]">
                         <td class="nm"><span class="cmp-nm-line"><span class="cmp-nm">{{ r.name || r.jibun }}</span><span v-if="cmpIsMyUnit(r)" class="cmp-tag">선정물건</span><span v-else-if="r.mine" class="cmp-tag same">{{ isApartment ? '동일단지' : '동일빌라' }}</span></span><small class="sup-tbl-sub">{{ cmpArea(r.supply, r.area) }}</small></td>
-                        <td class="n">{{ cmpScore(r.loc) }}</td>
+                        <td class="n"><button v-if="r.loc !== null" type="button" class="cmp-sc" :aria-label="`${r.name || r.jibun} 입지 점수 근거 보기`" @click.stop="cmpPopOpen('loc', r, $event)">{{ cmpScore(r.loc) }}<i class="cmp-sc-arr" aria-hidden="true">›</i></button><template v-else>-</template></td>
                         <td class="n"><span v-if="cmpRankOf.get(cmpKeyOf(r))" :class="['cmp-rk', { r1: cmpRankOf.get(cmpKeyOf(r)) === 1 }]">{{ cmpRankOf.get(cmpKeyOf(r)) }}</span><template v-else>-</template></td>
                         <td class="n amt"><b>{{ cmpMoney(r.saleAvg) }}</b><small v-if="cmpDealN(r, '매매')" class="sup-tbl-sub">{{ cmpDealN(r, '매매') }}건</small></td>
                       </tr>
@@ -10114,7 +10114,7 @@ const goBack = () => router.back();
                       <tr v-for="r in cmpViewRows" :key="cmpKeyOf(r)" :class="['cmp-row', { mine: r.mine, on: cmpIsOn(r) }]" tabindex="0" @click="cmpToggle(cmpKeyOf(r))" @keydown.enter="cmpToggle(cmpKeyOf(r))">
                         <td class="nm" :data-tip="r.name || r.jibun" data-tip-pos="left"><span class="cmp-nm-line"><span class="cmp-nm">{{ r.name || r.jibun }}</span><span v-if="cmpIsMyUnit(r)" class="cmp-tag">선정물건</span><span v-else-if="r.mine" class="cmp-tag same">{{ isApartment ? '동일단지' : '동일빌라' }}</span></span><small class="sup-tbl-sub">{{ cmpArea(r.supply, r.area) }}</small></td>
                         <!-- 점수를 누르면 계산 내역 팝업(조건별 등수 칸은 팝업으로, 2026-11-11 시안) -->
-                        <td class="n"><button type="button" class="cmp-sc" :aria-label="`${r.name || r.jibun} 입지 점수 계산 보기`" @click.stop="cmpPopOpen('loc', r, $event)">{{ cmpScore(r.loc) }}</button></td>
+                        <td class="n"><button type="button" class="cmp-sc" :aria-label="`${r.name || r.jibun} 입지 점수 계산 보기`" @click.stop="cmpPopOpen('loc', r, $event)">{{ cmpScore(r.loc) }}<i class="cmp-sc-arr" aria-hidden="true">›</i></button></td>
                         <td class="n"><span v-if="cmpRankOf.get(cmpKeyOf(r))" :class="['cmp-rk', { r1: cmpRankOf.get(cmpKeyOf(r)) === 1 }]">{{ cmpRankOf.get(cmpKeyOf(r)) }}</span><template v-else>-</template></td>
                         <!-- 연식은 시세 묶음 앞(순위 묶음 · 시세 묶음으로 나눈다, 2026-11-11) -->
                         <td class="n">{{ r.buildYear ? `${r.buildYear}년` : '모름' }}<small v-if="r.buildYear" class="sup-tbl-sub">{{ new Date().getFullYear() - r.buildYear + 1 }}년차</small></td>
@@ -10143,7 +10143,10 @@ const goBack = () => router.back();
               </div>
               <!-- 보고 있는 단지 거래 표는 뺐다 — 거래 하나하나는 가격(시세분석) 몫, 매매수요는 단지 리스트 평균으로 등수만 본다(2026-11-11 사용자) -->
               <!-- 점수 팝업 — 머리 줄을 잡고 옮긴다. 폰에서는 아래에서 올라오는 창(2026-11-11 시안) -->
+            </section>
+              <!-- 점수 창 — 웹 평가표 · 앱 ② 입지비교 같이 쓴다(앱은 아래에서 올라오는 창, 2026-11-14 사용자) -->
               <Teleport to="body">
+                <div v-if="!webEmbed && cmpPop && cmpPopRow" class="cmp-pop-dim" aria-hidden="true" @click="cmpPop = null" />
                 <div v-if="cmpPop && cmpPopRow && (!sonpumTab || sonpumTab === 'demand')" class="cmp-pop" role="dialog" aria-modal="false" :aria-label="`입지 창 ${cmpPopRow.name || cmpPopRow.jibun} ${CMP_POP_TITLE[cmpPop.kind]}`" :style="cmpPopPos ? { left: `${cmpPopPos.x}px`, top: `${cmpPopPos.y}px` } : {}">
                   <div class="cmp-pop-h" @pointerdown="cmpPopDown" @pointermove="cmpPopMove" @pointerup="cmpPopUp" @pointercancel="cmpPopUp"><span class="grip" aria-hidden="true">⋮⋮</span><h4><span class="cmp-pop-k">입지 창</span>{{ cmpPopRow.name || cmpPopRow.jibun }}<span v-if="cmpIsMyUnit(cmpPopRow)" class="cmp-tag">선정물건</span><span v-else-if="cmpPopRow.mine" class="cmp-tag same">{{ isApartment ? '동일단지' : '동일빌라' }}</span></h4><button type="button" aria-label="닫기" @click="cmpPop = null">×</button></div>
                   <div class="cmp-pop-b">
@@ -10168,7 +10171,6 @@ const goBack = () => router.back();
                   </div>
                 </div>
               </Teleport>
-            </section>
 
           </div>
         </section>
@@ -12277,9 +12279,9 @@ tr.tone-take { background: #fff5f5; }
 
 /* 권리분석 탭 — 첨부 / 케이스 배너 / 서류 확인 */
 .adp-rcase-banner {
-  margin: 8px 0 0; padding: 10px 12px;
+  margin: 8px 0 0; padding: 9px 8px;
   background: #eaf1ff; border-radius: 8px;
-  font-size: 12.5px; font-weight: 700; color: #1d4ed8; line-height: 1.5;
+  font-size: 11px; font-weight: 700; color: #1d4ed8; line-height: 1.5; letter-spacing: -0.4px; word-break: keep-all;   /* 앱 — 케이스 설명이 한 줄에 들게(2026-11-14 사용자) */
 }
 .adp-rdoc-task { display: block; font-weight: 700; color: #111827; font-size: 11.5px; line-height: 1.4; }
 .adp-rdoc-task-cell, .adp-rdoc-note-cell { vertical-align: middle; padding: 8px 5px; }
@@ -13176,7 +13178,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 #appUnitSlot .cmp-ind-seg.cmp-zone-cmp button { height: auto; padding: 3px 0; }
 #appUnitSlot .cmp-zone-cmp button small { font-size: 11px; }
 #appUnitSlot .cmp-zone-match { font-size: 11.5px; }
-#appUnitSlot .cmp-rate-in { display: flex; width: 100%; gap: 1px; }   /* 비율 입력칸 — 칸 폭 끝까지(단위 % · 만 자리만 남기고) */
+#appUnitSlot .cmp-rate-in { display: flex; align-items: center; width: 100%; gap: 1px; font-size: 9.5px; color: #6b7280; }   /* 단위 % · 만은 작게(2026-11-14 사용자) */   /* 비율 입력칸 — 칸 폭 끝까지(단위 % · 만 자리만 남기고) */
 #appUnitSlot .cmp-rate-in input { flex: 1 1 0; width: auto; min-width: 0; height: 24px; padding: 0 4px; font-size: 11.5px; }
 #appUnitSlot .cmp-ind-in input { width: 34px; height: 24px; padding: 0 3px; font-size: 11.5px; }
 #appUnitSlot .cmp-auto { display: none; }
@@ -13243,6 +13245,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 /* 평가표 점수 — 누르면 팝업 */
 .cmp-sc { border: 0; background: none; padding: 2px 6px; border-radius: 5px; font: inherit; font-size: 13px; color: #111827; cursor: pointer; text-decoration: underline dotted #9ca3af; text-underline-offset: 3px; }
 .cmp-sc.big { font-weight: 800; }
+.cmp-sc-arr { margin-left: 2px; font-style: normal; font-weight: 400; color: #9ca3af; }   /* 누르면 근거가 열린다는 표시(2026-11-14 사용자) */
+.cmp-pop-dim { position: fixed; inset: 0; z-index: 2999; background: rgba(17, 24, 39, .35); }   /* 앱 — 바깥을 누르면 닫힌다 */
 .cmp-sc:hover, .cmp-sc:focus-visible { background: #eef2ff; color: #2b6df3; outline: none; }
 .cmp-flt { flex: 0 0 auto; margin-right: 4px; vertical-align: -1px; color: #111827; }   /* 필터로 고른 조건을 적은 설명 앞 — 깔때기(2026-11-11 사용자 규칙) */
 .cmp-guide { margin: 10px 2px 0; padding: 9px 12px; border-radius: 8px; background: #f7f8fb; font-size: 12.5px; line-height: 1.6; color: #4b5563; }
@@ -13280,7 +13284,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-ref-t { margin-left: 4px; font-size: 11.5px; color: #9ca3af; font-weight: 400; }
 .cmp-formula { margin: 0; padding: 8px 10px; border-radius: 8px; background: #f7f8fb; font-size: 12.5px; color: #6b7280; line-height: 1.6; }
 .cmp-formula b { font-size: 15px; font-weight: 800; color: #111827; }
-@media (max-width: 640px) { .cmp-pop { left: 0 !important; right: 0; top: auto !important; bottom: 0; width: 100%; border-radius: 12px 12px 0 0; } }
+@media (max-width: 640px) { .cmp-pop .cmp-tbl :is(th, td) { padding-left: 4px; padding-right: 4px; } .cmp-pop .cmp-tbl th { white-space: normal; word-break: keep-all; line-height: 1.3; } }   /* 폰 — 머리 글이 옆 칸과 겹치지 않게 두 줄로 */
+@media (max-width: 640px) { .cmp-pop { left: 0 !important; right: 0; top: auto !important; bottom: 0; width: 100%; max-height: 85vh; overflow-y: auto; border-radius: 12px 12px 0 0; padding-bottom: env(safe-area-inset-bottom); } }
 /* 기준가 카드 · 표 묶음 줄 */
 .cmp-bases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
 .cmp-bases.one { grid-template-columns: minmax(0, 1fr); }
@@ -15092,11 +15097,11 @@ select.adp-pub-input option { text-align: center; }
 .adp-body.is-app .adp-survey-row .adp-multi-item { padding: 5px 10px; }
 
 /* ===== 앱 수익분석 — 웹 꼴(시안 profit-mock, 2026-11-09): 안 고르기 줄 · 요약 넷(2×2) · 클래식 표 · 돈이 나가는 순서 · 세율 · 공식 · 자동 적용 ===== */
-.app-plans { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; }   /* 머리 줄 바로 아래로 올리고 아래 틈을 둔다(고정 띠 아래 선에 붙지 않게) */
+.app-plans { display: flex; align-items: center; gap: 6px; margin: 0; padding-bottom: 10px; }   /* 머리 줄 바로 아래로 올리고 아래 틈을 둔다(고정 띠 아래 선에 붙지 않게). margin 은 고정 묶음 밖으로 새어 상자가 띠 끝에 칼처럼 잘렸다 → padding(2026-11-14 사용자) */
 .app-plans .bida-seg { flex: 1 1 auto; min-width: 0; display: flex; gap: 2px; padding: 3px; }
 .app-plans .bida-seg .bida-plan { flex: 1 1 0; min-width: 0; justify-content: center; padding-left: 4px; }
 .app-plans .bida-seg .bida-plan.add { padding-left: 0; }
-.app-plans .bida-plan-name { height: 30px; padding: 0 4px; font-size: 12.5px; white-space: nowrap; }
+.app-plans .bida-plan-name { height: 26px; padding: 0 4px; font-size: 12.5px; white-space: nowrap; }
 .app-plans .bida-plan.add .bida-plan-name { padding-left: 4px; }
 .app-plans .bida-ck { width: 18px; height: 18px; flex: 0 0 auto; }
 .app-plans .bida-ck i { width: 14px; height: 14px; }

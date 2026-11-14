@@ -2,7 +2,7 @@
 // 낙찰이후 · 진행절차 (웹) — 고른 낙찰 물건의 낙찰일(없으면 입찰기일)에서 시작해
 // 단계마다 '앞 단계 + N일'로 날짜를 셈한다. [완료]를 누르면 그날이 적히고 뒤 단계가 따라 밀린다.
 // 단계는 물건마다 저장한다(auction.postWinFlow). 처음 열면 기본 절차로 채운다.
-import { computed, inject, ref } from 'vue';
+import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue';
 // 웹은 구분 줄 이름을 '진행절차' 로(앱은 '법원 진행절차' 그대로)
 const webEmbedTl = inject<boolean>('webEmbed', false);
 import type { AuctionDetail, PostWinFlow, PostWinStep } from '../types/auction';
@@ -132,13 +132,30 @@ const toggleDone = (id: string) => {
   });
 };
 // ===== 끌어서 차례 바꾸기 — 임장경로처럼 상자를 잡고 위아래로. 체크 상자 · 연필 · 지우기 자리는 잡히지 않는다 =====
-const onDragStart = (id: string, e: PointerEvent) => {
-  if (editingId.value || (e.target as HTMLElement).closest('input, button, select, textarea')) return;
+// 손가락(앱)은 꾹 눌러야(0.4초) 끈다 — 바로 잡으면 칸이 움직여 스크롤을 못 했다(2026-11-14 사용자). 그 전에 움직이면 스크롤, 떼면 고르기. 마우스(웹)는 바로 끈다
+const LONG_MS = 400;
+let press: { id: string; x: number; y: number; timer: number } | null = null;
+const clearPress = () => { if (press) window.clearTimeout(press.timer); press = null; };
+const beginDrag = (id: string, el: HTMLElement, pid: number) => {
   dragId.value = id;
   dragOrder.value = savedFlow.value.steps.map((x) => x.id);
-  (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+  try { el.setPointerCapture?.(pid); } catch { /* 이미 뗐다 */ }
 };
+const onDragStart = (id: string, e: PointerEvent) => {
+  if (editingId.value || (e.target as HTMLElement).closest('input, button, select, textarea')) return;
+  const el = e.currentTarget as HTMLElement;
+  if (e.pointerType !== 'touch') { beginDrag(id, el, e.pointerId); return; }
+  clearPress();
+  const pid = e.pointerId;
+  press = { id, x: e.clientX, y: e.clientY, timer: window.setTimeout(() => { press = null; beginDrag(id, el, pid); navigator.vibrate?.(10); }, LONG_MS) };
+};
+// 끄는 동안은 화면이 따라 스크롤되지 않게
+const blockScroll = (e: TouchEvent) => { if (dragId.value) e.preventDefault(); };
+onMounted(() => document.addEventListener('touchmove', blockScroll, { passive: false }));
+onBeforeUnmount(() => { document.removeEventListener('touchmove', blockScroll); clearPress(); });
+const onDragCancel = () => { clearPress(); onDragEnd(); };
 const onDragMove = (e: PointerEvent) => {
+  if (press) { if (Math.hypot(e.clientX - press.x, e.clientY - press.y) > 8) clearPress(); return; }
   if (!dragId.value || !dragOrder.value) return;
   e.preventDefault();
   const el = document.elementFromPoint(e.clientX, e.clientY)?.closest('.pwt-row') as HTMLElement | null;
@@ -151,6 +168,7 @@ const onDragMove = (e: PointerEvent) => {
   dragOrder.value = order;
 };
 const onDragEnd = () => {
+  if (press) { const id = press.id; clearPress(); selectedId.value = selectedId.value !== id ? id : ''; return; }   // 손가락으로 짧게 눌렀다 뗐다 — 고르기
   if (!dragId.value) return;
   const order = dragOrder.value;
   const id = dragId.value;
@@ -272,7 +290,8 @@ const resetDefault = () => {
           @pointerdown="onDragStart(r.id, $event)"
           @pointermove="onDragMove"
           @pointerup="onDragEnd"
-          @pointercancel="onDragEnd"
+          @pointercancel="onDragCancel"
+          @contextmenu="(e: Event) => { if (dragId) e.preventDefault(); }"
         >
           <!-- 체크하면 그날로 적히고 뒤 일정이 따라 밀린다 -->
           <input type="checkbox" class="pwt-chk" :checked="!!r.doneDate" :aria-label="`${r.name} 마침`" @change="toggleDone(r.id)" />
@@ -390,7 +409,7 @@ const resetDefault = () => {
 .pwt-ctrl button { width: 30px; height: 30px; padding: 0; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #4b5563; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
 .pwt-ctrl button:hover { background: #f3f4f6; color: #111827; }
 /* 끌어 옮기기 — 상자를 잡으면 파란 테두리 · 옅은 파랑 바탕, 체크 상자도 파랗게 테를 두른다 */
-.pwt-row { cursor: grab; touch-action: none; user-select: none; border: 1px solid transparent; border-bottom-color: #eef1f6; }
+.pwt-row { cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; border: 1px solid transparent; border-bottom-color: #eef1f6; }
 .pwt-row:active { cursor: grabbing; }
 .pwt-row.sel { border-color: #2b6df3; }
 .pwt-ctrl button.ins { color: #2b6df3; border-color: #bcd0f7; }
