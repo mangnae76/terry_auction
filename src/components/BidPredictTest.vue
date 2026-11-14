@@ -256,11 +256,19 @@ const dayItem = (d: DayRow): Item => {
   return { ...base, failed: true, target: { round, appr: d.appr, min: Math.round(d.appr * 0.7 ** round / 1000) * 1000, area: d.area, year: null, floor, date: dayDate.value, dong: dongOf(d.addr) }, result: { sold: 0, bids: 0, second: 0 } };
 };
 /** 표에 올릴 줄 — 처음은 보고 있는 동(예측 있음), '모든동'이면 그날 기일 목록 전부(그 동 밖은 예측 칸 —) */
-const fAllDong = ref(false);
-const listItems = computed<Item[]>(() => {
-  if (!fAllDong.value || !useHits.value) return items.value;
+const fDong = ref(dongFilter.value.trim());   // '' = 모든동
+watch(dongFilter, (v) => { fDong.value = v.trim(); });
+const allDayItems = computed<Item[]>(() => {
+  if (!useHits.value) return items.value;
   const have = new Set(items.value.map((it) => it.key));
   return [...items.value, ...dbRows.value.filter((d) => !have.has(d.key)).map(dayItem)];
+});
+const listItems = computed<Item[]>(() => (fDong.value === dongFilter.value.trim() || !useHits.value ? items.value : allDayItems.value.filter((it) => !fDong.value || dongOf(it.addr) === fDong.value)));
+/** 동 드롭다운 — 그날 목록(고른 계)에 있는 동과 건수, 많은 순 */
+const dongOpts = computed(() => {
+  const o = new Map<string, number>(); allDayItems.value.filter((it) => !fDept.value || deptOf(it.key) === fDept.value).forEach((it) => { const d = dongOf(it.addr) || '동 모름'; o.set(d, (o.get(d) ?? 0) + 1); });
+  const me = dongFilter.value.trim(); if (me && !o.has(me)) o.set(me, 0);
+  return [...o.entries()].sort((a, b) => (a[0] === me ? -1 : b[0] === me ? 1 : b[1] - a[1]));
 });
 
 const pairs = computed<ViewPair[]>(() => items.value.filter((it) => it.result && it.views >= 0 && it.result.bids >= 0 && (it.failed || it.result.bids > 0)).map((it) => ({ key: it.key, views: it.views, bids: it.result!.bids })));
@@ -423,7 +431,9 @@ const dayChips = computed(() => {
 const fDept = ref(''); const fStat = ref(''); const fKind = ref('');
 watch(dayDate, () => { fDept.value = ''; fStat.value = ''; fKind.value = ''; });
 const deptOf = (key: string) => dayDepts.value.find((d) => d.keys.includes(key))?.dept ?? '';
-const statOf = (it: Item) => (it.result ? (it.result.sold > 0 ? '매각' : '유찰') : '입찰 전');
+const dbByKey = computed(() => new Map(dbRows.value.map((d) => [d.key, d])));
+/** 그날 현황 — 기일 목록에서 온 줄은 법원 쪽 셈(statOfRow)과 같은 기준(변경 · 취하도) */
+const statOf = (it: Item) => { if (it.src === '기일 목록') { const d = dbByKey.value.get(it.key); if (d) return statOfRow(d); } return it.result ? (it.result.sold > 0 ? '매각' : '유찰') : '입찰 전'; };
 const kindOf = (it: Item) => dayRounds.value.find((x) => x.key === it.key)?.kind || dayMap.value.get(it.key)?.kind || '기타';
 const KIND5 = ['아파트', '연립주택', '다세대주택', '오피스텔(주거)', '도시형생활주택'];
 const daySum = computed(() => {
@@ -456,7 +466,7 @@ const pickF = (w: keyof typeof FR, v: string) => { FR[w].value = FR[w].value ===
 const auctions = useAuctionStore();
 const mineKeys = computed(() => new Set(auctions.auctions.map((a) => caseKey(a.caseNumber)).filter(Boolean)));
 const fMine = ref(false);
-watch(dayDate, () => { fMine.value = false; fAllDong.value = false; });
+watch(dayDate, () => { fMine.value = false; fDong.value = dongFilter.value.trim(); });
 
 /** 표의 입찰자 있을확률 · 예상응찰 */
 const sellOf = (key: string) => { const s = sellMap.value.get(key); if (s) return s; const p = preds.value.get(key); return p && p.p0 != null ? { pSold: 1 - p.p0, expBids: p.expBids ?? 0 } : null; };
@@ -584,14 +594,14 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <table class="bpt-dayinfo">
         <tbody>
           <tr><th>매각기일</th><td class="chips date-row"><b class="date">{{ dayDate ? `${dayDate.slice(0, 4)}년 ${Number(dayDate.slice(5, 7))}월 ${Number(dayDate.slice(8))}일 (${WD[new Date(`${dayDate}T00:00:00`).getDay()]})` : '' }}</b>
-            <button type="button" :class="['bpt-fchip', 'big', { on: !fDept && fAllDong }]" :disabled="!daySum.total" @click="fDept = ''; fAllDong = true">전체보기<b class="all">{{ daySum.total ? daySum.total.toLocaleString('ko-KR') : daySum.mineN }}</b></button>
-            <button v-for="d in daySum.depts" :key="d.k" type="button" :class="['bpt-fchip', 'big', { on: fDept === d.k && fAllDong }]" @click="fDept = d.k; fAllDong = true">{{ d.label }}<b class="all">{{ d.all.toLocaleString('ko-KR') }}</b></button>
+            <button type="button" :class="['bpt-fchip', 'big', { on: !fDept && !fDong }]" :disabled="!daySum.total" @click="fDept = ''; fDong = ''">전체보기<b class="all">{{ daySum.total ? daySum.total.toLocaleString('ko-KR') : daySum.mineN }}</b></button>
+            <button v-for="d in daySum.depts" :key="d.k" type="button" :class="['bpt-fchip', 'big', { on: fDept === d.k && !fDong }]" @click="fDept = d.k; fDong = ''">{{ d.label }}<b class="all">{{ d.all.toLocaleString('ko-KR') }}</b></button>
+            <select v-model="fDong" :class="['bpt-dongsel', { on: !!fDong }]" aria-label="동 고르기">
+              <option value="">모든동 {{ allDayItems.filter((it) => !fDept || deptOf(it.key) === fDept).length.toLocaleString('ko-KR') }}</option>
+              <option v-for="[d, n] in dongOpts" :key="d" :value="d">{{ d }} {{ n.toLocaleString('ko-KR') }}{{ d === daySum.dong ? ' · 예측' : '' }}</option>
+            </select>
             <button type="button" :class="['bpt-fchip', 'big', { on: fMine }]" :disabled="!nMine" @click="fMine = !fMine">선정물건만보기<b>{{ nMine }}</b></button>
             </td></tr>
-          <tr><th>동</th><td class="chips">
-            <button type="button" :class="['bpt-fchip', { on: !fAllDong }]" @click="fAllDong = false; fDept = ''">{{ daySum.dong }}<b>{{ daySum.dongN }}</b></button>
-            <button type="button" :class="['bpt-fchip', { on: fAllDong }]" :disabled="!daySum.total" @click="fAllDong = true">모든동<b class="all">{{ daySum.scopeN.toLocaleString('ko-KR') }}</b></button>
-            <span class="muted">다른 동은 목록만 나오고 예측 칸은 — (날짜별 조회수를 모으면 예측까지, 구현 예정)</span></td></tr>
           <tr><th>현황별 물건수</th><td class="chips">
             <button type="button" :class="['bpt-fchip', { on: !fStat }]" @click="fStat = ''">전체<b>{{ daySum.inDept }}</b><small v-if="daySum.total">/ {{ daySum.scopeN.toLocaleString('ko-KR') }}</small></button>
             <button v-for="s in daySum.stats" :key="s.k" type="button" :class="['bpt-fchip', { on: fStat === s.k }]" :disabled="!s.mine" @click="pickF('stat', s.k)">{{ s.k }}<b>{{ s.mine }}</b><small v-if="daySum.total">/ {{ s.all.toLocaleString('ko-KR') }}</small></button></td></tr>
@@ -600,7 +610,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <button v-for="k in daySum.kinds" :key="k.k" type="button" :class="['bpt-fchip', { on: fKind === k.k }]" :disabled="!k.mine" @click="pickF('kind', k.k)">{{ k.k }}<b>{{ k.mine }}</b><small v-if="daySum.total">/ {{ k.all.toLocaleString('ko-KR') }}</small></button></td></tr>
         </tbody>
       </table>
-      <p class="bpt-sub">물건 보기 숫자는 그날 법원 전체 건수입니다. 현황 · 종류 단추의 파란 숫자는 지금 표에 나온 줄(동 단추로 고른 범위), / 뒤는 고른 범위의 법원 전체 건수입니다. 다시 누르면 풀립니다</p>
+      <p class="bpt-sub">예측(조회수 · 입찰자 있을확률 · 예상응찰 · 예상 낙찰가)은 {{ daySum.dong }}만 나오고, 다른 동은 목록만 나옵니다(날짜별 조회수를 모으면 예측까지, 구현 예정). 매각기일 줄 숫자는 그날 법원 전체 건수입니다. 현황 · 종류 단추의 파란 숫자는 지금 표에 나온 줄(동 단추로 고른 범위), / 뒤는 고른 범위의 법원 전체 건수입니다. 다시 누르면 풀립니다</p>
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl">
           <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
@@ -826,6 +836,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-dayinfo .muted { font-size: 13px; color: #6b7280; }
 .bpt-dayinfo .muted .dong { color: #1f5fe0; }
 .bpt-dayinfo td.date-row { align-items: center; }
+.bpt-dongsel { height: 32px; border: 1px solid #d5dbe5; border-radius: 8px; padding: 0 8px; font: inherit; font-size: 14px; color: #111827; background: #fff; }
+.bpt-dongsel:focus, .bpt-dongsel.on { border-color: #2b6df3; outline: none; }
 .bpt-dayinfo td.date-row .date { margin-right: 8px; }
 .bpt-dayinfo td.chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .bpt-fchip { height: 30px; padding: 0 10px; border: 1px solid #d5dbe5; border-radius: 8px; background: #fff; color: #374151; font: inherit; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
