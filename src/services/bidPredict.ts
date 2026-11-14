@@ -281,24 +281,27 @@ export const marketPriceAt = (trades: TradeLite[], addr: string, area: number | 
 /* ===== 낙찰가 ÷ 매매 실거래가(k) — 감정가 대신 그 건물 매매 실거래가를 기준으로(2026-11-15 사용자)
  * 실거래는 시세(호가)가 아니다. 사례마다 그 건물 매매 실거래가를 잡고, 낙찰가 ÷ 그 값을 응찰 인원별로 배운다 ===== */
 export type SaleTradeHow = '같은 건물 같은 평형' | '같은 건물 다른 평형' | '유사물건';
-export type SaleTrade = { price: number; how: SaleTradeHow; n: number; drop: number };
+export type SaleTrade = { price: number; how: SaleTradeHow; n: number; drop: number; months: 12 | 24 };
 const ppmOf = (x: TradeLite) => x.price / x.area;
-/** d 이전 12개월 매매 실거래로 그 물건 값(원). 위에서부터 처음 잡히는 단계만 —
- *  같은 건물 같은 평형(전용 ±1㎡) → 같은 건물 다른 평형 → 유사물건(같은 동 · 전용 ±10㎡ · 연식 ±5년, 3건 이상).
+/** d 이전 매매 실거래로 그 물건 값(원). 위에서부터 처음 잡히는 단계만 —
+ *  같은 건물 같은 평형(전용 ±1㎡, 1년 · 없으면 2년) → 같은 건물 다른 평형(1년 · 없으면 2년) → 유사물건(같은 동 · 전용 ±10㎡ · 연식 ±5년, 1년, 3건 이상).
+ *  2년 넘게는 안 본다 — 빌라 시장 흐름이 빠르다(2026-11-15 사용자).
  *  뺀다 — 직거래, 신축 첫 해 거래(분양 업계약), 유사물건 ㎡당 중앙값과 ±20% 넘게 어긋난 거래, 같은 건물 전세보다 낮은 매매(다운계약 의심) */
 export const saleTradeAt = (trades: TradeLite[], rents: TradeLite[], addr: string, area: number | null, year: number | null, d: string): SaleTrade | null => {
   if (!area || !d) return null;
   const { dong, jibun } = lotOf(addr); if (!dong) return null;
-  const since = monthsBefore(d, 12);
-  const base = trades.filter((x) => x.dong === dong && x.t < d && x.t >= since && x.area > 0 && !x.direct && !(x.year && Number(x.t.slice(0, 4)) <= x.year));
+  const since = monthsBefore(d, 12); const since2 = monthsBefore(d, 24);
+  const base2 = trades.filter((x) => x.dong === dong && x.t < d && x.t >= since2 && x.area > 0 && !x.direct && !(x.year && Number(x.t.slice(0, 4)) <= x.year));
+  const base = base2.filter((x) => x.t >= since);
   const simOf = (xs: TradeLite[]) => xs.filter((x) => Math.abs(x.area - area) <= 10 && (!year || !x.year || Math.abs(x.year - year) <= 5));
   const simAll = simOf(base); const simPpm = simAll.length >= 3 ? median(simAll.map(ppmOf)) : NaN;
   const rentPpm = (() => { const r = rents.filter((x) => x.dong === dong && x.jibun === jibun && x.t < d && x.t >= since && x.area > 0); return r.length ? median(r.map(ppmOf)) : NaN; })();
   const odd = (x: TradeLite) => (Number.isFinite(simPpm) && Math.abs(ppmOf(x) / simPpm - 1) > 0.2) || (Number.isFinite(rentPpm) && x.jibun === jibun && ppmOf(x) < rentPpm);
-  const pick = (xs: TradeLite[], how: SaleTradeHow): SaleTrade | null => { const ok = xs.filter((x) => !odd(x)); return ok.length ? { price: median(ok.map(ppmOf)) * area, how, n: ok.length, drop: xs.length - ok.length } : null; };
-  const bld = base.filter((x) => x.jibun === jibun);
-  return pick(bld.filter((x) => Math.abs(x.area - area) <= 1), '같은 건물 같은 평형')
-    ?? pick(bld.filter((x) => Math.abs(x.area - area) > 1), '같은 건물 다른 평형')
+  const pick = (xs: TradeLite[], how: SaleTradeHow, months: 12 | 24 = 12): SaleTrade | null => { const ok = xs.filter((x) => !odd(x)); return ok.length ? { price: median(ok.map(ppmOf)) * area, how, n: ok.length, drop: xs.length - ok.length, months } : null; };
+  const bld2 = base2.filter((x) => x.jibun === jibun); const bld = bld2.filter((x) => x.t >= since);
+  const same = (x: TradeLite) => Math.abs(x.area - area) <= 1;
+  return pick(bld.filter(same), '같은 건물 같은 평형') ?? pick(bld2.filter(same), '같은 건물 같은 평형', 24)
+    ?? pick(bld.filter((x) => !same(x)), '같은 건물 다른 평형') ?? pick(bld2.filter((x) => !same(x)), '같은 건물 다른 평형', 24)
     ?? (() => { const r = pick(simAll, '유사물건'); return r && r.n >= 3 ? r : null; })();
 };
 export type KModel = { ks: number[][]; mx1: number[]; n: number; loose: boolean };

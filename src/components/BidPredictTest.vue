@@ -759,7 +759,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td v-else class="r">—</td>
               <td v-if="preds.get(it.key)" class="r two"><span class="bpt-nb rng">{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).lo) }} ~<small>{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).hi) }}<i class="ghost" aria-hidden="true"> ~</i></small></span></td>
               <td v-else>—</td>
-              <td v-if="predsK.get(it.key)" class="r kn"><span class="bpt-nb">{{ won(predsK.get(it.key)!.base.price) }}</span><small class="bpt-at">{{ HOW_SHORT[predsK.get(it.key)!.base.how] }} {{ predsK.get(it.key)!.base.n }}건</small></td>
+              <td v-if="predsK.get(it.key)" class="r kn"><span class="bpt-nb">{{ won(predsK.get(it.key)!.base.price) }}</span><small class="bpt-at">{{ HOW_SHORT[predsK.get(it.key)!.base.how] }} {{ predsK.get(it.key)!.base.n }}건{{ predsK.get(it.key)!.base.months === 24 ? ' · 2년' : '' }}</small></td>
               <td v-else class="kn">—</td>
               <td v-if="predsK.get(it.key)" class="r strong kn"><span class="bpt-nb">{{ won(predsK.get(it.key)!.dist.median) }}</span></td>
               <td v-else class="kn">—</td>
