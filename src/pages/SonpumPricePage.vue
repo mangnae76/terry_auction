@@ -898,12 +898,14 @@ const syncEstFix = () => {
   // 시세분석 탭이 숨어 있으면(다른 탭 · 접힘) 상자 크기가 0 — 그때 재면 화면 왼쪽 끝에 폭 없이 붙었다(2026-11-13 사용자 화면). 숨어 있으면 풀어 둔다
   if (!(paR.width > 0 && paR.height > 0)) { if (estFix.value) estFix.value = null; return; }
   const h = estFix.value?.h ?? z.offsetHeight;
-  // 상자 아래 끝이 머리를 밀어 올리기 시작하면(상자 아래 여백 24 포함) 화면에 고정
-  if (paR.top >= top || paR.bottom - 24 >= top + h) { if (estFix.value) estFix.value = null; return; }
-  const ends = ['.son-price', '#sonUnitSlot', '#sonNaverSlot'].map((q) => son.querySelector(q) as HTMLElement | null).filter((e): e is HTMLElement => !!e && e.offsetHeight > 0);
+  // 상자 아래 끝이 머리를 밀어 올리기 전에(120px 앞) 미리 화면에 고정 — 밀린 뒤에 바꾸면 빠르게 내릴 때 한 프레임 밀렸다 돌아와 덜컹거렸다(2026-11-15 사용자).
+  // 붙어 있는 자리와 고정 자리가 같아 바꾸는 순간은 보이지 않는다
+  if (paR.top >= top || paR.bottom - 24 >= top + h + 120) { if (estFix.value) estFix.value = null; return; }
+  // 끝 — 호실 예상가 · 호가매물 · 시세결론까지. 그 아래로 가면 위로 밀어 올리지 않고 통째로 감춘다(고정카드 밑으로 반쯤 걸쳤다, 2026-11-15 사용자)
+  const ends = ['.son-price', '#sonUnitSlot', '#sonNaverSlot', '#sonConcSlot', '#sonAskSlot'].map((q) => (son.querySelector(q) ?? document.querySelector(q)) as HTMLElement | null).filter((e): e is HTMLElement => !!e && e.offsetHeight > 0);
   const endB = Math.max(...ends.map((e) => e.getBoundingClientRect().bottom));
-  const t = Math.min(top, endB - h);
-  estFix.value = { h, style: { position: 'fixed', top: `${Math.round(t)}px`, left: `${Math.round(paR.left + 1)}px`, width: `${Math.round(paR.width - 2)}px`, margin: '0' } };
+  const gone = endB < top + h;
+  estFix.value = { h, style: { position: 'fixed', top: `${Math.round(top)}px`, left: `${Math.round(paR.left + 1)}px`, width: `${Math.round(paR.width - 2)}px`, margin: '0', transition: 'opacity .15s', ...(gone ? { opacity: '0', pointerEvents: 'none' } : {}) } };
 };
 const onEstScroll = () => { if (!estRaf) estRaf = requestAnimationFrame(syncEstFix); };
 if (typeof window !== 'undefined' && webEmbed && !props.app) {

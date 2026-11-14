@@ -1201,6 +1201,8 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 /* 시세분석 내비게이터도 같은 자리에 붙는다(SonpumPricePage .pa.stick .est) — 선정물건 손품조사는 매각분석 머리와 같은 높이, 시장분석 시세예측은 검색 띠 아래(2026-11-13 사용자) */
 .app-market[data-s="son"] { --pa-stick-top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px)); }   /* 틈 없이 — 머리 상자가 위 안쪽 여백으로 대신 띄운다 */
 .app-market[data-s="sonq"] { --pa-stick-top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 60px); }
+.sx-results > .sx-hero { transition: opacity .15s; }
+.sx-results > .sx-hero.leaving { opacity: 0; pointer-events: none; }   /* 결과 상자 끝 — 밀려 걸치지 않고 사라진다 */
 .sx-results > .sx-card:not(.sx-hero) { position: relative; z-index: 0; }   /* 지도 도구 · 핀이 붙박이 상자 위로 올라오지 않게 */
 .sx-where { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .sx-where h2 { margin: 0; font-size: 18px; font-weight: 800; text-wrap: balance; }
@@ -10599,11 +10601,20 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
 
   /* 붙었을 때 그림자 — 선정물건 · 선정물건등록 두 상자 모두. 하위 탭이 있으면 탭 줄 높이만큼 아래에서 붙는다 */
   /* 붙었을 때 그림자 — 틀 고정 모듈과 짝. 상자가 제 고정 자리(top)에 닿았으면 붙은 것이다 (화면·머리 높이와 상관없이) */
-  const markStuck = () => document.querySelectorAll('.toolbar-shell').forEach((shell) => {
-    if (!shell.offsetParent) return;
-    const top = parseFloat(getComputedStyle(shell).top);
-    shell.classList.toggle('stuck', getComputedStyle(shell).position === 'sticky' && window.scrollY > 0 && Math.abs(shell.getBoundingClientRect().top - top) < 1);
-  });
+  const markStuck = () => {
+    document.querySelectorAll('.toolbar-shell').forEach((shell) => {
+      if (!shell.offsetParent) return;
+      const top = parseFloat(getComputedStyle(shell).top);
+      shell.classList.toggle('stuck', getComputedStyle(shell).position === 'sticky' && window.scrollY > 0 && Math.abs(shell.getBoundingClientRect().top - top) < 1);
+    });
+    /* 매각분석 결과 머리(내비게이터) — 결과 상자가 끝나 위로 밀리기 시작하면 고정카드 밑으로 반쯤 걸치지 않게 통째로 감춘다(2026-11-15 사용자) */
+    document.querySelectorAll('.sx-results > .sx-hero').forEach((h) => {
+      let box = h.parentElement; while (box && getComputedStyle(box).display === 'contents') box = box.parentElement;   /* 결과 상자는 display: contents — 실제 크기가 있는 위 상자로 잰다 */
+      if (!box || !h.offsetParent) return;
+      const top = parseFloat(getComputedStyle(h).top) || 0;
+      h.classList.toggle('leaving', box.getBoundingClientRect().bottom < top + h.offsetHeight + 1);
+    });
+  };
   /* 틀 고정 높이 — 머리띠·하위 탭 줄의 실제 높이를 변수에 적는다 (좁은 화면에서 머리띠가 두 줄이 돼도 맞게) */
   /* 값이 바뀔 때만 적는다 — 문서 맨 위(:root) 변수를 적을 때마다 화면 전체 스타일을 다시 셈해, 스크롤마다 적으면 무겁고 딸깍거렸다 */
   const rootVars = {};
