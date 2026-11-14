@@ -319,14 +319,15 @@ const ymdOf = (s: string) => { const m = String(s ?? '').match(/(\d{2,4})[.\-/](
 const myOwnDates = computed(() => new Set((props.auction?.registryRows ?? []).filter((x) => /소유권이전/.test(x.kind)).map((x) => ymdOf(x.date)).filter(Boolean)));
 /** 호 — ① 그 지번 호실 목록(공동주택가격 · 호마다 전용)에서 같은 층 · 같은 전용(±0.05㎡)이 하나뿐이면 그 호(동까지)
  *  ② 둘 이상이면 후보 '401 · 402호 중' ③ 선정물건 등기부 소유권이전 접수일 = 실거래 등기일자면 선정물건 호 ④ 그 밖은 '모름'(2026-11-14 사용자) */
-const hoName = (u: { dong: string; ho: string }) => `${u.dong ? `${u.dong.replace(/동$/, '')}동 ` : ''}${u.ho.replace(/\D/g, '')}호`;
 const hoOf = (r: PriceRow) => {
   if (r.rgstDate && r.jibun && r.jibun === lot.value && myOwnDates.value.has(ymdOf(r.rgstDate)) && myHo.value !== '-') return myHo.value;
-  const hit = (units.value[r.jibun] ?? []).filter((u) => Math.abs(u.areaM2 - r.areaM2) < 0.05 && Math.floor(Number(u.ho.replace(/\D/g, '')) / 100) === r.floorNo);
-  if (hit.length === 1) return hoName(hit[0]);
-  if (hit.length > 1 && hit.length <= 3) return `${hit.map((u) => hoName(u).replace(/호$/, '')).join(' · ')}호 중`;
-  return '모름';
+  // 동은 주소에 이미 있어 호만(같은 호 번호가 두 동에 있으면 하나로)
+  const hos = [...new Set((units.value[r.jibun] ?? []).filter((u) => Math.abs(u.areaM2 - r.areaM2) < 0.05 && Math.floor(Number(u.ho.replace(/\D/g, '')) / 100) === r.floorNo).map((u) => u.ho.replace(/\D/g, '')))].sort();
+  if (!hos.length || hos.length > 4) return '모름';
+  return hos.map((h) => `${h}호`).join(' · ');
 };
+/** 호 칸 두 줄 — 후보는 두 개씩 */
+const hoLines = (r: PriceRow) => { const v = hoOf(r); if (!v.includes(' · ')) return [v]; const xs = v.split(' · '); return [xs.slice(0, 2).join(' · '), xs.slice(2).join(' · ')].filter(Boolean); };
 const isOff = (r: PriceRow) => webEmbed && dropped.value.includes(rowKey(r));
 /** 앱 표 주소 말풍선 — 누른 칸 바로 아래(화면 밖으로 나가지 않게), 다시 누르거나 밖을 누르거나 스크롤하면 닫는다 */
 const addrTip = ref<{ text: string; style: Record<string, string> } | null>(null);
@@ -799,7 +800,7 @@ const evenCols = () => {
       year: ['2026년'],
       dist: ['9,999m'],
       floor: ['99층'],
-      ho: ['999동 9999호', '모름'],
+      ho: ['9999호 · 9999호', '모름'],
     };
     const natOf = (pad: number) => ths.map((th) => {
       if (th.classList.contains('ck-th')) return 44;
@@ -1238,7 +1239,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td class="pa-num">{{ r.buildYear || '-' }}</td>
               <td class="r pa-num">{{ r.dist ?? '-' }}m</td>
               <td class="pa-num">{{ r.floorNo || '-' }}</td>
-              <td v-if="webEmbed" :class="['pa-num', { 'ho-u': hoOf(r) === '모름' }]" :title="r.rgstDate ? `등기 ${ymdOf(r.rgstDate)}` : '등기일자 없음'">{{ hoOf(r) }}</td>
+              <td v-if="webEmbed" :class="['pa-num', 'two', { 'ho-u': hoOf(r) === '모름', 'ho-c': hoOf(r).includes(' · ') }]" :title="hoOf(r).includes(' · ') ? '같은 층 · 같은 전용 호가 여럿 — 이 중 하나' : undefined">{{ hoLines(r)[0] }}<small v-if="hoLines(r)[1]">{{ hoLines(r)[1] }}</small></td>
               <td class="l" :data-tip="webEmbed ? addrOf(r) : undefined" data-tip-pos="right"><div class="pa-addr"><span class="addr"><i v-if="orderOf[r.jibun]" class="no" :title="`임장 순서 ${orderOf[r.jibun]}번 — 지도 번호와 같다`">{{ orderOf[r.jibun] }}</i>{{ addrOf(r) }}</span><span v-if="r.same" class="chips"><span class="same">경매지번</span><span v-if="Math.abs(r.areaM2 - me.areaM2) <= 0.05" class="same eq">같은면적</span></span><span v-else-if="fieldChips(r.jibun).length" class="chips"><span v-for="c in fieldChips(r.jibun)" :key="c.t" :class="['pa-fc', c.k]">{{ c.t }}</span></span></div></td>
               <td class="acts-td" @click.stop><span class="acts">
                 <button type="button" class="ab n" title="네이버 부동산에서 이 빌라 보기 — 그 건물을 가운데 두고 지도를 바로 엽니다" aria-label="네이버 부동산에서 보기" @click="goNaver(fullAddr(r))">N</button>
@@ -1550,6 +1551,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 /* 웹 — 머리말 · 내용 모두 가운데(2026-11-14 사용자 '공시가 · 거리 · 층 가운데'). 머리말 옆 정렬 ▼ 만큼 왼쪽에도 빈 자리를 둬 글자가 칸 가운데에 온다 */
 .pa.web td.r { text-align: center; }
 .pa td.ho-u { color: #9ca3af; }
+.pa td.ho-c, .pa td.ho-c small { color: #4b5563; }   /* 후보(여럿) — 확정 호보다 조금 옅게 */
 
 .pa.web th:has(.sdir) .hk::before { content: ""; display: inline-block; width: 13px; }
 .pa-list { position: relative; min-width: 0; }
