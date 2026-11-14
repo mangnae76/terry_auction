@@ -109,6 +109,7 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    --row-hover: rgba(66, 130, 215, 0.2); --row-on: rgba(66, 130, 215, 0.3);   /* 밤 표 줄 — 오버 · 고른 줄(랭킹지도 고른 줄 색, 묻히지 않게 조금 진하게, 2026-11-15) */
     --bg: #0f141f; --band: #131a28; --row-line: #232d42; --subtab-line: #232e45; --surface: #182031; --surface-2: #1d2638; --surface-3: #232d42;
     --line: #232c3f; --line-2: #2a3449; --tb-line: #2a3449; --card-line: #1f2839;   /* 밤 선 — 한 단계 어둡게(2026-11-06, 너무 밝았다) */
     --text: #cfd6e2; --text-2: #a9b2c2; --muted: #8b95a8; --faint: #6e788c;
@@ -132,6 +133,7 @@
   }
 }
 :root[data-theme="dark"] {
+  --row-hover: rgba(66, 130, 215, 0.2); --row-on: rgba(66, 130, 215, 0.3);   /* 밤 표 줄 — 오버 · 고른 줄(랭킹지도 고른 줄 색, 묻히지 않게 조금 진하게, 2026-11-15) */
   --bg: #0f141f; --band: #131a28; --surface: #182031; --surface-2: #1d2638; --surface-3: #232d42;
   --line: #232c3f; --line-2: #2a3449; --tb-line: #2a3449; --card-line: #1f2839;   /* 밤 선 — 한 단계 어둡게(2026-11-06) */
   --row-line: #232d42; --subtab-line: #232e45;   /* 밤낮 단추로 켰을 때도 탭 줄 선이 밤 색이게(빠져 있어 낮 색 흰 선이 나왔다) */
@@ -827,6 +829,16 @@ button { cursor: pointer; }
 /* 선정물건 손품조사 — 경로가 화면 안 탭 줄로 갔으니 빈 경로 줄은 숨긴다(시장분석 손품조사와 같은 모양) */
 #itemView:has(#itemContent .item-son) #crumbSlotItem { display: none; }
 #itemView:has(#itemContent .item-son) #itemHead .ih-fold { visibility: hidden; pointer-events: none; }   /* 전체 접기는 옛 손품조사 카드용 — 단추만 감추고 자리는 남겨 사건 카드 높이가 다른 탭(권리분석 등)과 같게(탭 바꿀 때 흔들림 없음) */
+/* 밤 표 줄 색 하나로 — 웹의 모든 표(실거래분석 · 상세분포 · 랭킹 · 매각사례 · 낙찰가예측 · 물건목록 …) 줄에 마우스를 대거나 고르면
+   낮 색(흰빛)이 남거나 묻히던 것을 한 색으로. 칸마다 따로 칠한 색(평단가 칸 등)까지 덮도록 아이디 급으로 건다(2026-11-15 사용자) */
+:root[data-theme="dark"]:is(html, #__dk) :is(body, #__dk) tbody tr:hover > :is(td, th) { background: var(--row-hover) !important; }
+:root[data-theme="dark"]:is(html, #__dk) :is(body, #__dk) tbody tr:hover { background: transparent !important; }
+:root[data-theme="dark"]:is(html, #__dk) :is(body, #__dk) tbody tr:is(.on, .active, .sel, .selected, .is-sel, .picked, .picked-sale, .picked-jeonse) > :is(td, th), :root[data-theme="dark"]:is(html, #__dk) :is(body, #__dk) tbody tr:hover:is(.on, .active, .sel, .selected, .is-sel, .picked, .picked-sale, .picked-jeonse) > :is(td, th) { background: var(--row-on) !important; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):is(html, #__dk) :is(body, #__dk) tbody tr:hover > :is(td, th) { background: var(--row-hover) !important; }
+  :root:not([data-theme="light"]):is(html, #__dk) :is(body, #__dk) tbody tr:hover { background: transparent !important; }
+  :root:not([data-theme="light"]):is(html, #__dk) :is(body, #__dk) tbody tr:is(.on, .active, .sel, .selected, .is-sel, .picked, .picked-sale, .picked-jeonse) > :is(td, th), :root:not([data-theme="light"]):is(html, #__dk) :is(body, #__dk) tbody tr:hover:is(.on, .active, .sel, .selected, .is-sel, .picked, .picked-sale, .picked-jeonse) > :is(td, th) { background: var(--row-on) !important; }
+}
 /* ===== 다크 모드 — 시장분석(지역분석 · 물건분석 · 경매사례)에서 이번에 만든 화면. 흰 상자 · 검정 글을 테마 변수로 ===== */
 /* 바탕 — 안쪽 상자 · 표 · 거르기 칸은 카드 바탕을 그대로(흰 상자가 떠 있지 않게), 선은 어두운 선 */
 :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) :is(.adm-case-block, .adm-case-tail, .adm-table-wrap, .adm-trf, .adm-sel-row, .adm-kpi, .list-find, .sc-box, .sc-table, .adp-mkt-block, .adp-sub-block, .adp-table-wrap, .adp-mkt-cells, .adm-supply, .adm-nav.dm, .dm-row > *) { background: transparent !important; border-color: var(--card-line) !important; }
@@ -834,8 +846,8 @@ button { cursor: pointer; }
 :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) :is(table, thead, tbody, tr) { background: transparent !important; }
 :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) :is(th, td) { background: transparent !important; border-color: var(--line) !important; }
 :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) :is(thead th, .adp-mkt-cells .cell > small, .adp-conc-side, .adp-conc-corner) { background: var(--surface-2) !important; }
-:root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) .res-table tbody tr:hover td, :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) .adm-table tbody tr:hover td { background: var(--surface-2) !important; }
-:root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) .adm-table tbody :is(tr.picked-sale, tr.picked-jeonse) td { background: var(--blue-soft) !important; }
+:root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) .res-table tbody tr:hover td, :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) .adm-table tbody tr:hover td { background: var(--row-hover) !important; }
+:root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) .adm-table tbody :is(tr.picked-sale, tr.picked-jeonse) td { background: var(--row-on) !important; }
 /* 글자 — 검정 글은 밝게, 회색 글은 흐리게. 빨강 · 파랑 · 초록처럼 뜻이 있는 색은 그대로 */
 :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) :is(th, td, strong, b, h2, h3, label, .t, .list-title, .adm-sise-head, .sc-head, .sc-sub, .adp-dm-title, .res-amt, .res-name, .son-auto, .son-addr-head, .adp-conc-v, .adp-sub-head, .adm-nav-scope, .trf-lab, .lab):not(.res-note):not(.res-empty):not(.tool-desc):not(.kind):not(.hi.red):not(.in):not(.turn) { color: var(--text) !important; }
 :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) :is(.res-empty, .res-sub, .res-place, .son-ask-note, .res-pub, .res-pub em, .res-hint, .adm-sum span, .adp-dm-addr, .adp-mkt-block-head .adp-dm-addr, .son-auto-empty, .adp-dm-sub, .sc-table td) { color: var(--muted) !important; }
@@ -874,8 +886,8 @@ button { cursor: pointer; }
 :root:not([data-theme="light"]) :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) :is(table, thead, tbody, tr) { background: transparent !important; }
 :root:not([data-theme="light"]) :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) :is(th, td) { background: transparent !important; border-color: var(--line) !important; }
 :root:not([data-theme="light"]) :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) :is(thead th, .adp-mkt-cells .cell > small, .adp-conc-side, .adp-conc-corner) { background: var(--surface-2) !important; }
-:root:not([data-theme="light"]) :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) .res-table tbody tr:hover td, :root:not([data-theme="light"]) :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) .adm-table tbody tr:hover td { background: var(--surface-2) !important; }
-:root:not([data-theme="light"]) :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) .adm-table tbody :is(tr.picked-sale, tr.picked-jeonse) td { background: var(--blue-soft) !important; }
+:root:not([data-theme="light"]) :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) .res-table tbody tr:hover td, :root:not([data-theme="light"]) :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) .adm-table tbody tr:hover td { background: var(--row-hover) !important; }
+:root:not([data-theme="light"]) :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) .adm-table tbody :is(tr.picked-sale, tr.picked-jeonse) td { background: var(--row-on) !important; }
 /* 글자 — 검정 글은 밝게, 회색 글은 흐리게. 빨강 · 파랑 · 초록처럼 뜻이 있는 색은 그대로 */
 :root:not([data-theme="light"]) :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) :is(th, td, strong, b, h2, h3, label, .t, .list-title, .adm-sise-head, .sc-head, .sc-sub, .adp-dm-title, .res-amt, .res-name, .son-auto, .son-addr-head, .adp-conc-v, .adp-sub-head, .adm-nav-scope, .trf-lab, .lab):not(.res-note):not(.res-empty):not(.tool-desc):not(.kind):not(.hi.red):not(.in):not(.turn) { color: var(--text) !important; }
 :root:not([data-theme="light"]) :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) :is(.res-empty, .res-sub, .res-place, .son-ask-note, .res-pub, .res-pub em, .res-hint, .adm-sum span, .adp-dm-addr, .adp-mkt-block-head .adp-dm-addr, .son-auto-empty, .adp-dm-sub, .sc-table td) { color: var(--muted) !important; }
