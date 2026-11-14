@@ -476,12 +476,15 @@ const soldTrade = (r: { addr: string; area: number | null; year: number | null; 
 /** 그 물건 · 그날 새 방식 예측 — 매매 실거래가 · 분포. 못 잡으면 null */
 /** 선정물건 — 손품조사에서 잡은 매매가(빌라 · 호실 개별성 보정 뒤). 급매가가 아니다(2026-11-15 사용자) */
 const mineSale = computed(() => new Map(auctions.auctions.map((a) => [caseKey(a.caseNumber), Number(a.surveyForm?.indivValues?.['unit.est']) || Number(a.marketPicks?.price?.estSale) || 0] as const).filter(([k, v]) => k && v > 0)));   // 개별성 보정 뒤 값(선정물건 호실 예상가)이 먼저, 없으면 시세분석 매도가 예상
+/** 선정물건 급매가 — 손품결론 급매가 칸(사용자가 ±300만 안으로 잡는 값, 2026-11-15) */
+const mineUrgent = computed(() => new Map(auctions.auctions.map((a) => [caseKey(a.caseNumber), Number(String(a.surveyForm?.urgentSalePrice ?? '').replace(/[^\d]/g, '')) || 0] as const).filter(([k, v]) => k && v > 0)));
 const kPredOf = (tg: BidTarget & { addr: string; key?: string }, pi: number[]) => {
   if (!extTrades.value.length || tg.round < 1) return null;   // 실거래만 들어오면 바로(건축물대장 399곳을 다 기다리지 않는다, 2026-11-15 사용자)
   const own = tg.key ? mineSale.value.get(tg.key) : 0;
   const base = own ? { price: own, how: '손품 매매가', n: 0, drop: 0, months: 12 as const } : tradeAt(tg.addr, tg.area, tg.year, tg.date); if (!base) return null;
   const km = fitKModel(recs.value, tg, soldTrade); if (!km) return null;
-  return { base, km, dist: kDist(km, base.price, tg.min, pi) };
+  const urg = tg.key ? mineUrgent.value.get(tg.key) ?? 0 : 0;
+  return { base, km, dist: kDist(km, base.price, tg.min, pi), urgent: urg ? { price: urg, dist: kDist(km, urg, tg.min, pi) } : null };
 };
 watch(() => [hitDocs.value.length, recs.value.length] as const, ([h, r]) => { if (h && r && !extReady.value && !extBusy.value) void loadExt(); });
 const xfRound = (r: Round) => extVec(r.addr, r.area, r.min, r.date);
@@ -738,8 +741,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
           <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게(검암동 · 모든동 · 11-13 · 16 · 19 에서 잰 가장 넓은 값, 주소는 남는 폭) -->
-          <colgroup><col style="width: 80px" /><col style="width: 128px" /><col /><col style="width: 64px" /><col style="width: 80px" /><col style="width: 58px" /><col style="width: 80px" /><col style="width: 44px" /><col style="width: 100px" /><col style="width: 66px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 92px" /><col style="width: 100px" /><col style="width: 112px" /><col style="width: 100px" /><col style="width: 92px" /></colgroup>
-          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th>연식</th><th>전용</th><th>엘베</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th><th class="r kn">매매<br>실거래가</th><th class="r kn">새 예상<br>낙찰가</th><th class="r kn">새 차이</th></tr></thead>
+          <colgroup><col style="width: 80px" /><col style="width: 128px" /><col /><col style="width: 64px" /><col style="width: 80px" /><col style="width: 58px" /><col style="width: 80px" /><col style="width: 44px" /><col style="width: 100px" /><col style="width: 66px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 92px" /><col style="width: 100px" /><col style="width: 112px" /><col style="width: 100px" /><col style="width: 92px" /><col style="width: 112px" /></colgroup>
+          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th>연식</th><th>전용</th><th>엘베</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th><th class="r kn">매매<br>실거래가</th><th class="r kn">새 예상<br>낙찰가</th><th class="r kn">새 차이</th><th class="r kn">급매가 기준<br>낙찰가</th></tr></thead>
           <tbody>
             <tr v-for="it in shownItems" :key="it.key" :class="{ on: pick === it.key, off: !preds.has(it.key) }" @click="pick = pick === it.key ? '' : it.key">
               <td>{{ bidDay(it.target?.date || dayDate).slice(3) }}</td>
@@ -768,6 +771,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td v-else class="kn">—</td>
               <td v-if="it.result && it.result.sold > 0 && predsK.get(it.key)" class="r kn"><span class="bpt-nb">{{ signWon(it.result.sold - predsK.get(it.key)!.dist.median) }}<small class="bpt-at bpt-nb">{{ sgn(it.result.sold / predsK.get(it.key)!.dist.median - 1) }}</small></span></td>
               <td v-else class="r kn">—</td>
+              <td v-if="predsK.get(it.key)?.urgent" class="r kn"><span class="bpt-nb">{{ won(predsK.get(it.key)!.urgent!.dist.median) }}</span><small class="bpt-at">급매 {{ manN(predsK.get(it.key)!.urgent!.price) }}{{ it.result && it.result.sold > 0 ? ` · ${sgn(it.result.sold / predsK.get(it.key)!.urgent!.dist.median - 1)}` : '' }}</small></td>
+              <td v-else class="kn">—</td>
             </tr>
           </tbody>
         </table>
