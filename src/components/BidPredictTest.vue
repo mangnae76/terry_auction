@@ -359,11 +359,11 @@ const predsK = computed(() => {
   for (const it of items.value) {
     if (!it.target || it.target.round < 1) continue;
     const pi = sellMap.value.get(it.key)?.pi ?? similarBands(recs.value, it.target).pi;
-    const k = kPredOf({ ...it.target, addr: it.addr }, pi); if (k) out.set(it.key, k);
+    const k = kPredOf({ ...it.target, addr: it.addr, key: it.key }, pi); if (k) out.set(it.key, k);
   }
   return out;
 });
-const HOW_SHORT: Record<string, string> = { '같은 건물 같은 평형': '같은평형', '같은 건물 다른 평형': '다른평형', '유사물건': '유사물건' };
+const HOW_SHORT: Record<string, string> = { '같은 건물 같은 평형': '같은평형', '같은 건물 다른 평형': '다른평형', '유사물건': '유사물건', '손품 매매가': '손품조사' };
 const sel = computed(() => items.value.find((it) => it.key === pick.value && preds.value.has(it.key)) ?? items.value.find((it) => preds.value.has(it.key)) ?? null);
 const selP = computed(() => (sel.value ? preds.value.get(sel.value.key) ?? null : null));
 
@@ -474,9 +474,12 @@ const tradeAt = (addr: string, area: number | null, year: number | null, d: stri
 watch(extReady, () => tradeMemo.clear());
 const soldTrade = (r: { addr: string; area: number | null; year: number | null; d: string }) => tradeAt(r.addr, r.area, r.year, r.d)?.price ?? null;
 /** 그 물건 · 그날 새 방식 예측 — 매매 실거래가 · 분포. 못 잡으면 null */
-const kPredOf = (tg: BidTarget & { addr: string }, pi: number[]) => {
+/** 선정물건 — 손품조사 시세분석에서 잡은 매매가(매도가 예상). 급매가가 아니다(2026-11-15 사용자) */
+const mineSale = computed(() => new Map(auctions.auctions.map((a) => [caseKey(a.caseNumber), Number(a.marketPicks?.price?.estSale) || 0] as const).filter(([k, v]) => k && v > 0)));
+const kPredOf = (tg: BidTarget & { addr: string; key?: string }, pi: number[]) => {
   if (!extReady.value || tg.round < 1) return null;
-  const base = tradeAt(tg.addr, tg.area, tg.year, tg.date); if (!base) return null;
+  const own = tg.key ? mineSale.value.get(tg.key) : 0;
+  const base = own ? { price: own, how: '손품 매매가', n: 0, drop: 0, months: 12 as const } : tradeAt(tg.addr, tg.area, tg.year, tg.date); if (!base) return null;
   const km = fitKModel(recs.value, tg, soldTrade); if (!km) return null;
   return { base, km, dist: kDist(km, base.price, tg.min, pi) };
 };
@@ -759,7 +762,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td v-else class="r">—</td>
               <td v-if="preds.get(it.key)" class="r two"><span class="bpt-nb rng">{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).lo) }} ~<small>{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).hi) }}<i class="ghost" aria-hidden="true"> ~</i></small></span></td>
               <td v-else>—</td>
-              <td v-if="predsK.get(it.key)" class="r kn"><span class="bpt-nb">{{ won(predsK.get(it.key)!.base.price) }}</span><small class="bpt-at">{{ HOW_SHORT[predsK.get(it.key)!.base.how] }} {{ predsK.get(it.key)!.base.n }}건{{ predsK.get(it.key)!.base.months === 24 ? ' · 2년' : '' }}</small></td>
+              <td v-if="predsK.get(it.key)" class="r kn"><span class="bpt-nb">{{ won(predsK.get(it.key)!.base.price) }}</span><small class="bpt-at">{{ HOW_SHORT[predsK.get(it.key)!.base.how] }}{{ predsK.get(it.key)!.base.n ? ` ${predsK.get(it.key)!.base.n}건` : '' }}{{ predsK.get(it.key)!.base.months === 24 ? ' · 2년' : '' }}</small></td>
               <td v-else class="kn">—</td>
               <td v-if="predsK.get(it.key)" class="r strong kn"><span class="bpt-nb">{{ won(predsK.get(it.key)!.dist.median) }}</span></td>
               <td v-else class="kn">—</td>
