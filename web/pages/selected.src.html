@@ -395,7 +395,7 @@ button { cursor: pointer; }
 /* 아래 바닥 띠(.foot)가 표 바로 밑에 붙어 올라와 보였다 — 표 한 줄쯤 띄운다 */
 #marketView:has(.app-market:is([data-k="dong"], [data-k="case"])) .market-content { padding-bottom: 56px; }
 /* 매각분석 › 낙찰가예측 — 사건별 예측 표가 칸이 많아 1280 에서는 옆으로 굴렀다. 이 탭만 표가 딱 들어가는 폭(칸 너비 고정 · 주소 칸에 남는 폭 → 1560, 엘베 · 연식 · 전용 칸이 늘어서)으로(2026-11-14 사용자 — 1920은 너무 넓고 주소는 조금 더) */
-#marketContent:has(#bidPredictMount) { max-width: calc(1560px + 64px); padding-bottom: 56px; }
+#marketContent:has(#bidPredictMount) { max-width: calc(1860px + 64px); padding-bottom: 56px; }
 /* 화면 끝까지 긋는 선 — transform 으로 옮기면 반 픽셀에 걸려 선이 흐려지고 파란 밑줄과 1px 어긋났다. left 로 옮긴다 */
 .app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 0; width: 100vw; height: 1px; background: var(--subtab-line); }
 .app-market[data-k="dong"] .adm-view-tabs button { position: relative; z-index: 1; }
@@ -8245,8 +8245,8 @@ span.cal-day.has { cursor: help; }
     const offFx = !online && offMs < 1600 ? ` going-off" style="--off-d:-${offMs}ms` : '';
     /* 판 번호는 연결 알약 바로 오른쪽('ver.26.11.08-2', MyAgent 글자 없이) — 패널 위 따로 줄에서 옮겼다(2026-11-08) */
     AG.lastOnline = online;
-    const conn = online ? `<span class="sx-conn on"><i></i>MyAgent Connecting · <span class="sx-ago">${ago}</span>초 전</span>${s.version ? `<span class="sx-ver">${esc(agVer(s.version))}</span>` : ''}`
-      : `<span class="sx-conn off${offFx}"><i></i>MyAgent Disconnected<span class="sx-info" tabindex="0" data-tip="컴퓨터에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다" data-tip-pos="left" aria-label="컴퓨터에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span></span>`;
+    const conn = online ? `<span class="sx-conn on"><i></i>MyAgent · <span class="sx-ago">${ago}</span>초 전</span>${s.version ? `<span class="sx-ver">${esc(agVer(s.version))}</span>` : ''}`
+      : `<span class="sx-conn off${offFx}"><i></i>MyAgent<span class="sx-info" tabindex="0" data-tip="컴퓨터에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다" data-tip-pos="left" aria-label="컴퓨터에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span></span>`;
     const seg = (k, opts) => `<div class="sx-seg sm" data-n="${opts.length}" role="group">${opts.map(([v, t]) => `<button type="button" class="${String(agSel[k]) === String(v) ? 'on' : ''}" data-act="ag-sel" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div>`;
     /* 대기열수집 — 도우미 2026.11.01-7 부터. 도는 동안은 단추를 켜 둔다 */
     const qVerOk = !online || agVerAtLeast(s.version, [2026, 11, 1, 7]);
