@@ -1715,7 +1715,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .rr-tag svg { width: 12px; height: 12px; }
 .rr-tag.ok, .rr-tag.gone { background: color-mix(in srgb, #0f766e 15%, var(--surface)); color: #0f766e; }
 .rr-tag.warn { background: color-mix(in srgb, var(--nav-orange) 15%, var(--surface)); color: #c2410c; }
-.rr-tag.base { background: #e03131; color: #fff; }   /* 말소기준권리 — 빨강(앱 같게, 2026-11-14 사용자) */
+.rr-tag.base { background: color-mix(in srgb, #d04848 14%, var(--surface)); color: #c24545; }   /* 말소기준권리 — 붉은색은 두되 채도를 뺀 연한 칩(앱 같게, 2026-11-14 사용자) */
 .rr-tag.bad, .rr-tag.take { background: color-mix(in srgb, #be123c 13%, var(--surface)); color: #be123c; }
 .rr-head h4 { margin-top: 12px; font-size: 16px; color: var(--blue); }   /* 한 줄 제목 — 판정에 따라 색: 인수 위험 없음 초록 · 주의 파랑 · 위험 빨강(2026-11-06) */
 .rr-head.ok h4 { color: #15803d; }
@@ -1730,7 +1730,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .rr-kpi span { font-size: 12px; font-weight: 700; color: var(--text-2); }
 .rr-kpi b { font-size: 22px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
 .rr-kpi small { font-size: 12px; color: var(--muted); }
-.rr-base { display: grid; gap: 6px; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--nav-orange) 32%, var(--surface)); border-radius: 10px; background: color-mix(in srgb, var(--nav-orange) 7%, var(--surface)); }
+.rr-base { display: grid; gap: 6px; padding: 14px 16px; border: 1px solid color-mix(in srgb, #e0707e 30%, var(--surface)); border-radius: 10px; background: color-mix(in srgb, #f07a8a 8%, var(--surface)); }   /* 말소기준권리 상자 — 연핑크(앱 같게, 2026-11-14 사용자) */
 .rr-base b { font-size: 15px; font-weight: 800; color: var(--text); }
 .rr-base span { font-size: 13px; color: var(--text-2); }
 .rr-note, .rr-txt { margin: 10px 0 0; font-size: 12px; line-height: 1.7; color: var(--muted); word-break: keep-all; }
@@ -1796,7 +1796,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .rt-must { margin-left: auto; }   /* 필수 칩은 오른쪽 끝 — 올림 칩은 PDF 바로 옆 */
 .rt-tag { padding: 2px 7px; border-radius: 5px; font-size: 12px; background: var(--surface-3); color: var(--muted); white-space: nowrap; }
 .rt-tag.need { background: color-mix(in srgb, var(--nav-orange) 15%, var(--surface)); color: #c2410c; }
-.rt-tag.need.rt-must { background: color-mix(in srgb, #ff0000 9%, var(--surface)); color: #ff0000; box-shadow: inset 0 0 0 1px #ff0000; }   /* 서류 올리기 '필수' — 눈에 띄게 새빨간 테두리 · 글자(2026-11-06) */
+.rt-tag.need.rt-must { background: color-mix(in srgb, #cf5a5a 6%, var(--surface)); color: #cf5a5a; box-shadow: inset 0 0 0 1px #e7a9a9; }   /* 서류 올리기 '필수' — 붉은색 · 채도 뺌(2026-11-14 사용자, 예전 새빨강 2026-11-06) */
 .rt-tag.ok { background: color-mix(in srgb, #15803d 15%, var(--surface)); color: #15803d; }
 .rt-doc p { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--muted); word-break: keep-all; }
 .rt-doc .rt-how { white-space: nowrap; letter-spacing: -0.3px; overflow: hidden; text-overflow: ellipsis; }   /* 한 줄로 — 글자 하한 12 그대로, 자간만 좁힘 */

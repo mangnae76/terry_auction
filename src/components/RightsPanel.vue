@@ -269,8 +269,8 @@ const evLevelTone = computed(() => { const l = res.value?.evict.level; return l 
 .rp-tag.ok { background: #e6f4ea; color: #1b7f3b; }
 .rp-tag.warn { background: #fff4e5; color: #b45309; }
 .rp-tag.bad { background: #fde8e8; color: #dc2626; }
-.rp-tag.base { background: #e03131; color: #fff; }   /* 말소기준권리 — 빨강(웹 같게, 2026-11-14 사용자) */
-.rp-tag.must { margin-left: auto; color: #ff0000; box-shadow: inset 0 0 0 1px #ff0000; background: #fff5f5; }
+.rp-tag.base { background: #f8e0e0; color: #c24545; }   /* 말소기준권리 — 붉은색은 두되 채도를 뺀 연한 칩(웹 같게, 2026-11-14 사용자) */
+.rp-tag.must { margin-left: auto; color: #cf5a5a; box-shadow: inset 0 0 0 1px #e7a9a9; background: #fdf5f5; }   /* 필수 — 붉은색 · 채도 뺌(2026-11-14 사용자) */
 
 /* 서류 올리기 */
 .rp-doc { background: #f7f9fd; border: 1px solid #e8ebf1; border-radius: 10px; padding: 9px 10px; }
@@ -334,7 +334,7 @@ const evLevelTone = computed(() => { const l = res.value?.evict.level; return l 
 .rp-kpi span { font-size: 11px; font-weight: 700; color: #374151; }
 .rp-kpi b { display: block; margin-top: 2px; font-size: 18px; font-weight: 800; color: #111827; font-variant-numeric: tabular-nums; }
 .rp-kpi small { display: block; margin-top: 2px; font-size: 10.5px; color: #6b7280; line-height: 1.4; }
-.rp-base { margin-top: 8px; background: #fff6ef; border: 1px solid #f6cfae; border-radius: 8px; padding: 9px 10px; }
+.rp-base { margin-top: 8px; background: #fff3f4; border: 1px solid #f5d3d7; border-radius: 8px; padding: 9px 10px; }
 .rp-base b { display: block; font-size: 14px; font-weight: 800; color: #111827; }
 .rp-base span { display: block; margin-top: 3px; font-size: 12px; color: #374151; }
 .rp-lab { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 8px; align-items: start; margin-top: 7px; font-size: 11.5px; color: #374151; line-height: 1.5; }
