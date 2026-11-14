@@ -2866,7 +2866,7 @@ const INDIV_GROUPS: IndivGroup[] = [
       { id: 'ind.slope', label: '경사', survey: true, options: ['O', 'X'], rate: '-5%' },
       {
         id: 'ind.mgmt', label: '건물외관', survey: true, multi: true,
-        options: ['좋음', '양호', '나쁨', '지정주차', '곰팡이', '누수', '결로'], rate: '-5%',
+        options: ['좋음', '양호', '나쁨', '크랙', '누수', '곰팡이', '결로'], rate: '-5%',   // 등급 하나 + 나쁜 근거(있으면). 지정주차는 외관이 아니라 뺐다(2026-11-15 사용자)
       },
       {
         id: 'ind.inside', label: '공용부', survey: true, multi: true,
@@ -2913,7 +2913,7 @@ const APT_UNIT_EXTRA: IndivItem[] = [
 const TYPE_SHAPES = ['판상형', '타워형', '복층형'];
 /** 뷰 — 호수 · 강 · 공원이 보이는 조망은 따로(청라 레이크뷰 동이 같은 평형 +25%, 2026-11-11 사용자 확인). 하나만 고른다 */
 const VIEW_LAKE = '호수·강·공원뷰';
-const VIEW_OPTS = ['뻥뷰', '단지뷰', VIEW_LAKE];
+const VIEW_OPTS = ['뻥뷰', '단지뷰', '벽뷰', VIEW_LAKE];   // 벽뷰 — 앞 건물 벽이 막은 집(2026-11-15 사용자)
 /** 묶음마다 하나만 고르는 칸 — 타입(모양 · 베이), 구조(방 · 화장실), 향(2026-11-11 사용자) */
 const UNIT_PICK_GROUPS: Record<string, Array<{ label: string; opts: string[] }>> = {
   'ind.type': [{ label: '타입 모양', opts: TYPE_SHAPES }],   // 베이 · 방 · 화장실은 같은 평형이면 같아 뺐다(2026-11-11 사용자)
@@ -2929,6 +2929,9 @@ const UNIT_PICK_GROUPS_VILLA: Record<string, Array<{ label: string; opts: string
   'ind.view': [{ label: '뷰', opts: VIEW_OPTS }],
 };
 const unitPickGroups = computed(() => (isApartment.value ? UNIT_PICK_GROUPS : UNIT_PICK_GROUPS_VILLA));
+/** 빌라 건물외관 · 공용부 — 등급(좋음 · 양호 · 나쁨) 하나 + 근거 여러 개. 외관 근거는 나쁜 쪽(크랙 · 누수 · 곰팡이 · 결로), 공용부 근거는 좋은 쪽(청결 · 계단청소 · 보안)(2026-11-15 사용자) */
+const ZONE_GRADE = ['좋음', '양호', '나쁨'];
+const ZONE_GRADED = new Set(['ind.mgmt', 'ind.inside']);
 const indivGroups = computed<IndivGroup[]>(() => (isApartment.value
   ? INDIV_GROUPS.map((g, i) => (i === 0
     ? { ...g, items: [...g.items.filter((it) => it.id !== 'ind.mgmt' && it.id !== 'ind.inside'), ...APT_INDIV_EXTRA] }
@@ -5969,7 +5972,9 @@ const rateRange = (raw: string): [number, number] => {
   return [Math.min(...ns), Math.max(...ns)];
 };
 const floorRateOr = () => { const r = indivFloorRate(); return r && Number(r) !== 0 ? r : '5'; };   // 기준층도 비교한 집과 다르면 ±5%(강의 '층 · 동 · 타입 개별 편차 약 5%')
-const rateOf = (id: string) => rateRange(indivValue(`${id}.rate`) || (id === 'ind.floorNum' ? floorRateOr() : rateDefaultOf(id)));
+/** 적은 비율 — 비었거나 0 이면 기본값(0% 는 '같음'과 같아 따로 둘 까닭이 없다, 2026-11-15 사용자) */
+const rateTyped = (id: string) => { const v = indivValue(`${id}.rate`); return v && !/^0+(\.0*)?$/.test(v.trim()) ? v : ''; };
+const rateOf = (id: string) => rateRange(rateTyped(id) || (id === 'ind.floorNum' ? floorRateOr() : rateDefaultOf(id)));
 /** 구역 내 개별성 점수(0~100) — 단지끼리 잴 수 있는 항목만: 년식 · 주차수 · 엘베 · 경사 · 용적률(지하주차장 연결은 단지 내 개별성으로, 2026-11-11). 비중은 개별성 분석 '비율'(범위면 가운데).
  *  선정물건은 개별성 분석 값, 다른 단지는 년식(국토부 건축년도)만 — 건축물대장에 없는 값은 채우지 않는다 */
 /** 칸별 점수(0~100)와 비중 — 점수 팝업이 칸마다 보여 준다(2026-11-11 시안) */
@@ -6029,6 +6034,12 @@ const indivPick = (item: IndivItem, opt: string) => {
 /** 비중 · 비율 칸 — 기본값은 흐리지 않은 회색 글(placeholder), 고친 값은 파랑. 비우면 기본값으로 돌아간다 */
 /** 비율 · 수리 금액 칸 초기화 — 적은 값을 지워 기본값으로(웹, 줄마다 ↺, 2026-11-15 사용자) */
 const resetIndivValue = (key: string) => { if (!indivValue(key)) return; setIndivValue(key, ''); persistSoon(); };
+/** 표 위 점선 상자 '초기화' — 그 표의 비율(호실은 수리 금액까지)을 모두 기본값으로(2026-11-15 사용자) */
+const zoneRateKeys = computed(() => ZONE_UNIT_ITEMS.value.map((it) => `${it.id}.rate`));
+const unitRateKeys = computed(() => [...unitGroupsView.value.flatMap((g) => g.items.map((it) => `${it.id}.rate`)), 'ind.viewLake.rate', 'ind.repair.amt']);
+const zoneResetOn = computed(() => zoneRateKeys.value.some((k) => !!indivValue(k)));
+const unitResetOn = computed(() => unitRateKeys.value.some((k) => !!indivValue(k)));
+const resetRates = (keys: string[]) => { let n = 0; keys.forEach((k) => { if (indivValue(k)) { setIndivValue(k, ''); n += 1; } }); if (n) persistSoon(); };
 const indivRateInput = (id: string, v: string) => { setIndivValue(`${id}.rate`, v.replace(/[^\d.~\-]/g, '')); persistSoon(); };
 /** 묶음 안에서 하나만 — 같은 묶음의 다른 것은 풀고 이것만(다시 누르면 해제). 다른 묶음 값은 그대로 */
 const indivPickOne = (id: string, opt: string, group: string[]) => {
@@ -10203,8 +10214,8 @@ const goBack = () => router.back();
               <!-- 구역 내 개별성 — 위 표가 모두 이 단지 거래면 접어 둔다(이미 담겨 있다). 다른 단지 거래가 섞이면 열려 % 로 보정 -->
               <div class="cmp-two pair">
                 <!-- 안내는 표마다 위에 한 칸씩 — 옆 표로 넘어가지 않게(2026-11-13 사용자). 좁으면 안내 · 표 순서로 -->
-                <div :class="['cmp-zone-off', 'cmp-guide', 'g-zone', { 'cmp-zone-guide': zoneApplied }]"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span v-if="zoneApplied">{{ isApartment ? '이 단지가 다른 단지보다' : '경매빌라가 다른 빌라보다' }} 나으면 +, 못하면 −. {{ isApartment ? '다른 단지 거래에만 붙습니다.' : '예상 매매가에 바로 붙습니다.' }}</span><span v-else>시세분석에서 고른 실거래가 모두 이 {{ isApartment ? '단지' : '건물' }} 거래라 꺼져 있습니다.</span></div>
-                <div class="cmp-zone-off cmp-zone-guide cmp-guide g-unit"><b>{{ isApartment ? '단지 내 개별성' : '호실 개별성' }}</b><span>{{ isApartment ? '내 호실이' : '경매호실이' }} 시세분석에서 고른 거래 호실보다 나으면 +, 못하면 −. 모든 거래에 붙습니다.</span></div>
+                <div :class="['cmp-zone-off', 'cmp-guide', 'g-zone', { 'cmp-zone-guide': zoneApplied }]"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span v-if="zoneApplied">다른 {{ isApartment ? '단지' : '빌라' }}보다 나으면 +, 못하면 −</span><span v-else>고른 거래가 모두 이 단지라 꺼짐</span><button v-if="webEmbed" type="button" class="cmp-guide-reset" :disabled="!zoneResetOn" @click="resetRates(zoneRateKeys)">초기화</button></div>
+                <div class="cmp-zone-off cmp-zone-guide cmp-guide g-unit"><b>{{ isApartment ? '단지 내 개별성' : '호실 개별성' }}</b><span>고른 거래 호실보다 나으면 +, 못하면 −</span><button v-if="webEmbed" type="button" class="cmp-guide-reset" :disabled="!unitResetOn" @click="resetRates(unitRateKeys)">초기화</button></div>
                 <!-- 표는 늘 보인다 — 다른 단지(건물) 거래가 없으면 흐리게 막는다(2026-11-13 사용자) -->
                 <div :class="['son-demand', 'sup-tbl', 'cmp-zone-wrap', 't-zone', { off: !zoneApplied }]" :inert="!zoneApplied || undefined" :aria-disabled="!zoneApplied || undefined"><div class="adm-table-wrap"><table class="adm-table cmp-tbl cmp-tbl-zone">
                   <colgroup><col style="width: 15%" /><col /><col style="width: 17%" /><col style="width: 29%" /></colgroup>
@@ -10214,10 +10225,11 @@ const goBack = () => router.back();
                     <tr v-for="item in ZONE_UNIT_ITEMS" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
                       <td class="lft cmp-ind-ct">
                         <template v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
+                        <span v-else-if="item.options && ZONE_GRADED.has(item.id)" class="cmp-type-pick"><span class="cmp-ind-seg" role="radiogroup" :aria-label="`${item.label} 등급`"><button v-for="opt in ZONE_GRADE" :key="opt" type="button" role="radio" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-checked="indivPicked(item, opt)" @click="indivPickOne(item.id, opt, ZONE_GRADE)">{{ opt }}</button></span><span class="cmp-ind-seg" role="group" :aria-label="`${item.label} 근거`"><button v-for="opt in item.options.filter((o) => !ZONE_GRADE.includes(o))" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span></span>
                         <span v-else-if="item.options" class="cmp-ind-seg" role="group" :aria-label="item.label"><button v-for="opt in item.options" :key="opt" type="button" :data-t="optText(item.id, opt)" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ optText(item.id, opt) }}</button></span>
                         <b v-else>{{ indivAutoText(item) }}</b>
                       </td>
-                      <td class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="indivValue(`${item.id}.rate`)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%<button v-if="webEmbed" type="button" :class="['cmp-rate-reset', { on: !!indivValue(`${item.id}.rate`) }]" :tabindex="indivValue(`${item.id}.rate`) ? 0 : -1" :aria-label="`${item.label} 기본값으로`" :data-tip="indivValue(`${item.id}.rate`) ? '기본값으로' : undefined" @click="resetIndivValue(`${item.id}.rate`)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg></button></span></td>
+                      <td class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="rateTyped(item.id)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%<button v-if="webEmbed" type="button" :class="['cmp-rate-reset', { on: !!rateTyped(item.id) }]" :tabindex="rateTyped(item.id) ? 0 : -1" :aria-label="`${item.label} 기본값으로`" :data-tip="rateTyped(item.id) ? '기본값으로' : undefined" @click="resetIndivValue(`${item.id}.rate`)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg></button></span></td>
                       <td class="cmp-zone-cmp-td"><span v-if="zoneMatched(item.id)" class="cmp-zone-match">시세분석 조건으로 맞춤 · 0%</span><span v-else class="cmp-ind-seg cmp-zone-cmp" role="radiogroup" :aria-label="`${item.label} — ${isApartment ? '이 단지가 다른 단지보다' : '경매빌라가 다른 빌라보다'}`"><button v-for="c in ZONE_CMP" :key="c.v" type="button" role="radio" :aria-checked="zoneCmpOf(item.id) === c.sg" :class="[c.v, { on: zoneCmpOf(item.id) === c.sg }]"  @click="pickZoneCmp(item.id, c.v)"><span class="k">{{ c.label }}</span><small v-if="c.sg">{{ cmpPct(c.sg, item.id) }}</small></button></span></td></tr>
                   </tbody>
                 </table></div></div>
@@ -10236,7 +10248,7 @@ const goBack = () => router.back();
                         </td>
                         <!-- 수리는 금액(만 원) — 고른 수리에 따른 기본 금액, 적으면 그 금액 -->
                         <td v-if="item.id === 'ind.repair'" class="n"><span class="cmp-rate-in"><input inputmode="numeric" :class="{ typed: !!indivValue('ind.repair.amt') }" :value="indivValue('ind.repair.amt') ? Number(indivValue('ind.repair.amt')).toLocaleString('ko-KR') : ''" :placeholder="repairDefaultMan().toLocaleString('ko-KR')" aria-label="수리 금액" @input="indivPickText('ind.repair.amt', ($event.target as HTMLInputElement).value)" />만<button v-if="webEmbed" type="button" :class="['cmp-rate-reset', { on: !!indivValue('ind.repair.amt') }]" :tabindex="indivValue('ind.repair.amt') ? 0 : -1" :aria-label="`${'수리 금액'} 기본값으로`" :data-tip="indivValue('ind.repair.amt') ? '기본값으로' : undefined" @click="resetIndivValue('ind.repair.amt')"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg></button></span></td>
-                        <td v-else class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="indivValue(`${rateIdOf(item.id)}.rate`)" :placeholder="indivRateNum({ ...item, id: rateIdOf(item.id) })" :aria-label="`${item.label} 비율`" @input="indivRateInput(rateIdOf(item.id), ($event.target as HTMLInputElement).value)" />%<button v-if="webEmbed" type="button" :class="['cmp-rate-reset', { on: !!indivValue(`${rateIdOf(item.id)}.rate`) }]" :tabindex="indivValue(`${rateIdOf(item.id)}.rate`) ? 0 : -1" :aria-label="`${item.label} 기본값으로`" :data-tip="indivValue(`${rateIdOf(item.id)}.rate`) ? '기본값으로' : undefined" @click="resetIndivValue(`${rateIdOf(item.id)}.rate`)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg></button></span></td>
+                        <td v-else class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="rateTyped(rateIdOf(item.id))" :placeholder="indivRateNum({ ...item, id: rateIdOf(item.id) })" :aria-label="`${item.label} 비율`" @input="indivRateInput(rateIdOf(item.id), ($event.target as HTMLInputElement).value)" />%<button v-if="webEmbed" type="button" :class="['cmp-rate-reset', { on: !!rateTyped(rateIdOf(item.id)) }]" :tabindex="rateTyped(rateIdOf(item.id)) ? 0 : -1" :aria-label="`${item.label} 기본값으로`" :data-tip="rateTyped(rateIdOf(item.id)) ? '기본값으로' : undefined" @click="resetIndivValue(`${rateIdOf(item.id)}.rate`)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg></button></span></td>
                         <td v-if="item.id === 'ind.repair'" :class="['n', 'adp-ind-adj', repairMan() > 0 ? 'up' : 'zero']">{{ repairText(repairMan()) }}</td>
                         <td v-else class="cmp-zone-cmp-td"><span v-if="item.id === 'ind.floorNum' && cmpFloorZero" class="cmp-zone-match">시세분석 조건으로 맞춤 · 0%</span><span v-else class="cmp-ind-seg cmp-zone-cmp" role="radiogroup" :aria-label="`${item.label} — 내 호실이 비교한 호실보다`"><button v-for="c in ZONE_CMP" :key="c.v" type="button" role="radio" :aria-checked="zoneCmpOf(item.id) === c.sg" :class="[c.v, { on: zoneCmpOf(item.id) === c.sg }]" @click="pickZoneCmp(item.id, c.v)"><span class="k">{{ c.label }}</span><small v-if="c.sg">{{ cmpPct(c.sg, rateIdOf(item.id)) }}</small></button></span></td></tr>
                     </template>
@@ -13205,6 +13217,11 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-zone-cmp button.up.on { color: #c22e2e; box-shadow: inset 0 0 0 1px #c22e2e; }
 .cmp-zone-cmp button.down.on { color: #1d4ed8; box-shadow: inset 0 0 0 1px #1d4ed8; }
 .cmp-zone-off.cmp-zone-guide { color: #374151; }
+.cmp-guide-reset { flex: none; margin-left: auto; align-self: center; height: 24px; padding: 0 9px; border: 1px solid #d5dbe5; border-radius: 6px; background: #fff; color: #374151; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }   /* 점선 상자 오른쪽 끝 — 그 표 비율 모두 기본값으로 */
+.cmp-guide-reset:hover:not(:disabled) { border-color: #2b6df3; color: #2b6df3; }
+.cmp-guide-reset:disabled { color: #b3bac6; cursor: default; }
+:root[data-theme="dark"] .cmp-guide-reset { background: transparent; border-color: rgba(255, 255, 255, .2); color: #cfd6e2; }
+:root[data-theme="dark"] .cmp-guide-reset:disabled { color: #5b6579; }
 .cmp-floors { display: block; margin-top: 2px; font-size: 12px; color: #6b7280; }   /* 층 줄 — 비교한 거래 층 */
 .cmp-two > .cmp-guide { margin: 0; align-items: flex-start; }   /* 표마다 위 안내 — 두 칸 같은 높이(같은 줄) */
 .cmp-two > .cmp-guide b { white-space: nowrap; }
