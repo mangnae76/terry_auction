@@ -76,19 +76,21 @@ const lstsq = (X: number[][], y: number[]): number[] => {
 };
 const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); const n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : NaN; };
 
-export type PriceModel = { b: number[]; res: number[][]; n: number; pool: Sold[] };
+/** 덧붙일 값 — 시세 대비 최저가 · 엘베 · 세대수처럼 사건마다 따로 받는 것(2026-11-14). 없으면 지금 식 그대로 */
+export type PriceExtra = (x: { key: string; addr: string; area: number | null; min: number; d: string }) => number[];
+export type PriceModel = { b: number[]; res: number[][]; n: number; pool: Sold[]; px?: PriceExtra };
 /** 매각기일 이전 2년 · 같은 동(모자라면 전체) · 2~4차 · 응찰자 수 있는 매각 건으로 배수 식을 맞춘다 */
-export const fitPriceModel = (recs: Sold[], t: BidTarget): PriceModel | null => {
+export const fitPriceModel = (recs: Sold[], t: BidTarget, px?: PriceExtra): PriceModel | null => {
   const inWin = (r: Sold) => r.d < t.date && r.d >= yearsBefore(t.date, 2);
   let pool = recs.filter((r) => inWin(r) && r.round >= 1 && r.round <= 3 && r.bids != null && r.bids >= 1 && (!t.dong || r.dong === t.dong));
   if (pool.length < 60) pool = recs.filter((r) => inWin(r) && r.round >= 1 && r.round <= 3 && r.bids != null && r.bids >= 1);
   if (pool.length < 30) return null;
-  const X = pool.map((r) => feat(r, r.bids as number)); const y = pool.map((r) => Math.log(r.mx));
+  const X = pool.map((r) => [...feat(r, r.bids as number), ...(px ? px({ key: r.key, addr: r.addr, area: r.area, min: r.min, d: r.d }) : [])]); const y = pool.map((r) => Math.log(r.mx));
   const b = lstsq(X, y);
   const res: number[][] = [[], [], [], [], []];
   pool.forEach((r, i) => res[bandOf(r.bids as number)].push(y[i] - X[i].reduce((s, v, j) => s + v * b[j], 0)));
   const all = res.flat();
-  return { b, res: res.map((r) => (r.length >= 5 ? r : all)), n: pool.length, pool };
+  return { b, res: res.map((r) => (r.length >= 5 ? r : all)), n: pool.length, pool, px };
 };
 
 /** 비슷한 물건(같은 차수 · 전용 ±10㎡ · 연식 ±6년 · 감정가 ±25%)이 지난 2년 받은 인원 비율 */
@@ -105,7 +107,8 @@ export const similarBands = (recs: Sold[], t: BidTarget): { pi: number[]; n: num
 /** 인원 비율 + 배수 식 → 낙찰가 분포 */
 export const priceDist = (m: PriceModel, t: BidTarget, pi: number[]) => {
   const tt = { ...t, round: Math.min(Math.max(t.round, 1), 3) };
-  const center = BAND_REP.map((n) => Math.exp(feat(tt, n).reduce((s, v, j) => s + v * m.b[j], 0)));
+  const ex = m.px ? m.px({ key: (t as BidTarget & { key?: string }).key ?? '', addr: (t as BidTarget & { addr?: string }).addr ?? '', area: t.area, min: t.min, d: t.date }) : [];
+  const center = BAND_REP.map((n) => Math.exp([...feat(tt, n), ...ex].reduce((s, v, j) => s + v * m.b[j], 0)));
   const bandWon = center.map((c) => Math.round(t.min * c));
   /** 이 금액을 쓰면 이길 확률 = 낙찰가가 이보다 낮게 나올 확률 */
   const win = (w: number) => pi.reduce((s, p, k) => s + (p ? p * (m.res[k].filter((e) => center[k] * Math.exp(e) < w / t.min).length / m.res[k].length) : 0), 0);
@@ -216,7 +219,8 @@ export const roundsOf = (h: HitLike, collectStart = '2025-06-15', lead = 0): Rou
 };
 const lnp = (x: number) => Math.log(1 + Math.max(0, x));
 /** 고른 방법 — 누적 조회수 + 마지막 7일 + 회차(신건 · 3차 이상) */
-export const roundFeat = (r: Pick<Round, 'views' | 'last7' | 'round'>) => [1, lnp(r.views), lnp(r.last7), r.round === 0 ? 1 : 0, r.round >= 2 ? 1 : 0];
+export type RoundExtra = (r: Round) => number[];
+export const roundFeat = (r: Pick<Round, 'views' | 'last7' | 'round'>, xf?: RoundExtra) => [1, lnp(r.views), lnp(r.last7), r.round === 0 ? 1 : 0, r.round >= 2 ? 1 : 0, ...(xf ? xf(r as Round) : [])];
 const ridge = (A: number[][], y: number[], lam: number) => {
   const p = A[0].length;
   const M = Array.from({ length: p }, (_, i) => Array.from({ length: p + 1 }, (_, j) => (j === p ? A.reduce((s, r, k) => s + r[i] * y[k], 0) : A.reduce((s, r) => s + r[i] * r[j], 0) + (i === j && i > 0 ? lam : 0))));
@@ -227,32 +231,51 @@ const ridge = (A: number[][], y: number[], lam: number) => {
   }
   return M.map((row, i) => row[p] / (M[i][i] || 1e-12));
 };
-export type RoundModel = { ps: number[]; b: number[]; s: number; n: number; nSold: number; before: string };
+export type RoundModel = { ps: number[]; b: number[]; s: number; n: number; nSold: number; before: string; xf?: RoundExtra };
 /** before 날짜 이전 회차로만 배운다(그날과 그 뒤 결과는 안 본다). 공고일부터 기록이 있는 4회 유찰까지 */
-export const fitRoundModel = (rounds: Round[], before: string): RoundModel | null => {
+export const fitRoundModel = (rounds: Round[], before: string, xf?: RoundExtra): RoundModel | null => {
   const tr = rounds.filter((r) => r.complete && r.round <= 4 && r.date < before && (r.result === 'fail' || (r.result === 'sold' && r.bids > 0)));
   const sd = tr.filter((r) => r.result === 'sold');
   if (tr.length < 30 || sd.length < 10) return null;
-  const X = tr.map(roundFeat); const y = tr.map((r) => (r.result === 'sold' ? 1 : 0));
+  const X = tr.map((r) => roundFeat(r, xf)); const y = tr.map((r) => (r.result === 'sold' ? 1 : 0));
   let ps = new Array(X[0].length).fill(0);
   for (let it = 0; it < 30; it++) {
     const w: number[] = []; const z: number[] = [];
     X.forEach((x, k) => { const e = x.reduce((s, v, j) => s + v * ps[j], 0); const p = 1 / (1 + Math.exp(-e)); const ww = Math.max(1e-6, p * (1 - p)); w.push(ww); z.push(e + (y[k] - p) / ww); });
     ps = ridge(X.map((x, k) => x.map((v) => v * Math.sqrt(w[k]))), z.map((v, k) => v * Math.sqrt(w[k])), 1);
   }
-  const Xs = sd.map(roundFeat); const ys = sd.map((r) => lnp(r.bids)); const b = ridge(Xs, ys, 1e-3);
+  const Xs = sd.map((r) => roundFeat(r, xf)); const ys = sd.map((r) => lnp(r.bids)); const b = ridge(Xs, ys, 1e-3);
   const s = Math.max(0.15, Math.sqrt(Xs.reduce((a, x, k) => a + (ys[k] - x.reduce((q, v, j) => q + v * b[j], 0)) ** 2, 0) / Math.max(1, Xs.length - b.length)));
-  return { ps, b, s, n: tr.length, nSold: sd.length, before };
+  return { ps, b, s, n: tr.length, nSold: sd.length, before, xf };
 };
 /** 팔릴 확률 · 팔릴 때 인원 구간 비율 · 예상 인원 */
 export const predictRound = (m: RoundModel, r: Pick<Round, 'views' | 'last7' | 'round'>) => {
-  const x = roundFeat(r);
+  const x = roundFeat(r, m.xf);
   const pSold = 1 / (1 + Math.exp(-x.reduce((s, v, j) => s + v * m.ps[j], 0)));
   const mu = x.reduce((s, v, j) => s + v * m.b[j], 0);
   const cut = [1.5, 2.5, 4.5, 7.5, 11.5].map(Math.log); const P = (y: number) => ncdf((y - mu) / m.s);
   const raw = [P(cut[1]) - P(cut[0]), P(cut[2]) - P(cut[1]), P(cut[3]) - P(cut[2]), P(cut[4]) - P(cut[3]), 1 - P(cut[4])];
   const tot = raw.reduce((a, v) => a + v, 0) || 1;
   return { pSold, pi: raw.map((v) => v / tot), expBids: Math.max(0, Math.exp(mu) - 1) };
+};
+
+/* ===== 시세 — 매각일 이전 실거래(국토부)로. 같은 건물 비슷한 평형 → 같은 동 비슷한 평수 · 연식 ===== */
+export type TradeLite = { t: string; price: number; area: number; dong: string; jibun: string; year: number };
+/** 주소 → 동 · 지번('검암동', '493-4') */
+export const lotOf = (addr: string): { dong: string; jibun: string } => {
+  const m = String(addr ?? '').replace(/\s*\(.*$/, '').match(/([가-힣0-9]+(?:동|가|읍|면|리))\s+(산\s*)?(\d+(?:-\d+)?)/);
+  return m ? { dong: m[1], jibun: `${m[2] ? '산' : ''}${m[3]}` } : { dong: '', jibun: '' };
+};
+const monthsBefore = (d: string, n: number) => { const x = new Date(`${d}T00:00:00Z`); x.setUTCMonth(x.getUTCMonth() - n); return x.toISOString().slice(0, 10); };
+/** d 이전 실거래로 그 물건 시세(원). 같은 건물 · 전용 ±10% · 24개월 → 같은 동 · 전용 ±10㎡ · 연식 ±5년 · 12개월(3건 이상). 못 잡으면 null */
+export const marketPriceAt = (trades: TradeLite[], addr: string, area: number | null, year: number | null, d: string): { price: number; how: '같은 건물' | '유사물건' } | null => {
+  if (!area || !d) return null;
+  const { dong, jibun } = lotOf(addr); if (!dong) return null;
+  const ppm = (xs: TradeLite[]) => median(xs.map((x) => x.price / x.area));
+  const same = trades.filter((x) => x.dong === dong && x.jibun === jibun && Math.abs(x.area - area) <= area * 0.1 && x.t < d && x.t >= monthsBefore(d, 24));
+  if (same.length) return { price: ppm(same) * area, how: '같은 건물' };
+  const sim = trades.filter((x) => x.dong === dong && Math.abs(x.area - area) <= 10 && (!year || !x.year || Math.abs(x.year - year) <= 5) && x.t < d && x.t >= monthsBefore(d, 12));
+  return sim.length >= 3 ? { price: ppm(sim) * area, how: '유사물건' } : null;
 };
 
 export { median as medianOf };

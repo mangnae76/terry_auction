@@ -9,8 +9,8 @@ export const getBuildingFacts = async (address: string): Promise<BuildingFacts |
   try {
     const region = await resolveRegionFromAddress(address);
     if (!region?.bCode10 || !region.jibun) return null;
-    // 'h' — 세대수(households)까지 담은 판(2026-11-08). 예전 'n' 판에는 세대수가 없어 열쇠를 바꿔 새로 받는다
-    const got = await cachedEntryOrStale('cacheBldFacts', cacheKey(region.bCode10, region.jibun, 'h'), CACHE_TTL.units,
+    // 'y' — 사용승인 해(year)까지 담은 판(2026-11-14). 예전 'h' 판(세대수) · 'n' 판에는 없어 열쇠를 바꿔 새로 받는다
+    const got = await cachedEntryOrStale('cacheBldFacts', cacheKey(region.bCode10, region.jibun, 'y'), CACHE_TTL.units,
       () => fetchBuildingFacts(region.bCode10, region.jibun), (v) => v !== null, 365 * 24 * 60 * 60 * 1000);
     return got.value ?? null;
   } catch {
