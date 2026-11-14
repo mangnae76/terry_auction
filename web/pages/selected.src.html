@@ -109,6 +109,7 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    --tip-bg: #3d4b6b; --tip-line: rgba(255, 255, 255, 0.16); --tip-text: #f5f7fb; --tip-label: #c3cde0;   /* 밤 툴팁 — 바탕과 섞이지 않게 한 단계 밝은 회청색(2026-11-15) */
     --row-hover: rgba(66, 130, 215, 0.2); --row-on: rgba(66, 130, 215, 0.3);   /* 밤 표 줄 — 오버 · 고른 줄(랭킹지도 고른 줄 색, 묻히지 않게 조금 진하게, 2026-11-15) */
     --bg: #0f141f; --band: #131a28; --row-line: #232d42; --subtab-line: #232e45; --surface: #182031; --surface-2: #1d2638; --surface-3: #232d42;
     --line: #232c3f; --line-2: #2a3449; --tb-line: #2a3449; --card-line: #1f2839;   /* 밤 선 — 한 단계 어둡게(2026-11-06, 너무 밝았다) */
@@ -133,6 +134,7 @@
   }
 }
 :root[data-theme="dark"] {
+  --tip-bg: #3d4b6b; --tip-line: rgba(255, 255, 255, 0.16); --tip-text: #f5f7fb; --tip-label: #c3cde0;   /* 밤 툴팁 — 바탕과 섞이지 않게 한 단계 밝은 회청색(2026-11-15) */
   --row-hover: rgba(66, 130, 215, 0.2); --row-on: rgba(66, 130, 215, 0.3);   /* 밤 표 줄 — 오버 · 고른 줄(랭킹지도 고른 줄 색, 묻히지 않게 조금 진하게, 2026-11-15) */
   --bg: #0f141f; --band: #131a28; --surface: #182031; --surface-2: #1d2638; --surface-3: #232d42;
   --line: #232c3f; --line-2: #2a3449; --tb-line: #2a3449; --card-line: #1f2839;   /* 밤 선 — 한 단계 어둡게(2026-11-06) */
@@ -829,6 +831,15 @@ button { cursor: pointer; }
 /* 선정물건 손품조사 — 경로가 화면 안 탭 줄로 갔으니 빈 경로 줄은 숨긴다(시장분석 손품조사와 같은 모양) */
 #itemView:has(#itemContent .item-son) #crumbSlotItem { display: none; }
 #itemView:has(#itemContent .item-son) #itemHead .ih-fold { visibility: hidden; pointer-events: none; }   /* 전체 접기는 옛 손품조사 카드용 — 단추만 감추고 자리는 남겨 사건 카드 높이가 다른 탭(권리분석 등)과 같게(탭 바꿀 때 흔들림 없음) */
+/* 밤 툴팁 — 검은 말풍선이 밤 바탕과 같은 색이라 고장처럼 보였다. 모든 툴팁(ⓘ 설명 · 표 말풍선 · 차트 말풍선 · 주소 말풍선)을 한 단계 밝은 색 하나로(2026-11-15 사용자) */
+:root[data-theme="dark"] [data-tip]::after, :root[data-theme="dark"] :is(.itip-bubble, .adp-dm-bubble, .adp-note-bubble, .adm-tip, .cal-tip, .pw-flow-tip, .tip-float, .dq-tip, .dsc-tip, .ttl-tip, .bm-tip, .at-tip, .ftp-addr-bubble-top, .wlp-addr-bubble) { background: var(--tip-bg) !important; color: var(--tip-text) !important; box-shadow: 0 0 0 1px var(--tip-line), 0 8px 20px rgba(0, 0, 0, .35) !important; }
+:root[data-theme="dark"] .itip-bubble::before, :root[data-theme="dark"] .adp-dm-bubble::before, :root[data-theme="dark"] .ftp-addr-bubble-top::before, :root[data-theme="dark"] .wlp-addr-bubble::before { border-bottom-color: var(--tip-bg) !important; }
+:root[data-theme="dark"] :is(.dq-tip b, .dsc-tip b, .ttl-tip b, .bm-tip b, .itip-bubble em:not(.good), .adp-dm-bubble b:not(.act), .adp-note-bubble b:not(.act)) { color: var(--tip-label) !important; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) [data-tip]::after, :root:not([data-theme="light"]) :is(.itip-bubble, .adp-dm-bubble, .adp-note-bubble, .adm-tip, .cal-tip, .pw-flow-tip, .tip-float, .dq-tip, .dsc-tip, .ttl-tip, .bm-tip, .at-tip, .ftp-addr-bubble-top, .wlp-addr-bubble) { background: var(--tip-bg) !important; color: var(--tip-text) !important; box-shadow: 0 0 0 1px var(--tip-line), 0 8px 20px rgba(0, 0, 0, .35) !important; }
+  :root:not([data-theme="light"]) .itip-bubble::before, :root:not([data-theme="light"]) .adp-dm-bubble::before, :root:not([data-theme="light"]) .ftp-addr-bubble-top::before, :root:not([data-theme="light"]) .wlp-addr-bubble::before { border-bottom-color: var(--tip-bg) !important; }
+  :root:not([data-theme="light"]) :is(.dq-tip b, .dsc-tip b, .ttl-tip b, .bm-tip b, .itip-bubble em:not(.good), .adp-dm-bubble b:not(.act), .adp-note-bubble b:not(.act)) { color: var(--tip-label) !important; }
+}
 /* 밤 표 줄 색 하나로 — 웹의 모든 표(실거래분석 · 상세분포 · 랭킹 · 매각사례 · 낙찰가예측 · 물건목록 …) 줄에 마우스를 대거나 고르면
    낮 색(흰빛)이 남거나 묻히던 것을 한 색으로. 칸마다 따로 칠한 색(평단가 칸 등)까지 덮도록 아이디 급으로 건다(2026-11-15 사용자) */
 :root[data-theme="dark"]:is(html, #__dk) :is(body, #__dk) tbody tr:hover > :is(td, th) { background: var(--row-hover) !important; }
