@@ -1783,6 +1783,10 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 .app-tbl .at-line .no.ph { visibility: hidden; }
 .app-tbl .at-line .at-tx { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-tbl .kind.me { justify-self: start; margin-bottom: 2px; }
+/* 앱 — 선정물건 줄은 칩과 주소를 한 줄에, 세로 가운데로(2026-11-14 사용자) */
+.app-tbl .at-addr:has(> .kind.me) { display: flex; align-items: center; gap: 6px; }
+.app-tbl .at-addr > .kind.me { flex: none; margin-bottom: 0; line-height: 1.4; }
+.app-tbl .at-addr:has(> .kind.me) .at-line { flex: 1 1 auto; }
 .app-tbl .at-two { line-height: 1.3; }
 .app-tbl .at-two small { display: block; font-size: 10.5px; color: var(--sub); }
 .app-tbl .est-lab { display: block; font-size: 10.5px; }

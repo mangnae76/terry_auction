@@ -158,6 +158,12 @@ const isOperator = computed(() => isAdminEmail(authStore.email));
 const saleSnap = computed(() => (auction.value?.saleSnap?.v === 1 ? auction.value.saleSnap : null));
 /** 조건 줄 — 앱은 동 이름부터(시군구 '서해구'는 뺀다, 매매수요 ② · ③ 제목과 같게, 2026-11-13 사용자) */
 const saleHead = computed(() => String(saleSnap.value?.head ?? '').replace(/^\S+(?:시|군|구)\s+(?=\S+(?:동|읍|면|가|리)(?:\s|$))/, '').replace(/\b20(\d{2})[.-](\d{2})[.-](\d{2})\b/g, '$1$2$3'));   // 날짜는 260813 꼴(2026-11-13 사용자)
+/** 앱 매각분석 — 앞의 지역 · 종류(숫자 없는 마디)는 제목 줄 운영 칩 오른쪽으로, 나머지(사건번호 · 둘레 · 기간 · 건수)는 한 줄로(2026-11-14 사용자) */
+const saleHeadParts = computed(() => {
+  const seg = saleHead.value.split(' · ');
+  const k = Math.max(0, seg.findIndex((x) => /\d/.test(x)));
+  return { region: seg.slice(0, k).join(' · '), rest: seg.slice(k).join(' · ').replace(/\s*~\s*/g, '~') };
+});
 const saleWon = (n: number | null | undefined) => { if (n == null || !(n > 0)) return '-'; const man = Math.round(n / 1e4); const eok = Math.floor(man / 1e4); const rest = man % 1e4; return eok ? `${eok}억${rest ? ` ${rest.toLocaleString('ko-KR')}만` : ''}` : `${rest.toLocaleString('ko-KR')}만`; };
 const salePct = (x: number | null | undefined) => (x == null ? '-' : `${(x * 100).toFixed(1)}%`);
 const saleSnapAt = computed(() => { const t = saleSnap.value?.at; if (!t) return '-'; const d = new Date(t); const p2 = (n: number) => String(n).padStart(2, '0'); return `${String(d.getFullYear()).slice(2)}${p2(d.getMonth() + 1)}${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`; });
@@ -10616,13 +10622,13 @@ const goBack = () => router.back();
         <!-- 앱 매각분석 — 운영자만(웹 손품조사 › 매각분석 탭처럼 '운영' 칩, 2026-11-13 사용자). 시세분석 카드 아래 같은 꼴 · 같은 접기 -->
         <section v-if="appPrice && isOperator" v-show="sonSub === 'sale'" class="adp-card son-under">
           <!-- 탭으로 여는 카드라 접기는 뺐다 — 접힌 채로 남아 탭을 눌러도 안이 비어 보였다(2026-11-13 사용자) -->
-          <header class="adp-card-head adp-survey-head">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" /></svg>매각분석<span class="adp-op-chip">운영</span></h2><span v-if="saleSnap" class="sale-at">웹 매각분석 기준 {{ saleSnapAt }}</span>
+          <header class="adp-card-head adp-survey-head sale-title">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" /></svg>매각분석<span class="adp-op-chip">운영</span><span v-if="saleSnap && saleHeadParts.region" class="sale-region">{{ saleHeadParts.region }}</span></h2><span v-if="saleSnap" class="sale-at">웹 기준 {{ saleSnapAt }}</span>
           </header>
           <div class="adp-mkt-body">
             <!-- 웹 손품조사 › 매각분석을 열면 웹이 물건에 남긴 결과(saleSnap)를 그대로 보여 준다 — 앱엔 계산이 없다(2026-11-13 사용자) -->
             <template v-if="saleSnap">
-              <p class="sale-head"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ saleHead }}</p>
+              <p class="sale-head"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="sale-head-t" :title="saleHeadParts.rest">{{ saleHeadParts.rest }}</span></p>
               <div class="sale-bids">
                 <div class="sale-my"><span>경매물건 감정가</span><b>{{ saleSnap.my > 0 ? `${saleSnap.my.toLocaleString('ko-KR')}원` : '-' }}</b></div>
                 <div v-for="b in saleBids" :key="b.k" class="sale-bid"><span class="k">{{ b.k }}</span><b class="v">{{ b.v }}</b><small>{{ b.note }}</small></div>
@@ -12784,6 +12790,10 @@ tr.tone-take { background: #fff5f5; }
 .adp-card-opt .addr { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sale-head { display: flex; align-items: center; gap: 4px; margin: 4px 0 10px; font-size: 12px; color: #2b6df3; line-height: 1.45; }
 .sale-head svg { flex: none; }
+.sale-head-t { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; letter-spacing: -0.3px; }   /* 한 줄로(2026-11-14 사용자) */
+.sale-title { flex-wrap: wrap; row-gap: 2px; }   /* 제목 · 지역이 길면 기준 시각이 아래 줄 오른쪽으로 — 제목을 누르지 않는다 */
+.sale-title h2 { flex: 0 1 auto; white-space: nowrap; }
+.sale-region { margin-left: 6px; font-size: 12px; font-weight: 400; color: #2b6df3; white-space: nowrap; }   /* 운영 칩 오른쪽 — 지역 · 종류 */
 .sale-at { margin-left: auto; font-size: 11.5px; font-weight: 400; color: #9ca3af; white-space: nowrap; }   /* 매각분석 제목 줄 오른쪽 끝 */
 .sale-bids { display: grid; gap: 6px; padding: 10px; border-radius: 10px; background: #f7f8fb; }
 .sale-my { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 10px; border-radius: 8px; background: #fff; border: 1px solid #e8ecf3; font-size: 12.5px; color: #4b5563; }   /* 아래 입찰가 상자와 같은 테두리 · 같은 양끝 */
@@ -13151,16 +13161,21 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 :is(#sonUnitSlot, #appUnitSlot) .unit-tag { font-size: 13px; font-weight: 700; color: #2b4fd8; background: #eef2ff; border-radius: 5px; padding: 3px 8px; }   /* 시세분석 '결론 · 입력' 표와 같은 꼴 */
 /* 앱 — 폰 폭: 상자 안쪽 여백 줄이고, 개별성 표는 옆으로 밀어 본다(고르는 단추가 잘리지 않게) */
 #appUnitSlot .o-unit { padding: 14px 12px 16px !important; }
-/* 개별성 표 — 옆으로 밀지 않고 폰 폭에 꽉(2026-11-13 사용자). 칸 폭 이름 19 · 내용 나머지 · 비율 17 · 보정 15, 글 · 단추 · 칸 작게 */
+/* 개별성 표 — 옆으로 밀지 않고 폰 폭에 꽉(2026-11-13 사용자). 칸 폭 이름 54 · 내용 나머지 · 비율 46 · 비교 104px — 비교(나음 · 같음 · 못함)를 지키고 내용 단추는 줄마다 2~3개로 접힌다(2026-11-14 사용자) */
 #appUnitSlot .sup-tbl .adm-table { width: 100%; min-width: 0; table-layout: fixed; }
-#appUnitSlot .sup-tbl .adm-table col:nth-child(1) { width: 19% !important; }
-#appUnitSlot .sup-tbl .adm-table th:first-child { white-space: nowrap; letter-spacing: -0.3px; }
-#appUnitSlot .sup-tbl .adm-table col:nth-child(3) { width: 17% !important; }
-#appUnitSlot .sup-tbl .adm-table col:nth-child(4) { width: 15% !important; }
+#appUnitSlot .sup-tbl .adm-table col:nth-child(1) { width: 54px !important; }
+#appUnitSlot .sup-tbl .adm-table th:first-child { letter-spacing: -0.3px; }
+#appUnitSlot .sup-tbl .adm-table col:nth-child(3) { width: 46px !important; }
+#appUnitSlot .sup-tbl .adm-table col:nth-child(4) { width: 104px !important; }
 #appUnitSlot .sup-tbl .adm-table :is(th, td) { padding: 6px 3px !important; font-size: 11.5px !important; white-space: normal; word-break: keep-all; }
 #appUnitSlot .sup-tbl .adm-table td.lft { padding-left: 5px !important; }
 #appUnitSlot .cmp-ind-seg { gap: 2px; padding: 2px; }
 #appUnitSlot .cmp-ind-seg button { height: 22px; padding: 0 5px; font-size: 11.5px; }
+#appUnitSlot td.cmp-ind-ct :is(.cmp-ind-seg, .cmp-type-pick) { max-width: 100%; box-sizing: border-box; }
+#appUnitSlot .cmp-type-pick { gap: 4px; }
+#appUnitSlot .cmp-ind-seg.cmp-zone-cmp button { height: auto; padding: 3px 0; }
+#appUnitSlot .cmp-zone-cmp button small { font-size: 11px; }
+#appUnitSlot .cmp-zone-match { font-size: 11.5px; }
 #appUnitSlot .cmp-rate-in { display: flex; width: 100%; gap: 1px; }   /* 비율 입력칸 — 칸 폭 끝까지(단위 % · 만 자리만 남기고) */
 #appUnitSlot .cmp-rate-in input { flex: 1 1 0; width: auto; min-width: 0; height: 24px; padding: 0 4px; font-size: 11.5px; }
 #appUnitSlot .cmp-ind-in input { width: 34px; height: 24px; padding: 0 3px; font-size: 11.5px; }
