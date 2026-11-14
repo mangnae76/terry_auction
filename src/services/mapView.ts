@@ -110,7 +110,14 @@ const spanOf = (c: LatLng, meters: number) => {
   return { dLat, dLng };
 };
 
+/** 누른 말풍선을 맨 위로 — 겹치면 뒤 말풍선이 안 보였다(2026-11-14 사용자, 웹 모든 지도). 위치마다 올린 높이를 기억해 다시 그려도 그대로 */
+const raiser = (base: number) => {
+  let top = base; const up = new Map<string, number>();
+  const keyOf = (p: LatLng) => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
+  return { zOf: (p: LatLng, z: number) => Math.max(z, up.get(keyOf(p)) ?? -Infinity), raise: (p: LatLng) => { top += 1; up.set(keyOf(p), top); return top; }, top: () => top };
+};
 const kakaoView = (k: KakaoMaps, el: HTMLElement, opts: MapOpts): MapView => {
+  const rz = raiser(1500);
   addKakaoCss();
   el.classList.add('kmap-box');
   const c0 = opts.center ?? { lat: 37.5, lng: 126.7 };
@@ -184,16 +191,18 @@ const kakaoView = (k: KakaoMaps, el: HTMLElement, opts: MapOpts): MapView => {
           const pe = document.createElement('div');
           pe.className = `kpop ${o.popup.className ?? ''}`;
           pe.innerHTML = o.popup.html;
-          const next = new k.CustomOverlay({ position: at, content: pe, xAnchor: 0.5, yAnchor: 1, zIndex: 3000, clickable: true });
+          const next = new k.CustomOverlay({ position: at, content: pe, xAnchor: 0.5, yAnchor: 1, zIndex: Math.max(3000, rz.top() + 1), clickable: true });
           next.setMap(map);
           pop = next;
         });
       }
       const ov = new k.CustomOverlay({
         // 누를 일이 있는 표식만 클릭을 잡는다 — 선정물건 같은 표식 위를 눌러도 지도(재기 · 반경 도구)로 간다
-        position: at, content, zIndex: o.z ?? 1, clickable: o.interactive !== false && !!(o.onClick || o.popup),
+        position: at, content, zIndex: rz.zOf(p, o.z ?? 1), clickable: o.interactive !== false && !!(o.onClick || o.popup),
         xAnchor: o.size ? 0.5 : 0, yAnchor: o.size ? 0.5 : 0,
       });
+      content.addEventListener('mousedown', () => { ov.setZIndex(rz.raise(p)); });
+      content.addEventListener('touchstart', () => { ov.setZIndex(rz.raise(p)); }, { passive: true });
       ov.setMap(map); items.push(ov);
       return { el: () => content, setHtml: (h) => { content.innerHTML = h; }, setZ: (z) => ov.setZIndex(z) };
     },
@@ -207,6 +216,7 @@ const kakaoView = (k: KakaoMaps, el: HTMLElement, opts: MapOpts): MapView => {
 };
 
 const leafletView = (el: HTMLElement, opts: MapOpts): MapView => {
+  const rz = raiser(100000);   // 리플릿 zIndexOffset — 위도로 정해지는 높이(수백)보다 훨씬 위
   const c0 = opts.center ?? { lat: 37.5, lng: 126.7 };
   // 웹은 같은 칸에 지도를 또 만들면 있던 지도를 돌려준다(web/lib/shared.entry) — 그때 확대 단추 · 바닥 지도를 두 번 붙이지 않는다
   const reused = !!el.querySelector('.leaflet-pane');
@@ -240,8 +250,9 @@ const leafletView = (el: HTMLElement, opts: MapOpts): MapView => {
         iconSize: o.size ?? [0, 0], ...(o.size ? { iconAnchor: [o.size[0] / 2, o.size[1] / 2] as [number, number] } : {}),
       });
       const icon = iconOf(o.html);
-      const mk = L.marker(ll(p), { icon, keyboard: false, zIndexOffset: o.z ?? 0, interactive: o.interactive !== false });
+      const mk = L.marker(ll(p), { icon, keyboard: false, zIndexOffset: rz.zOf(p, o.z ?? 0), interactive: o.interactive !== false });
       if (o.onClick) mk.on('click', o.onClick);
+      mk.on('mousedown touchstart', () => { mk.setZIndexOffset(rz.raise(p)); });
       if (o.popup) mk.bindPopup(o.popup.html, { maxWidth: 680, minWidth: 0, className: o.popup.className ?? '' });
       mk.addTo(layer);
       return { el: () => mk.getElement() ?? null, setHtml: (h) => { mk.setIcon(iconOf(h)); }, setZ: (z) => { mk.setZIndexOffset(z); } };
