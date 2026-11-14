@@ -7,14 +7,15 @@
 //   saleData/coverage                도우미 → 웹 모은 동네 {dongs: {'인천 서구 검암동': {at(ms), n, site, src, months}}}
 //   saleData/main                    {count, chunks, version, by, updatedAt}
 //   saleData/main/chunks/{i}         {i, data: 레코드 JSON 글자, v}
-//   saleData/dayList/days/{날짜_법원_계}  기일 목록(탱크옥션 기일별물건) — 도우미가 조회수(views: {수집일: 값}), 웹 CSV 는 {날짜}_csv
+//   saleData/dayList/days/{날짜_법원_계}  기일 목록(탱크옥션 기일별물건) — 마이가 조회수(views: {수집일: 값}), 웹 CSV 는 {날짜}_csv
+//   saleData/dayList/hits/{tid}          사건별 날짜별 조회수(탱크옥션 차트) — 마이가 hd · hc · he(날짜 · 조회 · 유효)와 목록 줄(결과 · 인원)
 // 공용 자료는 관리자 누구나 쓰고 로그인한 모두가 읽는다. 명령 · 상태 · 대기열은 각자 집 PC 라 운영자 본인만(firestore.rules).
 // 예전에는 모은 자료도 users/{uid}/datasets · agent/coverage 에 계정마다 쌓였다 — migrateLegacyAgentData 가 한 번 옮긴다.
 import { collection, doc, getDoc, getDocFromServer, getDocs, onSnapshot, query, runTransaction, serverTimestamp, setDoc, where, type Unsubscribe } from 'firebase/firestore';
 import { firestore } from './firebase';
 
-export type AgentCmdName = 'open' | 'screen' | 'auto' | 'enrich' | 'queue' | 'daylist';
-export type AgentCmdArgs = { site?: '옥션원' | '탱크옥션'; months?: 0 | 6 | 12 | 24 | 36; src?: 'near' | 'same'; fresh?: boolean; from?: string; to?: string; court?: string };
+export type AgentCmdName = 'open' | 'screen' | 'auto' | 'enrich' | 'queue' | 'daylist' | 'hits';
+export type AgentCmdArgs = { site?: '옥션원' | '탱크옥션'; months?: 0 | 6 | 12 | 24 | 36; src?: 'near' | 'same'; fresh?: boolean; from?: string; to?: string; court?: string; dong?: string };
 export type AgentStatus = {
   at?: { toMillis(): number } | null;
   version?: string;
@@ -215,4 +216,21 @@ export const loadDayLists = async (date: string): Promise<DayListDoc[]> => {
 /** CSV(엑셀) 줄 — 그 매각기일의 '날짜_csv' 문서로 통째 저장 */
 export const saveDayCsv = async (date: string, rows: DayListRow[]): Promise<void> => {
   await setDoc(doc(dayCol(), `${date}_csv`), { date, court: '', dept: '', sptCd: '', dptCd: '', rows: rows.slice(0, 600), by: 'web', at: serverTimestamp() });
+};
+
+/* ===== 사건별 날짜별 조회수(탱크옥션 차트) — 사건(tid)마다 한 문서, 마이가 넣는다(2026-11-14) ===== */
+export type HitDoc = {
+  key: string; tid: string; dong: string; addr: string; kind: string; area: number | null; appr: number; min: number; sold: number; bids: number; second: number;
+  fails: number; next: string; state: string; asOf: string; ev: { d: string; l: string }[]; hd: string[]; hc: number[]; he: number[]; at: number;
+};
+/** 그 동의 사건 전부 */
+export const loadHits = async (dong: string): Promise<HitDoc[]> => {
+  const snaps = await getDocs(query(collection(db(), 'saleData', 'dayList', 'hits'), where('dong', '==', dong)));
+  return snaps.docs.map((d) => {
+    const x = d.data() as Partial<HitDoc> & { at?: { toMillis(): number } };
+    const n = (v: unknown) => (typeof v === 'number' ? v : 0); const arr = <T,>(v: unknown) => (Array.isArray(v) ? (v as T[]) : []);
+    return { key: String(x.key ?? ''), tid: String(x.tid ?? d.id), dong: String(x.dong ?? ''), addr: String(x.addr ?? ''), kind: String(x.kind ?? ''), area: typeof x.area === 'number' ? x.area : null,
+      appr: n(x.appr), min: n(x.min), sold: n(x.sold), bids: n(x.bids), second: n(x.second), fails: n(x.fails), next: String(x.next ?? ''), state: String(x.state ?? ''), asOf: String(x.asOf ?? ''),
+      ev: arr<{ d: string; l: string }>(x.ev), hd: arr<string>(x.hd), hc: arr<number>(x.hc), he: arr<number>(x.he), at: x.at?.toMillis?.() ?? 0 };
+  });
 };

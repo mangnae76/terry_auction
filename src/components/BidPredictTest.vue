@@ -6,11 +6,11 @@
  * 조회수 규칙은 늘 '그 사건을 뺀 나머지'로 배운다(자기 결과로 자기를 맞히지 않게).
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { agentOnline, loadAgentDataset, loadDayLists, saveDayCsv, sendAgentCommand, watchAgentStatus, type AgentStatus, type DayListRow } from '../services/agentRemote';
+import { agentOnline, loadAgentDataset, loadDayLists, loadHits, saveDayCsv, sendAgentCommand, watchAgentStatus, type AgentStatus, type DayListRow, type HitDoc } from '../services/agentRemote';
 import { readSheetRows } from '../services/saleExcel';
 import {
-  BAND_NAMES, caseLabel, csvRows, dongOf, fitPriceModel, fitViewModel, parseViewLines, priceDist, readDayRows, roundOfRatio, similarBands, soldOf, viewBands,
-  type BidTarget, type DayRow, type ViewPair,
+  BAND_NAMES, caseLabel, csvRows, dongOf, fitPriceModel, fitRoundModel, fitViewModel, parseViewLines, predictRound, priceDist, readDayRows, roundOfRatio, roundsOf, similarBands, soldOf, viewBands,
+  type BidTarget, type DayRow, type Round, type ViewPair,
 } from '../services/bidPredict';
 
 type Sold = NonNullable<ReturnType<typeof soldOf>>;
@@ -40,10 +40,11 @@ const agentOn = computed(() => agentOnline(agent.value));
 let stopAgent: (() => void) | null = null;
 onMounted(() => { stopAgent = watchAgentStatus('', (st) => { agent.value = st; }, () => { agent.value = null; }); });
 onBeforeUnmount(() => stopAgent?.());
-const sendCmd = async (name: 'open' | 'daylist') => {
+const sendCmd = async (name: 'open' | 'daylist' | 'hits') => {
   try {
-    await sendAgentCommand('', name, name === 'open' ? { site: '탱크옥션' } : { site: '탱크옥션', from: colFrom.value, to: colTo.value, court: colCourt.value.trim() || '인천-본원' });
-    agentNote.value = name === 'open' ? '브라우저 열기를 보냈습니다. 크롬에서 탱크옥션 로그인을 확인해 주세요.' : '기일 목록 수집을 보냈습니다. 끝나면 매각기일을 골라 다시 읽습니다.';
+    const range = { site: '탱크옥션' as const, from: colFrom.value, to: colTo.value, court: colCourt.value.trim() || '인천-본원' };
+    await sendAgentCommand('', name, name === 'open' ? { site: '탱크옥션' } : name === 'hits' ? { ...range, dong: dongFilter.value.trim() } : range);
+    agentNote.value = name === 'open' ? '브라우저 열기를 보냈습니다. 크롬에서 탱크옥션 로그인을 확인해 주세요.' : name === 'hits' ? `${dongFilter.value.trim()} 조회수 수집을 보냈습니다. 끝나면 다시 읽습니다.` : '기일 목록 수집을 보냈습니다. 끝나면 매각기일을 골라 다시 읽습니다.';
   } catch { agentNote.value = '명령을 보내지 못했습니다. 다시 해 주세요.'; }
 };
 /** 그 매각기일의 DB 목록 읽기 */
@@ -55,7 +56,7 @@ const loadDb = async () => {
     const put = (r: DayListRow, csv: boolean) => {
       const o = m.get(r.key);
       const base: DbRow = o ?? { key: r.key, kind: '', addr: '', area: null, appr: 0, min: 0, sold: 0, second: 0, bids: 0, status: '', date: '', views: {}, from: '' };
-      const from = base.from && base.from !== (csv ? 'CSV' : '도우미') ? '도우미 · CSV' : csv ? 'CSV' : '도우미';
+      const from = base.from && base.from !== (csv ? 'CSV' : '마이') ? '마이 · CSV' : csv ? 'CSV' : '마이';
       const pickN = (a: number | undefined, b: number) => (a && a > 0 ? a : b);
       m.set(r.key, { ...base, kind: base.kind || r.kind || '', addr: base.addr || r.addr || '', area: base.area ?? r.area ?? null, appr: pickN(r.appr, base.appr), min: csv && base.min ? base.min : pickN(r.min, base.min),
         sold: pickN(r.sold, base.sold), second: pickN(r.second, base.second), bids: pickN(r.bids, base.bids), status: base.status || r.status || '', date: base.date || String((r as { date?: string }).date ?? ''), views: { ...base.views, ...(r.views ?? {}) }, from });
@@ -67,6 +68,24 @@ const loadDb = async () => {
   } catch { dbInfo.value = 'DB 목록을 읽지 못했습니다'; }
 };
 watch(dayDate, () => { void loadDb(); }, { immediate: true });
+
+/** 그 동 사건별 날짜별 조회수(마이가 차트에서 모은 것) → 회차표 */
+const hitDocs = ref<HitDoc[]>([]);
+const hitInfo = ref('');
+const loadHitDocs = async () => {
+  const dong = dongFilter.value.trim();
+  if (!/(동|가|읍|면|리)$/.test(dong)) { hitDocs.value = []; hitInfo.value = ''; return; }
+  try { hitDocs.value = await loadHits(dong); hitInfo.value = hitDocs.value.length ? `${dong} 사건 차트 ${hitDocs.value.length.toLocaleString('ko-KR')}건` : `${dong} 사건 차트가 아직 없습니다`; }
+  catch { hitInfo.value = '사건 차트를 읽지 못했습니다'; }
+};
+watch(dongFilter, () => { void loadHitDocs(); }, { immediate: true });
+watch(() => agent.value?.message, (m, o) => { if (m && m !== o && m.startsWith('조회수 수집 끝')) void loadHitDocs(); });
+const hitRounds = computed<Round[]>(() => hitDocs.value.flatMap((h) => roundsOf(h)));
+/** 이 매각기일 회차 — 붙여넣은 글이 없고 차트 자료가 있으면 이것으로 맞힌다 */
+const dayRounds = computed(() => (parseViewLines(viewsText.value).length ? [] : hitRounds.value.filter((r) => r.date === dayDate.value)));
+const useHits = computed(() => dayRounds.value.length > 0);
+/** 그날 이전 회차로만 배운 규칙(누적 조회수 + 마지막 7일 + 회차) */
+const roundModel = computed(() => (useHits.value ? fitRoundModel(hitRounds.value, dayDate.value) : null));
 
 try {
   const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null') as { dayRows?: DayRow[]; dayName?: string; dayDate?: string; viewsText?: string; pick?: string } | null;
@@ -137,7 +156,11 @@ const yearOfAddr = (addr: string) => {
 };
 
 type Item = { key: string; addr: string; views: number; viewAt: string; target: BidTarget | null; result: { sold: number; bids: number; second: number } | null; failed: boolean; src: string };
-const items = computed<Item[]>(() => baseLines.value.map((l) => {
+const items = computed<Item[]>(() => useHits.value ? dayRounds.value.map((r) => ({
+  key: r.key, addr: r.addr, views: r.views, viewAt: r.upTo, src: '차트', failed: r.result === 'fail',
+  target: { round: r.round, appr: r.appr, min: r.min, area: r.area, year: yearOfAddr(r.addr), floor: Number(r.addr.match(/(\d+)층/)?.[1] ?? 0) || null, date: r.date, dong: dongOf(r.addr) },
+  result: r.result === 'sold' ? { sold: r.sold, bids: r.bids, second: r.second } : r.result === 'fail' ? { sold: 0, bids: 0, second: 0 } : null,
+})) : baseLines.value.map((l) => {
   const d = dayMap.value.get(l.key); const s = soldMap.value.get(l.key);
   if (d) {
     const floor = Number(d.addr.match(/(\d+)층/)?.[1] ?? 0) || null; const year = yearOfAddr(d.addr);
@@ -167,9 +190,25 @@ const items = computed<Item[]>(() => baseLines.value.map((l) => {
 const pairs = computed<ViewPair[]>(() => items.value.filter((it) => it.result && it.views >= 0 && it.result.bids >= 0 && (it.failed || it.result.bids > 0)).map((it) => ({ key: it.key, views: it.views, bids: it.result!.bids })));
 
 type Pred = { before: ReturnType<typeof priceDist>; after: ReturnType<typeof priceDist> | null; piBefore: number[]; piAfter: number[] | null; p0: number | null; simN: number; loose: boolean; vmN: number; expBids: number | null };
+/** 차트 모드 — 팔릴 확률 · 예상 인원(신건도) */
+const sellMap = computed(() => {
+  const m = new Map<string, { pSold: number; pi: number[]; expBids: number }>(); const rm = roundModel.value;
+  if (rm) dayRounds.value.forEach((r) => m.set(r.key, predictRound(rm, r)));
+  return m;
+});
 const preds = computed(() => {
   const out = new Map<string, Pred>();
   if (!recs.value.length) return out;
+  if (useHits.value) {
+    const rm = roundModel.value;
+    for (const it of items.value) {
+      if (!it.target || it.target.round < 1) continue;   // 신건은 팔릴 확률만(배수 식은 1회 유찰부터)
+      const m = fitPriceModel(recs.value, it.target); if (!m) continue;
+      const sim = similarBands(recs.value, it.target); const s = sellMap.value.get(it.key);
+      out.set(it.key, { before: priceDist(m, it.target, sim.pi), after: s ? priceDist(m, it.target, s.pi) : null, piBefore: sim.pi, piAfter: s?.pi ?? null, p0: s ? 1 - s.pSold : null, simN: sim.n, loose: sim.loose, vmN: rm?.n ?? 0, expBids: s?.expBids ?? null });
+    }
+    return out;
+  }
   for (const it of items.value) {
     if (!it.target) continue;
     const m = fitPriceModel(recs.value, it.target); if (!m) continue;
@@ -211,7 +250,7 @@ const curve = computed(() => {
 
 /* 조회수 규칙 그림 — 가로 조회수(로그), 세로 인원 */
 const rule = computed(() => {
-  const ps = pairs.value; if (ps.length < 2) return null;
+  const ps = pairs.value; if (useHits.value || ps.length < 2) return null;
   const vm = fitViewModel(ps);
   const vMax = Math.max(...ps.map((p) => p.views), 10); const bMax = Math.max(...ps.map((p) => p.bids), 5);
   const sx = (v: number) => 40 + (Math.log(1 + v) / Math.log(1 + vMax)) * 330; const sy = (b: number) => 170 - (b / bMax) * 150;
@@ -229,6 +268,10 @@ const dbList = computed(() => {
   });
 });
 const nUnmatched = computed(() => items.value.filter((it) => !it.target).length);
+/** 표의 팔릴 확률 · 예상 인원 */
+const sellOf = (key: string) => { const s = sellMap.value.get(key); if (s) return s; const p = preds.value.get(key); return p && p.p0 != null ? { pSold: 1 - p.p0, expBids: p.expBids ?? 0 } : null; };
+/** 누적이 매각 전날까지 안 닿았으면(덜 모음) */
+const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.value, -1);
 </script>
 
 <template>
@@ -250,14 +293,17 @@ const nUnmatched = computed(() => items.value.filter((it) => !it.target).length)
           <p v-if="fileMsg" class="bpt-warn">{{ fileMsg }}</p>
         </div>
         <div class="bpt-box">
-          <h3>기일 목록 수집 <small :class="['bpt-on', { on: agentOn }]">{{ agentOn ? 'MyAgent 연결됨' : 'MyAgent 꺼짐' }}</small></h3>
+          <h3>기일 목록 · 조회수 수집 <small :class="['bpt-on', { on: agentOn }]">{{ agentOn ? 'MyAgent 연결됨' : 'MyAgent 꺼짐' }}</small></h3>
           <label class="bpt-date">법원<input v-model="colCourt" type="text" class="court" /></label>
           <div class="bpt-range"><input v-model="colFrom" type="date" aria-label="시작일" /><span>~</span><input v-model="colTo" type="date" aria-label="끝일" /></div>
           <div class="bpt-btns">
             <button type="button" class="bpt-btn line" :disabled="!agentOn || !!agent?.busy" @click="sendCmd('open')">브라우저열기</button>
             <button type="button" class="bpt-btn" :disabled="!agentOn || !agent?.ready || !!agent?.busy" @click="sendCmd('daylist')">기일목록수집</button>
+            <button type="button" class="bpt-btn" :disabled="!agentOn || !agent?.ready || !!agent?.busy || !/(동|가|읍|면|리)$/.test(dongFilter.trim())" @click="sendCmd('hits')">조회수수집</button>
           </div>
-          <p class="bpt-sub">{{ agentNote || (agentOn ? agent?.message : '') || '집 PC 에서 agent.py 를 켜 두면 여기서 시킬 수 있습니다' }}</p>
+          <p class="bpt-sub">조회수수집은 동 거르기에 적은 동의 주택 사건마다 차트(날짜별 조회수)를 모읍니다. 처음 한 번은 시작일을 2025-06-15로(조회 기록이 그날부터)</p>
+          <p v-if="hitInfo" class="bpt-sub">{{ hitInfo }}</p>
+          <p class="bpt-sub">{{ agentNote || (agentOn ? agent?.message : '') || '집 PC 에서 마이(agent.py)를 켜 두면 여기서 시킬 수 있습니다' }}</p>
         </div>
         <div class="bpt-box grow">
           <h3>사건번호 · 주소 · 조회수</h3>
@@ -285,22 +331,24 @@ const nUnmatched = computed(() => items.value.filter((it) => !it.target).length)
           </tbody>
         </table>
       </div>
-      <p v-else class="bpt-sub">이 날짜로 DB에 들어간 목록이 없습니다. 파일넣기로 CSV를 올리거나 도우미로 기일목록수집을 하세요</p>
-      <p class="bpt-sub">조회수는 가장 늦게 모은 값이고, 아래 작은 글은 모은 날입니다. '매각 뒤'로 모은 값은 예측에 쓰지 않습니다(입찰 전날까지 모은 값만). CSV에는 조회수가 없어 도우미로 모은 줄에만 있습니다</p>
+      <p v-else class="bpt-sub">이 날짜로 DB에 들어간 목록이 없습니다. 파일넣기로 CSV를 올리거나 마이로 기일목록수집을 하세요</p>
+      <p class="bpt-sub">조회수는 가장 늦게 모은 값이고, 아래 작은 글은 모은 날입니다. '매각 뒤'로 모은 값은 예측에 쓰지 않습니다(입찰 전날까지 모은 값만). CSV에는 조회수가 없어 마이로 모은 줄에만 있습니다</p>
     </section>
 
     <section v-if="items.length" class="bpt-card">
-      <h3 class="bpt-h3">사건별 예측</h3>
+      <h3 class="bpt-h3">사건별 예측 <small v-if="useHits">사건 차트의 매각 전날까지 누적 조회수 · {{ roundModel ? `그날 이전 ${roundModel.n.toLocaleString('ko-KR')}회차(팔림 ${roundModel.nSold.toLocaleString('ko-KR')})로 배움` : '배울 회차가 모자랍니다' }}</small></h3>
       <div class="bpt-tbl-wrap">
         <table class="bpt-tbl">
-          <thead><tr><th>사건번호</th><th class="l">주소</th><th>조회수</th><th>차수</th><th>최저가</th><th>예상 낙찰가</th><th>흔한 범위</th><th>실제</th><th>차이</th></tr></thead>
+          <thead><tr><th>사건번호</th><th class="l">주소</th><th>조회수</th><th>차수</th><th>최저가</th><th>팔릴 확률</th><th>예상 인원</th><th>예상 낙찰가</th><th>흔한 범위</th><th>실제</th><th>차이</th></tr></thead>
           <tbody>
             <tr v-for="it in items" :key="it.key" :class="{ on: sel?.key === it.key, off: !preds.has(it.key) }" @click="pick = it.key">
               <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button></td>
               <td class="l addr">{{ it.addr || '—' }}</td>
-              <td class="r">{{ it.views.toLocaleString('ko-KR') }}<small class="bpt-at">{{ it.viewAt === dayDate ? '당일' : it.viewAt.slice(5).replace('-', '.') }}</small></td>
+              <td class="r">{{ it.views.toLocaleString('ko-KR') }}<small :class="['bpt-at', { after: stale(it.viewAt) }]">{{ it.viewAt === dayDate ? '당일' : it.viewAt.slice(5).replace('-', '.') }}{{ stale(it.viewAt) ? ' 덜 모음' : '' }}</small></td>
               <td>{{ it.target ? `${it.target.round + 1}차` : '—' }}</td>
               <td class="r">{{ it.target ? won(it.target.min) : '자료 없음' }}</td>
+              <td class="r">{{ sellOf(it.key) ? pct(sellOf(it.key)!.pSold) : '—' }}</td>
+              <td class="r">{{ sellOf(it.key) ? `${sellOf(it.key)!.expBids.toFixed(1)}명` : '—' }}</td>
               <template v-if="preds.get(it.key)">
                 <td class="r strong">{{ won((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}</td>
                 <td class="r">{{ man((preds.get(it.key)!.after ?? preds.get(it.key)!.before).lo) }} ~ {{ man((preds.get(it.key)!.after ?? preds.get(it.key)!.before).hi) }}</td>
@@ -312,14 +360,15 @@ const nUnmatched = computed(() => items.value.filter((it) => !it.target).length)
           </tbody>
         </table>
       </div>
-      <p class="bpt-sub">예상 낙찰가는 조회수 규칙이 있으면 반영한 값, 없으면 비슷한 물건 인원 비율로 낸 값입니다. 줄을 누르면 아래에 자세히 나옵니다</p>
+      <p v-if="useHits" class="bpt-sub">조회수 아래 작은 글은 누적에 넣은 마지막 날입니다. 매각 전날까지 안 닿으면 '덜 모음' — 그날 조회수수집을 한 번 더 누르세요. 예상 인원은 팔린다고 칠 때, 신건은 팔릴 확률만 냅니다. 줄을 누르면 아래에 자세히 나옵니다</p>
+      <p v-else class="bpt-sub">예상 낙찰가는 조회수 규칙이 있으면 반영한 값, 없으면 비슷한 물건 인원 비율로 낸 값입니다. 줄을 누르면 아래에 자세히 나옵니다</p>
     </section>
 
     <section v-if="sel && selP && sel.target" class="bpt-card">
       <h3 class="bpt-h3">{{ caseLabel(sel.key) }} <small>{{ sel.addr }}</small></h3>
       <div class="bpt-flow">
-        <div class="bpt-tile"><span>전일까지 누적 조회수</span><b>{{ sel.views.toLocaleString('ko-KR') }}회</b><small>{{ selP.vmN ? `조회수 규칙 ${selP.vmN}건으로 배움` : '조회수 규칙 없음(6건 이상 필요)' }}</small></div>
-        <div class="bpt-tile"><span>예상 응찰 인원</span><b>{{ selP.expBids != null ? `약 ${Math.round(selP.expBids)}명` : BAND_NAMES[selP.piBefore.indexOf(Math.max(...selP.piBefore))] + ' 가장 흔함' }}</b><small>{{ selP.p0 != null ? `유찰 확률 ${pct(selP.p0)}` : `비슷한 물건 ${selP.simN}건${selP.loose ? '(조건 넓힘)' : ''}` }}</small></div>
+        <div class="bpt-tile"><span>전일까지 누적 조회수</span><b>{{ sel.views.toLocaleString('ko-KR') }}회</b><small>{{ useHits ? `${sel.viewAt.slice(5).replace('-', '.')}까지 · 그날 이전 ${selP.vmN.toLocaleString('ko-KR')}회차로 배움` : selP.vmN ? `조회수 규칙 ${selP.vmN}건으로 배움` : '조회수 규칙 없음(6건 이상 필요)' }}</small></div>
+        <div class="bpt-tile"><span>예상 응찰 인원</span><b>{{ selP.expBids != null ? `약 ${Math.round(selP.expBids)}명` : BAND_NAMES[selP.piBefore.indexOf(Math.max(...selP.piBefore))] + ' 가장 흔함' }}</b><small>{{ selP.p0 != null ? `${useHits ? '팔린다고 칠 때 · ' : ''}유찰 확률 ${pct(selP.p0)}` : `비슷한 물건 ${selP.simN}건${selP.loose ? '(조건 넓힘)' : ''}` }}</small></div>
         <div class="bpt-tile key"><span>예상 낙찰가(가운데)</span><b>{{ won((selP.after ?? selP.before).median) }}</b><small>흔한 범위 {{ won((selP.after ?? selP.before).lo) }} ~ {{ won((selP.after ?? selP.before).hi) }}</small></div>
         <div class="bpt-tile"><span>낙찰확률 60%로 쓰려면</span><b>{{ won((selP.after ?? selP.before).q(0.6)) }}</b><small>50% {{ won((selP.after ?? selP.before).q(0.5)) }} · 70% {{ won((selP.after ?? selP.before).q(0.7)) }}</small></div>
       </div>
@@ -358,7 +407,7 @@ const nUnmatched = computed(() => items.value.filter((it) => !it.target).length)
     </section>
 
     <section v-if="score.rows.length" class="bpt-card">
-      <h3 class="bpt-h3">맞혀보기 <small>결과가 있는 매각 {{ score.rows.length }}건 · 그날 이전 자료와 자기 사건을 뺀 조회수 규칙만 사용</small></h3>
+      <h3 class="bpt-h3">맞혀보기 <small>결과가 있는 매각 {{ score.rows.length }}건 · {{ useHits ? '그날 이전 회차로만 배운 규칙(그날 결과는 안 봄)' : '그날 이전 자료와 자기 사건을 뺀 조회수 규칙만 사용' }}</small></h3>
       <div class="bpt-score">
         <div v-if="score.before" class="bpt-tile"><span>조회수 반영 전</span><b>평균 차이 {{ (score.before.mae * 100).toFixed(1) }}%</b><small>흔한 범위 안 {{ score.before.inR }} / {{ score.before.n }}</small></div>
         <div v-if="score.after" class="bpt-tile key"><span>조회수 반영 후</span><b>평균 차이 {{ (score.after.mae * 100).toFixed(1) }}%</b><small>흔한 범위 안 {{ score.after.inR }} / {{ score.after.n }}</small></div>

@@ -172,12 +172,14 @@ service cloud.firestore {
     function validAgentCmd(c) {
       return c is map && c.keys().hasOnly(['id', 'name', 'args', 'at'])
         && c.id is string && c.id.size() <= 64
-        && c.name in ['open', 'screen', 'auto', 'enrich', 'queue', 'daylist']
-        && c.args is map && c.args.keys().hasOnly(['site', 'months', 'src', 'fresh', 'from', 'to', 'court'])
+        && c.name in ['open', 'screen', 'auto', 'enrich', 'queue', 'daylist', 'hits']
+        && c.args is map && c.args.keys().hasOnly(['site', 'months', 'src', 'fresh', 'from', 'to', 'court', 'dong'])
         // daylist(기일 목록, 2026-11-14) — 기간 · 법원
         && (!('from' in c.args) || (c.args.from is string && c.args.from.size() == 10))
         && (!('to' in c.args) || (c.args.to is string && c.args.to.size() == 10))
         && (!('court' in c.args) || (c.args.court is string && c.args.court.size() <= 20))
+        // hits(사건별 날짜별 조회수) — 동
+        && (!('dong' in c.args) || (c.args.dong is string && c.args.dong.size() <= 20))
         && (!('site' in c.args) || c.args.site in ['옥션원', '탱크옥션'])
         && (!('months' in c.args) || c.args.months in [0, 6, 12, 24, 36])
         && (!('src' in c.args) || c.args.src in ['near', 'same'])
@@ -237,6 +239,18 @@ service cloud.firestore {
         && agentData().date is string && agentData().date.size() == 10
         && agentData().rows is list && agentData().rows.size() <= 600
         && agentData().by in ['web', 'agent'];
+    }
+    // 사건별 날짜별 조회수(탱크옥션 차트) — 사건(tid)마다 한 문서. hd · hc · he = 날짜 · 조회 · 유효(2026-11-14)
+    match /saleData/dayList/hits/{tid} {
+      allow read, delete: if isAdmin();
+      allow create, update: if isAdmin()
+        && agentData().keys().hasOnly(['key', 'tid', 'dong', 'addr', 'kind', 'area', 'appr', 'min', 'sold', 'bids', 'second', 'fails', 'next', 'state', 'asOf', 'collect', 'total', 'ev', 'hd', 'hc', 'he', 'by', 'at'])
+        && agentData().dong is string && agentData().dong.size() <= 20
+        && agentData().hd is list && agentData().hd.size() <= 800
+        && agentData().hc is list && agentData().hc.size() <= 800
+        && agentData().he is list && agentData().he.size() <= 800
+        && agentData().ev is list && agentData().ev.size() <= 60
+        && agentData().by == 'agent';
     }
     match /saleData/agentQueue {
       allow get: if isAdmin();

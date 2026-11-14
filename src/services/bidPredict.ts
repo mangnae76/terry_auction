@@ -175,4 +175,81 @@ export const parseViewLines = (text: string): Array<{ key: string; addr: string;
     return { key, addr: rest.slice(0, m.index).replace(/[,\s]+$/, '').trim(), views: Number(m[1].replace(/,/g, '')) };
   }).filter((x): x is { key: string; addr: string; views: number } => !!x);
 
+/* ===== 회차별 표(사건 차트의 날짜별 조회수) → 팔릴 확률 · 인원 — 2026-11-14 =====
+ * 회차마다 '매각 전날까지 누적 조회수'와 결과(유찰 0명 · 팔림 N명)를 짝짓는다. 매각 당일 이후 조회는 쓰지 않는다.
+ * 검암동 1,068회차로 시간 순서대로 골랐다(6월 ~ 11-12 회차를 그날 이전 자료로만 맞혀 봄):
+ *   팔림/유찰 맞힘 85% → 90%, 인원 구간 18% → 40%, 낙찰가 평균 차이 8.1% → 7.5%(실제 인원을 알아도 6.9%) */
+export type HitLike = { key: string; addr: string; kind: string; area: number | null; appr: number; sold: number; bids: number; second: number; fails: number; next: string; asOf?: string; ev: { d: string; l: string }[]; hd: string[]; hc: number[]; he: number[] };   // asOf = 모은 날(차트에 그 뒤 날짜는 0 으로 미리 들어 있다)
+export type Round = {
+  key: string; addr: string; kind: string; area: number | null; appr: number; min: number;
+  date: string; round: number;               // 매각기일 · 그때까지 유찰 횟수
+  views: number; eff: number; last7: number;  // 전날까지 누적 조회 · 유효 · 마지막 7일 조회
+  upTo: string;                               // 누적에 넣은 마지막 날짜(전날이 아니면 아직 덜 모은 것)
+  complete: boolean;                          // 공고일부터 조회 기록이 있다(2025-06-15 수집 시작 뒤 공고)
+  result: 'sold' | 'fail' | 'none'; sold: number; bids: number; second: number;
+};
+const STEP = 0.7;   // 인천 — 유찰마다 30% 저감
+export const roundsOf = (h: HitLike, collectStart = '2025-06-15'): Round[] => {
+  const notice = h.ev.find((e) => e.l === '경매공고일')?.d ?? '';
+  const complete = !!notice && notice >= collectStart;
+  const sales = [...new Set(h.ev.filter((e) => /^\d+차 매각기일$/.test(e.l)).map((e) => e.d))].sort();
+  if (h.next && /^\d{4}-\d{2}-\d{2}$/.test(h.next) && !sales.includes(h.next) && (!sales.length || h.next > sales[sales.length - 1])) sales.push(h.next);
+  const soldDays = h.ev.filter((e) => e.l === '매각').map((e) => e.d);
+  const chg = new Set(h.ev.filter((e) => e.l === '변경' || e.l === '결정변경').map((e) => e.d));
+  const multi = soldDays.length > 1 || h.ev.some((e) => e.l === '미납' || e.l === '불허가');
+  const out: Round[] = []; let k = 0;
+  for (let i = 0; i < sales.length; i++) {
+    const d = sales[i];
+    if (chg.has(d)) continue;
+    const idx = h.hd.map((x, j) => (x < d && (!h.asOf || x <= h.asOf) ? j : -1)).filter((j) => j >= 0);
+    const views = idx.reduce((s, j) => s + (h.hc[j] ?? 0), 0); const eff = idx.reduce((s, j) => s + (h.he[j] ?? 0), 0);
+    const last7 = idx.slice(-7).reduce((s, j) => s + (h.hc[j] ?? 0), 0);
+    const base = { key: h.key, addr: h.addr, kind: h.kind, area: h.area, appr: h.appr, min: Math.round((h.appr * STEP ** k) / 1000) * 1000, date: d, round: k, views, eff, last7, upTo: idx.length ? h.hd[idx[idx.length - 1]] : '', complete };
+    if (soldDays.includes(d)) { out.push({ ...base, result: multi ? 'none' : 'sold', sold: multi ? 0 : h.sold, bids: multi ? 0 : h.bids, second: multi ? 0 : h.second }); break; }
+    if (i + 1 < sales.length) { out.push({ ...base, result: 'fail', sold: 0, bids: 0, second: 0 }); k++; continue; }
+    out.push({ ...base, result: 'none', sold: 0, bids: 0, second: 0 });   // 아직 안 열렸거나 취하 · 기각
+  }
+  return out;
+};
+const lnp = (x: number) => Math.log(1 + Math.max(0, x));
+/** 고른 방법 — 누적 조회수 + 마지막 7일 + 회차(신건 · 3차 이상) */
+export const roundFeat = (r: Pick<Round, 'views' | 'last7' | 'round'>) => [1, lnp(r.views), lnp(r.last7), r.round === 0 ? 1 : 0, r.round >= 2 ? 1 : 0];
+const ridge = (A: number[][], y: number[], lam: number) => {
+  const p = A[0].length;
+  const M = Array.from({ length: p }, (_, i) => Array.from({ length: p + 1 }, (_, j) => (j === p ? A.reduce((s, r, k) => s + r[i] * y[k], 0) : A.reduce((s, r) => s + r[i] * r[j], 0) + (i === j && i > 0 ? lam : 0))));
+  for (let c = 0; c < p; c++) {
+    let pv = c; for (let r = c + 1; r < p; r++) if (Math.abs(M[r][c]) > Math.abs(M[pv][c])) pv = r;
+    [M[c], M[pv]] = [M[pv], M[c]];
+    for (let r = 0; r < p; r++) if (r !== c) { const f = M[r][c] / (M[c][c] || 1e-12); for (let j = c; j <= p; j++) M[r][j] -= f * M[c][j]; }
+  }
+  return M.map((row, i) => row[p] / (M[i][i] || 1e-12));
+};
+export type RoundModel = { ps: number[]; b: number[]; s: number; n: number; nSold: number; before: string };
+/** before 날짜 이전 회차로만 배운다(그날과 그 뒤 결과는 안 본다). 공고일부터 기록이 있는 4회 유찰까지 */
+export const fitRoundModel = (rounds: Round[], before: string): RoundModel | null => {
+  const tr = rounds.filter((r) => r.complete && r.round <= 4 && r.date < before && (r.result === 'fail' || (r.result === 'sold' && r.bids > 0)));
+  const sd = tr.filter((r) => r.result === 'sold');
+  if (tr.length < 30 || sd.length < 10) return null;
+  const X = tr.map(roundFeat); const y = tr.map((r) => (r.result === 'sold' ? 1 : 0));
+  let ps = new Array(X[0].length).fill(0);
+  for (let it = 0; it < 30; it++) {
+    const w: number[] = []; const z: number[] = [];
+    X.forEach((x, k) => { const e = x.reduce((s, v, j) => s + v * ps[j], 0); const p = 1 / (1 + Math.exp(-e)); const ww = Math.max(1e-6, p * (1 - p)); w.push(ww); z.push(e + (y[k] - p) / ww); });
+    ps = ridge(X.map((x, k) => x.map((v) => v * Math.sqrt(w[k]))), z.map((v, k) => v * Math.sqrt(w[k])), 1);
+  }
+  const Xs = sd.map(roundFeat); const ys = sd.map((r) => lnp(r.bids)); const b = ridge(Xs, ys, 1e-3);
+  const s = Math.max(0.15, Math.sqrt(Xs.reduce((a, x, k) => a + (ys[k] - x.reduce((q, v, j) => q + v * b[j], 0)) ** 2, 0) / Math.max(1, Xs.length - b.length)));
+  return { ps, b, s, n: tr.length, nSold: sd.length, before };
+};
+/** 팔릴 확률 · 팔릴 때 인원 구간 비율 · 예상 인원 */
+export const predictRound = (m: RoundModel, r: Pick<Round, 'views' | 'last7' | 'round'>) => {
+  const x = roundFeat(r);
+  const pSold = 1 / (1 + Math.exp(-x.reduce((s, v, j) => s + v * m.ps[j], 0)));
+  const mu = x.reduce((s, v, j) => s + v * m.b[j], 0);
+  const cut = [1.5, 2.5, 4.5, 7.5, 11.5].map(Math.log); const P = (y: number) => ncdf((y - mu) / m.s);
+  const raw = [P(cut[1]) - P(cut[0]), P(cut[2]) - P(cut[1]), P(cut[3]) - P(cut[2]), P(cut[4]) - P(cut[3]), 1 - P(cut[4])];
+  const tot = raw.reduce((a, v) => a + v, 0) || 1;
+  return { pSold, pi: raw.map((v) => v / tot), expBids: Math.max(0, Math.exp(mu) - 1) };
+};
+
 export { median as medianOf };
