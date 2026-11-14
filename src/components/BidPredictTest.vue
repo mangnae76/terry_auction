@@ -28,6 +28,8 @@ const dongFilter = ref((() => { try { return (JSON.parse(localStorage.getItem(ST
 /** DB 기일 목록(계마다 + CSV)을 사건번호로 합친 것 — 조회수는 수집한 날짜별 */
 type DbRow = DayRow & { views: Record<string, number>; from: string };
 const dbRows = ref<DbRow[]>([]);
+/** 그 매각기일 계마다 건수 · 종류별 건수(마이가 모은 기일 목록 — 그날 그 법원 전체) */
+const dayDepts = ref<Array<{ court: string; dept: string; n: number; kinds: Record<string, number> }>>([]);
 const dbInfo = ref('');
 const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const plusDays = (iso: string, n: number) => { const d = new Date(`${iso}T00:00:00`); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -60,7 +62,7 @@ const sendCmd = async (name: 'open' | 'daylist' | 'hits') => {
 };
 /** 그 매각기일의 DB 목록 읽기 */
 const loadDb = async () => {
-  if (!dayDate.value) { dbRows.value = []; dbInfo.value = ''; return; }
+  if (!dayDate.value) { dbRows.value = []; dbInfo.value = ''; dayDepts.value = []; return; }
   try {
     const docs = await loadDayLists(dayDate.value);
     const m = new Map<string, DbRow>();
@@ -75,6 +77,10 @@ const loadDb = async () => {
     docs.filter((d) => d.by === 'agent').forEach((d) => d.rows.forEach((r) => put(r, false)));
     docs.filter((d) => d.by !== 'agent').forEach((d) => d.rows.forEach((r) => put(r, true)));
     dbRows.value = [...m.values()];
+    dayDepts.value = docs.filter((d) => d.by === 'agent').map((d) => {
+      const kinds: Record<string, number> = {}; d.rows.forEach((r) => { const k = r.kind || '기타'; kinds[k] = (kinds[k] ?? 0) + 1; });
+      return { court: d.court, dept: d.dept, n: d.rows.length, kinds };
+    }).sort((a, b) => (parseInt(a.dept, 10) || 0) - (parseInt(b.dept, 10) || 0));
     dbInfo.value = docs.length ? `DB ${docs.length}개 목록(${docs.map((d) => d.dept || 'CSV').join(' · ')}) · ${m.size.toLocaleString('ko-KR')}건` : 'DB에 이 날 목록이 없습니다';
   } catch { dbInfo.value = 'DB 목록을 읽지 못했습니다'; }
 };
@@ -386,6 +392,19 @@ const dayChips = computed(() => {
   return [...all.filter(([d]) => d < today).slice(-6), ...all.filter(([d]) => d >= today).slice(0, 6)].map(chip);
 });
 
+/** 사건별 예측 제목 줄 오른쪽 — 그날 법원 · 계 · 종류 건수, 그중 보고 있는 동 건수 · 종류 */
+const daySum = computed(() => {
+  const courts = new Map<string, Array<{ dept: string; n: number }>>(); const kinds: Record<string, number> = {};
+  dayDepts.value.forEach((d) => { const c = (d.court || '').replace('-', ' '); courts.set(c, [...(courts.get(c) ?? []), { dept: d.dept, n: d.n }]); Object.entries(d.kinds).forEach(([k, n]) => { kinds[k] = (kinds[k] ?? 0) + n; }); });
+  const sortK = (o: Record<string, number>) => Object.entries(o).sort((a, b) => b[1] - a[1]);
+  const mine: Record<string, number> = {}; items.value.forEach((it) => { const r = dayRounds.value.find((x) => x.key === it.key); const k = r?.kind || dayMap.value.get(it.key)?.kind || '기타'; mine[k] = (mine[k] ?? 0) + 1; });
+  return {
+    total: dayDepts.value.reduce((s, d) => s + d.n, 0),
+    courts: [...courts.entries()].map(([c, ds]) => ({ c, n: ds.reduce((s, d) => s + d.n, 0), ds })),
+    kinds: sortK(kinds), dong: dongFilter.value.trim() || '전체', mineN: items.value.length, mine: sortK(mine),
+  };
+});
+
 /** 표의 입찰자 있을확률 · 예상응찰 */
 const sellOf = (key: string) => { const s = sellMap.value.get(key); if (s) return s; const p = preds.value.get(key); return p && p.p0 != null ? { pSold: 1 - p.p0, expBids: p.expBids ?? 0 } : null; };
 /** 누적이 매각 전날까지 안 닿았으면(덜 모음) */
@@ -506,7 +525,14 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
     </section>
 
     <section v-if="items.length" class="bpt-card bpt-day">
+      <div class="bpt-dayhead">
       <h3 class="bpt-h3">사건별 예측 <small v-if="useHits">사건 차트의 매각 전날까지 누적 조회수 · {{ roundModel ? `그날 이전 ${roundModel.n.toLocaleString('ko-KR')}회차(매각 ${roundModel.nSold.toLocaleString('ko-KR')})로 배움` : '배울 회차가 모자랍니다' }}{{ leadDays ? ` · 조회수가 매각 ${leadDays + 1}일 전까지라 배울 때도 ${leadDays + 1}일 전 값으로 맞춤` : '' }}</small></h3>
+        <div class="bpt-daysum">
+          <p><b>{{ bidDay(dayDate) }}</b><template v-if="daySum.total"> 전체 <b>{{ daySum.total.toLocaleString('ko-KR') }}건</b><template v-for="c in daySum.courts" :key="c.c"> · {{ c.c }} {{ c.n.toLocaleString('ko-KR') }}건(<template v-for="(d, i) in c.ds" :key="d.dept">{{ i ? ' · ' : '' }}{{ d.dept }} {{ d.n.toLocaleString('ko-KR') }}</template>)</template></template><template v-else> 그날 전체 목록은 기일목록수집을 하면 나옵니다</template></p>
+          <p v-if="daySum.kinds.length" class="kinds"><template v-for="([k, n], i) in daySum.kinds" :key="k">{{ i ? ' · ' : '' }}{{ k }} {{ n.toLocaleString('ko-KR') }}</template></p>
+          <p class="mine">{{ daySum.dong }} <b>{{ daySum.mineN.toLocaleString('ko-KR') }}건</b><template v-for="([k, n]) in daySum.mine" :key="k"> · {{ k }} {{ n.toLocaleString('ko-KR') }}</template></p>
+        </div>
+      </div>
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl">
           <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
@@ -722,6 +748,14 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-grade-head .bpt-h3 { margin-right: auto; }
 .bpt-grade { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
 @media (max-width: 900px) { .bpt-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.bpt-dayhead { display: flex; align-items: flex-start; gap: 16px; }
+.bpt-dayhead .bpt-h3 { flex: 1 1 auto; min-width: 0; }
+.bpt-daysum { flex: 0 1 auto; max-width: 62%; display: grid; gap: 2px; text-align: right; font-size: 12px; color: #4b5563; font-variant-numeric: tabular-nums; }
+.bpt-daysum p { margin: 0; }
+.bpt-daysum b { color: #111827; }
+.bpt-daysum .kinds { color: #6b7280; }
+.bpt-daysum .mine { color: #1f5fe0; }
+.bpt-daysum .mine b { color: #1f5fe0; }
 .bpt-rule { margin: 0; font-size: 15px; font-weight: 700; color: #111827; }
 @media (max-width: 900px) { .bpt-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bpt-two { grid-template-columns: minmax(0, 1fr); } }
 </style>
