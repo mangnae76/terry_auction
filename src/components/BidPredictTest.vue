@@ -583,14 +583,11 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       </div>
       <table class="bpt-dayinfo">
         <tbody>
-          <tr><th>매각기일</th><td><b class="date">{{ dayDate ? `${dayDate.slice(0, 4)}년 ${Number(dayDate.slice(5, 7))}월 ${Number(dayDate.slice(8))}일 (${WD[new Date(`${dayDate}T00:00:00`).getDay()]})` : '' }}</b>
-            <span v-if="daySum.total" class="muted">그날 <template v-for="(c, i) in daySum.courts" :key="c.c">{{ i ? ' · ' : '' }}{{ c.c }}</template> 전체 {{ daySum.total.toLocaleString('ko-KR') }}건 중 <b class="dong">{{ daySum.dong }} {{ daySum.mineN.toLocaleString('ko-KR') }}건</b></span>
-            <span v-else class="muted">{{ daySum.dong }} {{ daySum.mineN.toLocaleString('ko-KR') }}건 · 그날 전체 목록은 기일목록수집을 하면 나옵니다</span>
-            </td></tr>
-          <tr><th>물건 보기</th><td class="chips">
+          <tr><th>매각기일</th><td class="chips date-row"><b class="date">{{ dayDate ? `${dayDate.slice(0, 4)}년 ${Number(dayDate.slice(5, 7))}월 ${Number(dayDate.slice(8))}일 (${WD[new Date(`${dayDate}T00:00:00`).getDay()]})` : '' }}</b>
             <button type="button" :class="['bpt-fchip', 'big', { on: !fDept && fAllDong }]" :disabled="!daySum.total" @click="fDept = ''; fAllDong = true">전체보기<b class="all">{{ daySum.total ? daySum.total.toLocaleString('ko-KR') : daySum.mineN }}</b></button>
             <button v-for="d in daySum.depts" :key="d.k" type="button" :class="['bpt-fchip', 'big', { on: fDept === d.k && fAllDong }]" @click="fDept = d.k; fAllDong = true">{{ d.label }}<b class="all">{{ d.all.toLocaleString('ko-KR') }}</b></button>
-            <button type="button" :class="['bpt-fchip', 'big', { on: fMine }]" :disabled="!nMine" @click="fMine = !fMine">선정물건만보기<b>{{ nMine }}</b></button></td></tr>
+            <button type="button" :class="['bpt-fchip', 'big', { on: fMine }]" :disabled="!nMine" @click="fMine = !fMine">선정물건만보기<b>{{ nMine }}</b></button>
+            </td></tr>
           <tr><th>동</th><td class="chips">
             <button type="button" :class="['bpt-fchip', { on: !fAllDong }]" @click="fAllDong = false; fDept = ''">{{ daySum.dong }}<b>{{ daySum.dongN }}</b></button>
             <button type="button" :class="['bpt-fchip', { on: fAllDong }]" :disabled="!daySum.total" @click="fAllDong = true">모든동<b class="all">{{ daySum.scopeN.toLocaleString('ko-KR') }}</b></button>
@@ -828,7 +825,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-dayinfo .date { font-size: 18px; color: #1f5fe0; margin-right: 12px; }
 .bpt-dayinfo .muted { font-size: 13px; color: #6b7280; }
 .bpt-dayinfo .muted .dong { color: #1f5fe0; }
-.bpt-dayinfo .date-btns { display: inline-flex; gap: 6px; margin-left: 12px; vertical-align: middle; }
+.bpt-dayinfo td.date-row { align-items: center; }
+.bpt-dayinfo td.date-row .date { margin-right: 8px; }
 .bpt-dayinfo td.chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .bpt-fchip { height: 30px; padding: 0 10px; border: 1px solid #d5dbe5; border-radius: 8px; background: #fff; color: #374151; font: inherit; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
 .bpt-fchip b { color: #1f5fe0; font-weight: 700; }
