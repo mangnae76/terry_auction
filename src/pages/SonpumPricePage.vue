@@ -83,6 +83,10 @@ const run = async () => {
     if (id !== runId) return;
     if (out.error) errorMsg.value = out.error;
     res.value = out; loadedMonths.value = months.value; fetchedAt.value = Date.now();
+    sameRaw2y.value = [];
+    if (months.value < 24 && !(out.rows ?? []).some((r) => (r.kind === '매매' || r.kind === '직거래') && r.price > 0)) {
+      void analyzeAddress({ address: props.auction.address, propertyType: props.kind, years: 2 }).then((o2) => { if (id === runId) sameRaw2y.value = o2.rows ?? []; }).catch(() => undefined);
+    }
     // 층은 고른(저장한) 그대로 — 11-10 에 여기서 '전체'로 되돌리게 바꿔, 유사도에서 고른 '같은 층'이 새로고침하면 풀렸다(2026-11-11 사용자)
     if (!rangeCond.value.mMax) rangeCond.value = { ...simCond(sim.value, me.value), floor: rangeCond.value.floor === 0 ? 0 : null };
     void enrich(id);
@@ -106,6 +110,8 @@ const lot = computed(() => res.value?.parts.lot ?? '');
 
 // ===== 선정물건 — 전용 · 건축년 · 층 · 공시가 =====
 const sameRaw = computed(() => res.value?.rows ?? []);
+/** 경매지번 매매가 — 그 건물 매매가 고른 기간(1년 등) 안에 없으면 2년까지 찾는다. 2년 넘게는 안 본다(2026-11-15 사용자) */
+const sameRaw2y = ref<typeof sameRaw.value>([]);
 const me = computed(() => {
   // 아파트는 물건 자료 전용(다른 탭 · 고정카드와 같은 84.39)이 먼저 — 실거래에서 고른 값(84.40)과 끝자리가 달라 직접범위 끝이 84.4 로 보였다(2026-11-11)
   const areaM2 = (props.kind === 'apt' ? Number(props.auction.buildingAreaM2) || 0 : 0) || res.value?.baseAreaM2 || props.auction.buildingAreaM2 || 0;
@@ -532,7 +538,7 @@ const body = computed((): Omit<MarketPicks, 'savedAt'> => {
   };
   return {
     // 같은 건물 거래는 손품결론 「경매지번 매매가」 자리 — 같은 평형 · 같은 층 → 같은 평형 → 가까운 평형
-    caseSale: toPick(pickCaseTrade(sameRaw.value, ['매매', '직거래'], me.value.areaM2, me.value.floor)),
+    caseSale: toPick(pickCaseTrade(sameRaw.value, ['매매', '직거래'], me.value.areaM2, me.value.floor) ?? pickCaseTrade(sameRaw2y.value, ['매매', '직거래'], me.value.areaM2, me.value.floor)),
     caseJeonse: toPick(pickCaseTrade(sameRaw.value, ['전세'], me.value.areaM2, me.value.floor)),
     caseManual: { sale: false, jeonse: false },
     simSale: null, simJeonse: null,
