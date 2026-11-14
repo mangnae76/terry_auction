@@ -581,7 +581,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <button v-for="k in daySum.kinds" :key="k.k" type="button" :class="['bpt-fchip', { on: fKind === k.k }]" :disabled="!k.mine" @click="pickF('kind', k.k)">{{ k.k }}<b>{{ k.mine }}</b><small v-if="daySum.total">/ {{ k.all.toLocaleString('ko-KR') }}</small></button></td></tr>
         </tbody>
       </table>
-      <p class="bpt-sub">단추의 파란 숫자는 {{ daySum.dong }} 건수, 옆 회색은 그날 법원 전체 건수입니다. 누르면 아래 표를 거릅니다(다시 누르면 풀림)</p>
+      <p class="bpt-sub">단추의 파란 숫자는 {{ daySum.dong }} 건수, 옆 / 뒤 숫자는 그날 법원 전체 건수입니다. 누르면 아래 표를 거릅니다(다시 누르면 풀림)</p>
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl">
           <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
@@ -809,7 +809,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-dayinfo td.chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .bpt-fchip { height: 30px; padding: 0 10px; border: 1px solid #d5dbe5; border-radius: 8px; background: #fff; color: #374151; font: inherit; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
 .bpt-fchip b { color: #1f5fe0; font-weight: 700; }
-.bpt-fchip small { font-size: 12px; color: #9ca3af; }
+.bpt-fchip small { font-size: 13px; color: #374151; }   /* 법원 전체 수 — 회색이면 안 보인다(2026-11-14 사용자) */
 .bpt-fchip.on { border-color: #2b6df3; background: #eef3ff; }
 .bpt-fchip:disabled { opacity: .5; cursor: default; }
 .bpt-rule { margin: 0; font-size: 15px; font-weight: 700; color: #111827; }
