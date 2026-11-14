@@ -39,7 +39,8 @@ import { useAuctionStore } from '../stores/auctionStore';
 /** app — 앱 물건상세 › 손품+현장 › 시세조사(2026-11-09 시안 price-mock). 내용은 웹과 같고(매도가 예상 · 제외 체크 · 저장 단추),
  *  폰 폭에 맞춰 지도는 접어 두고(한 줄 '지도 보기'), 거르기는 반경 · 거래 · 엘베 · 층 · 기준 → 바로 아래 면적 · 건축 막대 차례로 쌓는다. 전체화면은 없다 */
 const props = defineProps<{ auction: AuctionDetail; kind: CasePropertyType; loose?: boolean; months?: number; app?: boolean }>();
-const meName = computed(() => (props.loose ? '검색주소' : '선정물건'));
+// 칩 · 범례는 늘 '선정물건'(검색 주소로 볼 때도 — 2026-11-14 사용자)
+const meName = computed(() => '선정물건');
 const store = useAuctionStore();
 
 const n0 = (w: number) => Math.round(w).toLocaleString('ko-KR');
@@ -139,6 +140,13 @@ const myPub = computed(() => res.value?.price?.price ?? 0);
 const pubMissing = computed(() => !!res.value && !myPub.value);
 const curPub = computed(() => (pubMissing.value ? typedPub.value : myPub.value));
 const myElev = computed(() => elevs.value[lot.value] ?? null);
+/** 지도 빨간 이름표 — 건물명 · 동 · 호(못 찾으면 지번 주소). '선정물건' · '검색주소' 대신 실제 이름(2026-11-14 사용자) */
+const myLabel = computed(() => {
+  const p = res.value?.parts; const nm = res.value?.price?.name || sameRaw.value[0]?.name || '';
+  const dong = p?.buildingDong && !nm.includes(`${p.buildingDong}동`) ? `${p.buildingDong}동` : '';
+  const ho = p?.ho ? `${p.ho}호` : '';
+  return [nm || [region.value?.dong, lot.value].filter(Boolean).join(' '), dong, ho].filter(Boolean).join(' ');
+});
 const myAddr = computed(() => [region.value?.dong, lot.value, res.value?.price?.name || sameRaw.value[0]?.name, res.value?.parts.ho ? `${res.value.parts.ho}호` : ''].filter(Boolean).join(' '));
 
 // ===== 좌표 · 공시가 호실 · 엘베 — 지번마다 한 번(값은 각 서비스가 저장해 둔다) =====
@@ -715,7 +723,7 @@ const drawMap = () => {
     const mAvg = mp.length ? mp.reduce((a, b) => a + b, 0) / mp.length : 0;
     mv.pin(m, {
       className: 'cmp-bub me',
-      html: `<div class="cb"><b><span class="nm" title="${esc(meName.value)}">${esc(meName.value)}</span></b><span>${mAvg ? `${kindF.value} ${eok(mAvg)}<i></i>${mp.length}건` : '선정물건'}</span></div>`,
+      html: `<div class="cb"><b><span class="nm" title="${esc(myAddr.value)}">${esc(myLabel.value)}</span></b><span>${mAvg ? `${kindF.value} ${eok(mAvg)}<i></i>${mp.length}건` : '선정물건'}</span></div>`,
       onClick: () => { focus.value = ''; meOpen.value = !meOpen.value; },
       z: 1000,
     });
