@@ -746,7 +746,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl tr:last-child td { border-bottom: 0; }
 .bpt-day .bpt-tbl th, .bpt-day .bpt-tbl td { padding-left: 8px; padding-right: 8px; text-align: center; }   /* 사건별 예측은 머리 · 내용 모두 가운데(2026-11-14 사용자) */
 .bpt-day .bpt-tbl td.act-sold { font-weight: 700; }   /* 실제 낙찰가는 굵게 */
-.bpt-day .bpt-tbl td.addr { text-align: left; }
+.bpt-day .bpt-tbl td.addr, .bpt-day .bpt-tbl th.l { text-align: left; }   /* 주소는 머리 · 내용 모두 왼쪽 줄 맞춤 */
 .bpt-tbl.fixed { table-layout: fixed; }
 .bpt-tbl.fixed td { overflow: hidden; text-overflow: ellipsis; }
 .bpt-tbl.fixed td.addr { max-width: none; }   /* 주소 내용만 왼쪽 줄 맞춤(머리는 가운데) */   /* 사건별 예측은 칸이 많다 — 1440 화면에서도 옆으로 안 구르게 */
@@ -852,10 +852,10 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-dayinfo td.date-row .date { margin-right: 8px; }
 .bpt-dayinfo td.chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .bpt-fchip { height: 30px; padding: 0 10px; border: 1px solid #d5dbe5; border-radius: 8px; background: #fff; color: #374151; font: inherit; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
-.bpt-fchip b { color: #111827; font-weight: 700; }
-.bpt-fchip small { font-size: 13px; color: #111827; }   /* 법원 전체 수 — 회색이면 안 보인다(2026-11-14 사용자) */
+.bpt-fchip b { color: #111827; font-weight: 700; display: inline-block; min-width: 3ch; text-align: right; }   /* 숫자 자리 고정 — 누를 때마다 단추 폭이 흔들리지 않게 */
+.bpt-fchip small { font-size: 13px; color: #111827; display: inline-block; min-width: 5.5ch; }   /* 법원 전체 수 — 회색이면 안 보인다(2026-11-14 사용자) */
 .bpt-fchip.on { border-color: #2b6df3; background: #eef3ff; }
-.bpt-fchip b.all { color: #111827; }
+.bpt-fchip b.all { color: #111827; min-width: 3ch; }
 .bpt-fchip.big { height: 32px; font-size: 14px; }
 .bpt-fchip:disabled { opacity: .5; cursor: default; }
 .bpt-rule { margin: 0; font-size: 15px; font-weight: 700; color: #111827; }
