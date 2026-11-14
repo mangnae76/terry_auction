@@ -246,6 +246,23 @@ const items = computed<Item[]>(() => useHits.value ? dayRounds.value.map((r) => 
   return { key: l.key, addr: l.addr, views: l.views, viewAt: l.viewAt, src: '', failed: false, target: null, result: null };
 }));
 
+/** 기일 목록 한 줄 → 표 줄(조회수 · 예측 없이 사건 · 차수 · 최저가 · 결과만). 다른 동은 날짜별 조회수를 아직 안 모았다 */
+const dayItem = (d: DayRow): Item => {
+  const floor = Number(d.addr.match(/(\d+)층/)?.[1] ?? 0) || null; const base = { key: d.key, addr: d.addr, views: 0, viewAt: '', src: '기일 목록' };
+  if (d.status.includes('매각')) return { ...base, failed: false, target: { round: roundOfRatio(d.min / d.appr), appr: d.appr, min: d.min, area: d.area, year: null, floor, date: dayDate.value, dong: dongOf(d.addr) }, result: { sold: d.sold, bids: d.bids, second: d.second } };
+  const n = Number(d.status.match(/유찰\s*(\d+)/)?.[1] ?? 0); const failedHere = !!d.date && d.date > dayDate.value;
+  if (!failedHere) return { ...base, failed: false, target: d.appr ? { round: n, appr: d.appr, min: d.min, area: d.area, year: null, floor, date: dayDate.value, dong: dongOf(d.addr) } : null, result: null };
+  const round = Math.max(0, n - 1);
+  return { ...base, failed: true, target: { round, appr: d.appr, min: Math.round(d.appr * 0.7 ** round / 1000) * 1000, area: d.area, year: null, floor, date: dayDate.value, dong: dongOf(d.addr) }, result: { sold: 0, bids: 0, second: 0 } };
+};
+/** 표에 올릴 줄 — 처음은 보고 있는 동(예측 있음), '모든동'이면 그날 기일 목록 전부(그 동 밖은 예측 칸 —) */
+const fAllDong = ref(false);
+const listItems = computed<Item[]>(() => {
+  if (!fAllDong.value || !useHits.value) return items.value;
+  const have = new Set(items.value.map((it) => it.key));
+  return [...items.value, ...dbRows.value.filter((d) => !have.has(d.key)).map(dayItem)];
+});
+
 const pairs = computed<ViewPair[]>(() => items.value.filter((it) => it.result && it.views >= 0 && it.result.bids >= 0 && (it.failed || it.result.bids > 0)).map((it) => ({ key: it.key, views: it.views, bids: it.result!.bids })));
 
 type Pred = { before: ReturnType<typeof priceDist>; after: ReturnType<typeof priceDist> | null; piBefore: number[]; piAfter: number[] | null; p0: number | null; simN: number; loose: boolean; vmN: number; expBids: number | null };
@@ -413,13 +430,16 @@ const daySum = computed(() => {
   const courts = new Map<string, Array<{ dept: string; n: number }>>(); const kinds: Record<string, number> = {}; const stats: Record<string, number> = {};
   dayDepts.value.forEach((d) => {
     const c = (d.court || '').replace('-', ' '); courts.set(c, [...(courts.get(c) ?? []), { dept: d.dept, n: d.n }]);
+    if (fDept.value && d.dept !== fDept.value) return;   // 현황 · 종류의 법원 쪽 수는 고른 계만
     Object.entries(d.kinds).forEach(([k, n]) => { kinds[k] = (kinds[k] ?? 0) + n; }); Object.entries(d.stats).forEach(([k, n]) => { stats[k] = (stats[k] ?? 0) + n; });
   });
-  const cnt = (f: (it: Item) => string) => { const o: Record<string, number> = {}; items.value.forEach((it) => { const k = f(it); o[k] = (o[k] ?? 0) + 1; }); return o; };
+  const cnt = (f: (it: Item) => string) => { const o: Record<string, number> = {}; listItems.value.filter((it) => !fDept.value || deptOf(it.key) === fDept.value).forEach((it) => { const k = f(it); o[k] = (o[k] ?? 0) + 1; }); return o; };
   const mDept = cnt((it) => deptOf(it.key) || '계 모름'); const mStat = cnt(statOf); const mKind = cnt(kindOf);
   const STAT_ORDER = ['유찰', '매각', '입찰 전'];
+  const inDept = listItems.value.filter((it) => !fDept.value || deptOf(it.key) === fDept.value).length;
+  const dongN = items.value.filter((it) => !fDept.value || deptOf(it.key) === fDept.value).length;
   return {
-    total: dayDepts.value.reduce((s, d) => s + d.n, 0),
+    total: dayDepts.value.reduce((s, d) => s + d.n, 0), dongN, scopeN: fDept.value ? dayDepts.value.find((d) => d.dept === fDept.value)?.n ?? 0 : dayDepts.value.reduce((s, d) => s + d.n, 0), inDept,
     courts: [...courts.entries()].map(([c, ds]) => ({ c, n: ds.reduce((s, d) => s + d.n, 0) })),
     depts: dayDepts.value.map((d) => ({ k: d.dept, label: `${(d.court || '').replace('-', ' ')} ${d.dept}`.trim(), mine: mDept[d.dept] ?? 0, all: d.n })),
     stats: [...new Set([...STAT_ORDER.filter((s) => mStat[s] || stats[s]), ...Object.keys(stats)])].map((k) => ({ k, mine: mStat[k] ?? 0, all: stats[k] ?? 0 })),
@@ -429,14 +449,14 @@ const daySum = computed(() => {
 });
 const nMine = computed(() => items.value.filter((it) => mineKeys.value.has(it.key)).length);
 /** 단추로 거른 줄 */
-const shownItems = computed(() => items.value.filter((it) => (!fMine.value || mineKeys.value.has(it.key)) && (!fDept.value || deptOf(it.key) === fDept.value) && (!fStat.value || statOf(it) === fStat.value) && (!fKind.value || kindOf(it) === fKind.value)));
+const shownItems = computed(() => listItems.value.filter((it) => (!fMine.value || mineKeys.value.has(it.key)) && (!fDept.value || deptOf(it.key) === fDept.value) && (!fStat.value || statOf(it) === fStat.value) && (!fKind.value || kindOf(it) === fKind.value)));
 const FR = { dept: fDept, stat: fStat, kind: fKind } as const;
 const pickF = (w: keyof typeof FR, v: string) => { FR[w].value = FR[w].value === v ? '' : v; };
 /** 내 관심 물건 = 물건카드(선정물건)에 올린 사건 — 사건번호로 맞춘다 */
 const auctions = useAuctionStore();
 const mineKeys = computed(() => new Set(auctions.auctions.map((a) => caseKey(a.caseNumber)).filter(Boolean)));
 const fMine = ref(false);
-watch(dayDate, () => { fMine.value = false; });
+watch(dayDate, () => { fMine.value = false; fAllDong.value = false; });
 
 /** 표의 입찰자 있을확률 · 예상응찰 */
 const sellOf = (key: string) => { const s = sellMap.value.get(key); if (s) return s; const p = preds.value.get(key); return p && p.p0 != null ? { pSold: 1 - p.p0, expBids: p.expBids ?? 0 } : null; };
@@ -566,22 +586,24 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <tr><th>매각기일</th><td><b class="date">{{ dayDate ? `${dayDate.slice(0, 4)}년 ${Number(dayDate.slice(5, 7))}월 ${Number(dayDate.slice(8))}일 (${WD[new Date(`${dayDate}T00:00:00`).getDay()]})` : '' }}</b>
             <span v-if="daySum.total" class="muted">그날 <template v-for="(c, i) in daySum.courts" :key="c.c">{{ i ? ' · ' : '' }}{{ c.c }}</template> 전체 {{ daySum.total.toLocaleString('ko-KR') }}건 중 <b class="dong">{{ daySum.dong }} {{ daySum.mineN.toLocaleString('ko-KR') }}건</b></span>
             <span v-else class="muted">{{ daySum.dong }} {{ daySum.mineN.toLocaleString('ko-KR') }}건 · 그날 전체 목록은 기일목록수집을 하면 나옵니다</span>
-            <span class="date-btns">
-              <button type="button" :class="['bpt-fchip', { on: !fMine && !fDept && !fStat && !fKind }]" @click="fMine = false; fDept = ''; fStat = ''; fKind = ''">전체보기<b>{{ daySum.mineN }}</b></button>
-              <button type="button" :class="['bpt-fchip', { on: fMine }]" :disabled="!nMine" @click="fMine = !fMine">선정물건만보기<b>{{ nMine }}</b></button>
-            </span></td></tr>
-          <tr v-if="daySum.depts.length"><th>계별 물건수</th><td class="chips">
-            <button type="button" :class="['bpt-fchip', { on: !fDept }]" @click="fDept = ''">{{ daySum.courts.length === 1 ? `${daySum.courts[0].c} 전체` : '전체' }}<b>{{ daySum.mineN }}</b><small v-if="daySum.total">/ {{ daySum.total.toLocaleString('ko-KR') }}</small></button>
-            <button v-for="d in daySum.depts" :key="d.k" type="button" :class="['bpt-fchip', { on: fDept === d.k }]" :disabled="!d.mine" @click="pickF('dept', d.k)">{{ d.label }}<b>{{ d.mine }}</b><small>/ {{ d.all.toLocaleString('ko-KR') }}</small></button></td></tr>
+            </td></tr>
+          <tr><th>물건 보기</th><td class="chips">
+            <button type="button" :class="['bpt-fchip', 'big', { on: !fDept }]" @click="fDept = ''">전체보기<b class="all">{{ daySum.total ? daySum.total.toLocaleString('ko-KR') : daySum.mineN }}</b></button>
+            <button v-for="d in daySum.depts" :key="d.k" type="button" :class="['bpt-fchip', 'big', { on: fDept === d.k }]" @click="pickF('dept', d.k)">{{ d.label }}<b class="all">{{ d.all.toLocaleString('ko-KR') }}</b></button>
+            <button type="button" :class="['bpt-fchip', 'big', { on: fMine }]" :disabled="!nMine" @click="fMine = !fMine">선정물건만보기<b>{{ nMine }}</b></button></td></tr>
+          <tr><th>동</th><td class="chips">
+            <button type="button" :class="['bpt-fchip', { on: !fAllDong }]" @click="fAllDong = false">{{ daySum.dong }}<b>{{ daySum.dongN }}</b></button>
+            <button type="button" :class="['bpt-fchip', { on: fAllDong }]" :disabled="!daySum.total" @click="fAllDong = true">모든동<b class="all">{{ daySum.scopeN.toLocaleString('ko-KR') }}</b></button>
+            <span class="muted">다른 동은 목록만 나오고 예측 칸은 — (날짜별 조회수를 모으면 예측까지, 구현 예정)</span></td></tr>
           <tr><th>현황별 물건수</th><td class="chips">
-            <button type="button" :class="['bpt-fchip', { on: !fStat }]" @click="fStat = ''">전체<b>{{ daySum.mineN }}</b><small v-if="daySum.total">/ {{ daySum.total.toLocaleString('ko-KR') }}</small></button>
+            <button type="button" :class="['bpt-fchip', { on: !fStat }]" @click="fStat = ''">전체<b>{{ daySum.inDept }}</b><small v-if="daySum.total">/ {{ daySum.scopeN.toLocaleString('ko-KR') }}</small></button>
             <button v-for="s in daySum.stats" :key="s.k" type="button" :class="['bpt-fchip', { on: fStat === s.k }]" :disabled="!s.mine" @click="pickF('stat', s.k)">{{ s.k }}<b>{{ s.mine }}</b><small v-if="daySum.total">/ {{ s.all.toLocaleString('ko-KR') }}</small></button></td></tr>
           <tr><th>종류별 물건수</th><td class="chips">
-            <button type="button" :class="['bpt-fchip', { on: !fKind }]" @click="fKind = ''">전체<b>{{ daySum.mineN }}</b><small v-if="daySum.total">/ {{ daySum.total.toLocaleString('ko-KR') }}</small></button>
+            <button type="button" :class="['bpt-fchip', { on: !fKind }]" @click="fKind = ''">전체<b>{{ daySum.inDept }}</b><small v-if="daySum.total">/ {{ daySum.scopeN.toLocaleString('ko-KR') }}</small></button>
             <button v-for="k in daySum.kinds" :key="k.k" type="button" :class="['bpt-fchip', { on: fKind === k.k }]" :disabled="!k.mine" @click="pickF('kind', k.k)">{{ k.k }}<b>{{ k.mine }}</b><small v-if="daySum.total">/ {{ k.all.toLocaleString('ko-KR') }}</small></button></td></tr>
         </tbody>
       </table>
-      <p class="bpt-sub">단추의 파란 숫자는 {{ daySum.dong }} 건수, 옆 / 뒤 숫자는 그날 법원 전체 건수입니다. 누르면 아래 표를 거릅니다(다시 누르면 풀림)</p>
+      <p class="bpt-sub">물건 보기 숫자는 그날 법원 전체 건수입니다. 현황 · 종류 단추의 파란 숫자는 지금 표에 나온 줄(동 단추로 고른 범위), / 뒤는 고른 범위의 법원 전체 건수입니다. 다시 누르면 풀립니다</p>
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl">
           <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
@@ -590,7 +612,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td>{{ bidDay(it.target?.date || dayDate) }}</td>
               <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button></td>
               <td class="l addr" :data-tip="it.addr || undefined" data-tip-trunc>{{ it.addr || '—' }}</td>
-              <td class="r">{{ it.views.toLocaleString('ko-KR') }}<small :class="['bpt-at', { after: stale(it.viewAt) }]">{{ it.viewAt === dayDate ? '당일' : it.viewAt.slice(5).replace('-', '.') }}{{ stale(it.viewAt) ? ' 덜 모음' : '' }}</small></td>
+              <td v-if="!it.viewAt" class="r">—</td>
+              <td v-else class="r">{{ it.views.toLocaleString('ko-KR') }}<small :class="['bpt-at', { after: stale(it.viewAt) }]">{{ it.viewAt === dayDate ? '당일' : it.viewAt.slice(5).replace('-', '.') }}{{ stale(it.viewAt) ? ' 덜 모음' : '' }}</small></td>
               <td>{{ it.target ? `${it.target.round + 1}차` : '—' }}</td>
               <td class="r">{{ it.target ? won(it.target.min) : '자료 없음' }}</td>
               <td>{{ sellOf(it.key) ? pct(sellOf(it.key)!.pSold) : '—' }}</td>
@@ -811,6 +834,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-fchip b { color: #1f5fe0; font-weight: 700; }
 .bpt-fchip small { font-size: 13px; color: #111827; }   /* 법원 전체 수 — 회색이면 안 보인다(2026-11-14 사용자) */
 .bpt-fchip.on { border-color: #2b6df3; background: #eef3ff; }
+.bpt-fchip b.all { color: #111827; }
+.bpt-fchip.big { height: 32px; font-size: 14px; }
 .bpt-fchip:disabled { opacity: .5; cursor: default; }
 .bpt-rule { margin: 0; font-size: 15px; font-weight: 700; color: #111827; }
 @media (max-width: 900px) { .bpt-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bpt-two { grid-template-columns: minmax(0, 1fr); } }
