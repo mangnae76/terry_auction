@@ -39,8 +39,8 @@ import { useAuctionStore } from '../stores/auctionStore';
 /** app — 앱 물건상세 › 손품+현장 › 시세조사(2026-11-09 시안 price-mock). 내용은 웹과 같고(매도가 예상 · 제외 체크 · 저장 단추),
  *  폰 폭에 맞춰 지도는 접어 두고(한 줄 '지도 보기'), 거르기는 반경 · 거래 · 엘베 · 층 · 기준 → 바로 아래 면적 · 건축 막대 차례로 쌓는다. 전체화면은 없다 */
 const props = defineProps<{ auction: AuctionDetail; kind: CasePropertyType; loose?: boolean; months?: number; app?: boolean }>();
-// 칩 · 범례는 늘 '선정물건'(검색 주소로 볼 때도 — 2026-11-14 사용자)
-const meName = computed(() => '선정물건');
+// 칩 · 범례 — 선정물건 손품조사는 '선정물건', 시장분석 › 시세예측(주소로 조회)은 '조회물건'(2026-11-14 사용자 — '검색주소'는 알아보기 어려웠다)
+const meName = computed(() => (props.loose ? '조회물건' : '선정물건'));
 const store = useAuctionStore();
 
 const n0 = (w: number) => Math.round(w).toLocaleString('ko-KR');
@@ -1194,7 +1194,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <!-- 맨 위 고정 — 선정물건. 거래가 아니라 견줄 기준이라 실거래가 예상을 적는다 -->
             <tr :class="['mine', { on: webEmbed ? pickedRow === 'mine' : meOpen }]" @click="pickMineRow">
               <td v-if="webEmbed" class="ck-td" />
-              <td><span class="kind me">{{ meName }}</span></td>
+              <td><span :class="['kind', 'me', { q: webEmbed }]">{{ meName }}</span></td>
               <td class="r"><span class="est-lab">{{ kindF }} 예상</span></td>
               <td v-if="kindF === '월세'" class="r pa-num two est-v">{{ view ? n0(view.est) : '-' }}<small>월세</small></td>
               <td v-else class="r pa-num est-v">{{ view ? n0(view.est) : '-' }}</td>
@@ -1657,6 +1657,7 @@ td.two small.neg { color: var(--red); }
 .kind.j { background: #fdf3e1; color: var(--amber); }
 .kind.m { background: #eef7f1; color: var(--ok); }
 .kind.me { background: var(--red); color: #fff; font-size: 9px; padding: 1px 4px; border-radius: 3px; }
+.kind.me.q { font-size: 12px !important; padding: 1px 6px; border-radius: 4px; }   /* 웹 조회물건 · 선정물건 — 아래 매매 · 전세 칩과 같은 높이(2026-11-14 사용자) */
 .est-lab { color: var(--red); font-size: 13.5px; }
 .est-v { color: var(--red); }   /* 선정물건 줄 가격 — 실거래가 아니라 예상가라 '매매 예상'과 같은 빨강(2026-11-12 사용자) */
 .pubin { width: 110px; height: 30px; border: 1.5px solid var(--red); border-radius: 6px; padding: 0 8px; font: inherit; font-size: 13px; text-align: right; background: #fff; }
