@@ -621,7 +621,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl tr:last-child td { border-bottom: 0; }
 .bpt-tbl .l { text-align: left; }
 .bpt-tbl .r { text-align: right; }
-.bpt-tbl td.addr { max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+.bpt-tbl td.addr { max-width: min(420px, 22vw); overflow: hidden; text-overflow: ellipsis; }
 .bpt-tbl td.strong { font-weight: 800; color: #1f5fe0; }
 .bpt-tbl tbody tr { cursor: pointer; }
 .bpt-tbl tbody tr.ro { cursor: default; }
