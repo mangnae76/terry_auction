@@ -49,6 +49,7 @@ import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 import UnitText from '../components/UnitText.vue';
 import InfoTip from '../components/InfoTip.vue';
+import type { TipRow } from '../services/tipRows';
 import DateWheelPicker from '../components/DateWheelPicker.vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import {
@@ -2866,7 +2867,7 @@ const INDIV_GROUPS: IndivGroup[] = [
       { id: 'ind.slope', label: '경사', survey: true, options: ['O', 'X'], rate: '-5%' },
       {
         id: 'ind.mgmt', label: '건물외관', survey: true, multi: true,
-        options: ['좋음', '양호', '나쁨', '크랙', '누수', '곰팡이', '결로'], rate: '-5%',   // 등급 하나 + 나쁜 근거(있으면). 지정주차는 외관이 아니라 뺐다(2026-11-15 사용자)
+        options: ['좋음', '양호', '나쁨', '노후', '크랙', '누수', '곰팡이', '결로'], rate: '-5%',   // 등급 하나 + 나쁜 근거(있으면). 지정주차는 외관이 아니라 뺐다(2026-11-15 사용자)
       },
       {
         id: 'ind.inside', label: '공용부', survey: true, multi: true,
@@ -6032,6 +6033,29 @@ const indivPick = (item: IndivItem, opt: string) => {
   persistSoon();
 };
 /** 비중 · 비율 칸 — 기본값은 흐리지 않은 회색 글(placeholder), 고친 값은 파랑. 비우면 기본값으로 돌아간다 */
+/** 개별성 이름 옆 ⓘ — 비율이 어떤 수치 · 기준으로 붙는지(웹, 2026-11-15 사용자). 값은 위 기본 비율 · 층 규칙 · 수리 금액 그대로 읽는다 */
+const indivTip = (item: IndivItem): TipRow[] => {
+  const id = item.id; const pct = (v: string) => `${String(v).replace(/^-/, '')}%`;
+  const how: TipRow = ['붙는 법', '나음 +비율 · 같음 0 · 못함 −비율, 칸마다 더해 예상 매매가에 곱한다'];
+  const rate: TipRow = ['기본', pct(rateDefaultOf(id) || '5')];
+  const free: TipRow = ['참고', '주관적으로 판단하는 부분이라 비율을 바꿔 써도 괜찮습니다'];
+  const T: Record<string, TipRow[]> = {
+    'ind.age': [['견줌', '경매빌라와 유사빌라의 준공 연월'], rate, ['제외', '시세분석에서 건축 연도 범위로 걸렀으면 0%(두 번 세지 않게)'], how, free],
+    'ind.parking': [['견줌', '세대당 주차 대수(건축물대장 자동)'], rate, how, free],
+    'ind.elevator': [['견줌', '승강기 있음 · 없음(건축물대장 자동)'], rate, ['제외', '시세분석에서 엘베로 걸렀으면 0%'], how, free],
+    'ind.corridor': [['견줌', '계단식 · 복도식(건축물대장 공용부분 자동)'], ['의미', '복도식은 춥고 안전 문제로 싸다(강의)'], rate, how, free],
+    'ind.slope': [['견줌', '언덕 · 경사 있음 · 없음(손품 · 임장)'], rate, how, free],
+    'ind.mgmt': [['견줌', '외관 등급 좋음 · 양호 · 나쁨'], ['근거', '노후 · 크랙 · 누수 · 곰팡이 · 결로가 있으면 나쁜 쪽'], rate, how, free],
+    'ind.inside': [['견줌', '공용부 등급 좋음 · 양호 · 나쁨'], ['근거', '청결 · 계단청소 · 보안이 있으면 좋은 쪽'], rate, how, free],
+    'ind.floorNum': isApartment.value
+      ? [['기준', '1층 10% · 2층 5% · 3층 · 꼭대기층 3%'], ['기본', '그 밖은 5%(층 · 동 · 타입 개별 편차, 강의)'], how, free]
+      : [['엘베 없음', '4 · 5층 10% · 3층 5%'], ['엘베 있음', '5층 이상 10%'], ['그 밖', '5%(유사호실과 층이 다르면, 강의)'], how, free],
+    'ind.view': [['견줌', '뻥뷰 · 단지뷰 · 벽뷰 · 호수·강·공원뷰'], rate, ['호수뷰', `${pct(rateDefaultOf('ind.viewLake') || '20~25')}(호수·강·공원뷰를 고르면)`], how, free],
+    'ind.repair': [['기준', '20평대 부분수리 1,000만 · 올수리 2,000만 · 샤시 +1,000만(강의)'], ['붙는 법', '% 가 아니라 금액을 예상 매매가에 더한다'], ['참고', '집마다 수리 범위가 달라 금액을 바꿔 써도 괜찮습니다']],
+  };
+  const what: Record<string, string> = { 'ind.type': '타입 모양 · 베이', 'ind.rooms': '방 수 · 화장실 수', 'ind.direction': '향(동 · 서 · 남 · 북)', 'ind.sunlight': '일조량 좋음 · 보통 · 나쁨' };
+  return T[id] ?? [['견줌', `${what[id] ?? item.label} — 유사호실과 비교`], rate, how, free];
+};
 /** 비율 · 수리 금액 칸 초기화 — 적은 값을 지워 기본값으로(웹, 줄마다 ↺, 2026-11-15 사용자) */
 const resetIndivValue = (key: string) => { if (!indivValue(key)) return; setIndivValue(key, ''); persistSoon(); };
 /** 표 위 점선 상자 '초기화' — 그 표의 비율(호실은 수리 금액까지)을 모두 기본값으로(2026-11-15 사용자) */
@@ -10214,15 +10238,15 @@ const goBack = () => router.back();
               <!-- 구역 내 개별성 — 위 표가 모두 이 단지 거래면 접어 둔다(이미 담겨 있다). 다른 단지 거래가 섞이면 열려 % 로 보정 -->
               <div class="cmp-two pair">
                 <!-- 안내는 표마다 위에 한 칸씩 — 옆 표로 넘어가지 않게(2026-11-13 사용자). 좁으면 안내 · 표 순서로 -->
-                <div :class="['cmp-zone-off', 'cmp-guide', 'g-zone', { 'cmp-zone-guide': zoneApplied }]"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span v-if="zoneApplied">다른 {{ isApartment ? '단지' : '빌라' }}보다 나으면 +, 못하면 −</span><span v-else>고른 거래가 모두 이 단지라 꺼짐</span><button v-if="webEmbed" type="button" class="cmp-guide-reset" :disabled="!zoneResetOn" @click="resetRates(zoneRateKeys)">초기화</button></div>
-                <div class="cmp-zone-off cmp-zone-guide cmp-guide g-unit"><b>{{ isApartment ? '단지 내 개별성' : '호실 개별성' }}</b><span>고른 거래 호실보다 나으면 +, 못하면 −</span><button v-if="webEmbed" type="button" class="cmp-guide-reset" :disabled="!unitResetOn" @click="resetRates(unitRateKeys)">초기화</button></div>
+                <div :class="['cmp-zone-off', 'cmp-guide', 'g-zone', { 'cmp-zone-guide': zoneApplied }]"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span v-if="zoneApplied">{{ isApartment ? '이 단지가 다른 단지보다' : '해당 경매빌라가 유사빌라보다' }} 나으면 +, 못하면 −</span><span v-else>고른 거래가 모두 이 단지라 꺼짐</span><button v-if="webEmbed" type="button" class="cmp-guide-reset" :disabled="!zoneResetOn" @click="resetRates(zoneRateKeys)">초기화</button></div>
+                <div class="cmp-zone-off cmp-zone-guide cmp-guide g-unit"><b>{{ isApartment ? '단지 내 개별성' : '호실 개별성' }}</b><span>{{ isApartment ? '내 호실이' : '해당 경매호실이' }} 유사호실보다 나으면 +, 못하면 −</span><button v-if="webEmbed" type="button" class="cmp-guide-reset" :disabled="!unitResetOn" @click="resetRates(unitRateKeys)">초기화</button></div>
                 <!-- 표는 늘 보인다 — 다른 단지(건물) 거래가 없으면 흐리게 막는다(2026-11-13 사용자) -->
                 <div :class="['son-demand', 'sup-tbl', 'cmp-zone-wrap', 't-zone', { off: !zoneApplied }]" :inert="!zoneApplied || undefined" :aria-disabled="!zoneApplied || undefined"><div class="adm-table-wrap"><table class="adm-table cmp-tbl cmp-tbl-zone">
                   <colgroup><col style="width: 15%" /><col /><col style="width: 17%" /><col style="width: 29%" /></colgroup>
-                  <thead><tr><th>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</th><th>{{ isApartment ? '이 단지' : '경매빌라' }}</th><th>비율</th><th>{{ isApartment ? '다른 단지와 비교' : '다른 빌라와 비교' }}</th></tr></thead>
+                  <thead><tr><th>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</th><th>{{ isApartment ? '이 단지' : '경매빌라' }}</th><th>비율</th><th>{{ isApartment ? '다른 단지와 비교' : '유사빌라와 비교' }}</th></tr></thead>
                   <tbody>
                     <!-- 구역 내 개별성 — 단지 자체(연식 · 주차 · 엘베 · 현관구조 · 경사 · 용적률). 기준가가 단지 평균이면 이미 담겨 있어 0(2026-11-11 사용자) -->
-                    <tr v-for="item in ZONE_UNIT_ITEMS" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
+                    <tr v-for="item in ZONE_UNIT_ITEMS" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]"><InfoTip v-if="webEmbed" :rows="indivTip(item)" align="start">{{ item.label }}</InfoTip><template v-else>{{ item.label }}</template></td>
                       <td class="lft cmp-ind-ct">
                         <template v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small></template>
                         <span v-else-if="item.options && ZONE_GRADED.has(item.id)" class="cmp-type-pick"><span class="cmp-ind-seg" role="radiogroup" :aria-label="`${item.label} 등급`"><button v-for="opt in ZONE_GRADE" :key="opt" type="button" role="radio" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-checked="indivPicked(item, opt)" @click="indivPickOne(item.id, opt, ZONE_GRADE)">{{ opt }}</button></span><span class="cmp-ind-seg" role="group" :aria-label="`${item.label} 근거`"><button v-for="opt in item.options.filter((o) => !ZONE_GRADE.includes(o))" :key="opt" type="button" :data-t="opt" :class="{ on: indivPicked(item, opt) }" :aria-pressed="indivPicked(item, opt)" @click="indivPick(item, opt)">{{ opt }}</button></span></span>
@@ -10238,7 +10262,7 @@ const goBack = () => router.back();
                   <thead><tr><th>{{ isApartment ? '단지 내 개별성' : '호실 개별성' }}</th><th>{{ isApartment ? '내 호실' : '경매호실' }}</th><th>비율</th><th>비교한 호실과 비교</th></tr></thead>
                   <tbody>
                     <template v-for="g in unitGroupsView" :key="g.title">
-                    <tr v-for="item in g.items" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]">{{ item.label }}</td>
+                    <tr v-for="item in g.items" :key="item.id"><td :class="['cmp-ind-nm', { auto: INDIV_AUTO.has(item.id) }]"><InfoTip v-if="webEmbed" :rows="indivTip(item)" align="start">{{ item.label }}</InfoTip><template v-else>{{ item.label }}</template></td>
                         <td class="lft cmp-ind-ct">
                           <!-- 자동 칸은 공식 자료 값 그대로(고치지 않는다). 자료에 없어 비었을 때만 직접 넣는다(2026-11-11 사용자) -->
                           <template v-if="INDIV_AUTO.has(item.id) && !autoMissing(item.id)"><b>{{ indivAutoText(item) }}</b><small class="cmp-auto">자동</small><small v-if="item.id === 'ind.floorNum' && cmpFloorsText" class="cmp-floors">{{ cmpFloorsText }}</small></template>

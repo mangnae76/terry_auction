@@ -8,7 +8,8 @@ import type { TipRow } from '../services/tipRows';
 /** show — 감싼 칸이 열고 닫을 때(칸 전체에 마우스를 대면 뜨게). 안 주면 ⓘ 와 이름에 댈 때만 */
 /** align='end' — 화면 오른쪽 끝 칸은 말풍선을 왼쪽으로 펼친다(가운데로 펼치면 화면 밖으로 잘렸다) */
 /** under='box' — 말풍선을 ⓘ 밑이 아니라 감싼 칸(가장 가까운 position 이 있는 상자) 아래 밖에 띄운다. 칸 안 숫자를 가리지 않는다(손품조사 말풍선과 같은 자리) */
-const props = defineProps<{ rows: TipRow[]; show?: boolean; align?: 'end'; under?: 'box' }>();
+/** align='start' — 표 맨 왼쪽 칸은 말풍선을 오른쪽으로 펼친다(가운데로 펼치면 표 왼쪽 밖으로 잘렸다) */
+const props = defineProps<{ rows: TipRow[]; show?: boolean; align?: 'end' | 'start'; under?: 'box' }>();
 const hover = ref(false);
 const open = computed(() => (props.show === undefined ? hover.value : props.show || hover.value));
 </script>
@@ -17,7 +18,7 @@ const open = computed(() => (props.show === undefined ? hover.value : props.show
   <span :class="['itip', { box: under === 'box' }]" @mouseenter="hover = true" @mouseleave="hover = false" @click.stop="hover = !hover">
     <slot />
     <svg class="itip-i" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-label="설명"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg>
-    <span v-if="open" :class="['itip-bubble', { end: align === 'end' }]" role="tooltip">
+    <span v-if="open" :class="['itip-bubble', { end: align === 'end', start: align === 'start' }]" role="tooltip">
       <template v-for="(r, i) in rows" :key="i"><em :class="{ good: r[0] === '적정' }">{{ r[0] }}</em><span :class="{ good: r[0] === '적정' }">{{ r[1] }}</span></template>
     </span>
   </span>
@@ -42,6 +43,8 @@ const open = computed(() => (props.show === undefined ? hover.value : props.show
 }
 .itip-bubble.end { left: auto; right: -12px; transform: none; }
 .itip-bubble.end::before { left: auto; right: 12px; transform: none; }
+.itip-bubble.start { left: -12px; transform: none; white-space: normal; width: 360px; grid-template-columns: max-content minmax(0, 1fr); word-break: keep-all; }   /* 긴 설명은 상자 폭 안에서 줄바꿈 */
+.itip-bubble.start::before { left: 18px; transform: none; }
 .itip-bubble em { font-style: normal; font-weight: 400; color: #9db9ef; }
 .itip-bubble .good { color: #86efac; }
 .itip-bubble em.good { color: #4ade80; }
