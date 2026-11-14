@@ -231,7 +231,7 @@ const items = computed<Item[]>(() => useHits.value ? dayRounds.value.map((r) => 
 const pairs = computed<ViewPair[]>(() => items.value.filter((it) => it.result && it.views >= 0 && it.result.bids >= 0 && (it.failed || it.result.bids > 0)).map((it) => ({ key: it.key, views: it.views, bids: it.result!.bids })));
 
 type Pred = { before: ReturnType<typeof priceDist>; after: ReturnType<typeof priceDist> | null; piBefore: number[]; piAfter: number[] | null; p0: number | null; simN: number; loose: boolean; vmN: number; expBids: number | null };
-/** 차트 모드 — 매각될 확률 · 예상 인원(신건도) */
+/** 차트 모드 — 입찰자 있을 확률 · 예상 인원(신건도) */
 const sellMap = computed(() => {
   const m = new Map<string, { pSold: number; pi: number[]; expBids: number }>(); const rm = roundModel.value;
   if (rm) dayRounds.value.forEach((r) => m.set(r.key, predictRound(rm, r)));
@@ -243,7 +243,7 @@ const preds = computed(() => {
   if (useHits.value) {
     const rm = roundModel.value;
     for (const it of items.value) {
-      if (!it.target || it.target.round < 1) continue;   // 신건은 매각될 확률만(배수 식은 1회 유찰부터)
+      if (!it.target || it.target.round < 1) continue;   // 신건은 입찰자 있을 확률만(배수 식은 1회 유찰부터)
       const m = fitPriceModel(recs.value, it.target); if (!m) continue;
       const sim = similarBands(recs.value, it.target); const s = sellMap.value.get(it.key);
       out.set(it.key, { before: priceDist(m, it.target, sim.pi), after: s ? priceDist(m, it.target, s.pi) : null, piBefore: sim.pi, piAfter: s?.pi ?? null, p0: s ? 1 - s.pSold : null, simN: sim.n, loose: sim.loose, vmN: rm?.n ?? 0, expBids: s?.expBids ?? null });
@@ -375,7 +375,7 @@ const dayChips = computed(() => {
   return [...all.filter(([d]) => d < today).slice(-6), ...all.filter(([d]) => d >= today).slice(0, 6)].map(chip);
 });
 
-/** 표의 매각될 확률 · 예상 인원 */
+/** 표의 입찰자 있을 확률 · 예상 인원 */
 const sellOf = (key: string) => { const s = sellMap.value.get(key); if (s) return s; const p = preds.value.get(key); return p && p.p0 != null ? { pSold: 1 - p.p0, expBids: p.expBids ?? 0 } : null; };
 /** 누적이 매각 전날까지 안 닿았으면(덜 모음) */
 const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.value, -1);
@@ -498,7 +498,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <h3 class="bpt-h3">사건별 예측 <small v-if="useHits">사건 차트의 매각 전날까지 누적 조회수 · {{ roundModel ? `그날 이전 ${roundModel.n.toLocaleString('ko-KR')}회차(매각 ${roundModel.nSold.toLocaleString('ko-KR')})로 배움` : '배울 회차가 모자랍니다' }}{{ leadDays ? ` · 조회수가 매각 ${leadDays + 1}일 전까지라 배울 때도 ${leadDays + 1}일 전 값으로 맞춤` : '' }}</small></h3>
       <div class="bpt-tbl-wrap">
         <table class="bpt-tbl">
-          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th class="r">조회수</th><th>차수</th><th class="r">최저가</th><th class="r">매각될 확률</th><th class="r">예상 인원</th><th class="r">예상 낙찰가</th><th class="r">실제 인원</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">흔한 범위</th></tr></thead>
+          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th class="r">조회수</th><th>차수</th><th class="r">최저가</th><th class="r">입찰자 있을 확률</th><th class="r">예상 인원</th><th class="r">예상 낙찰가</th><th class="r">실제 인원</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">흔한 범위</th></tr></thead>
           <tbody>
             <tr v-for="it in items" :key="it.key" :class="{ on: sel?.key === it.key, off: !preds.has(it.key) }" @click="pick = it.key">
               <td>{{ bidDay(it.target?.date || dayDate) }}</td>
@@ -520,7 +520,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           </tbody>
         </table>
       </div>
-      <p v-if="useHits" class="bpt-sub">조회수 아래 작은 글은 누적에 넣은 마지막 날입니다. 매각 전날까지 안 닿으면 '덜 모음' — 그날 조회수수집을 한 번 더 누르세요. 예상 인원은 매각된다고 칠 때, 신건은 매각될 확률만 냅니다. 줄을 누르면 아래에 자세히 나옵니다</p>
+      <p v-if="useHits" class="bpt-sub">조회수 아래 작은 글은 누적에 넣은 마지막 날입니다. 매각 전날까지 안 닿으면 '덜 모음' — 그날 조회수수집을 한 번 더 누르세요. 예상 인원은 매각된다고 칠 때, 신건은 입찰자 있을 확률만 냅니다. 줄을 누르면 아래에 자세히 나옵니다</p>
       <p v-else class="bpt-sub">예상 낙찰가는 조회수 규칙이 있으면 반영한 값, 없으면 비슷한 물건 인원 비율로 낸 값입니다. 줄을 누르면 아래에 자세히 나옵니다</p>
     </section>
 
