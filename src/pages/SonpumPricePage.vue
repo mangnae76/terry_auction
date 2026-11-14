@@ -293,7 +293,7 @@ const kindCount = (k: Kind) => candidates.value.filter((r) => r.group === k).len
 const gapText = (r: PriceRow) => (r.pub ? (r.price - r.pub * HUG_RATE < 0 ? '갭 마이너스' : '갭 있음') : '공시가 없음');
 const elevText = (r: PriceRow) => (r.elev === undefined ? '조회 중' : r.elev === null ? '-' : r.elev > 0 ? `${r.elev}대있음` : '없음');
 // 아파트 동(653동)도 — 같은 단지 안에서 어느 동 거래인지 보이게(2026-11-11 사용자). 국토부가 동을 안 준 거래는 비운다
-const addrOf = (r: PriceRow) => [r.umdNm, r.jibun, r.name, r.dong ? `${String(r.dong).replace(/동$/, '')}동` : '', r.ho || (webEmbed ? hoCand(r) : '')].filter(Boolean).join(' ');
+const addrOf = (r: PriceRow) => [r.umdNm, r.jibun, r.name, r.dong ? `${String(r.dong).replace(/동$/, '')}동` : '', r.ho || hoCand(r)].filter(Boolean).join(' ');   // 앱 · 웹 같게 — 확정 호, 아니면 후보 '401·402호 중'
 /** 표에 보이는 주소 — 선정물건과 같은 읍면동이면 동 이름을 빼 짧게(말풍선 · 정렬은 전체 주소) */
 const addrShort = (r: PriceRow) => { const a = addrOf(r); const d = region.value?.dong; return d && r.umdNm === d ? a.replace(new RegExp(`^${d}\\s+`), '') : a; };
 const COLS: Array<ColumnDef<PriceRow>> = [
@@ -715,7 +715,7 @@ const drawMap = () => {
     }
     mv!.pin(g.spot, {
       className: `pa-pin${on ? ' on' : ''}${off ? ' off' : ''}`,
-      html: on ? html(`<b>${esc(g.name)} ${live.length}건</b><br>${range} · ${g.dist}m`, String(orderOf.value[g.jibun] ?? '')) : dotOnly(String(orderOf.value[g.jibun] ?? '')),
+      html: on ? html(`<b>${esc([g.name, hosOf(g)].filter(Boolean).join(' '))} ${live.length}건</b><br>${range} · ${g.dist}m`, String(orderOf.value[g.jibun] ?? '')) : dotOnly(String(orderOf.value[g.jibun] ?? '')),
       onClick: () => { meOpen.value = false; focus.value = on ? '' : g.jibun; },   // 이름표는 누른 점 하나만
       z: on ? 50 : 1,
     });
@@ -734,7 +734,7 @@ const drawMap = () => {
   }
   mv.pin(m, {
     className: `pa-pin me${meOpen.value ? ' on' : ''}`,
-    html: meOpen.value ? html(`<b>${meName.value}</b>${sameCount.value ? `<br>${webEmbed ? `<b>같은건물 ${sameCount.value}건</b>` : `같은 건물 ${sameCount.value}건`}` : ''}`) : dotOnly(),   /* 웹 — '같은건물' 붙여 쓰고 굵게 */
+    html: meOpen.value ? html(`<b>${esc(myLabel.value)}</b><br>${meName.value}${sameCount.value ? `<br>${webEmbed ? `<b>같은건물 ${sameCount.value}건</b>` : `같은 건물 ${sameCount.value}건`}` : ''}`) : dotOnly(),   /* 웹 — '같은건물' 붙여 쓰고 굵게 */
     onClick: () => { focus.value = ''; meOpen.value = !meOpen.value; },
     z: 1000,
   });
@@ -755,7 +755,7 @@ const ensureMap = async () => {
 watch(mySpot, () => { void ensureMap(); });
 watch(radius, fitMap);
 // 점 · 원이 실제로 바뀔 때만 다시 그린다 — 공시가 · 엘베가 들어올 때마다 지도를 통째로 다시 그리지 않게
-const mapKey = computed(() => `${dropped.value.join('~')}|${radius.value}|${focus.value}|${meOpen.value}|${sameCount.value}|${mySpot.value?.lat}|${mapGroups.value.map((g) => `${g.jibun}:${g.list.length}:${g.range}:${orderOf.value[g.jibun] ?? ''}:${webEmbed ? hosOf(g) : ''}`).join(',')}`);   // 호(호실 목록이 나중에 들어온다)도 — 들어오면 말풍선을 다시 그린다
+const mapKey = computed(() => `${dropped.value.join('~')}|${radius.value}|${focus.value}|${meOpen.value}|${sameCount.value}|${mySpot.value?.lat}|${mapGroups.value.map((g) => `${g.jibun}:${g.list.length}:${g.range}:${orderOf.value[g.jibun] ?? ''}:${hosOf(g)}`).join(',')}`);   // 호(호실 목록이 나중에 들어온다)도 — 들어오면 말풍선을 다시 그린다
 watch(mapKey, drawMap);
 // 숨은 탭에서 처음 그려지면 크기를 모른다 — 보일 때 다시 잰다
 const sonTab = inject<Ref<string> | null>('sonpumTab', null);
@@ -1163,7 +1163,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <thead><tr><th>주소</th><th>실거래가</th><th>연식</th><th>전용</th><th>엘베</th></tr></thead>
           <tbody>
             <tr class="mine">
-              <td class="l"><button type="button" class="at-addr" @click.stop="openAddrTip($event, myAddr)"><span class="kind me">{{ meName }}</span><span class="at-line"><i class="no ph" aria-hidden="true" /><span class="at-tx">{{ myAddr }}</span></span></button></td>
+              <td class="l"><button type="button" class="at-addr" @click.stop="openAddrTip($event, myAddr)"><span class="kind me q">{{ meName }}</span><span class="at-line"><i class="no ph" aria-hidden="true" /><span class="at-tx">{{ myAddr }}</span></span></button></td>
               <td class="r pa-num at-two"><span class="est-lab">{{ kindF }} 예상</span>{{ view ? n0(view.est) : '-' }}</td>
               <td class="pa-num">{{ me.year || '-' }}</td>
               <td v-if="isAptKind" class="pa-num at-two">{{ areaLines(aptMyArea)[0] }}<small v-if="areaLines(aptMyArea)[1]">{{ areaLines(aptMyArea)[1] }}</small></td>
@@ -1197,7 +1197,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <!-- 맨 위 고정 — 선정물건. 거래가 아니라 견줄 기준이라 실거래가 예상을 적는다 -->
             <tr :class="['mine', { on: webEmbed ? pickedRow === 'mine' : meOpen }]" @click="pickMineRow">
               <td v-if="webEmbed" class="ck-td" />
-              <td><span :class="['kind', 'me', { q: webEmbed }]">{{ meName }}</span></td>
+              <td><span class="kind me q">{{ meName }}</span></td>
               <td class="r"><span class="est-lab">{{ kindF }} 예상</span></td>
               <td v-if="kindF === '월세'" class="r pa-num two est-v">{{ view ? n0(view.est) : '-' }}<small>월세</small></td>
               <td v-else class="r pa-num est-v">{{ view ? n0(view.est) : '-' }}</td>
@@ -1660,7 +1660,7 @@ td.two small.neg { color: var(--red); }
 .kind.j { background: #fdf3e1; color: var(--amber); }
 .kind.m { background: #eef7f1; color: var(--ok); }
 .kind.me { background: var(--red); color: #fff; font-size: 9px; padding: 1px 4px; border-radius: 3px; }
-.kind.me.q { font-size: 12px !important; padding: 1px 6px; border-radius: 4px; }   /* 웹 조회물건 · 선정물건 — 아래 매매 · 전세 칩과 같은 높이(2026-11-14 사용자) */
+.kind.me.q { font-size: 12px !important; padding: 1px 6px; border-radius: 4px; }   /* 조회물건 · 선정물건(앱 · 웹) — 아래 매매 · 전세 칩과 같은 높이(2026-11-14 사용자) */
 .est-lab { color: var(--red); font-size: 13.5px; }
 .est-v { color: var(--red); }   /* 선정물건 줄 가격 — 실거래가 아니라 예상가라 '매매 예상'과 같은 빨강(2026-11-12 사용자) */
 .pubin { width: 110px; height: 30px; border: 1.5px solid var(--red); border-radius: 6px; padding: 0 8px; font: inherit; font-size: 13px; text-align: right; background: #fff; }
