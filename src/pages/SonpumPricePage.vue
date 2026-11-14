@@ -706,7 +706,8 @@ const drawMap = () => {
       const avg = lp.reduce((a, b) => a + b, 0) / (lp.length || 1);
       mv!.pin(g.spot, {
         className: `cmp-bub${on ? ' on' : ''}${off ? ' off' : ''}`,
-        html: `<div class="cb"><b><span class="nm" title="${esc(g.name)}">${esc(g.name)}</span></b><span>${kindF.value} ${eok(avg)}<i></i>${live.length}건</span></div>`,
+        // 이름 뒤에 그 건물 거래의 호(확정 · 후보) — 길면 잘리고 말풍선(검은)으로 전체(2026-11-14 사용자)
+        html: (() => { const nm = [g.name, hosOf(g)].filter(Boolean).join(' '); return `<div class="cb"><b><span class="nm" data-tip="${esc(nm)}">${esc(nm)}</span></b><span>${kindF.value} ${eok(avg)}<i></i>${live.length}건</span></div>`; })(),
         onClick: () => { meOpen.value = false; focus.value = on ? '' : g.jibun; },
         z: on ? 50 : 1,
       });
@@ -725,7 +726,7 @@ const drawMap = () => {
     const mAvg = mp.length ? mp.reduce((a, b) => a + b, 0) / mp.length : 0;
     mv.pin(m, {
       className: 'cmp-bub me',
-      html: `<div class="cb"><b><span class="nm" title="${esc(myAddr.value)}">${esc(myLabel.value)}</span></b><span>${mAvg ? `${kindF.value} ${eok(mAvg)}<i></i>${mp.length}건` : '선정물건'}</span></div>`,
+      html: `<div class="cb"><b><span class="nm" data-tip="${esc(myAddr.value)}">${esc(myLabel.value)}</span></b><span>${mAvg ? `${kindF.value} ${eok(mAvg)}<i></i>${mp.length}건` : meName.value}</span></div>`,
       onClick: () => { focus.value = ''; meOpen.value = !meOpen.value; },
       z: 1000,
     });
@@ -754,7 +755,7 @@ const ensureMap = async () => {
 watch(mySpot, () => { void ensureMap(); });
 watch(radius, fitMap);
 // 점 · 원이 실제로 바뀔 때만 다시 그린다 — 공시가 · 엘베가 들어올 때마다 지도를 통째로 다시 그리지 않게
-const mapKey = computed(() => `${dropped.value.join('~')}|${radius.value}|${focus.value}|${meOpen.value}|${sameCount.value}|${mySpot.value?.lat}|${mapGroups.value.map((g) => `${g.jibun}:${g.list.length}:${g.range}:${orderOf.value[g.jibun] ?? ''}`).join(',')}`);
+const mapKey = computed(() => `${dropped.value.join('~')}|${radius.value}|${focus.value}|${meOpen.value}|${sameCount.value}|${mySpot.value?.lat}|${mapGroups.value.map((g) => `${g.jibun}:${g.list.length}:${g.range}:${orderOf.value[g.jibun] ?? ''}:${webEmbed ? hosOf(g) : ''}`).join(',')}`);   // 호(호실 목록이 나중에 들어온다)도 — 들어오면 말풍선을 다시 그린다
 watch(mapKey, drawMap);
 // 숨은 탭에서 처음 그려지면 크기를 모른다 — 보일 때 다시 잰다
 const sonTab = inject<Ref<string> | null>('sonpumTab', null);
