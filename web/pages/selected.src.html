@@ -8716,8 +8716,8 @@ span.cal-day.has { cursor: help; }
     const T = CLOUD.T;
     /* 경매사례는 운영자만 — 로그인 확인이 끝났는데 운영자가 아니면 지역분석으로(주소로 바로 들어와도) */
     if (key === 'sale' && S.authReady && !agIsAdmin()) { S.marketTab = 'dong'; writeHash(false); renderSubTabs(); renderMarket(); return; }
-    /* 매각분석 탭 두 개 — 매각사례 | 낙찰가예측(운영). 낙찰가예측은 앱 화면(BidPredictTest)을 붙인다(2026-11-14) */
-    const saleTabs = `<nav class="cm-tabs sale-tabs" role="tablist" aria-label="매각분석">${[['near', '매각사례'], ['predict', '낙찰가예측']].map(([k, t]) => { const on = k === 'predict' ? S.saleTab === 'predict' : S.saleTab !== 'predict'; return `<button type="button" role="tab" class="${on ? 'on' : ''}" aria-selected="${on}" data-act="sale-tab" data-v="${k}">${t}${k === 'predict' ? '<span class="adm-chip">운영</span>' : ''}</button>`; }).join('')}</nav>`;
+    /* 매각분석 탭 두 개 — 매각사례 | 낙찰가예측. 낙찰가예측은 앱 화면(BidPredictTest)을 붙인다(2026-11-14) */
+    const saleTabs = `<nav class="cm-tabs sale-tabs" role="tablist" aria-label="매각분석">${[['near', '매각사례'], ['predict', '낙찰가예측']].map(([k, t]) => { const on = k === 'predict' ? S.saleTab === 'predict' : S.saleTab !== 'predict'; return `<button type="button" role="tab" class="${on ? 'on' : ''}" aria-selected="${on}" data-act="sale-tab" data-v="${k}">${t}</button>`; }).join('')}</nav>`;   /* 매각분석 전체가 운영자만이라 탭에 운영 칩은 따로 달지 않는다 */
     if (key === 'sale' && S.saleTab === 'predict' && agIsAdmin()) {
       if (marketUnmount && box.querySelector('#bidPredictMount')) return;
       const ss = $('sonSaleSlot'); if (ss) ss.innerHTML = '';
