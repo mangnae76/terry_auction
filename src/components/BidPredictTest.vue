@@ -9,7 +9,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { agentOnline, loadAgentDataset, loadDayLists, loadHits, saveDayCsv, sendAgentCommand, sendAgentStop, watchAgentStatus, type AgentStatus, type DayListRow, type HitDoc } from '../services/agentRemote';
 import { readSheetRows } from '../services/saleExcel';
 import {
-  BAND_NAMES, caseLabel, csvRows, dongOf, fitPriceModel, fitRoundModel, fitViewModel, parseViewLines, predictRound, priceDist, readDayRows, roundOfRatio, roundsOf, similarBands, soldOf, viewBands,
+  BAND_NAMES, bandOf, caseLabel, csvRows, dongOf, fitPriceModel, fitRoundModel, fitViewModel, parseViewLines, predictRound, priceDist, readDayRows, roundOfRatio, roundsOf, similarBands, soldOf, viewBands,
   type BidTarget, type DayRow, type Round, type ViewPair,
 } from '../services/bidPredict';
 
@@ -31,8 +31,12 @@ const dbRows = ref<DbRow[]>([]);
 const dbInfo = ref('');
 const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const plusDays = (iso: string, n: number) => { const d = new Date(`${iso}T00:00:00`); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
-const colFrom = ref(todayIso());
-const colTo = ref(plusDays(todayIso(), 7));
+/** 수집 기간 — 처음은 오늘 ~ 7일 뒤(다가오는 기일). 고친 값은 이 브라우저에 남긴다(새로고침해도 그대로) */
+const COL_KEY = 'bidtest.col';
+const colSaved = (() => { try { return JSON.parse(localStorage.getItem(COL_KEY) || 'null') as { from?: string; to?: string } | null; } catch { return null; } })();
+const colFrom = ref(colSaved?.from || todayIso());
+const colTo = ref(colSaved?.to || plusDays(todayIso(), 7));
+watch([colFrom, colTo], () => { try { localStorage.setItem(COL_KEY, JSON.stringify({ from: colFrom.value, to: colTo.value })); } catch { /* 그만 */ } });
 const colCourt = ref('인천-본원');
 const agent = ref<AgentStatus | null>(null);
 const agentNote = ref('');
@@ -298,6 +302,70 @@ const dbList = computed(() => {
   });
 });
 const nUnmatched = computed(() => items.value.filter((it) => !it.target).length);
+/* ===== 채점하기 — 기간 안 모든 회차를 그날 이전 자료로만 맞혀 본다(그날 결과는 안 본다, 2026-11-14) =====
+ * 조회수 없이(같은 회차 팔린 비율 · 비슷한 물건 인원) ↔ 조회수 반영(누적 + 마지막 7일 + 회차) 나란히 */
+const gradeFrom = ref('2026-06-01');
+const gradeTo = ref(plusDays(todayIso(), -1));
+type GradeAcc = { n: number; sold: number; sell: [number, number]; band: [number, number]; nb: number; err: [number, number]; inR: [number, number]; np: number };
+const acc0 = (): GradeAcc => ({ n: 0, sold: 0, sell: [0, 0], band: [0, 0], nb: 0, err: [0, 0], inR: [0, 0], np: 0 });
+const grade = ref<{ total: GradeAcc; days: Array<GradeAcc & { date: string }>; skipped: number; from: string; to: string } | null>(null);
+const grading = ref(false);
+const gradeMsg = ref('');
+const runGrade = async () => {
+  if (grading.value) return;
+  if (!hitRounds.value.length || !recs.value.length) { gradeMsg.value = '사건 차트 · 매각 자료를 다 읽은 뒤에 눌러 주세요'; return; }
+  grading.value = true; gradeMsg.value = ''; grade.value = null;
+  await new Promise((r) => setTimeout(r, 20));
+  try {
+    const R = hitRounds.value; const from = gradeFrom.value; const to = gradeTo.value;
+    const ok = (r: Round) => r.complete && r.round <= 4 && (r.result === 'fail' || (r.result === 'sold' && r.bids > 0));
+    const T = R.filter((r) => ok(r) && r.date >= from && r.date <= to);
+    const dates = [...new Set(T.map((r) => r.date))].sort();
+    const total = acc0(); const days: Array<GradeAcc & { date: string }> = []; let skipped = 0;
+    const REP = [1, 2, 5, 8, 15];
+    for (let di = 0; di < dates.length; di++) {
+      const d = dates[di]; const m = fitRoundModel(R, d);
+      const rows = T.filter((r) => r.date === d);
+      if (!m) { skipped += rows.length; continue; }
+      const rate: Record<number, [number, number]> = {};
+      R.filter((r) => ok(r) && r.date < d).forEach((r) => { const g = Math.min(r.round, 3); rate[g] = rate[g] ?? [0, 0]; rate[g][0] += r.result === 'sold' ? 1 : 0; rate[g][1] += 1; });
+      const a = { ...acc0(), date: d };
+      for (const r of rows) {
+        const p = predictRound(m, r); const g = rate[Math.min(r.round, 3)]; const pb = g ? (g[0] + 1) / (g[1] + 2) : 0.5;
+        const sold = r.result === 'sold';
+        for (const x of [a, total]) { x.n += 1; x.sold += sold ? 1 : 0; x.sell[0] += (pb >= 0.5) === sold ? 1 : 0; x.sell[1] += (p.pSold >= 0.5) === sold ? 1 : 0; }
+        if (!sold) continue;
+        const tg: BidTarget = { round: r.round, appr: r.appr, min: r.min, area: r.area, year: yearOfAddr(r.addr), floor: Number(r.addr.match(/(\d+)층/)?.[1] ?? 0) || null, date: r.date, dong: dongOf(r.addr) };
+        const sim = similarBands(recs.value, tg); const eb0 = sim.pi.reduce((s, q, k) => s + q * REP[k], 0);
+        for (const x of [a, total]) { x.nb += 1; x.band[0] += bandOf(Math.round(eb0)) === bandOf(r.bids) ? 1 : 0; x.band[1] += bandOf(Math.round(p.expBids)) === bandOf(r.bids) ? 1 : 0; }
+        if (r.round < 1) continue;
+        const pm = fitPriceModel(recs.value, tg); if (!pm) continue;
+        const d0 = priceDist(pm, tg, sim.pi); const d1 = priceDist(pm, tg, p.pi);
+        for (const x of [a, total]) {
+          x.np += 1; x.err[0] += Math.abs(r.sold / d0.median - 1); x.err[1] += Math.abs(r.sold / d1.median - 1);
+          x.inR[0] += r.sold >= d0.lo && r.sold <= d0.hi ? 1 : 0; x.inR[1] += r.sold >= d1.lo && r.sold <= d1.hi ? 1 : 0;
+        }
+      }
+      days.push(a);
+      if (di % 6 === 5) { gradeMsg.value = `채점하는 중 — 기일 ${di + 1}/${dates.length}`; await new Promise((r) => setTimeout(r, 0)); }
+    }
+    grade.value = { total, days: days.reverse(), skipped, from, to }; gradeMsg.value = '';
+  } catch { gradeMsg.value = '채점하지 못했습니다. 다시 눌러 주세요'; }
+  finally { grading.value = false; }
+};
+const rate = (x: number, n: number) => (n ? `${Math.round((x / n) * 100)}%` : '—');
+const errPct = (x: number, n: number) => (n ? `${((x / n) * 100).toFixed(1)}%` : '—');
+const goDay = (d: string) => { dayDate.value = d; requestAnimationFrame(() => document.querySelector('.bpt-day')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); };
+
+/** 기일 칩 — 사건 차트에 있는 매각기일. 다가오는 기일과 최근 지난 기일 */
+const WD = ['일', '월', '화', '수', '목', '금', '토'];
+const dayChips = computed(() => {
+  const cnt = new Map<string, number>(); hitRounds.value.forEach((r) => cnt.set(r.date, (cnt.get(r.date) ?? 0) + 1));
+  const all = [...cnt.entries()].sort((a, b) => a[0].localeCompare(b[0])); const today = todayIso();
+  const chip = ([d, n]: [string, number]) => ({ d, n, label: `${Number(d.slice(5, 7))}.${Number(d.slice(8))}(${WD[new Date(`${d}T00:00:00`).getDay()]})`, ahead: d >= today });
+  return [...all.filter(([d]) => d < today).slice(-6), ...all.filter(([d]) => d >= today).slice(0, 6)].map(chip);
+});
+
 /** 표의 팔릴 확률 · 예상 인원 */
 const sellOf = (key: string) => { const s = sellMap.value.get(key); if (s) return s; const p = preds.value.get(key); return p && p.p0 != null ? { pSold: 1 - p.p0, expBids: p.expBids ?? 0 } : null; };
 /** 누적이 매각 전날까지 안 닿았으면(덜 모음) */
@@ -319,6 +387,9 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <p v-if="dayName" class="bpt-sub">{{ dayName }} · {{ dayRows.length.toLocaleString('ko-KR') }}건</p>
           <p v-else class="bpt-sub">기일별물건에서 받은 엑셀 · CSV(그날 결과 · 2위 · 입찰자수)</p>
           <label class="bpt-date">매각기일<input v-model="dayDate" type="date" /></label>
+          <div v-if="dayChips.length" class="bpt-chips" role="group" aria-label="매각기일 고르기">
+            <button v-for="c in dayChips" :key="c.d" type="button" :class="['bpt-chip', { on: c.d === dayDate, ahead: c.ahead }]" :title="`${c.d} · 검암동 ${c.n}건`" @click="dayDate = c.d">{{ c.label }}<small>{{ c.n }}</small></button>
+          </div>
           <p v-if="dbInfo" class="bpt-sub">{{ dbInfo }}</p>
           <p v-if="fileMsg" class="bpt-warn">{{ fileMsg }}</p>
         </div>
@@ -357,6 +428,42 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       </div>
     </section>
 
+    <section class="bpt-card">
+      <div class="bpt-grade-head">
+        <h3 class="bpt-h3">채점 <small>기간 안 모든 회차를 그날 이전 자료로만 맞혀 봅니다(그날 결과는 안 봄)</small></h3>
+        <div class="bpt-range"><input v-model="gradeFrom" type="date" aria-label="채점 시작일" /><span>~</span><input v-model="gradeTo" type="date" aria-label="채점 끝일" /></div>
+        <button type="button" class="bpt-btn" :disabled="grading || !hitRounds.length" @click="runGrade">{{ grading ? '채점하는중' : '채점하기' }}</button>
+      </div>
+      <p v-if="gradeMsg" class="bpt-sub">{{ gradeMsg }}</p>
+      <p v-else-if="!hitRounds.length" class="bpt-sub">사건 차트가 있어야 채점합니다. 동 거르기에 동을 적고 조회수수집을 먼저 해 주세요</p>
+      <template v-if="grade">
+        <div class="bpt-grade">
+          <div class="bpt-tile"><span>맞힌 회차</span><b>{{ grade.total.n.toLocaleString('ko-KR') }}회차</b><small>팔림 {{ grade.total.sold.toLocaleString('ko-KR') }} · 유찰 {{ (grade.total.n - grade.total.sold).toLocaleString('ko-KR') }}{{ grade.skipped ? ` · 배울 자료 모자라 뺌 ${grade.skipped}` : '' }}</small></div>
+          <div class="bpt-tile key"><span>팔림 · 유찰 맞힘</span><b>{{ rate(grade.total.sell[1], grade.total.n) }}</b><small>조회수 없이 {{ rate(grade.total.sell[0], grade.total.n) }}</small></div>
+          <div class="bpt-tile key"><span>인원 구간 맞힘(팔린 것)</span><b>{{ rate(grade.total.band[1], grade.total.nb) }}</b><small>조회수 없이 {{ rate(grade.total.band[0], grade.total.nb) }}</small></div>
+          <div class="bpt-tile key"><span>낙찰가 평균 차이</span><b>{{ errPct(grade.total.err[1], grade.total.np) }}</b><small>조회수 없이 {{ errPct(grade.total.err[0], grade.total.np) }} · {{ grade.total.np }}건</small></div>
+          <div class="bpt-tile key"><span>흔한 범위 안</span><b>{{ rate(grade.total.inR[1], grade.total.np) }}</b><small>조회수 없이 {{ rate(grade.total.inR[0], grade.total.np) }} · 50%가 정상</small></div>
+        </div>
+        <div class="bpt-tbl-wrap bpt-scroll">
+          <table class="bpt-tbl">
+            <thead><tr><th>매각기일</th><th>회차</th><th>팔림</th><th>팔림 · 유찰 맞힘</th><th>인원 구간 맞힘</th><th>낙찰가 평균 차이</th><th>흔한 범위 안</th></tr></thead>
+            <tbody>
+              <tr v-for="g in grade.days" :key="g.date" :class="{ on: g.date === dayDate }" @click="goDay(g.date)">
+                <td><button type="button" class="bpt-link" @click.stop="goDay(g.date)">{{ g.date }}</button></td>
+                <td class="r">{{ g.n }}</td>
+                <td class="r">{{ g.sold }}</td>
+                <td class="r">{{ rate(g.sell[1], g.n) }}<small class="bpt-at">없이 {{ rate(g.sell[0], g.n) }}</small></td>
+                <td class="r">{{ rate(g.band[1], g.nb) }}<small class="bpt-at">없이 {{ rate(g.band[0], g.nb) }}</small></td>
+                <td class="r">{{ errPct(g.err[1], g.np) }}<small class="bpt-at">없이 {{ errPct(g.err[0], g.np) }}</small></td>
+                <td class="r">{{ g.np ? `${g.inR[1]} / ${g.np}` : '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="bpt-sub">{{ grade.from }} ~ {{ grade.to }} · 기일 {{ grade.days.length }}개. 줄을 누르면 그날 사건별 예측으로 갑니다. 실제 인원을 다 알아도 낙찰가 평균 차이는 7% 가까이 남습니다(1등이 써 낸 금액은 사람마다 달라서)</p>
+      </template>
+    </section>
+
     <section v-if="dayDate" class="bpt-card">
       <h3 class="bpt-h3">DB에 들어 있는 목록 <small>{{ dayDate }} · {{ dongFilter.trim() || '전체' }} {{ dbList.length.toLocaleString('ko-KR') }}건 / 이 날 전체 {{ dbRows.length.toLocaleString('ko-KR') }}건</small></h3>
       <div v-if="dbList.length" class="bpt-tbl-wrap bpt-scroll">
@@ -378,7 +485,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <p class="bpt-sub">조회수는 가장 늦게 모은 값이고, 아래 작은 글은 모은 날입니다. '매각 뒤'로 모은 값은 예측에 쓰지 않습니다(입찰 전날까지 모은 값만). CSV에는 조회수가 없어 마이로 모은 줄에만 있습니다</p>
     </section>
 
-    <section v-if="items.length" class="bpt-card">
+    <section v-if="items.length" class="bpt-card bpt-day">
       <h3 class="bpt-h3">사건별 예측 <small v-if="useHits">사건 차트의 매각 전날까지 누적 조회수 · {{ roundModel ? `그날 이전 ${roundModel.n.toLocaleString('ko-KR')}회차(팔림 ${roundModel.nSold.toLocaleString('ko-KR')})로 배움` : '배울 회차가 모자랍니다' }}</small></h3>
       <div class="bpt-tbl-wrap">
         <table class="bpt-tbl">
@@ -580,6 +687,16 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-prog .num b { color: #1f5fe0; }
 .bpt-stop { height: 34px; padding: 0 14px; border: 1px solid #c22e2e; border-radius: 8px; background: none; color: #c22e2e; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
 .bpt-stop:disabled { border-color: #e3e7ee; color: #c4c9d2; cursor: default; }
+.bpt-chips { display: flex; flex-wrap: wrap; gap: 6px; max-width: 320px; }
+.bpt-chip { height: 28px; padding: 0 9px; border: 1px solid #d5dbe5; border-radius: 999px; background: #fff; color: #374151; font: inherit; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.bpt-chip small { font-size: 12px; color: #9ca3af; }
+.bpt-chip.ahead { border-color: #b9cbf5; color: #1f5fe0; }
+.bpt-chip.on { background: #2b6df3; border-color: #2b6df3; color: #fff; }
+.bpt-chip.on small { color: #dbe5fa; }
+.bpt-grade-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.bpt-grade-head .bpt-h3 { margin-right: auto; }
+.bpt-grade { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 900px) { .bpt-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .bpt-rule { margin: 0; font-size: 15px; font-weight: 700; color: #111827; }
 @media (max-width: 900px) { .bpt-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bpt-two { grid-template-columns: minmax(0, 1fr); } }
 </style>
