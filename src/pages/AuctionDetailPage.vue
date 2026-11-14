@@ -12279,9 +12279,9 @@ tr.tone-take { background: #fff5f5; }
 
 /* 권리분석 탭 — 첨부 / 케이스 배너 / 서류 확인 */
 .adp-rcase-banner {
-  margin: 8px 0 0; padding: 9px 8px;
+  margin: 8px 0 0; padding: 9px 10px;
   background: #eaf1ff; border-radius: 8px;
-  font-size: 11px; font-weight: 700; color: #1d4ed8; line-height: 1.5; letter-spacing: -0.4px; word-break: keep-all;   /* 앱 — 케이스 설명이 한 줄에 들게(2026-11-14 사용자) */
+  font-size: 12.5px; font-weight: 700; color: #1d4ed8; line-height: 1.5; letter-spacing: -0.2px; word-break: keep-all;   /* 앱 — 케이스 설명이 한 줄에 들게(2026-11-14 사용자) */
 }
 .adp-rdoc-task { display: block; font-weight: 700; color: #111827; font-size: 11.5px; line-height: 1.4; }
 .adp-rdoc-task-cell, .adp-rdoc-note-cell { vertical-align: middle; padding: 8px 5px; }
