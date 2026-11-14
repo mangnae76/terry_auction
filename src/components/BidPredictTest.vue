@@ -588,11 +588,11 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <span v-else class="muted">{{ daySum.dong }} {{ daySum.mineN.toLocaleString('ko-KR') }}건 · 그날 전체 목록은 기일목록수집을 하면 나옵니다</span>
             </td></tr>
           <tr><th>물건 보기</th><td class="chips">
-            <button type="button" :class="['bpt-fchip', 'big', { on: !fDept }]" @click="fDept = ''">전체보기<b class="all">{{ daySum.total ? daySum.total.toLocaleString('ko-KR') : daySum.mineN }}</b></button>
-            <button v-for="d in daySum.depts" :key="d.k" type="button" :class="['bpt-fchip', 'big', { on: fDept === d.k }]" @click="pickF('dept', d.k)">{{ d.label }}<b class="all">{{ d.all.toLocaleString('ko-KR') }}</b></button>
+            <button type="button" :class="['bpt-fchip', 'big', { on: !fDept && fAllDong }]" :disabled="!daySum.total" @click="fDept = ''; fAllDong = true">전체보기<b class="all">{{ daySum.total ? daySum.total.toLocaleString('ko-KR') : daySum.mineN }}</b></button>
+            <button v-for="d in daySum.depts" :key="d.k" type="button" :class="['bpt-fchip', 'big', { on: fDept === d.k && fAllDong }]" @click="fDept = d.k; fAllDong = true">{{ d.label }}<b class="all">{{ d.all.toLocaleString('ko-KR') }}</b></button>
             <button type="button" :class="['bpt-fchip', 'big', { on: fMine }]" :disabled="!nMine" @click="fMine = !fMine">선정물건만보기<b>{{ nMine }}</b></button></td></tr>
           <tr><th>동</th><td class="chips">
-            <button type="button" :class="['bpt-fchip', { on: !fAllDong }]" @click="fAllDong = false">{{ daySum.dong }}<b>{{ daySum.dongN }}</b></button>
+            <button type="button" :class="['bpt-fchip', { on: !fAllDong }]" @click="fAllDong = false; fDept = ''">{{ daySum.dong }}<b>{{ daySum.dongN }}</b></button>
             <button type="button" :class="['bpt-fchip', { on: fAllDong }]" :disabled="!daySum.total" @click="fAllDong = true">모든동<b class="all">{{ daySum.scopeN.toLocaleString('ko-KR') }}</b></button>
             <span class="muted">다른 동은 목록만 나오고 예측 칸은 — (날짜별 조회수를 모으면 예측까지, 구현 예정)</span></td></tr>
           <tr><th>현황별 물건수</th><td class="chips">
