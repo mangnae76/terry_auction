@@ -6562,9 +6562,11 @@ const ZONE_UNIT_ITEMS = computed(() => indivGroups.value[0].items.filter((it) =>
 // 구역 내 개별성 — 고른 거래가 모두 다른 단지일 때만(강의 '실거래 없을 때 시세조사 방법'). 이 단지 거래가 하나라도 있으면 이미 담겨 있다.
 // 섞여 있으면 % 를 평균 전체에 붙여 이 단지 거래까지 부풀었다(+35~45%, 2026-11-11) — 섞임은 알리기만 한다
 // 빌라는 섞여 있어도 연다 — % 를 다른 건물 거래 몫(zoneShare)에만 붙여 같은 건물 거래는 그대로 둔다(2026-11-13 사용자)
-const zoneApplied = computed(() => { const rs = sonPriceOut?.value?.rows ?? []; return rs.some((r) => !r.same); });
+// 빌라는 늘 켠다 — 고른 + / − 를 예상 매매가 전체에 바로 붙인다. 같은 건물이라도 외벽이 낡은 것처럼 다른 빌라보다 못한 점은 빼야 한다(2026-11-15 사용자). 아파트는 그대로
+const zoneApplied = computed(() => { if (!isApartment.value) return true; const rs = sonPriceOut?.value?.rows ?? []; return rs.some((r) => !r.same); });
 /** 기준가 가운데 다른 건물 거래 몫(0~1) — 평균이면 고른 거래 평당가 합에서, 중간값이면 가운데 거래(짝수면 두 건)에서 다른 건물 평당가가 차지하는 비율 */
 const zoneShare = computed(() => {
+  if (!isApartment.value) return 1;   // 빌라 — 몫으로 나누지 않고 전체에
   const rs = (sonPriceOut?.value?.rows ?? []).filter((r) => (r.perPy ?? 0) > 0);
   if (!rs.length) return 1;
   const of = (xs: typeof rs) => { const t = xs.reduce((s, r) => s + (r.perPy ?? 0), 0); return t > 0 ? xs.filter((r) => !r.same).reduce((s, r) => s + (r.perPy ?? 0), 0) / t : 0; };
@@ -10199,7 +10201,7 @@ const goBack = () => router.back();
               <!-- 구역 내 개별성 — 위 표가 모두 이 단지 거래면 접어 둔다(이미 담겨 있다). 다른 단지 거래가 섞이면 열려 % 로 보정 -->
               <div class="cmp-two pair">
                 <!-- 안내는 표마다 위에 한 칸씩 — 옆 표로 넘어가지 않게(2026-11-13 사용자). 좁으면 안내 · 표 순서로 -->
-                <div :class="['cmp-zone-off', 'cmp-guide', 'g-zone', { 'cmp-zone-guide': zoneApplied }]"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span v-if="zoneApplied">{{ isApartment ? '이 단지가 다른 단지보다' : '경매빌라가 다른 빌라보다' }} 나으면 +, 못하면 −. 다른 {{ isApartment ? '단지' : '건물' }} 거래에만 붙습니다.</span><span v-else>시세분석에서 고른 실거래가 모두 이 {{ isApartment ? '단지' : '건물' }} 거래라 꺼져 있습니다.</span></div>
+                <div :class="['cmp-zone-off', 'cmp-guide', 'g-zone', { 'cmp-zone-guide': zoneApplied }]"><b>{{ isApartment ? '구역 내 개별성' : '빌라 개별성' }}</b><span v-if="zoneApplied">{{ isApartment ? '이 단지가 다른 단지보다' : '경매빌라가 다른 빌라보다' }} 나으면 +, 못하면 −. {{ isApartment ? '다른 단지 거래에만 붙습니다.' : '예상 매매가에 바로 붙습니다.' }}</span><span v-else>시세분석에서 고른 실거래가 모두 이 {{ isApartment ? '단지' : '건물' }} 거래라 꺼져 있습니다.</span></div>
                 <div class="cmp-zone-off cmp-zone-guide cmp-guide g-unit"><b>{{ isApartment ? '단지 내 개별성' : '호실 개별성' }}</b><span>{{ isApartment ? '내 호실이' : '경매호실이' }} 시세분석에서 고른 거래 호실보다 나으면 +, 못하면 −. 모든 거래에 붙습니다.</span></div>
                 <!-- 표는 늘 보인다 — 다른 단지(건물) 거래가 없으면 흐리게 막는다(2026-11-13 사용자) -->
                 <div :class="['son-demand', 'sup-tbl', 'cmp-zone-wrap', 't-zone', { off: !zoneApplied }]" :inert="!zoneApplied || undefined" :aria-disabled="!zoneApplied || undefined"><div class="adm-table-wrap"><table class="adm-table cmp-tbl cmp-tbl-zone">
