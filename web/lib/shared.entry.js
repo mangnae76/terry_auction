@@ -242,6 +242,15 @@ const ADMIN_SCREENS = {
   sonItem: ['/admin/sonpum', SonpumAnalysisPage],
 };
 export const hasAppAdminScreen = (key) => !!ADMIN_SCREENS[key];
+/* 시장분석 › 매각분석 › 낙찰가예측(운영) — 기일 목록 · 사건 차트 조회수로 사건마다 팔릴 확률 · 인원 · 낙찰가를 내고 채점(2026-11-14) */
+import BidPredictTest from '../../src/components/BidPredictTest.vue';
+export const mountBidPredict = (el) => {
+  const app = createApp(BidPredictTest);
+  app.use(getActivePinia());
+  app.provide('webEmbed', true);
+  app.mount(el);
+  return () => app.unmount();
+};
 export const mountAppAdmin = (el, key, provides = {}) => {
   const [path, component, props] = ADMIN_SCREENS[key];
   const Empty = { render: () => null };

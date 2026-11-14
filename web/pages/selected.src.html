@@ -5265,7 +5265,7 @@ span.cal-day.has { cursor: help; }
     if (head === 'roi') return { route: 'market', sub: 'dong' }; /* 수익분석은 뺐다 — 예전 주소는 지역분석으로 */
     if (head === 'bidrate') return { route: 'market', sub: 'sale', saleTab: m[2] === 'same' ? 'same' : 'near' }; /* 예전 '낙찰가율분석' 주소 */
     if (head === 'market' && (m[2] === 'near' || m[2] === 'same')) return { route: 'market', sub: 'sale', saleTab: m[2] }; /* 예전 인근 · 동일지번 하위 탭 — 매각사례 안 박스 탭으로 */
-    if (head === 'market' && m[2] === 'sale') return { route: 'market', sub: 'sale', saleTab: m[3] === 'same' ? 'same' : 'near' };
+    if (head === 'market' && m[2] === 'sale') return { route: 'market', sub: 'sale', saleTab: m[3] === 'predict' ? 'predict' : m[3] === 'same' ? 'same' : 'near' };   /* predict = 낙찰가예측 탭(2026-11-14) */
     if (SUB_TAB_KEYS[head]) return { route: head, sub: SUB_TAB_KEYS[head].includes(m[2]) ? m[2] : SUB_TAB_KEYS[head][0] };
     if (PLAIN_ROUTES.includes(head)) return { route: head };
     if (head === 'list') return { route: 'list' };
@@ -5277,7 +5277,7 @@ span.cal-day.has { cursor: help; }
   if (H0.fromManual) fromManual();
   const S = {
     marketTab: H0.route === 'market' ? H0.sub : 'dong', /* 시장분석 하위 탭 */
-    saleTab: H0.saleTab || 'near', /* 매각사례 안 박스 탭 — near 인근 · same 동일지번 */
+    saleTab: H0.saleTab || 'near', /* 매각분석 탭 — near 매각사례(예전 same 도 매각사례로) · predict 낙찰가예측 */
     /* 낙찰이후 · 자금관리 · 더보기의 하위 탭 */
     pageTab: Object.fromEntries(Object.keys(APP_PAGE_NAMES).map((k) => [k, H0.route === k ? H0.sub : SUB_TAB_KEYS[k][0]])),
     layout: store.get('wlp.web.layout', 'card'), sort: store.get('wlp.web.sort', 'reg'),
@@ -8196,7 +8196,7 @@ span.cal-day.has { cursor: help; }
   })();
   const agSaveSel = () => { try { localStorage.setItem(AG_SEL_KEY, JSON.stringify({ site: agSel.site, months: agSel.months })); } catch (e) { /* 그만 */ } };
   const agIsAdmin = () => !!(CLOUD.on && CLOUD.T && CLOUD.T.isAdminEmail && CLOUD.auth && CLOUD.T.isAdminEmail(CLOUD.auth.email));
-  const agSaleOpen = () => (S.route === 'market' && S.marketTab === 'sale') || (S.route === 'item' && S.itemTab === 'survey' && sonSaleOn && !!$('sonSaleSlot'));
+  const agSaleOpen = () => (S.route === 'market' && S.marketTab === 'sale' && S.saleTab !== 'predict') || (S.route === 'item' && S.itemTab === 'survey' && sonSaleOn && !!$('sonSaleSlot'));
   const agDate = (v) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || '')); return m ? `${m[1]}.${m[2]}.${m[3]}` : (v ? esc(String(v)) : '-'); };
   const agWon = (v) => (Number(v) > 0 ? Math.round(Number(v)).toLocaleString('ko-KR') : '-');
   /* 건축연도 — 연도가 비면 건축연월('2010.06') 앞 네 자리 */
@@ -8716,8 +8716,19 @@ span.cal-day.has { cursor: help; }
     const T = CLOUD.T;
     /* 경매사례는 운영자만 — 로그인 확인이 끝났는데 운영자가 아니면 지역분석으로(주소로 바로 들어와도) */
     if (key === 'sale' && S.authReady && !agIsAdmin()) { S.marketTab = 'dong'; writeHash(false); renderSubTabs(); renderMarket(); return; }
+    /* 매각분석 탭 두 개 — 매각사례 | 낙찰가예측(운영). 낙찰가예측은 앱 화면(BidPredictTest)을 붙인다(2026-11-14) */
+    const saleTabs = `<nav class="cm-tabs sale-tabs" role="tablist" aria-label="매각분석">${[['near', '매각사례'], ['predict', '낙찰가예측']].map(([k, t]) => { const on = k === 'predict' ? S.saleTab === 'predict' : S.saleTab !== 'predict'; return `<button type="button" role="tab" class="${on ? 'on' : ''}" aria-selected="${on}" data-act="sale-tab" data-v="${k}">${t}${k === 'predict' ? '<span class="adm-chip">운영</span>' : ''}</button>`; }).join('')}</nav>`;
+    if (key === 'sale' && S.saleTab === 'predict' && agIsAdmin()) {
+      if (marketUnmount && box.querySelector('#bidPredictMount')) return;
+      const ss = $('sonSaleSlot'); if (ss) ss.innerHTML = '';
+      closeAppMarket();
+      box.innerHTML = `${saleTabs}<div id="bidPredictMount" class="bid-predict"></div>`;
+      if (!T || !T.mountBidPredict) { $('bidPredictMount').innerHTML = itEmpty('불러오는 중입니다…'); return; }
+      marketUnmount = T.mountBidPredict($('bidPredictMount'));
+      return;
+    }
     if (key === 'sale') { const ss = $('sonSaleSlot'); if (ss) ss.innerHTML = '';   /* 숨은 물건상세 경매사례 그림을 비운다 — 지도 자리(#sxMapSlot) · 결과(#sxResults)가 둘이 되면 지도가 숨은 쪽으로 옮겨 붙었다(2026-11-08) */
-      closeAppMarket(); agStart(); box.innerHTML = agIsAdmin() ? saleCaseHtml() + `<div class="mk-index">${hmIndexTradeHtml()}</div>` : itCard('chart', '매각분석', itEmpty('불러오는 중입니다…'), true); sxMountMap(); return; }
+      closeAppMarket(); agStart(); box.innerHTML = agIsAdmin() ? saleTabs + saleCaseHtml() + `<div class="mk-index">${hmIndexTradeHtml()}</div>` : itCard('chart', '매각분석', itEmpty('불러오는 중입니다…'), true); sxMountMap(); return; }
     if (!CLOUD.on || !T || !T.hasAppAdminScreen || !T.hasAppAdminScreen(key)) {
       closeAppMarket();
       const msg = !CLOUD.on ? (S.authReady ? '로그인하면 볼 수 있습니다.' : '불러오는 중입니다…') : '준비 중인 화면입니다.';
@@ -10297,6 +10308,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'buy-agree': if (S.modal && S.modal.kind === 'buy') { S.modal.agree = t.checked; const b = $('buyPay'); if (b) b.disabled = !t.checked; } break;
       case 'buy-pay': toast('결제는 준비 중입니다 — 결제 연동이 끝나면 열립니다.', 'info'); break;
       case 'store-login': openAppLogin(); break;   /* 콘텐츠 › 내콘텐츠 — 로그인 전 */
+      case 'sale-tab': { const nv = v === 'predict' ? 'predict' : 'near'; if (S.saleTab === nv) break; S.saleTab = nv; writeHash(true); renderMarket(); toTop(); break; }
       case 'store-tab': S.storeTab = v; store.set('wlp.web.storeTab2', v); renderInfo(); break;
       /* 전자책 무료로받기 — 회원가입 후 로그인한 회원만. 받은 기록을 남기고(콘텐츠 › 내콘텐츠) 새 탭으로 내려받는다 */
       case 'ebook-get': {

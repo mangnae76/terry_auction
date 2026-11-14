@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 시장분석 › 테스트(운영) — 낙찰가 예측 시험대.
+ * 시장분석 › 매각분석 › 낙찰가예측(운영) — 낙찰가 예측 시험대.
  * 기일 목록 파일(그날 결과) + 붙여넣은 '사건번호 주소 조회수' + 공용 매각 자료로
  * 사건마다 예상 낙찰가 · 입찰가별 낙찰확률을 내고, 결과가 있는 사건은 맞혀본 차이를 보인다.
  * 조회수 규칙은 늘 '그 사건을 뺀 나머지'로 배운다(자기 결과로 자기를 맞히지 않게).
@@ -94,10 +94,16 @@ watch(() => agent.value?.message, (m) => {
   const hits = m.startsWith('조회수 '); const day = m.startsWith('기일 목록 ');
   if (m.startsWith('조회수 수집 끝') || m.startsWith('기일 목록 수집 끝')) { if (prog.value) prog.value = { ...prog.value, done: true }; return; }
   const g = m.match(/(기일 목록|사건 차트) (\d+)\/(\d+)/);
-  if (g && (hits || day)) prog.value = { kind: hits ? 'hits' : 'daylist', stage: g[1] === '사건 차트' ? 'chart' : 'list', i: Number(g[2]), n: Number(g[3]), done: false };
+  if (g && (hits || day)) { prog.value = { kind: hits ? 'hits' : 'daylist', stage: g[1] === '사건 차트' ? 'chart' : 'list', i: Number(g[2]), n: Number(g[3]), done: false }; return; }
+  // 사건마다 '조회수 저장 — 사건 (N건)'과 '사건 차트 i/n'이 번갈아 온다 — 저장 글이면 건수만 올린다(처음 열었을 때는 전체 수를 모른다)
+  const s = m.match(/^조회수 저장 — .*\((\d+)건\)/);
+  if (s) prog.value = { kind: 'hits', stage: 'chart', i: Number(s[1]), n: prog.value?.stage === 'chart' ? Math.max(prog.value.n, Number(s[1])) : 0, done: false };
 }, { immediate: true });
 const progView = computed(() => {
-  const p = prog.value; if (!p) return null;
+  const p0 = prog.value; if (!p0) return null;
+  // 마이 2026.11.14-2 다음 판부터는 상태에 진행 숫자(prog)를 바로 보낸다 — 있으면 그것으로
+  const ap = agent.value?.prog; const p = ap && ap.n > 0 && !p0.done && agent.value?.busy ? { ...p0, i: ap.i, n: ap.n } : p0;
+  if (!p.done && p.stage === 'chart' && !p.n) return { pct: 20, what: `2단계 사건 차트 ${p.i.toLocaleString('ko-KR')}건 저장(전체 수는 다음 글에서)`, left: '' };
   const f = p.done ? 1 : p.kind === 'daylist' ? p.i / p.n : p.stage === 'list' ? 0.2 * (p.i / p.n) : 0.2 + 0.8 * (p.i / p.n);
   // 남은 시간 — 목록은 하나에 2초 남짓, 차트는 사건마다 3 ~ 6초 쉬어 가며 연다(차트 수는 목록이 끝나야 안다)
   const left = p.done ? 0 : p.kind === 'daylist' ? (p.n - p.i) * 6 : p.stage === 'list' ? (p.n - p.i) * 2 : (p.n - p.i) * 5;
@@ -303,7 +309,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
     <section class="bpt-card">
       <header class="bpt-head">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#213366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18" /><path d="m7 15 4-4 3 3 5-6" /></svg>
-        <h2>낙찰가 예측 테스트</h2>
+        <h2>낙찰가 예측</h2>
         <span class="bpt-note">{{ recsInfo }}</span>
       </header>
       <div class="bpt-in">
