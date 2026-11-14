@@ -487,7 +487,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <h3>기일 목록 파일</h3>
           <label class="bpt-file"><input type="file" accept=".xlsx,.csv" @change="onFile" />파일넣기</label>
           <p v-if="dayName" class="bpt-sub">{{ dayName }} · {{ dayRows.length.toLocaleString('ko-KR') }}건</p>
-          <p v-else class="bpt-sub">기일별물건에서 받은 엑셀 · CSV(그날 결과 · 2위 · 입찰자수)</p>
+          <p v-else class="bpt-sub">기일별물건 엑셀 · CSV</p>
           <label class="bpt-date">매각기일<input v-model="dayDate" type="date" /></label>
           <div v-if="dayChips.length" class="bpt-chips" role="group" aria-label="매각기일 고르기">
             <button v-for="c in dayChips" :key="c.d" type="button" :class="['bpt-chip', { on: c.d === dayDate, ahead: c.ahead }]" :title="`${c.d} · 검암동 ${c.n}건`" @click="dayDate = c.d">{{ c.label }}<small>{{ c.n }}</small></button>
@@ -517,27 +517,27 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             </div>
             <p v-if="progView && agent?.busy" class="bpt-sub num">{{ progView.what }}<template v-if="progView.left"> · {{ progView.left }}</template></p>
           </div>
-          <p class="bpt-sub">조회수수집은 동 거르기에 적은 동의 주택 사건마다 차트(날짜별 조회수)를 모읍니다. 처음 한 번은 시작일을 2025-06-15로(조회 기록이 그날부터)</p>
+          <p class="bpt-sub">조회수수집 · 동 거르기의 동, 주택 사건마다 날짜별 조회수 · 처음엔 시작일 2025-06-15</p>
           <p v-if="hitInfo" class="bpt-sub">{{ hitInfo }}</p>
-          <p class="bpt-sub">{{ agentNote || (agentOn ? agent?.message : '') || '집 PC 에서 마이(agent.py)를 켜 두면 여기서 시킬 수 있습니다' }}</p>
+          <p class="bpt-sub">{{ agentNote || (agentOn ? agent?.message : '') || '집 PC 마이(agent.py)를 켜면 여기서 시킵니다' }}</p>
         </div>
         <div class="bpt-box grow">
           <h3>사건번호 · 주소 · 조회수</h3>
           <textarea v-model="viewsText" rows="5" spellcheck="false" placeholder="손으로 넣을 때만 — 한 줄에 한 사건, 2026타경501308 검암동 493-4 정성드림빌 500&#10;조회수는 매각 전일까지 누적(줄 맨 끝 숫자)" />
           <label class="bpt-date">동 거르기<input v-model="dongFilter" type="text" class="court" placeholder="비우면 전부" /></label>
-          <p class="bpt-sub">{{ items.length.toLocaleString('ko-KR') }}건<template v-if="nUnmatched"> · 자료 못 찾음 {{ nUnmatched }}건</template> · 칸이 비어 있으면 DB 기일 목록에서 조회수가 있는 줄을 씁니다(매각기일 전날까지 가장 늦게 모은 값) · 조회수 규칙은 늘 그 사건을 뺀 나머지로 배웁니다</p>
+          <p class="bpt-sub">{{ items.length.toLocaleString('ko-KR') }}건<template v-if="nUnmatched"> · 자료 없음 {{ nUnmatched }}건</template> · 손으로 넣을 때만(비우면 DB 자료)</p>
         </div>
       </div>
     </section>
 
     <section class="bpt-card">
       <div class="bpt-grade-head">
-        <h3 class="bpt-h3">채점 <small>기간 안 모든 회차를 그날 이전 자료로만 맞혀 봅니다(그날 결과는 안 봄)</small></h3>
+        <h3 class="bpt-h3">채점 <small>기간 안 모든 회차 · 그날 이전 자료로만</small></h3>
         <div class="bpt-range"><input v-model="gradeFrom" type="date" aria-label="채점 시작일" /><span>~</span><input v-model="gradeTo" type="date" aria-label="채점 끝일" /></div>
         <button type="button" class="bpt-btn" :disabled="grading || !hitRounds.length" @click="runGrade">{{ grading ? '채점하는중' : '채점하기' }}</button>
       </div>
       <p v-if="gradeMsg" class="bpt-sub">{{ gradeMsg }}</p>
-      <p v-else-if="!hitRounds.length" class="bpt-sub">사건 차트가 있어야 채점합니다. 동 거르기에 동을 적고 조회수수집을 먼저 해 주세요</p>
+      <p v-else-if="!hitRounds.length" class="bpt-sub">사건 차트 없음 · 동 거르기에 동을 적고 조회수수집 먼저</p>
       <template v-if="grade">
         <div class="bpt-grade">
           <div class="bpt-tile"><span>맞힌 회차</span><b>{{ grade.total.n.toLocaleString('ko-KR') }}회차</b><small>매각 {{ grade.total.sold.toLocaleString('ko-KR') }} · 유찰 {{ (grade.total.n - grade.total.sold).toLocaleString('ko-KR') }}{{ grade.skipped ? ` · 배울 자료 모자라 뺌 ${grade.skipped}` : '' }}</small></div>
@@ -562,34 +562,14 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             </tbody>
           </table>
         </div>
-        <p class="bpt-sub">{{ grade.from }} ~ {{ grade.to }} · 기일 {{ grade.days.length }}개. 줄을 누르면 그날 사건별 예측으로 갑니다. 실제응찰을 다 알아도 낙찰가 평균 차이는 7% 가까이 남습니다(1등이 써 낸 금액은 사람마다 달라서)</p>
+        <p class="bpt-sub">{{ grade.from }} ~ {{ grade.to }} · 기일 {{ grade.days.length }}개 · 줄 누르면 그날 사건별 예측 · 실제응찰을 알아도 낙찰가 차이 약 7%(1등 금액은 사람마다 다름)</p>
       </template>
     </section>
 
-    <section v-if="dayDate" class="bpt-card">
-      <h3 class="bpt-h3">DB에 들어 있는 목록 <small>{{ dayDate }} · {{ dongFilter.trim() || '전체' }} {{ dbList.length.toLocaleString('ko-KR') }}건 / 이 날 전체 {{ dbRows.length.toLocaleString('ko-KR') }}건</small></h3>
-      <div v-if="dbList.length" class="table-wrap bpt-tbl-wrap bpt-scroll">
-        <table class="bpt-tbl">
-          <thead><tr><th>사건번호</th><th class="l">주소</th><th class="r">조회수</th><th>종류</th><th>진행상태</th><th>넣은 곳</th></tr></thead>
-          <tbody>
-            <tr v-for="d in dbList" :key="d.key" class="ro">
-              <td>{{ caseLabel(d.key) }}</td>
-              <td class="l addr" :data-tip="d.addr || undefined" data-tip-trunc>{{ d.addr || '—' }}</td>
-              <td class="r">{{ d.v ? d.v.n.toLocaleString('ko-KR') : '—' }}<small v-if="d.v" :class="['bpt-at', { after: d.v.after }]">{{ d.v.at === dayDate ? '당일' : d.v.at.slice(5).replace('-', '.') }}{{ d.v.after ? ' 매각 뒤' : '' }}</small></td>
-              <td>{{ d.kind || '—' }}</td>
-              <td>{{ d.status || '—' }}</td>
-              <td>{{ d.from }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p v-else class="bpt-sub">이 날짜로 DB에 들어간 목록이 없습니다. 파일넣기로 CSV를 올리거나 마이로 기일목록수집을 하세요</p>
-      <p class="bpt-sub">조회수는 가장 늦게 모은 값이고, 아래 작은 글은 모은 날입니다. '매각 뒤'로 모은 값은 예측에 쓰지 않습니다(입찰 전날까지 모은 값만). CSV에는 조회수가 없어 마이로 모은 줄에만 있습니다</p>
-    </section>
 
     <section v-if="items.length" class="bpt-card bpt-day">
       <div class="bpt-dayhead">
-      <h3 class="bpt-h3">사건별 예측 <small v-if="useHits">사건 차트의 매각 전날까지 누적 조회수 · {{ roundModel ? `그날 이전 ${roundModel.n.toLocaleString('ko-KR')}회차(매각 ${roundModel.nSold.toLocaleString('ko-KR')})로 배움` : '배울 회차가 모자랍니다' }}{{ leadDays ? ` · 조회수가 매각 ${leadDays + 1}일 전까지라 배울 때도 ${leadDays + 1}일 전 값으로 맞춤` : '' }}</small></h3>
+      <h3 class="bpt-h3">사건별 예측 <small v-if="useHits">{{ roundModel ? `그날 이전 ${roundModel.n.toLocaleString('ko-KR')}회차(매각 ${roundModel.nSold.toLocaleString('ko-KR')})로 배움` : '배울 회차 모자람' }}{{ leadDays ? ` · 조회수 매각 ${leadDays + 1}일 전 기준` : '' }}</small></h3>
       </div>
       <table class="bpt-dayinfo">
         <tbody>
@@ -610,13 +590,15 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <button v-for="k in daySum.kinds" :key="k.k" type="button" :class="['bpt-fchip', { on: fKind === k.k }]" :disabled="!k.mine" @click="pickF('kind', k.k)">{{ k.k }}<b>{{ k.mine }}</b><small v-if="daySum.total">/ {{ k.all.toLocaleString('ko-KR') }}</small></button></td></tr>
         </tbody>
       </table>
-      <p class="bpt-sub">예측(조회수 · 입찰자 있을확률 · 예상응찰 · 예상 낙찰가)은 {{ daySum.dong }}만 나오고, 다른 동은 목록만 나옵니다(날짜별 조회수를 모으면 예측까지, 구현 예정). 매각기일 줄 숫자는 그날 법원 전체 건수입니다. 현황 · 종류 단추의 파란 숫자는 지금 표에 나온 줄(동 단추로 고른 범위), / 뒤는 고른 범위의 법원 전체 건수입니다. 다시 누르면 풀립니다</p>
+      <p class="bpt-sub">예측 · {{ daySum.dong }}만(다른 동은 목록만, 구현 예정) · / 뒤 숫자 · 그날 법원 전체(고른 계)</p>
       <div class="table-wrap bpt-tbl-wrap">
-        <table class="bpt-tbl">
+        <table class="bpt-tbl fixed">
+          <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게(검암동 · 모든동 · 11-13 · 16 · 19 에서 잰 가장 넓은 값, 주소는 남는 폭) -->
+          <colgroup><col style="width: 80px" /><col style="width: 136px" /><col /><col style="width: 86px" /><col style="width: 44px" /><col style="width: 106px" /><col style="width: 66px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 96px" /><col style="width: 182px" /></colgroup>
           <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
           <tbody>
             <tr v-for="it in shownItems" :key="it.key" :class="{ on: sel?.key === it.key, off: !preds.has(it.key) }" @click="pick = it.key">
-              <td>{{ bidDay(it.target?.date || dayDate) }}</td>
+              <td>{{ bidDay(it.target?.date || dayDate).slice(3) }}</td>
               <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button></td>
               <td class="l addr" :data-tip="it.addr || undefined" data-tip-trunc>{{ it.addr || '—' }}</td>
               <td v-if="!it.viewAt" class="r">—</td>
@@ -637,8 +619,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           </tbody>
         </table>
       </div>
-      <p v-if="useHits" class="bpt-sub">조회수 아래 작은 글은 누적에 넣은 마지막 날입니다. 매각 전날까지 안 닿으면 '덜 모음' — 그날 조회수수집을 한 번 더 누르세요. 예상응찰은 매각된다고 칠 때, 신건은 입찰자 있을확률만 냅니다. 줄을 누르면 아래에 자세히 나옵니다</p>
-      <p v-else class="bpt-sub">예상 낙찰가는 조회수 규칙이 있으면 반영한 값, 없으면 비슷한 물건 인원 비율로 낸 값입니다. 줄을 누르면 아래에 자세히 나옵니다</p>
+      <p v-if="useHits" class="bpt-sub">조회일 · 누적에 넣은 마지막 날 · 덜 모음이면 그날 조회수수집 다시 · 예상응찰 · 입찰자 있을 때 · 신건은 확률만 · 줄 누르면 자세히</p>
+      <p v-else class="bpt-sub">예상 낙찰가 · 조회수 규칙 반영(없으면 비슷한 물건 인원 비율) · 줄 누르면 자세히</p>
     </section>
 
     <section v-if="sel && selP && sel.target" class="bpt-card">
@@ -662,7 +644,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <span class="v">{{ pct(selP.piBefore[k]) }}<template v-if="selP.piAfter"> → <b>{{ pct(selP.piAfter[k]) }}</b></template></span>
             <span class="w">{{ man(selP.before.bandWon[k]) }}</span>
           </div>
-          <p class="bpt-sub">오른쪽 금액은 그 인원일 때 예상 낙찰가입니다</p>
+          <p class="bpt-sub">오른쪽 금액 · 그 인원일 때 예상 낙찰가</p>
         </div>
         <div v-if="curve" class="bpt-box">
           <h3>입찰가별 낙찰확률</h3>
@@ -678,7 +660,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <g v-for="p in curve.pts" :key="p.x"><circle :cx="p.x" :cy="p.y" r="9" class="hit"><title>{{ p.tip }}</title></circle><circle :cx="p.x" :cy="p.y" r="3" class="dot"><title>{{ p.tip }}</title></circle></g>
             <circle v-if="curve.act" :cx="curve.act.x" :cy="curve.act.y" r="5" class="act"><title>{{ curve.act.label }}</title></circle>
           </svg>
-          <p v-if="curve.second" class="bpt-sub">회색 점선은 2위 금액입니다</p>
+          <p v-if="curve.second" class="bpt-sub">회색 점선 · 2위 금액</p>
         </div>
       </div>
     </section>
@@ -705,9 +687,30 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <h3>배운 규칙</h3>
           <p v-if="rule.vm" class="bpt-rule">조회수가 2배가 되면 응찰 인원이 약 {{ rule.twice!.toFixed(2) }}배</p>
           <p v-else class="bpt-rule">아직 배우지 못했습니다(결과 있는 사건 6건 이상 필요)</p>
-          <p class="bpt-sub">점 하나가 사건 하나입니다. 유찰은 0명으로 들어갑니다. 가로는 조회수(많을수록 촘촘), 세로는 실제 응찰 인원입니다</p>
+          <p class="bpt-sub">점 하나 · 사건 하나(유찰은 0명) · 가로 조회수 · 세로 실제응찰</p>
         </div>
       </div>
+    </section>
+
+    <section v-if="dayDate" class="bpt-card">
+      <h3 class="bpt-h3">DB에 들어 있는 목록 <small>{{ dayDate }} · {{ dongFilter.trim() || '전체' }} {{ dbList.length.toLocaleString('ko-KR') }}건 / 이 날 전체 {{ dbRows.length.toLocaleString('ko-KR') }}건</small></h3>
+      <div v-if="dbList.length" class="table-wrap bpt-tbl-wrap bpt-scroll">
+        <table class="bpt-tbl">
+          <thead><tr><th>사건번호</th><th class="l">주소</th><th class="r">조회수</th><th>종류</th><th>진행상태</th><th>넣은 곳</th></tr></thead>
+          <tbody>
+            <tr v-for="d in dbList" :key="d.key" class="ro">
+              <td>{{ caseLabel(d.key) }}</td>
+              <td class="l addr" :data-tip="d.addr || undefined" data-tip-trunc>{{ d.addr || '—' }}</td>
+              <td class="r">{{ d.v ? d.v.n.toLocaleString('ko-KR') : '—' }}<small v-if="d.v" :class="['bpt-at', { after: d.v.after }]">{{ d.v.at === dayDate ? '당일' : d.v.at.slice(5).replace('-', '.') }}{{ d.v.after ? ' 매각 뒤' : '' }}</small></td>
+              <td>{{ d.kind || '—' }}</td>
+              <td>{{ d.status || '—' }}</td>
+              <td>{{ d.from }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-else class="bpt-sub">이 날 목록 없음 · 기일목록수집 또는 CSV 파일넣기</p>
+      <p class="bpt-sub">조회수 · 가장 늦게 모은 값(아래 모은 날) · 매각 뒤 값은 예측에 안 씀 · CSV엔 조회수 없음</p>
     </section>
   </div>
 </template>
@@ -738,7 +741,10 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl tr:last-child td { border-bottom: 0; }
 .bpt-day .bpt-tbl th, .bpt-day .bpt-tbl td { padding-left: 8px; padding-right: 8px; text-align: center; }   /* 사건별 예측은 머리 · 내용 모두 가운데(2026-11-14 사용자) */
 .bpt-day .bpt-tbl td.act-sold { font-weight: 700; }   /* 실제 낙찰가는 굵게 */
-.bpt-day .bpt-tbl td.addr { text-align: left; }   /* 주소 내용만 왼쪽 줄 맞춤(머리는 가운데) */   /* 사건별 예측은 칸이 많다 — 1440 화면에서도 옆으로 안 구르게 */
+.bpt-day .bpt-tbl td.addr { text-align: left; }
+.bpt-tbl.fixed { table-layout: fixed; }
+.bpt-tbl.fixed td { overflow: hidden; text-overflow: ellipsis; }
+.bpt-tbl.fixed td.addr { max-width: none; }   /* 주소 내용만 왼쪽 줄 맞춤(머리는 가운데) */   /* 사건별 예측은 칸이 많다 — 1440 화면에서도 옆으로 안 구르게 */
 .bpt-tbl .l { text-align: left; }
 .bpt-tbl .r { text-align: right; }
 .bpt-tbl td.addr { max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
