@@ -10615,7 +10615,8 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       if (!box) return;
       if (!ph) h.dataset.top = String(parseFloat(getComputedStyle(h).top) || 0);
       const top = Number(h.dataset.top) || 0; const hh = h.offsetHeight; const br = box.getBoundingClientRect();
-      const want = br.top < top && br.bottom < top + hh + 120;
+      const passed = top - br.top;   /* 붙고 나서 200px 내려가면(풀 때 150) 미리 고정 — 결과 끝 가까이에서 바꾸면 빠르게 내릴 때 한 프레임 밀렸다 돌아와 튀었다(2026-11-15 사용자) */
+      const want = passed > (ph ? 150 : 200) || (passed > 0 && br.bottom < top + hh + 120);
       if (want && !ph) {
         const p = document.createElement('div'); p.className = 'sx-hero-ph'; p.setAttribute('aria-hidden', 'true');
         p.style.height = `${hh}px`; p.style.gridColumn = getComputedStyle(h).gridColumn; h.before(p);

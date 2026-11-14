@@ -898,9 +898,12 @@ const syncEstFix = () => {
   // 시세분석 탭이 숨어 있으면(다른 탭 · 접힘) 상자 크기가 0 — 그때 재면 화면 왼쪽 끝에 폭 없이 붙었다(2026-11-13 사용자 화면). 숨어 있으면 풀어 둔다
   if (!(paR.width > 0 && paR.height > 0)) { if (estFix.value) estFix.value = null; return; }
   const h = estFix.value?.h ?? z.offsetHeight;
-  // 상자 아래 끝이 머리를 밀어 올리기 전에(120px 앞) 미리 화면에 고정 — 밀린 뒤에 바꾸면 빠르게 내릴 때 한 프레임 밀렸다 돌아와 덜컹거렸다(2026-11-15 사용자).
-  // 붙어 있는 자리와 고정 자리가 같아 바꾸는 순간은 보이지 않는다
-  if (paR.top >= top || paR.bottom - 24 >= top + h + 120) { if (estFix.value) estFix.value = null; return; }
+  // 붙고 나서 200px 내려가면(풀 때는 150px) 미리 화면에 고정 — 상자 끝 가까이에서 바꾸면 빠르게 내릴 때 스크롤이 계산보다 앞서
+  // 한 프레임 밀렸다 돌아와 튀었다(2026-11-15 사용자 네 번). 이 구간은 붙은 자리와 고정 자리가 같아 계산이 늦어도 보이지 않는다.
+  // 상자가 짧아 그 전에 끝이 오면 끝 120px 앞에서
+  const passed = top - paR.top;
+  const want = passed > (estFix.value ? 150 : 200) || (passed > 0 && paR.bottom - 24 < top + h + 120);
+  if (!want) { if (estFix.value) estFix.value = null; return; }
   // 끝 — 호실 예상가 · 호가매물 · 시세결론까지. 그 아래로 가면 위로 밀어 올리지 않고 통째로 감춘다(고정카드 밑으로 반쯤 걸쳤다, 2026-11-15 사용자)
   const ends = ['.son-price', '#sonUnitSlot', '#sonNaverSlot', '#sonConcSlot', '#sonAskSlot'].map((q) => (son.querySelector(q) ?? document.querySelector(q)) as HTMLElement | null).filter((e): e is HTMLElement => !!e && e.offsetHeight > 0);
   const endB = Math.max(...ends.map((e) => e.getBoundingClientRect().bottom));
