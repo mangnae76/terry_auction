@@ -443,13 +443,18 @@ const daySum = computed(() => {
     if (fDept.value && d.dept !== fDept.value) return;   // 현황 · 종류의 법원 쪽 수는 고른 계만
     Object.entries(d.kinds).forEach(([k, n]) => { kinds[k] = (kinds[k] ?? 0) + n; }); Object.entries(d.stats).forEach(([k, n]) => { stats[k] = (stats[k] ?? 0) + n; });
   });
-  const cnt = (f: (it: Item) => string) => { const o: Record<string, number> = {}; listItems.value.filter((it) => !fDept.value || deptOf(it.key) === fDept.value).forEach((it) => { const k = f(it); o[k] = (o[k] ?? 0) + 1; }); return o; };
-  const mDept = cnt((it) => deptOf(it.key) || '계 모름'); const mStat = cnt(statOf); const mKind = cnt(kindOf);
+  // 단추 숫자 — 다른 줄에서 고른 거르기(계 · 선정물건 · 현황 ↔ 종류)를 반영해 센다. 표 줄 수와 맞게(2026-11-14 사용자)
+  const base = listItems.value.filter((it) => (!fDept.value || deptOf(it.key) === fDept.value) && (!fMine.value || mineKeys.value.has(it.key)));
+  const cnt = (f: (it: Item) => string, rows: Item[] = base) => { const o: Record<string, number> = {}; rows.forEach((it) => { const k = f(it); o[k] = (o[k] ?? 0) + 1; }); return o; };
+  const mDept = cnt((it) => deptOf(it.key) || '계 모름');
+  const mStat = cnt(statOf, base.filter((it) => !fKind.value || kindOf(it) === fKind.value));
+  const mKind = cnt(kindOf, base.filter((it) => !fStat.value || statOf(it) === fStat.value));
   const STAT_ORDER = ['유찰', '매각', '입찰 전'];
-  const inDept = listItems.value.filter((it) => !fDept.value || deptOf(it.key) === fDept.value).length;
+  const inDept = base.length;
+  const statAll = base.filter((it) => !fKind.value || kindOf(it) === fKind.value).length; const kindAll = base.filter((it) => !fStat.value || statOf(it) === fStat.value).length;
   const dongN = items.value.filter((it) => !fDept.value || deptOf(it.key) === fDept.value).length;
   return {
-    total: dayDepts.value.reduce((s, d) => s + d.n, 0), dongN, scopeN: fDept.value ? dayDepts.value.find((d) => d.dept === fDept.value)?.n ?? 0 : dayDepts.value.reduce((s, d) => s + d.n, 0), inDept,
+    total: dayDepts.value.reduce((s, d) => s + d.n, 0), dongN, statAll, kindAll, scopeN: fDept.value ? dayDepts.value.find((d) => d.dept === fDept.value)?.n ?? 0 : dayDepts.value.reduce((s, d) => s + d.n, 0), inDept,
     courts: [...courts.entries()].map(([c, ds]) => ({ c, n: ds.reduce((s, d) => s + d.n, 0) })),
     depts: dayDepts.value.map((d) => ({ k: d.dept, label: `${(d.court || '').replace('-', ' ')} ${d.dept}`.trim(), mine: mDept[d.dept] ?? 0, all: d.n })),
     stats: [...new Set([...STAT_ORDER.filter((s) => mStat[s] || stats[s]), ...Object.keys(stats)])].map((k) => ({ k, mine: mStat[k] ?? 0, all: stats[k] ?? 0 })),
@@ -583,10 +588,10 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <button type="button" :class="['bpt-fchip', 'big', { on: fMine }]" :disabled="!nMine" @click="fMine = !fMine">선정물건만보기<b>{{ nMine }}</b></button>
             </td></tr>
           <tr><th>현황별 물건수</th><td class="chips">
-            <button type="button" :class="['bpt-fchip', { on: !fStat }]" @click="fStat = ''">전체<b>{{ daySum.inDept }}</b><small v-if="daySum.total">/ {{ daySum.scopeN.toLocaleString('ko-KR') }}</small></button>
+            <button type="button" :class="['bpt-fchip', { on: !fStat }]" @click="fStat = ''">전체<b>{{ daySum.statAll }}</b><small v-if="daySum.total">/ {{ daySum.scopeN.toLocaleString('ko-KR') }}</small></button>
             <button v-for="s in daySum.stats" :key="s.k" type="button" :class="['bpt-fchip', { on: fStat === s.k }]" :disabled="!s.mine" @click="pickF('stat', s.k)">{{ s.k }}<b>{{ s.mine }}</b><small v-if="daySum.total">/ {{ s.all.toLocaleString('ko-KR') }}</small></button></td></tr>
           <tr><th>종류별 물건수</th><td class="chips">
-            <button type="button" :class="['bpt-fchip', { on: !fKind }]" @click="fKind = ''">전체<b>{{ daySum.inDept }}</b><small v-if="daySum.total">/ {{ daySum.scopeN.toLocaleString('ko-KR') }}</small></button>
+            <button type="button" :class="['bpt-fchip', { on: !fKind }]" @click="fKind = ''">전체<b>{{ daySum.kindAll }}</b><small v-if="daySum.total">/ {{ daySum.scopeN.toLocaleString('ko-KR') }}</small></button>
             <button v-for="k in daySum.kinds" :key="k.k" type="button" :class="['bpt-fchip', { on: fKind === k.k }]" :disabled="!k.mine" @click="pickF('kind', k.k)">{{ k.k }}<b>{{ k.mine }}</b><small v-if="daySum.total">/ {{ k.all.toLocaleString('ko-KR') }}</small></button></td></tr>
         </tbody>
       </table>
