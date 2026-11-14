@@ -317,7 +317,16 @@ const dropped = ref<string[]>(Array.isArray(sv?.drop) ? [...sv.drop] : []);
 /** 호 짝짓기 — 선정물건 등기부의 소유권이전 접수일(PDF 갑구)과 실거래 등기일자가 같고 같은 지번이면 선정물건의 호. 그 밖은 '모름' */
 const ymdOf = (s: string) => { const m = String(s ?? '').match(/(\d{2,4})[.\-/](\d{1,2})[.\-/](\d{1,2})/); if (!m) return ''; const y = m[1].length === 2 ? `20${m[1]}` : m[1]; return `${y}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`; };
 const myOwnDates = computed(() => new Set((props.auction?.registryRows ?? []).filter((x) => /소유권이전/.test(x.kind)).map((x) => ymdOf(x.date)).filter(Boolean)));
-const hoOf = (r: PriceRow) => (r.rgstDate && r.jibun && r.jibun === lot.value && myOwnDates.value.has(ymdOf(r.rgstDate)) && myHo.value !== '-' ? myHo.value : '모름');
+/** 호 — ① 그 지번 호실 목록(공동주택가격 · 호마다 전용)에서 같은 층 · 같은 전용(±0.05㎡)이 하나뿐이면 그 호(동까지)
+ *  ② 둘 이상이면 후보 '401 · 402호 중' ③ 선정물건 등기부 소유권이전 접수일 = 실거래 등기일자면 선정물건 호 ④ 그 밖은 '모름'(2026-11-14 사용자) */
+const hoName = (u: { dong: string; ho: string }) => `${u.dong ? `${u.dong.replace(/동$/, '')}동 ` : ''}${u.ho.replace(/\D/g, '')}호`;
+const hoOf = (r: PriceRow) => {
+  if (r.rgstDate && r.jibun && r.jibun === lot.value && myOwnDates.value.has(ymdOf(r.rgstDate)) && myHo.value !== '-') return myHo.value;
+  const hit = (units.value[r.jibun] ?? []).filter((u) => Math.abs(u.areaM2 - r.areaM2) < 0.05 && Math.floor(Number(u.ho.replace(/\D/g, '')) / 100) === r.floorNo);
+  if (hit.length === 1) return hoName(hit[0]);
+  if (hit.length > 1 && hit.length <= 3) return `${hit.map((u) => hoName(u).replace(/호$/, '')).join(' · ')}호 중`;
+  return '모름';
+};
 const isOff = (r: PriceRow) => webEmbed && dropped.value.includes(rowKey(r));
 /** 앱 표 주소 말풍선 — 누른 칸 바로 아래(화면 밖으로 나가지 않게), 다시 누르거나 밖을 누르거나 스크롤하면 닫는다 */
 const addrTip = ref<{ text: string; style: Record<string, string> } | null>(null);
@@ -790,7 +799,7 @@ const evenCols = () => {
       year: ['2026년'],
       dist: ['9,999m'],
       floor: ['99층'],
-      ho: ['9999호', '모름'],
+      ho: ['999동 9999호', '모름'],
     };
     const natOf = (pad: number) => ths.map((th) => {
       if (th.classList.contains('ck-th')) return 44;
