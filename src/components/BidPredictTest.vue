@@ -498,7 +498,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <h3 class="bpt-h3">사건별 예측 <small v-if="useHits">사건 차트의 매각 전날까지 누적 조회수 · {{ roundModel ? `그날 이전 ${roundModel.n.toLocaleString('ko-KR')}회차(매각 ${roundModel.nSold.toLocaleString('ko-KR')})로 배움` : '배울 회차가 모자랍니다' }}{{ leadDays ? ` · 조회수가 매각 ${leadDays + 1}일 전까지라 배울 때도 ${leadDays + 1}일 전 값으로 맞춤` : '' }}</small></h3>
       <div class="bpt-tbl-wrap">
         <table class="bpt-tbl">
-          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th class="r">조회수</th><th>차수</th><th class="r">최저가</th><th class="r">입찰자 있을 확률</th><th class="r">예상 인원</th><th class="r">예상 낙찰가</th><th class="r">실제 인원</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상 범위</th></tr></thead>
+          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th class="r">입찰자<br>있을 확률</th><th class="r">예상 인원</th><th class="r">예상 낙찰가</th><th class="r">실제 인원</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상 범위</th></tr></thead>
           <tbody>
             <tr v-for="it in items" :key="it.key" :class="{ on: sel?.key === it.key, off: !preds.has(it.key) }" @click="pick = it.key">
               <td>{{ bidDay(it.target?.date || dayDate) }}</td>
