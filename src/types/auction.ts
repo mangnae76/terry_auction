@@ -465,6 +465,8 @@ export interface PriceView {
   drop?: string[];
   /** 웹 — 엘베 있음 · 없음 거르기 */
   elev?: 'yes' | 'no' | null;
+  /** 웹 — 유사물건 줄마다 비교임장 때 확인해 적은 호(줄 열쇠 → '402호'). 국토부 실거래엔 호가 없다(2026-11-14) */
+  ho?: Record<string, string>;
   /** 실거래가 예상(매매 · 전세)과 평균 평당가 · 유사 매매 건수 */
   estSale: number;
   estJeonse: number;
