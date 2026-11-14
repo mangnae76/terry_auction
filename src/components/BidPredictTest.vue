@@ -6,10 +6,11 @@
  * 조회수 규칙은 늘 '그 사건을 뺀 나머지'로 배운다(자기 결과로 자기를 맞히지 않게).
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useAuctionStore } from '../stores/auctionStore';
 import { agentOnline, loadAgentDataset, loadDayLists, loadHits, saveDayCsv, sendAgentCommand, sendAgentStop, watchAgentStatus, type AgentStatus, type DayListRow, type HitDoc } from '../services/agentRemote';
 import { readSheetRows } from '../services/saleExcel';
 import {
-  BAND_NAMES, bandOf, caseLabel, csvRows, dongOf, fitPriceModel, fitRoundModel, fitViewModel, parseViewLines, predictRound, priceDist, readDayRows, roundOfRatio, roundsOf, similarBands, soldOf, viewBands,
+  BAND_NAMES, bandOf, caseKey, caseLabel, csvRows, dongOf, fitPriceModel, fitRoundModel, fitViewModel, parseViewLines, predictRound, priceDist, readDayRows, roundOfRatio, roundsOf, similarBands, soldOf, viewBands,
   type BidTarget, type DayRow, type Round, type ViewPair,
 } from '../services/bidPredict';
 
@@ -29,7 +30,7 @@ const dongFilter = ref((() => { try { return (JSON.parse(localStorage.getItem(ST
 type DbRow = DayRow & { views: Record<string, number>; from: string };
 const dbRows = ref<DbRow[]>([]);
 /** 그 매각기일 계마다 건수 · 종류별 건수(마이가 모은 기일 목록 — 그날 그 법원 전체) */
-const dayDepts = ref<Array<{ court: string; dept: string; n: number; kinds: Record<string, number> }>>([]);
+const dayDepts = ref<Array<{ court: string; dept: string; n: number; kinds: Record<string, number>; stats: Record<string, number>; keys: string[] }>>([]);
 const dbInfo = ref('');
 const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const plusDays = (iso: string, n: number) => { const d = new Date(`${iso}T00:00:00`); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -78,13 +79,22 @@ const loadDb = async () => {
     docs.filter((d) => d.by !== 'agent').forEach((d) => d.rows.forEach((r) => put(r, true)));
     dbRows.value = [...m.values()];
     dayDepts.value = docs.filter((d) => d.by === 'agent').map((d) => {
-      const kinds: Record<string, number> = {}; d.rows.forEach((r) => { const k = r.kind || '기타'; kinds[k] = (kinds[k] ?? 0) + 1; });
-      return { court: d.court, dept: d.dept, n: d.rows.length, kinds };
+      const kinds: Record<string, number> = {}; const stats: Record<string, number> = {};
+      d.rows.forEach((r) => { const k = r.kind || '기타'; kinds[k] = (kinds[k] ?? 0) + 1; const s = statOfRow(r); stats[s] = (stats[s] ?? 0) + 1; });
+      return { court: d.court, dept: d.dept, n: d.rows.length, kinds, stats, keys: d.rows.map((r) => r.key) };
     }).sort((a, b) => (parseInt(a.dept, 10) || 0) - (parseInt(b.dept, 10) || 0));
     dbInfo.value = docs.length ? `DB ${docs.length}개 목록(${docs.map((d) => d.dept || 'CSV').join(' · ')}) · ${m.size.toLocaleString('ko-KR')}건` : 'DB에 이 날 목록이 없습니다';
   } catch { dbInfo.value = 'DB 목록을 읽지 못했습니다'; }
 };
 watch(dayDate, () => { void loadDb(); }, { immediate: true });
+/** 기일 목록 한 줄의 그날 현황 — 매각 · 유찰(다음 기일로 넘어감) · 입찰 전 · 그 밖(취하 · 변경 …) */
+function statOfRow(r: DayListRow & { date?: string }): string {
+  const s = String(r.status || '');
+  if (s.includes('매각')) return '매각';
+  if (s.includes('유찰')) return r.date && dayDate.value && r.date > dayDate.value ? '유찰' : dayDate.value >= todayIso() ? '입찰 전' : '유찰';
+  if (s.includes('신건')) return dayDate.value >= todayIso() ? '입찰 전' : '유찰';
+  return s.replace(/\s.*$/, '') || '기타';
+}
 
 /** 그 동 사건별 날짜별 조회수(마이가 차트에서 모은 것) → 회차표 */
 const hitDocs = ref<HitDoc[]>([]);
@@ -392,18 +402,41 @@ const dayChips = computed(() => {
   return [...all.filter(([d]) => d < today).slice(-6), ...all.filter(([d]) => d >= today).slice(0, 6)].map(chip);
 });
 
-/** 사건별 예측 제목 줄 오른쪽 — 그날 법원 · 계 · 종류 건수, 그중 보고 있는 동 건수 · 종류 */
+/** 사건별 예측 머리 표 — 그날 법원 전체(작은 회색) · 보고 있는 동(단추 숫자). 단추를 누르면 아래 표를 거른다 */
+const fDept = ref(''); const fStat = ref(''); const fKind = ref('');
+watch(dayDate, () => { fDept.value = ''; fStat.value = ''; fKind.value = ''; });
+const deptOf = (key: string) => dayDepts.value.find((d) => d.keys.includes(key))?.dept ?? '';
+const statOf = (it: Item) => (it.result ? (it.result.sold > 0 ? '매각' : '유찰') : '입찰 전');
+const kindOf = (it: Item) => dayRounds.value.find((x) => x.key === it.key)?.kind || dayMap.value.get(it.key)?.kind || '기타';
+const KIND5 = ['아파트', '연립주택', '다세대주택', '오피스텔(주거)', '도시형생활주택'];
 const daySum = computed(() => {
-  const courts = new Map<string, Array<{ dept: string; n: number }>>(); const kinds: Record<string, number> = {};
-  dayDepts.value.forEach((d) => { const c = (d.court || '').replace('-', ' '); courts.set(c, [...(courts.get(c) ?? []), { dept: d.dept, n: d.n }]); Object.entries(d.kinds).forEach(([k, n]) => { kinds[k] = (kinds[k] ?? 0) + n; }); });
-  const sortK = (o: Record<string, number>) => Object.entries(o).sort((a, b) => b[1] - a[1]);
-  const mine: Record<string, number> = {}; items.value.forEach((it) => { const r = dayRounds.value.find((x) => x.key === it.key); const k = r?.kind || dayMap.value.get(it.key)?.kind || '기타'; mine[k] = (mine[k] ?? 0) + 1; });
+  const courts = new Map<string, Array<{ dept: string; n: number }>>(); const kinds: Record<string, number> = {}; const stats: Record<string, number> = {};
+  dayDepts.value.forEach((d) => {
+    const c = (d.court || '').replace('-', ' '); courts.set(c, [...(courts.get(c) ?? []), { dept: d.dept, n: d.n }]);
+    Object.entries(d.kinds).forEach(([k, n]) => { kinds[k] = (kinds[k] ?? 0) + n; }); Object.entries(d.stats).forEach(([k, n]) => { stats[k] = (stats[k] ?? 0) + n; });
+  });
+  const cnt = (f: (it: Item) => string) => { const o: Record<string, number> = {}; items.value.forEach((it) => { const k = f(it); o[k] = (o[k] ?? 0) + 1; }); return o; };
+  const mDept = cnt((it) => deptOf(it.key) || '계 모름'); const mStat = cnt(statOf); const mKind = cnt(kindOf);
+  const STAT_ORDER = ['유찰', '매각', '입찰 전'];
   return {
     total: dayDepts.value.reduce((s, d) => s + d.n, 0),
-    courts: [...courts.entries()].map(([c, ds]) => ({ c, n: ds.reduce((s, d) => s + d.n, 0), ds })),
-    kinds: sortK(kinds), dong: dongFilter.value.trim() || '전체', mineN: items.value.length, mine: sortK(mine),
+    courts: [...courts.entries()].map(([c, ds]) => ({ c, n: ds.reduce((s, d) => s + d.n, 0) })),
+    depts: dayDepts.value.map((d) => ({ k: d.dept, label: `${(d.court || '').replace('-', ' ')} ${d.dept}`.trim(), mine: mDept[d.dept] ?? 0, all: d.n })),
+    stats: [...new Set([...STAT_ORDER.filter((s) => mStat[s] || stats[s]), ...Object.keys(stats)])].map((k) => ({ k, mine: mStat[k] ?? 0, all: stats[k] ?? 0 })),
+    kinds: KIND5.map((k) => ({ k, mine: mKind[k] ?? 0, all: kinds[k] ?? 0 })),   // 탱크옥션 기일별물건과 같은 다섯 종류만
+    dong: dongFilter.value.trim() || '전체', mineN: items.value.length,
   };
 });
+const nMine = computed(() => items.value.filter((it) => mineKeys.value.has(it.key)).length);
+/** 단추로 거른 줄 */
+const shownItems = computed(() => items.value.filter((it) => (!fMine.value || mineKeys.value.has(it.key)) && (!fDept.value || deptOf(it.key) === fDept.value) && (!fStat.value || statOf(it) === fStat.value) && (!fKind.value || kindOf(it) === fKind.value)));
+const FR = { dept: fDept, stat: fStat, kind: fKind } as const;
+const pickF = (w: keyof typeof FR, v: string) => { FR[w].value = FR[w].value === v ? '' : v; };
+/** 내 관심 물건 = 물건카드(선정물건)에 올린 사건 — 사건번호로 맞춘다 */
+const auctions = useAuctionStore();
+const mineKeys = computed(() => new Set(auctions.auctions.map((a) => caseKey(a.caseNumber)).filter(Boolean)));
+const fMine = ref(false);
+watch(dayDate, () => { fMine.value = false; });
 
 /** 표의 입찰자 있을확률 · 예상응찰 */
 const sellOf = (key: string) => { const s = sellMap.value.get(key); if (s) return s; const p = preds.value.get(key); return p && p.p0 != null ? { pSold: 1 - p.p0, expBids: p.expBids ?? 0 } : null; };
@@ -527,17 +560,33 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
     <section v-if="items.length" class="bpt-card bpt-day">
       <div class="bpt-dayhead">
       <h3 class="bpt-h3">사건별 예측 <small v-if="useHits">사건 차트의 매각 전날까지 누적 조회수 · {{ roundModel ? `그날 이전 ${roundModel.n.toLocaleString('ko-KR')}회차(매각 ${roundModel.nSold.toLocaleString('ko-KR')})로 배움` : '배울 회차가 모자랍니다' }}{{ leadDays ? ` · 조회수가 매각 ${leadDays + 1}일 전까지라 배울 때도 ${leadDays + 1}일 전 값으로 맞춤` : '' }}</small></h3>
-        <div class="bpt-daysum">
-          <p><b>{{ bidDay(dayDate) }}</b><template v-if="daySum.total"> 전체 <b>{{ daySum.total.toLocaleString('ko-KR') }}건</b><template v-for="c in daySum.courts" :key="c.c"> · {{ c.c }} {{ c.n.toLocaleString('ko-KR') }}건(<template v-for="(d, i) in c.ds" :key="d.dept">{{ i ? ' · ' : '' }}{{ d.dept }} {{ d.n.toLocaleString('ko-KR') }}</template>)</template></template><template v-else> 그날 전체 목록은 기일목록수집을 하면 나옵니다</template></p>
-          <p v-if="daySum.kinds.length" class="kinds"><template v-for="([k, n], i) in daySum.kinds" :key="k">{{ i ? ' · ' : '' }}{{ k }} {{ n.toLocaleString('ko-KR') }}</template></p>
-          <p class="mine">{{ daySum.dong }} <b>{{ daySum.mineN.toLocaleString('ko-KR') }}건</b><template v-for="([k, n]) in daySum.mine" :key="k"> · {{ k }} {{ n.toLocaleString('ko-KR') }}</template></p>
-        </div>
       </div>
+      <table class="bpt-dayinfo">
+        <tbody>
+          <tr><th>매각기일</th><td><b class="date">{{ dayDate ? `${dayDate.slice(0, 4)}년 ${Number(dayDate.slice(5, 7))}월 ${Number(dayDate.slice(8))}일 (${WD[new Date(`${dayDate}T00:00:00`).getDay()]})` : '' }}</b>
+            <span v-if="daySum.total" class="muted">그날 <template v-for="(c, i) in daySum.courts" :key="c.c">{{ i ? ' · ' : '' }}{{ c.c }}</template> 전체 {{ daySum.total.toLocaleString('ko-KR') }}건 중 <b class="dong">{{ daySum.dong }} {{ daySum.mineN.toLocaleString('ko-KR') }}건</b></span>
+            <span v-else class="muted">{{ daySum.dong }} {{ daySum.mineN.toLocaleString('ko-KR') }}건 · 그날 전체 목록은 기일목록수집을 하면 나옵니다</span>
+            <span class="date-btns">
+              <button type="button" :class="['bpt-fchip', { on: !fMine && !fDept && !fStat && !fKind }]" @click="fMine = false; fDept = ''; fStat = ''; fKind = ''">전체보기<b>{{ daySum.mineN }}</b></button>
+              <button type="button" :class="['bpt-fchip', { on: fMine }]" :disabled="!nMine" @click="fMine = !fMine">선정물건만보기<b>{{ nMine }}</b></button>
+            </span></td></tr>
+          <tr v-if="daySum.depts.length"><th>계별 물건수</th><td class="chips">
+            <button type="button" :class="['bpt-fchip', { on: !fDept }]" @click="fDept = ''">{{ daySum.courts.length === 1 ? `${daySum.courts[0].c} 전체` : '전체' }}<b>{{ daySum.mineN }}</b><small v-if="daySum.total">/ {{ daySum.total.toLocaleString('ko-KR') }}</small></button>
+            <button v-for="d in daySum.depts" :key="d.k" type="button" :class="['bpt-fchip', { on: fDept === d.k }]" :disabled="!d.mine" @click="pickF('dept', d.k)">{{ d.label }}<b>{{ d.mine }}</b><small>/ {{ d.all.toLocaleString('ko-KR') }}</small></button></td></tr>
+          <tr><th>현황별 물건수</th><td class="chips">
+            <button type="button" :class="['bpt-fchip', { on: !fStat }]" @click="fStat = ''">전체<b>{{ daySum.mineN }}</b><small v-if="daySum.total">/ {{ daySum.total.toLocaleString('ko-KR') }}</small></button>
+            <button v-for="s in daySum.stats" :key="s.k" type="button" :class="['bpt-fchip', { on: fStat === s.k }]" :disabled="!s.mine" @click="pickF('stat', s.k)">{{ s.k }}<b>{{ s.mine }}</b><small v-if="daySum.total">/ {{ s.all.toLocaleString('ko-KR') }}</small></button></td></tr>
+          <tr><th>종류별 물건수</th><td class="chips">
+            <button type="button" :class="['bpt-fchip', { on: !fKind }]" @click="fKind = ''">전체<b>{{ daySum.mineN }}</b><small v-if="daySum.total">/ {{ daySum.total.toLocaleString('ko-KR') }}</small></button>
+            <button v-for="k in daySum.kinds" :key="k.k" type="button" :class="['bpt-fchip', { on: fKind === k.k }]" :disabled="!k.mine" @click="pickF('kind', k.k)">{{ k.k }}<b>{{ k.mine }}</b><small v-if="daySum.total">/ {{ k.all.toLocaleString('ko-KR') }}</small></button></td></tr>
+        </tbody>
+      </table>
+      <p class="bpt-sub">단추의 파란 숫자는 {{ daySum.dong }} 건수, 옆 회색은 그날 법원 전체 건수입니다. 누르면 아래 표를 거릅니다(다시 누르면 풀림)</p>
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl">
           <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
           <tbody>
-            <tr v-for="it in items" :key="it.key" :class="{ on: sel?.key === it.key, off: !preds.has(it.key) }" @click="pick = it.key">
+            <tr v-for="it in shownItems" :key="it.key" :class="{ on: sel?.key === it.key, off: !preds.has(it.key) }" @click="pick = it.key">
               <td>{{ bidDay(it.target?.date || dayDate) }}</td>
               <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button></td>
               <td class="l addr" :data-tip="it.addr || undefined" data-tip-trunc>{{ it.addr || '—' }}</td>
@@ -750,12 +799,19 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 @media (max-width: 900px) { .bpt-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .bpt-dayhead { display: flex; align-items: flex-start; gap: 16px; }
 .bpt-dayhead .bpt-h3 { flex: 1 1 auto; min-width: 0; }
-.bpt-daysum { flex: 0 1 auto; max-width: 62%; display: grid; gap: 2px; text-align: right; font-size: 12px; color: #4b5563; font-variant-numeric: tabular-nums; }
-.bpt-daysum p { margin: 0; }
-.bpt-daysum b { color: #111827; }
-.bpt-daysum .kinds { color: #6b7280; }
-.bpt-daysum .mine { color: #1f5fe0; }
-.bpt-daysum .mine b { color: #1f5fe0; }
+.bpt-dayinfo { width: 100%; border-collapse: collapse; border-top: 1px solid #e3e7ee; font-size: 14px; }
+.bpt-dayinfo th { width: 120px; padding: 10px 12px; background: #f4f6fa; color: #374151; font-weight: 600; text-align: center; border-bottom: 1px solid #e3e7ee; white-space: nowrap; }
+.bpt-dayinfo td { padding: 8px 12px; border-bottom: 1px solid #e3e7ee; color: #374151; }
+.bpt-dayinfo .date { font-size: 18px; color: #1f5fe0; margin-right: 12px; }
+.bpt-dayinfo .muted { font-size: 13px; color: #6b7280; }
+.bpt-dayinfo .muted .dong { color: #1f5fe0; }
+.bpt-dayinfo .date-btns { display: inline-flex; gap: 6px; margin-left: 12px; vertical-align: middle; }
+.bpt-dayinfo td.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.bpt-fchip { height: 30px; padding: 0 10px; border: 1px solid #d5dbe5; border-radius: 8px; background: #fff; color: #374151; font: inherit; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
+.bpt-fchip b { color: #1f5fe0; font-weight: 700; }
+.bpt-fchip small { font-size: 12px; color: #9ca3af; }
+.bpt-fchip.on { border-color: #2b6df3; background: #eef3ff; }
+.bpt-fchip:disabled { opacity: .5; cursor: default; }
 .bpt-rule { margin: 0; font-size: 15px; font-weight: 700; color: #111827; }
 @media (max-width: 900px) { .bpt-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bpt-two { grid-template-columns: minmax(0, 1fr); } }
 </style>
