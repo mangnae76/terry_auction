@@ -1303,7 +1303,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 
 .bar-desc { font-size: 13px; color: var(--sub); margin-left: 4px; min-width: 0; }
 .bar-desc.hi { color: #2563eb; }   /* 웹 — 어느 동네 · 반경 · 기간으로 낸 값인지 파란 글(2026-11-11 사용자) */
-.bar-desc .flt { margin-right: 4px; vertical-align: -1px; color: #111827; }   /* 필터 설명 앞 깔때기(규칙) */
+.bar-desc .flt { margin-right: 4px; vertical-align: -1px; color: var(--text, #111827); }   /* 필터 설명 앞 깔때기(규칙) */
 .pa-load-r { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
 .pa-load-r .prog { font-size: 12px; color: var(--sub); white-space: nowrap; min-width: 10.5em; text-align: right; font-variant-numeric: tabular-nums; }   /* 숫자가 늘어도 옆 단추를 밀지 않게 */
 .pa-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }

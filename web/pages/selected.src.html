@@ -5323,6 +5323,14 @@ span.cal-day.has { cursor: help; }
     storeTabPinned: !!H0.storeTab, /* 주소로 고른 탭(#/mobile · 예전 매뉴얼 주소 · 공유 링크) — 로그인 뒤 받은 화면 설정이 덮지 않게 */
     ebOpen: H0.ebook || '', /* 공유 링크로 들어온 책 — 목록이 오면 자세히보기 창을 연다 */
   };
+  /* 마지막으로 본 물건 — 새로고침(F5)해도 남긴다. 물건목록 › 하위 탭 · 전체 메뉴 수익분석이 이 물건으로 간다.
+     없으면 목록 맨 위 물건으로 가서, 시장분석에서 새로고침하면 보던 물건(정성드림빌) 대신 입찰일 가까운 다른 물건으로 바뀌었다(2026-11-15 사용자).
+     시장분석 › 매각분석의 '물건으로' 고른 물건(ta.web.sale.item)과는 따로 둔다 */
+  const LAST_ITEM_KEY = 'ta.web.lastItem';
+  const setLastItem = (id) => { S.lastItemId = id; try { if (id) localStorage.setItem(LAST_ITEM_KEY, id); } catch (e) { /* 그만 */ } };
+  try { S.lastItemId = S.lastItemId || localStorage.getItem(LAST_ITEM_KEY) || ''; } catch (e) { /* 그만 */ }
+  if (S.route === 'item' && S.itemId) setLastItem(S.itemId);   /* 주소로 바로 연 물건도 */
+
   /** 지금 화면 → 주소 */
   const hashOf = () => (S.route === 'item' ? itemHash(S.itemId, S.itemTab)
     : S.route === 'market' && S.marketTab === 'sale' ? `#/market/sale/${S.saleTab}`
@@ -9636,7 +9644,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
   function go(route, id) {
     if (S.route === route && (route !== 'item' || S.itemId === id)) { toTop(); return; }
     S.route = route; S.pop = ''; S.menu = null;
-    if (route === 'item') { S.itemId = id; S.lastItemId = id; S.itemTab = S.itemTabNext || 'basic'; S.itemTabNext = ''; }
+    if (route === 'item') { S.itemId = id; setLastItem(id); S.itemTab = S.itemTabNext || 'basic'; S.itemTabNext = ''; }
     render(); toTop();
     writeHash(true);
   }
@@ -9647,7 +9655,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     const h = readHash();
     const moved = S.route !== h.route || (h.route === 'item' && S.itemId !== h.itemId);
     S.route = h.route;
-    if (h.route === 'item') { S.itemId = h.itemId; S.lastItemId = h.itemId; S.itemTab = h.itemTab; }
+    if (h.route === 'item') { S.itemId = h.itemId; setLastItem(h.itemId); S.itemTab = h.itemTab; }
     if (h.route === 'market') { S.marketTab = h.sub; if (h.saleTab) S.saleTab = h.saleTab; }
     if (h.storeTab) { S.storeTab = h.storeTab; S.storeTabPinned = true; }
     if (h.fromManual) fromManual();
