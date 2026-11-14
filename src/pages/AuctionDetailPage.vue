@@ -4786,12 +4786,16 @@ const sonConcLines = computed(() => {
   const mp = auction.value?.marketPicks;
   const ca = askMin(false); const sa = askMin(true);
   const [lc, ls] = LOW_GROUPS.value;
+  // 조사가격은 평당가 × 우리 전용평 — 평수가 다른 거래 · 호가를 그대로 옮기면 우리 집 값이 아니다(2026-11-15 사용자). 평당가가 없으면 적힌 값 그대로
+  const myPy = (Number(auction.value?.buildingAreaM2) || 0) / PYEONG_TO_M2;
+  const ours = (unit: number, raw: number) => (unit > 0 && myPy > 0 ? Math.round(unit * myPy) : raw);
+  const line = (key: string, label: string, unit: number, raw: number, how: string) => ({ key, label, unit, price: ours(unit, raw), how: unit > 0 && myPy > 0 ? `${how} ${Math.round(unit / 1e4).toLocaleString('ko-KR')}만 × ${myPy.toFixed(2)}평` : '' });
   return [
-    { key: 'caseSale', label: '경매지번 매매가', unit: perPyOf(mp?.caseSale?.price ?? 0, mp?.caseSale?.areaM2 ?? 0), price: mp?.caseSale?.price ?? 0 },
-    { key: 'simSale', label: '유사물건 매매가', unit: perPyOf(mp?.simSale?.price ?? 0, mp?.simSale?.areaM2 ?? 0), price: mp?.simSale?.price ?? 0 },
-    { key: 'condSale', label: '유사물건 평균 매매가', unit: mp?.condSalePerPy ?? 0, price: mp?.condSaleAvg ?? 0 },
-    { key: 'askCase', label: lc.label, unit: ca?.unit ?? 0, price: ca?.price ?? 0 },
-    { key: 'askSim', label: ls.label, unit: sa?.unit ?? 0, price: sa?.price ?? 0 },
+    line('caseSale', '경매지번 매매가', perPyOf(mp?.caseSale?.price ?? 0, mp?.caseSale?.areaM2 ?? 0), mp?.caseSale?.price ?? 0, '실거래 평당가'),
+    line('simSale', '유사물건 매매가', perPyOf(mp?.simSale?.price ?? 0, mp?.simSale?.areaM2 ?? 0), mp?.simSale?.price ?? 0, '실거래 평당가'),
+    line('condSale', '유사물건 평균 매매가', mp?.condSalePerPy ?? 0, mp?.condSaleAvg ?? 0, '평균 평당가'),
+    line('askCase', lc.label, ca?.unit ?? 0, ca?.price ?? 0, '최저 호가 평당가'),
+    line('askSim', ls.label, sa?.unit ?? 0, sa?.price ?? 0, '최저 호가 평당가'),
   ];
 });
 const sonConcOff = (key: string) => mktVal(`son.conc.off.${key}`) === '1';
@@ -10569,7 +10573,7 @@ const goBack = () => router.back();
                 <tbody>
                   <tr v-for="l in sonConcLines" :key="l.key">
                     <th :class="['adp-conc-side', { off: sonConcOff(l.key) }]"><label class="adp-conc-pick inline"><input type="checkbox" :checked="!sonConcOff(l.key)" @change="toggleSonConc(l.key)" /></label>{{ l.label }}</th>
-                    <td :class="['num', { off: sonConcOff(l.key) }]"><span class="adp-conc-v">{{ wonText(l.price) }}</span></td>
+                    <td :class="['num', { off: sonConcOff(l.key) }]"><span class="adp-conc-v">{{ wonText(l.price) }}</span><small v-if="l.how" class="adp-conc-how">{{ l.how }}</small></td>
                     <td :class="['num', { off: sonConcOff(l.key) }]"><span class="adp-conc-v">{{ wonText(l.unit) }}</span></td>
                   </tr>
                   <tr>
@@ -11395,6 +11399,8 @@ const goBack = () => router.back();
 .adp-diag-v.on { color: #2b6df3; } /* 값이 채워진 진단 칸 — 말소기준권리 · 인수·소멸 권리수 · 예측 난이도 모두 우리 파랑 */
 /* AI 명도 난이도 분석 — 왼쪽 예측 난이도 한 칸(높이를 오른쪽에 맞춤) · 오른쪽 세 칸은 위아래로 */
 .adp-evict { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px; padding: 2px 0 6px; }
+.adp-conc-how { display: block; margin-top: 2px; font-size: 12px !important; font-weight: 400; line-height: 1.3; color: #6b7280; }   /* 조사가격 계산 — 평당가 × 선정물건 면적(2026-11-15 사용자) */
+:root[data-theme="dark"] .adp-conc-how { color: #8b95a8; }
 .adp-conclude { padding: 2px 0 6px; }
 .adp-conclude .adp-evict-note { min-height: 78px; }
 .adp-evict-notes { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
