@@ -447,6 +447,15 @@ const modeTip: TipRow[] = [
   ['따로 움직임', '직접범위 막대를 움직여도 유사도 %는 그대로이고, 유사도 %를 바꿔도 막대는 그대로입니다'],
   ['주의', '유사도로 돌아갔다가 다시 직접범위를 누르면 그때의 유사도 범위로 다시 시작합니다(손으로 맞춘 값이 바뀝니다)'],
 ];
+/** 초록 칸 아래 계산식(웹) — '유사물건 실거래 평균 평당가 862만 × 16.68평'. 건수 · 반경 · 기간은 위 필터 설명 줄에(2026-11-15 사용자) */
+const estFormula = computed(() => {
+  const v = view.value; if (!v || !(v.avgPy > 0) || !(myPy.value > 0)) return '';
+  const rs = kindF.value === '전세' ? jeonseRows.value : kindF.value === '월세' ? monthRows.value : saleRows.value;
+  const allSame = rs.length > 0 && rs.every((r) => r.same);
+  const who = allSame ? '경매지번' : '유사물건';
+  const per = kindF.value === '월세' ? '평당 월세' : '평당가';
+  return `${who} ${kindF.value} ${v.n > 1 ? `평균 ${per}` : per} ${vPy(v.avgPy)} × ${myPy.value.toFixed(2)}평`;
+});
 const estTip = computed<TipRow[]>(() => [
   ['공식', `${kindF.value} ${kindF.value === '월세' ? '평균 평당 월세' : '평균 평당가'} ${view.value ? vPy(view.value.avgPy) : '-'} × 이 물건 전용 ${myPy.value.toFixed(2)}평`],
   ['중간·최저·최고', `거래마다 ${myPy.value.toFixed(2)}평으로 바꾼 값`],
@@ -992,7 +1001,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
     <div v-if="estFix" class="zone-ph" :style="{ height: `${estFix.h}px` }" aria-hidden="true" />
     <div ref="zoneEl" class="zone zone-est" :style="estFix ? estFix.style : undefined">
       <div class="zone-h"><span class="pa-tag">결론</span><h3>{{ webEmbed ? '이 물건 매도가 예상' : '이 물건 실거래가 예상' }}</h3>
-        <span :class="['bar-desc', { hi: webEmbed }]"><svg v-if="webEmbed" class="flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ regionText || '지역 확인 중' }}{{ webEmbed ? ` · 반경 ${radText(radius)} · ${periodText(loadedMonths)}` : '' }} · {{ KIND_LABEL[kind] }} 실거래</span>
+        <span :class="['bar-desc', { hi: webEmbed }]"><svg v-if="webEmbed" class="flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ regionText || '지역 확인 중' }}{{ webEmbed ? ` · 반경 ${radText(radius)} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` : '' }} · {{ KIND_LABEL[kind] }} 실거래</span>
         <span class="pa-load-r">
           <span v-if="progress.total && progress.done < progress.total" class="prog">위치 찾는 중 {{ progress.done }} / {{ progress.total }}</span>
           <!-- 앱 — 기간 단추 · 조회는 뺐다(저장된 기간 그대로, 2026-11-13 사용자) -->
@@ -1008,7 +1017,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <div class="est">
         <!-- 웹 — 중간값 · 최저 · 최고는 뺐다. 거래가를 내 평수로 바꿔 만든 값이라 실제로 거래된 값이 아니다(2026-11-11 사용자) -->
         <div :class="['tiles', { four: !props.app }]">
-          <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? '매도가 예상' : '실거래가 예상' }}({{ kindF }})</InfoTip></span><span class="v pa-num">{{ view ? vfmt(view.est) : '-' }}</span><!-- 웹 — 0건이 돼도 아래 두 줄 자리를 그대로(칸 높이가 줄면 아래 필터 · 표가 통째로 올라갔다 내려왔다, 2026-11-12 사용자 '엘베 누르면 흔들려') --><span v-if="webEmbed || view?.capped" class="cap" :style="{ visibility: view?.capped ? 'visible' : 'hidden' }">보증보험 한도 적용</span><span v-if="webEmbed || view" class="s rad">반경 {{ radText(radius) }} · {{ periodText(loadedMonths) }} · {{ (view?.n ?? 0).toLocaleString('ko-KR') }}건</span></div>
+          <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? '매도가 예상' : '실거래가 예상' }}({{ kindF }})</InfoTip></span><span class="v pa-num">{{ view ? vfmt(view.est) : '-' }}</span><!-- 웹 — 0건이 돼도 아래 두 줄 자리를 그대로(칸 높이가 줄면 아래 필터 · 표가 통째로 올라갔다 내려왔다, 2026-11-12 사용자 '엘베 누르면 흔들려') --><span v-if="webEmbed || view?.capped" class="cap" :style="{ visibility: view?.capped ? 'visible' : 'hidden' }">보증보험 한도 적용</span><span v-if="webEmbed || view" class="s rad">{{ webEmbed ? (estFormula || '\u00a0') : `반경 ${radText(radius)} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` }}</span></div>
           <div class="tile"><span class="k">{{ kindF === '월세' ? '평균 평당 월세' : '평균 평당가' }}</span><span class="v pa-num">{{ view ? vPy(view.avgPy) : '-' }}</span></div>
           <!-- 선정물건 정보 — 유사 거래를 찾는 가운데 기준(실제 범위는 아래 「계산 조건」 줄) -->
           <div v-if="isAptKind" class="tile"><span class="k">면적 공급(전용) / 연식</span><span class="v pa-num sm">{{ aptMyArea }}</span><span class="s">{{ me.year ? `${me.year}년식` : '-' }}</span></div>
