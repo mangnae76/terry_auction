@@ -4794,8 +4794,8 @@ const sonConcLines = computed(() => {
     line('caseSale', '경매지번 매매가', perPyOf(mp?.caseSale?.price ?? 0, mp?.caseSale?.areaM2 ?? 0), mp?.caseSale?.price ?? 0, '실거래 평당가'),
     line('simSale', '유사물건 매매가', perPyOf(mp?.simSale?.price ?? 0, mp?.simSale?.areaM2 ?? 0), mp?.simSale?.price ?? 0, '실거래 평당가'),
     line('condSale', '유사물건 평균 매매가', mp?.condSalePerPy ?? 0, mp?.condSaleAvg ?? 0, '평균 평당가'),
-    { key: 'askCase', label: lc.label, unit: ca?.unit ?? 0, price: ca?.price ?? 0, how: '' },   // 경매빌라 호가는 파는 사람이 부른 값 그대로 — 평수로 바꾸지 않는다(2026-11-15 사용자)
-    line('askSim', ls.label, sa?.unit ?? 0, sa?.price ?? 0, '최저 호가 평당가'),
+    { key: 'askCase', label: lc.label, unit: ca?.unit ?? 0, price: ca?.price ?? 0, how: '' },   // 호가는 파는 사람이 부른 값 그대로 — 평수로 바꾸지 않는다(2026-11-15 사용자)
+    { key: 'askSim', label: ls.label, unit: sa?.unit ?? 0, price: sa?.price ?? 0, how: '' },   // 호가는 공식 없이 부른 값 그대로(2026-11-15 사용자)
   ];
 });
 const sonConcOff = (key: string) => mktVal(`son.conc.off.${key}`) === '1';
