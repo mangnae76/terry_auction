@@ -36,6 +36,8 @@ export interface CaseTradeRow {
   dong?: string;
   /** 월세 (원) — 월세 줄만 */
   monthly?: number;
+  /** 등기일자(국토부 'YY.MM.DD', 매매만) — 선정물건 등기부 소유권이전 접수일과 같으면 그 호(2026-11-14) */
+  rgstDate?: string;
 }
 
 export interface CaseTradeResult {
@@ -150,6 +152,7 @@ const toRows = (data: Awaited<ReturnType<typeof fetchPlaceHistory>>): CaseTradeR
     jibun: r.jibun ?? '',
     buildYear: r.buildYear,
     ...(r.dong ? { dong: r.dong } : {}),
+    ...(r.rgstDate ? { rgstDate: r.rgstDate } : {}),
   })),
   // 전월세는 국토부가 '만원'으로 준다 — 매매(원)와 한 칸에 서니 원으로 맞춰 적는다
   ...data.rents.map((r) => ({

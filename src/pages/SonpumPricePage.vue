@@ -297,8 +297,8 @@ const COLS: Array<ColumnDef<PriceRow>> = [
   { key: 'year', label: '건축', text: (r) => (r.buildYear ? `${r.buildYear}년` : '-'), order: (r) => r.buildYear ?? 0 },
   { key: 'dist', label: '거리', text: (r) => `${Math.floor((r.dist ?? 0) / 100) * 100}m대`, order: (r) => -(r.dist ?? 0) },
   { key: 'floor', label: '층', text: (r) => `${r.floorNo}층`, order: (r) => r.floorNo },
-  // 호 — 국토부 실거래엔 호가 없다. 비교임장 때 확인한 호를 줄마다 적는다(웹, 2026-11-14 사용자)
-  { key: 'ho', label: '호', text: (r) => hoMap.value[rowKey(r)] ?? '' },
+  // 호 — 국토부 실거래엔 호가 없다. 등기일자가 선정물건 등기부의 소유권이전 접수일과 같으면 그 호, 아니면 '모름'(웹, 2026-11-14 사용자)
+  { key: 'ho', label: '호', text: (r) => hoOf(r) },
   { key: 'name', label: '주소', text: (r) => r.name || r.jibun },
 ];
 const colFilter = useColumnFilters<PriceRow>(kindRows, COLS);
@@ -314,15 +314,10 @@ const sonApp = inject<boolean>('sonApp', false);
 /** 줄 열쇠 — 다시 불러와도 같은 줄이 같은 열쇠(순번 id 는 불러올 때마다 바뀐다) */
 const rowKey = (r: PriceRow) => [r.group, r.contractDate, r.jibun, r.price, r.floorNo, Math.round(r.areaM2 * 100)].join('|');
 const dropped = ref<string[]>(Array.isArray(sv?.drop) ? [...sv.drop] : []);
-/** 줄마다 적은 호 — 물건이 있으면 그 물건(시세분석 저장)에, 시장분석(물건 없음)은 이 브라우저에 */
-const HO_KEY = 'pa.ho.v1';
-const hoMap = ref<Record<string, string>>(sv?.ho ? { ...sv.ho } : (() => { try { return JSON.parse(localStorage.getItem(HO_KEY) || '{}') as Record<string, string>; } catch { return {}; } })());
-const setHo = (r: PriceRow, e: Event) => {
-  const v = (e.target as HTMLInputElement).value.replace(/[^\d]/g, '').slice(0, 5);
-  const next = { ...hoMap.value }; if (v) next[rowKey(r)] = `${v}호`; else delete next[rowKey(r)];
-  hoMap.value = next; (e.target as HTMLInputElement).value = v ? `${v}호` : '';
-  try { localStorage.setItem(HO_KEY, JSON.stringify(next)); } catch { /* 이 창에서만 */ }
-};
+/** 호 짝짓기 — 선정물건 등기부의 소유권이전 접수일(PDF 갑구)과 실거래 등기일자가 같고 같은 지번이면 선정물건의 호. 그 밖은 '모름' */
+const ymdOf = (s: string) => { const m = String(s ?? '').match(/(\d{2,4})[.\-/](\d{1,2})[.\-/](\d{1,2})/); if (!m) return ''; const y = m[1].length === 2 ? `20${m[1]}` : m[1]; return `${y}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`; };
+const myOwnDates = computed(() => new Set((props.auction?.registryRows ?? []).filter((x) => /소유권이전/.test(x.kind)).map((x) => ymdOf(x.date)).filter(Boolean)));
+const hoOf = (r: PriceRow) => (r.rgstDate && r.jibun && r.jibun === lot.value && myOwnDates.value.has(ymdOf(r.rgstDate)) && myHo.value !== '-' ? myHo.value : '모름');
 const isOff = (r: PriceRow) => webEmbed && dropped.value.includes(rowKey(r));
 /** 앱 표 주소 말풍선 — 누른 칸 바로 아래(화면 밖으로 나가지 않게), 다시 누르거나 밖을 누르거나 스크롤하면 닫는다 */
 const addrTip = ref<{ text: string; style: Record<string, string> } | null>(null);
@@ -518,7 +513,6 @@ const body = computed((): Omit<MarketPicks, 'savedAt'> => {
     keep: Object.fromEntries(Object.entries(colFilter.picked.value).filter(([, v]) => v.length)), typedPub: typedPub.value,
     ...(dropped.value.length ? { drop: [...dropped.value] } : {}),
     ...(elevPick.value ? { elev: elevPick.value } : {}),
-    ...(Object.keys(hoMap.value).length ? { ho: { ...hoMap.value } } : {}),
     estSale: s?.est ?? 0, estJeonse: Math.round(j?.est ?? 0), estPerPy: s?.avgPy ?? 0, estCount: s?.n ?? 0,
   };
   return {
@@ -538,7 +532,7 @@ let lastJson = (() => { const mp = store.auctions.find((x) => x.id === props.auc
 let saveTimer = 0;
 // 사용자가 고른 값(기간 · 반경 · 거래 · 유사도 · 직접범위 · 값 거르기 · 공시가)만 — 이것이 바뀐 저장만 '최근 작성'에 남긴다.
 // 자료가 새로 들어와 셈만 달라진 자동 저장은 조용히(silent) 적는다
-const choicesOf = (v?: PriceView) => (v ? stable({ months: v.months, radius: v.radius, kind: v.kind, simMode: v.simMode, sim: v.sim, cond: v.cond, keep: v.keep, typedPub: v.typedPub, drop: v.drop ?? [], elev: v.elev ?? null, ho: v.ho ?? {} }) : '');
+const choicesOf = (v?: PriceView) => (v ? stable({ months: v.months, radius: v.radius, kind: v.kind, simMode: v.simMode, sim: v.sim, cond: v.cond, keep: v.keep, typedPub: v.typedPub, drop: v.drop ?? [], elev: v.elev ?? null }) : '');
 let lastChoices: string | null = (() => { const v = store.auctions.find((x) => x.id === props.auction.id)?.marketPicks?.price; return v ? choicesOf(v) : null; })();
 /** manual — 저장 단추로 부르면 위치를 받는 중이어도 바로 적는다 */
 const saveNow = async (manual?: unknown) => {
@@ -796,7 +790,7 @@ const evenCols = () => {
       year: ['2026년'],
       dist: ['9,999m'],
       floor: ['99층'],
-      ho: ['9999호', '입력'],
+      ho: ['9999호', '모름'],
     };
     const natOf = (pad: number) => ths.map((th) => {
       if (th.classList.contains('ck-th')) return 44;
@@ -1235,7 +1229,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td class="pa-num">{{ r.buildYear || '-' }}</td>
               <td class="r pa-num">{{ r.dist ?? '-' }}m</td>
               <td class="pa-num">{{ r.floorNo || '-' }}</td>
-              <td v-if="webEmbed" @click.stop><input :class="['hoin', 'pa-num', { on: !!hoMap[rowKey(r)] }]" :value="hoMap[rowKey(r)] ?? ''" placeholder="입력" inputmode="numeric" :aria-label="`${r.contractDate} ${r.floorNo}층 거래의 호`" @change="setHo(r, $event)" /></td>
+              <td v-if="webEmbed" :class="['pa-num', { 'ho-u': hoOf(r) === '모름' }]" :title="r.rgstDate ? `등기 ${ymdOf(r.rgstDate)}` : '등기일자 없음'">{{ hoOf(r) }}</td>
               <td class="l" :data-tip="webEmbed ? addrOf(r) : undefined" data-tip-pos="right"><div class="pa-addr"><span class="addr"><i v-if="orderOf[r.jibun]" class="no" :title="`임장 순서 ${orderOf[r.jibun]}번 — 지도 번호와 같다`">{{ orderOf[r.jibun] }}</i>{{ addrOf(r) }}</span><span v-if="r.same" class="chips"><span class="same">경매지번</span><span v-if="Math.abs(r.areaM2 - me.areaM2) <= 0.05" class="same eq">같은면적</span></span><span v-else-if="fieldChips(r.jibun).length" class="chips"><span v-for="c in fieldChips(r.jibun)" :key="c.t" :class="['pa-fc', c.k]">{{ c.t }}</span></span></div></td>
               <td class="acts-td" @click.stop><span class="acts">
                 <button type="button" class="ab n" title="네이버 부동산에서 이 빌라 보기 — 그 건물을 가운데 두고 지도를 바로 엽니다" aria-label="네이버 부동산에서 보기" @click="goNaver(fullAddr(r))">N</button>
@@ -1546,9 +1540,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa td.r { text-align: right; }
 /* 웹 — 머리말 · 내용 모두 가운데(2026-11-14 사용자 '공시가 · 거리 · 층 가운데'). 머리말 옆 정렬 ▼ 만큼 왼쪽에도 빈 자리를 둬 글자가 칸 가운데에 온다 */
 .pa.web td.r { text-align: center; }
-.pa .hoin { width: 56px; height: 26px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 6px; padding: 0 4px; font: inherit; font-size: 13px; text-align: center; background: #fff; color: var(--text, #111827); }
-.pa .hoin::placeholder { color: #9ca3af; }
-.pa .hoin:focus, .pa .hoin.on { border-color: #2b6df3; outline: none; }   /* 적은 칸은 파란 테두리 그대로 */
+.pa td.ho-u { color: #9ca3af; }
+
 .pa.web th:has(.sdir) .hk::before { content: ""; display: inline-block; width: 13px; }
 .pa-list { position: relative; min-width: 0; }
 .pa-list .tbl-wrap { overflow-x: visible; }
