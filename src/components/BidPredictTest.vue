@@ -186,6 +186,15 @@ const onFile = async (e: Event) => {
 const won = (n: number) => Math.round(n).toLocaleString('ko-KR');
 const man = (n: number) => { const m = Math.round(n / 1e4); const e = Math.floor(m / 1e4); const r = m % 1e4; return e ? `${e}억${r ? ` ${r.toLocaleString('ko-KR')}만` : ''}` : `${r.toLocaleString('ko-KR')}만`; };
 const pct = (x: number) => `${Math.round(x * 100)}%`;
+/** 주소 복사 — 지도 · 로드뷰에서 입지 · 개별성을 볼 때 붙여 넣으려고(2026-11-14 사용자). 괄호 안 도로명 등은 뺀 지번 주소 */
+const copiedKey = ref('');
+let copyTimer: ReturnType<typeof setTimeout> | null = null;
+const copyAddr = async (it: Item) => {
+  const text = it.addr.replace(/\s*\(.*$/, '').replace(/\s*외\s*\d+필지\s*$/, '').trim();
+  try { await navigator.clipboard.writeText(text); }
+  catch { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 그만 */ } ta.remove(); }
+  copiedKey.value = it.key; if (copyTimer) clearTimeout(copyTimer); copyTimer = setTimeout(() => { copiedKey.value = ''; }, 1500);
+};
 /** 차이 금액 — '+4,660,000' · '−1,020,000' */
 const signWon = (x: number) => `${x >= 0 ? '+' : '−'}${won(Math.abs(x))}`;
 const sgn = (x: number) => `${x >= 0 ? '+' : '−'}${Math.abs(x * 100).toFixed(1)}%`;
@@ -605,7 +614,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <tr v-for="it in shownItems" :key="it.key" :class="{ on: sel?.key === it.key, off: !preds.has(it.key) }" @click="pick = it.key">
               <td>{{ bidDay(it.target?.date || dayDate).slice(3) }}</td>
               <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button></td>
-              <td class="l addr" :data-tip="it.addr || undefined" data-tip-trunc>{{ it.addr || '—' }}</td>
+              <td class="l addr" :data-tip="it.addr || undefined" data-tip-trunc><button v-if="it.addr" type="button" :class="['bpt-copy', { done: copiedKey === it.key }]" :data-tip="copiedKey === it.key ? '복사됨' : '주소복사'" :aria-label="`${caseLabel(it.key)} 주소 복사`" @click.stop="copyAddr(it)"><svg v-if="copiedKey !== it.key" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg><svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg></button>{{ it.addr || '—' }}</td>
               <td v-if="!it.viewAt" class="r">—</td>
               <td v-else class="r">{{ it.views.toLocaleString('ko-KR') }}<small :class="['bpt-at', { after: stale(it.viewAt) }]">{{ it.viewAt === dayDate ? '당일' : it.viewAt.slice(5).replace('-', '.') }}{{ stale(it.viewAt) ? ' 덜 모음' : '' }}</small></td>
               <td>{{ it.target ? `${it.target.round + 1}차` : '—' }}</td>
@@ -749,7 +758,10 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-day .bpt-tbl td.addr, .bpt-day .bpt-tbl th.l { text-align: left; }   /* 주소는 머리 · 내용 모두 왼쪽 줄 맞춤 */
 .bpt-tbl.fixed { table-layout: fixed; }
 .bpt-tbl.fixed td { overflow: hidden; text-overflow: ellipsis; }
-.bpt-tbl.fixed td.addr { max-width: none; }   /* 주소 내용만 왼쪽 줄 맞춤(머리는 가운데) */   /* 사건별 예측은 칸이 많다 — 1440 화면에서도 옆으로 안 구르게 */
+.bpt-tbl.fixed td.addr { max-width: none; }
+.bpt-copy { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 6px; padding: 0; border: 1px solid #d5dbe5; border-radius: 6px; background: #fff; color: #4b5563; cursor: pointer; vertical-align: -5px; }
+.bpt-copy:hover { border-color: #2b6df3; color: #2b6df3; }
+.bpt-copy.done { border-color: #15803d; color: #15803d; }   /* 주소 내용만 왼쪽 줄 맞춤(머리는 가운데) */   /* 사건별 예측은 칸이 많다 — 1440 화면에서도 옆으로 안 구르게 */
 .bpt-tbl .l { text-align: left; }
 .bpt-tbl .r { text-align: right; }
 .bpt-tbl td.addr { max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
