@@ -937,7 +937,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 <template>
   <div :class="['pa-wrap', { app: props.app, phone: sonApp }]">
   <Teleport to="body" :disabled="!fs">
-  <section :class="['pa', 'pa-card', { fs, stick: webEmbed && !props.app }]" aria-label="시세분석">
+  <section :class="['pa', 'pa-card', { fs, stick: webEmbed && !props.app, web: webEmbed && !props.app }]" aria-label="시세분석">
     <!-- 전체화면 위 띠 — 닫기 · 사건 · 조회기간 · 조회 -->
     <div v-if="fs" class="fs-top">
       <button type="button" class="fs-x" @click="fs = false"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>전체화면 닫기</button>
@@ -1534,6 +1534,9 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa td { padding: 9px 8px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; font-size: 13.5px; }
 .pa td.l { text-align: left; }
 .pa td.r { text-align: right; }
+/* 웹 — 머리말 · 내용 모두 가운데(2026-11-14 사용자 '공시가 · 거리 · 층 가운데'). 머리말 옆 정렬 ▼ 만큼 왼쪽에도 빈 자리를 둬 글자가 칸 가운데에 온다 */
+.pa.web td.r { text-align: center; }
+.pa.web th:has(.sdir) .hk::before { content: ""; display: inline-block; width: 13px; }
 .pa-list { position: relative; min-width: 0; }
 .pa-list .tbl-wrap { overflow-x: visible; }
 .pa-list table.even { table-layout: auto; width: 100%; }
