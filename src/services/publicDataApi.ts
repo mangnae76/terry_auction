@@ -1732,6 +1732,8 @@ export interface DongTradeDetailRow {
   jibun: string;
   /** 정상거래 / 직거래 / 계약해제 — 세는 자리가 셋이라 한 칸에 담는다 */
   kind: '정상거래' | '직거래' | '계약해제';
+  /** 등기일자 — 국토부가 2023년부터 함께 준다(없으면 ''). 호 짝짓기 · 거래 확정 여부 확인용(2026-11-14) */
+  rgstDate?: string;
   /** 연립 / 다세대 — 연립다세대 거래에만 온다 */
   houseType: string;
 }
@@ -1816,6 +1818,7 @@ export const fetchDongTradeDetails = async (params: {
       // 해제가 직거래보다 세다 — 해제된 계약은 거래유형과 상관없이 없던 거래다
       kind: isCancelled ? '계약해제' : (isDirect ? '직거래' : '정상거래'),
       houseType: String(row.houseType ?? row['주택유형'] ?? '').trim(),
+      rgstDate: String(row.rgstDate ?? row['등기일자'] ?? '').trim(),
     });
   });
 

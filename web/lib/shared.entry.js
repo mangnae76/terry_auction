@@ -65,7 +65,7 @@ export { resolveRegionFromAddress } from '../../src/services/regionResolver';   
 export { buildingAgeOf, buildingAgeText } from '../../src/utils/buildingAge';
 /* 화면에 보일 사건번호 — 휴지통에서 되살린 같은 사건은 '(1)' */
 export { caseLabelOf } from '../../src/utils/caseLabel';
-export { fetchDongTradeStats } from '../../src/services/publicDataApi';
+export { fetchDongTradeStats, fetchDongTradeDetails } from '../../src/services/publicDataApi';
 /* 대문의 가벼운 로그인 창이 '로그인'을 누를 때 쓴다 — 로그인 유지 방식 · 카카오 설정 여부 */
 export { setLoginPersistence } from '../../src/services/authRepository';
 export { isKakaoLoginConfigured } from '../../src/services/socialAuth';
