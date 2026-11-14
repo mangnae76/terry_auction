@@ -294,6 +294,8 @@ const gapText = (r: PriceRow) => (r.pub ? (r.price - r.pub * HUG_RATE < 0 ? '갭
 const elevText = (r: PriceRow) => (r.elev === undefined ? '조회 중' : r.elev === null ? '-' : r.elev > 0 ? `${r.elev}대있음` : '없음');
 // 아파트 동(653동)도 — 같은 단지 안에서 어느 동 거래인지 보이게(2026-11-11 사용자). 국토부가 동을 안 준 거래는 비운다
 const addrOf = (r: PriceRow) => [r.umdNm, r.jibun, r.name, r.dong ? `${String(r.dong).replace(/동$/, '')}동` : '', r.ho || (webEmbed ? hoCand(r) : '')].filter(Boolean).join(' ');
+/** 표에 보이는 주소 — 선정물건과 같은 읍면동이면 동 이름을 빼 짧게(말풍선 · 정렬은 전체 주소) */
+const addrShort = (r: PriceRow) => { const a = addrOf(r); const d = region.value?.dong; return d && r.umdNm === d ? a.replace(new RegExp(`^${d}\\s+`), '') : a; };
 const COLS: Array<ColumnDef<PriceRow>> = [
   { key: 'date', label: '계약일', text: (r) => r.contractDate, order: (r) => Number(r.contractDate.replace(/\D/g, '')) },
   { key: 'won', label: '실거래가', text: (r) => eok(r.price), order: (r) => r.price },
@@ -794,12 +796,12 @@ const evenCols = () => {
     // 칸마다 들어갈 수 있는 가장 긴 값(숫자는 자릿수가 가장 많은 꼴) — 매매 · 전세 · 월세를 다 합친 것이라 탭을 바꿔도 칸 폭이 같다. 바뀌면 여기만
     const SAMPLE: Record<string, string[]> = {
       date: ['2026.12.31', '매매 예상', '전세 예상', '월세 예상'],
-      won: ['9,999,999,999'],
+      won: [isAptKind ? '9,999,999,999' : '999,999,999'],
       perPy: ['99,999,999'],
-      pub: ['9,999,999,999', '999.9%', '공시가 없음'],
-      gap: ['9,999,999,999', '▲ 9,999,999,999', '한도 안', '갭 -9,999,999,999'],
+      pub: [isAptKind ? '9,999,999,999' : '999,999,999', '999.9%', '공시가 없음'],
+      gap: isAptKind ? ['9,999,999,999', '▲ 9,999,999,999', '한도 안', '갭 -9,999,999,999'] : ['999,999,999', '▲ 999,999,999', '한도 안', '갭 -999,999,999'],
       area: isAptKind ? ['999.99㎡ (999.99)'] : ['999.99㎡', '999.99평'],
-      elev: ['조회 중', '99대있음'],   // 아파트는 30대도 있다 — 9대로 잡아 '30대 있음'이 두 줄로 꺾였다
+      elev: ['조회 중', isAptKind ? '99대있음' : '9대있음'],   // 아파트는 30대도 있다 — 9대로 잡아 '30대 있음'이 두 줄로 꺾였다
       year: ['2026년'],
       dist: ['9,999m'],
       floor: ['99층'],
@@ -817,7 +819,7 @@ const evenCols = () => {
     });
     const ai = ths.findIndex((th) => th.dataset.k === 'name');
     const ADDR_MIN = 170;
-    let nat = natOf(24); t.classList.remove('tight', 'tighter');
+    let nat = natOf(10); t.classList.remove('tight', 'tighter');   // 칸 안 여백 24 → 10 — 그만큼 주소가 넓어진다(보떼하우스 '401·402호 중'까지 보이게, 2026-11-14 사용자)
     const others = () => nat.reduce((a, w, i) => (i === ai ? a : a + w), 0);
     if (cw - others() < ADDR_MIN) { t.classList.add('tight'); nat = natOf(10); }   // 좁으면 칸 안 여백을 줄인다
     if (cw - others() < 100) { t.classList.add('tighter'); nat = natOf(4); }   // 더 좁으면 한 번 더(창이 좁을 때 표가 상자 밖으로 넘치지 않게)
@@ -1184,7 +1186,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <th v-if="webEmbed" class="ck-th" title="체크하면 매도가 예상 · 평균 · 건수에서 빠집니다">제외</th>
             <th>구분</th>
             <th v-for="c in shownCols" :key="c.key" :data-k="c.key" :aria-sort="sortK === c.key ? (webEmbed && sortDir === 'asc' ? 'ascending' : 'descending') : undefined" :class="{ hl: ['won', 'perPy', 'pub', 'gap'].includes(c.key) }">
-              <span class="hk" :title="c.key === 'gap' ? '전세 = 공시가 × 126%(보증보험 한도)' : undefined" @click="sortBy(c.key)">{{ c.key === 'pub' ? '공시가 / 매매가율' : c.key === 'gap' ? '전세 / 갭' : c.key === 'area' && isAptKind ? '면적' : c.label }}<small v-if="c.key === 'area' && isAptKind" class="hk-sub">공급(전용)</small></span>
+              <span class="hk" :title="c.key === 'gap' ? '전세 = 공시가 × 126%(보증보험 한도)' : undefined" @click="sortBy(c.key)">{{ c.key === 'pub' ? (webEmbed ? '공시가' : '공시가 / 매매가율') : c.key === 'gap' ? '전세 / 갭' : c.key === 'area' && isAptKind ? '면적' : c.label }}<small v-if="c.key === 'area' && isAptKind" class="hk-sub">공급(전용)</small><small v-if="c.key === 'pub' && webEmbed" class="hk-sub">매매가율</small></span>
               <i v-if="webEmbed" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true" @click="sortBy(c.key)">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i>
               <button v-else type="button" :class="['fv', { act: colFilter.isActive(c.key) }]" :aria-label="`${c.label} 값 거르기`" @click.stop="colFilter.open(c.key, $event)">▾</button>
             </th>
@@ -1242,7 +1244,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td class="pa-num">{{ r.buildYear || '-' }}</td>
               <td class="r pa-num">{{ r.dist ?? '-' }}m</td>
               <td class="pa-num">{{ r.floorNo || '-' }}</td>
-              <td class="l" :data-tip="webEmbed ? addrOf(r) : undefined" data-tip-pos="right"><div class="pa-addr"><span class="addr"><i v-if="orderOf[r.jibun]" class="no" :title="`임장 순서 ${orderOf[r.jibun]}번 — 지도 번호와 같다`">{{ orderOf[r.jibun] }}</i>{{ addrOf(r) }}</span><span v-if="r.same" class="chips"><span class="same">경매지번</span><span v-if="Math.abs(r.areaM2 - me.areaM2) <= 0.05" class="same eq">같은면적</span></span><span v-else-if="fieldChips(r.jibun).length" class="chips"><span v-for="c in fieldChips(r.jibun)" :key="c.t" :class="['pa-fc', c.k]">{{ c.t }}</span></span></div></td>
+              <td class="l" :data-tip="webEmbed ? addrOf(r) : undefined" data-tip-pos="right"><div class="pa-addr"><span class="addr"><i v-if="orderOf[r.jibun]" class="no" :title="`임장 순서 ${orderOf[r.jibun]}번 — 지도 번호와 같다`">{{ orderOf[r.jibun] }}</i>{{ webEmbed ? addrShort(r) : addrOf(r) }}</span><span v-if="r.same" class="chips"><span class="same">경매지번</span><span v-if="Math.abs(r.areaM2 - me.areaM2) <= 0.05" class="same eq">같은면적</span></span><span v-else-if="fieldChips(r.jibun).length" class="chips"><span v-for="c in fieldChips(r.jibun)" :key="c.t" :class="['pa-fc', c.k]">{{ c.t }}</span></span></div></td>
               <td class="acts-td" @click.stop><span class="acts">
                 <button type="button" class="ab n" title="네이버 부동산에서 이 빌라 보기 — 그 건물을 가운데 두고 지도를 바로 엽니다" aria-label="네이버 부동산에서 보기" @click="goNaver(fullAddr(r))">N</button>
                 <button type="button" :class="['ab p', { ok: okKey === `${r.id}P` }]" :title="`부동산플래닛에서 보기 — 「${r.umdNm} ${r.jibun}」를 복사해 두고 지도를 엽니다`" aria-label="부동산플래닛에서 보기" @click="goPlanet(`${r.umdNm} ${r.jibun}`, `${r.id}P`)">P</button>
@@ -1330,7 +1332,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .tile.key :deep(.itip-bubble)::before { left: 40px; transform: none; }
 .tile.key .s.rad { color: #fff; }   /* 초록 칸 아래 — 어느 반경 · 기간 · 몇 건으로 낸 값인지(2026-11-11 사용자) */
 .tile .s { font-size: 12px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hk-sub { display: block; font-size: 11px; font-weight: 400; color: var(--sub); }   /* 아파트 면적 머리 — '공급(전용)' */
+.hk-sub { display: block; font-size: 12px; font-weight: 400; color: var(--sub); }   /* 아파트 면적 머리 — '공급(전용)' */
 .tile .cap { justify-self: center; font-size: 11px; color: #fff; background: rgba(0, 0, 0, .18); border-radius: 999px; padding: 1px 8px; }
 /* 웹 내비게이터(매도가 예상 · 평균 평당가 · 전용/연식 · 건수) — 네 칸 모두 같은 세 줄(이름 18 · 금액 30 · 아래 글 16)로 고정해 이름 · 금액 · 아래 글 줄이 가로로 맞고,
    값이 없어도(0건) 칸 높이가 그대로(2026-11-12 사용자 '세로 맞춰 고정 · 금액도 줄 맞춰'). '보증보험 한도 적용'은 줄을 늘리지 않게 칸 오른쪽 위 작은 딱지로 */
