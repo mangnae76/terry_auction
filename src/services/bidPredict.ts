@@ -189,7 +189,9 @@ export type Round = {
   result: 'sold' | 'fail' | 'none'; sold: number; bids: number; second: number;
 };
 const STEP = 0.7;   // 인천 — 유찰마다 30% 저감
-export const roundsOf = (h: HitLike, collectStart = '2025-06-15'): Round[] => {
+/** lead — 매각 며칠 전까지 센 값으로 볼지(0 = 전날까지). 다가오는 기일을 며칠 앞서 모았으면 배울 때도 같은 날수 앞으로 맞춘다 */
+const dayShift = (d: string, n: number) => { const x = new Date(`${d}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+export const roundsOf = (h: HitLike, collectStart = '2025-06-15', lead = 0): Round[] => {
   const notice = h.ev.find((e) => e.l === '경매공고일')?.d ?? '';
   const complete = !!notice && notice >= collectStart;
   const sales = [...new Set(h.ev.filter((e) => /^\d+차 매각기일$/.test(e.l)).map((e) => e.d))].sort();
@@ -201,7 +203,8 @@ export const roundsOf = (h: HitLike, collectStart = '2025-06-15'): Round[] => {
   for (let i = 0; i < sales.length; i++) {
     const d = sales[i];
     if (chg.has(d)) continue;
-    const idx = h.hd.map((x, j) => (x < d && (!h.asOf || x <= h.asOf) ? j : -1)).filter((j) => j >= 0);
+    const cut = lead > 0 ? dayShift(d, -lead) : d;   // 이 날 앞까지만 센다
+    const idx = h.hd.map((x, j) => (x < cut && (!h.asOf || x <= h.asOf) ? j : -1)).filter((j) => j >= 0);
     const views = idx.reduce((s, j) => s + (h.hc[j] ?? 0), 0); const eff = idx.reduce((s, j) => s + (h.he[j] ?? 0), 0);
     const last7 = idx.slice(-7).reduce((s, j) => s + (h.hc[j] ?? 0), 0);
     const base = { key: h.key, addr: h.addr, kind: h.kind, area: h.area, appr: h.appr, min: Math.round((h.appr * STEP ** k) / 1000) * 1000, date: d, round: k, views, eff, last7, upTo: idx.length ? h.hd[idx[idx.length - 1]] : '', complete };

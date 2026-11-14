@@ -115,11 +115,18 @@ const progView = computed(() => {
   return { pct: Math.round(f * 100), what, left: p.done ? '' : left >= 60 ? `남은 시간 약 ${Math.ceil(left / 60)}분${p.kind === 'hits' && p.stage === 'list' ? ' + 차트' : ''}` : '곧 끝' };
 });
 const hitRounds = computed<Round[]>(() => hitDocs.value.flatMap((h) => roundsOf(h)));
+/** 다가오는 기일을 며칠 앞서 모았으면(전날까지 안 닿음) 그 날수 — 배울 때도 매각 그 날수 앞 값으로 맞춘다 */
+const leadDays = computed(() => {
+  const up = hitRounds.value.filter((r) => r.date === dayDate.value).map((r) => r.upTo).filter(Boolean).sort().pop();
+  if (!up || !dayDate.value) return 0;
+  return Math.max(0, Math.round((new Date(`${dayDate.value}T00:00:00Z`).getTime() - new Date(`${up}T00:00:00Z`).getTime()) / 864e5) - 1);
+});
+const roundsAt = computed<Round[]>(() => (leadDays.value ? hitDocs.value.flatMap((h) => roundsOf(h, undefined, leadDays.value)) : hitRounds.value));
 /** 이 매각기일 회차 — 붙여넣은 글이 없고 차트 자료가 있으면 이것으로 맞힌다 */
-const dayRounds = computed(() => (parseViewLines(viewsText.value).length ? [] : hitRounds.value.filter((r) => r.date === dayDate.value)));
+const dayRounds = computed(() => (parseViewLines(viewsText.value).length ? [] : roundsAt.value.filter((r) => r.date === dayDate.value)));
 const useHits = computed(() => dayRounds.value.length > 0);
 /** 그날 이전 회차로만 배운 규칙(누적 조회수 + 마지막 7일 + 회차) */
-const roundModel = computed(() => (useHits.value ? fitRoundModel(hitRounds.value, dayDate.value) : null));
+const roundModel = computed(() => (useHits.value ? fitRoundModel(roundsAt.value, dayDate.value) : null));
 
 try {
   const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null') as { dayRows?: DayRow[]; dayName?: string; dayDate?: string; viewsText?: string; pick?: string } | null;
@@ -486,7 +493,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
     </section>
 
     <section v-if="items.length" class="bpt-card bpt-day">
-      <h3 class="bpt-h3">사건별 예측 <small v-if="useHits">사건 차트의 매각 전날까지 누적 조회수 · {{ roundModel ? `그날 이전 ${roundModel.n.toLocaleString('ko-KR')}회차(팔림 ${roundModel.nSold.toLocaleString('ko-KR')})로 배움` : '배울 회차가 모자랍니다' }}</small></h3>
+      <h3 class="bpt-h3">사건별 예측 <small v-if="useHits">사건 차트의 매각 전날까지 누적 조회수 · {{ roundModel ? `그날 이전 ${roundModel.n.toLocaleString('ko-KR')}회차(팔림 ${roundModel.nSold.toLocaleString('ko-KR')})로 배움` : '배울 회차가 모자랍니다' }}{{ leadDays ? ` · 조회수가 매각 ${leadDays + 1}일 전까지라 배울 때도 ${leadDays + 1}일 전 값으로 맞춤` : '' }}</small></h3>
       <div class="bpt-tbl-wrap">
         <table class="bpt-tbl">
           <thead><tr><th>사건번호</th><th class="l">주소</th><th>조회수</th><th>차수</th><th>최저가</th><th>팔릴 확률</th><th>예상 인원</th><th>예상 낙찰가</th><th>흔한 범위</th><th>실제</th><th>차이</th></tr></thead>
