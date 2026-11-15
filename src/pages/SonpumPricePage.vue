@@ -327,6 +327,10 @@ const sonApp = inject<boolean>('sonApp', false);
 /** 줄 열쇠 — 다시 불러와도 같은 줄이 같은 열쇠(순번 id 는 불러올 때마다 바뀐다) */
 const rowKey = (r: PriceRow) => [r.group, r.contractDate, r.jibun, r.price, r.floorNo, Math.round(r.areaM2 * 100)].join('|');
 const dropped = ref<string[]>(Array.isArray(sv?.drop) ? [...sv.drop] : []);
+/** 손품결론 '유사물건 매매가' — 다른 건물 매매 줄을 누르면 그 거래, 다시 누르면 뺀다(아파트 · 빌라, 2026-11-15 사용자).
+ *  거르기를 바꿔 표에서 사라져도 고른 거래는 남긴다(사용자가 고른 값) */
+const simPick = ref<string>(sv?.simPick ?? '');
+const simPickable = (r: PriceRow) => webEmbed && !r.same && r.group === '매매';
 /** 호 짝짓기 — 선정물건 등기부의 소유권이전 접수일(PDF 갑구)과 실거래 등기일자가 같고 같은 지번이면 선정물건의 호. 그 밖은 '모름' */
 const ymdOf = (s: string) => { const m = String(s ?? '').match(/(\d{2,4})[.\-/](\d{1,2})[.\-/](\d{1,2})/); if (!m) return ''; const y = m[1].length === 2 ? `20${m[1]}` : m[1]; return `${y}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`; };
 const myOwnDates = computed(() => new Set((props.auction?.registryRows ?? []).filter((x) => /소유권이전/.test(x.kind)).map((x) => ymdOf(x.date)).filter(Boolean)));
@@ -534,6 +538,7 @@ const widen = (w: 'r' | 's' | 'p') => {
 // ===== 저장 — 0.8초 뒤 물건 문서(marketPicks)에. 손품결론이 실거래가 예상을 읽는다 =====
 const saving = ref(false);
 const savedAt = ref(store.auctions.find((x) => x.id === props.auction.id)?.marketPicks?.savedAt ?? 0);
+const savedSim = store.auctions.find((x) => x.id === props.auction.id)?.marketPicks?.simSale ?? null;
 const toPick = (r: CaseTradeRow | null): MarketPickRow | null => (r ? {
   kind: r.kind, contractDate: r.contractDate, amount: r.amount, price: r.price, areaM2: r.areaM2, floor: r.floor,
   umdNm: r.umdNm, name: r.name, jibun: r.jibun, ...(r.buildYear ? { buildYear: r.buildYear } : {}),
@@ -545,6 +550,7 @@ const body = computed((): Omit<MarketPicks, 'savedAt'> => {
     keep: Object.fromEntries(Object.entries(colFilter.picked.value).filter(([, v]) => v.length)), typedPub: typedPub.value,
     ...(dropped.value.length ? { drop: [...dropped.value] } : {}),
     ...(elevPick.value ? { elev: elevPick.value } : {}),
+    ...(simPick.value ? { simPick: simPick.value } : {}),
     estSale: s?.est ?? 0, estJeonse: Math.round(j?.est ?? 0), estPerPy: s?.avgPy ?? 0, estCount: s?.n ?? 0,
   };
   return {
@@ -552,7 +558,7 @@ const body = computed((): Omit<MarketPicks, 'savedAt'> => {
     caseSale: toPick(pickCaseTrade(sameRaw.value, ['매매', '직거래'], me.value.areaM2, me.value.floor) ?? pickCaseTrade(sameRaw2y.value, ['매매', '직거래'], me.value.areaM2, me.value.floor)),
     caseJeonse: toPick(pickCaseTrade(sameRaw.value, ['전세'], me.value.areaM2, me.value.floor)),
     caseManual: { sale: false, jeonse: false },
-    simSale: null, simJeonse: null,
+    simSale: simPick.value ? (toPick(allRows.value.find((r) => rowKey(r) === simPick.value) ?? null) ?? savedSim) : null, simJeonse: null,
     condSaleAvg: s?.est ?? 0, condSalePerPy: s?.avgPy ?? 0, condJeonseAvg: Math.round(j?.est ?? 0),
     pubPrice: curPub.value, hugJeonse: Math.round(hug.value), price: pv,
   };
@@ -564,7 +570,7 @@ let lastJson = (() => { const mp = store.auctions.find((x) => x.id === props.auc
 let saveTimer = 0;
 // 사용자가 고른 값(기간 · 반경 · 거래 · 유사도 · 직접범위 · 값 거르기 · 공시가)만 — 이것이 바뀐 저장만 '최근 작성'에 남긴다.
 // 자료가 새로 들어와 셈만 달라진 자동 저장은 조용히(silent) 적는다
-const choicesOf = (v?: PriceView) => (v ? stable({ months: v.months, radius: v.radius, kind: v.kind, simMode: v.simMode, sim: v.sim, cond: v.cond, keep: v.keep, typedPub: v.typedPub, drop: v.drop ?? [], elev: v.elev ?? null }) : '');
+const choicesOf = (v?: PriceView) => (v ? stable({ months: v.months, radius: v.radius, kind: v.kind, simMode: v.simMode, sim: v.sim, cond: v.cond, keep: v.keep, typedPub: v.typedPub, drop: v.drop ?? [], elev: v.elev ?? null, simPick: v.simPick ?? '' }) : '');
 let lastChoices: string | null = (() => { const v = store.auctions.find((x) => x.id === props.auction.id)?.marketPicks?.price; return v ? choicesOf(v) : null; })();
 /** manual — 저장 단추로 부르면 위치를 받는 중이어도 바로 적는다 */
 const saveNow = async (manual?: unknown) => {
@@ -946,6 +952,7 @@ const pickMine = () => { focus.value = ''; meOpen.value = !meOpen.value; };
 const pickedRow = ref('');
 const pickRow = (r: PriceRow) => {
   const k = rowKey(r); const again = pickedRow.value === k;
+  if (simPickable(r)) simPick.value = simPick.value === k ? '' : k;
   pickedRow.value = again ? '' : k;
   if (r.same) { focus.value = ''; meOpen.value = !again; return; }
   meOpen.value = false; focus.value = again ? '' : r.jibun;
@@ -1249,7 +1256,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             </tr>
             <tr v-for="r in listRows" :key="r.id" :class="{ on: webEmbed ? pickedRow === rowKey(r) : (r.same ? meOpen : (focus && focus === r.jibun)), off: isOff(r) }" @click="pickRow(r)">
               <td v-if="webEmbed" class="ck-td" @click.stop><input type="checkbox" :checked="isOff(r)" :aria-label="`${r.contractDate} ${r.name || r.jibun} 평균에서 빼기`" @change="toggleDrop(r)" /></td>
-              <td><span :class="['kind', r.group === '전세' ? 'j' : r.group === '월세' ? 'm' : '']">{{ r.group }}</span></td>
+              <td><span :class="['kind', r.group === '전세' ? 'j' : r.group === '월세' ? 'm' : '']">{{ r.group }}</span><span v-if="simPick && simPick === rowKey(r)" class="sim-pick" title="손품결론 '유사물건 매매가'로 들어갑니다 — 다시 누르면 뺍니다">유사</span></td>
               <td class="pa-num">{{ r.contractDate }}</td>
               <template v-if="r.group === '월세'">
                 <td class="r pa-num two">{{ n0(r.price) }}<small>월 {{ Math.round((r.monthly ?? 0) / 1e4) }}만</small></td>
@@ -1664,6 +1671,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .ck-th, .ck-td { width: 44px; text-align: center !important; }
 .ck-td input { width: 15px; height: 15px; accent-color: var(--blue); cursor: pointer; }
 tr.off td:not(.ck-td) { opacity: .42; text-decoration: line-through; }
+.sim-pick { display: inline-block; margin-left: 4px; padding: 1px 5px; border-radius: 4px; background: #2b6df3; color: #fff; font-size: 12px; font-weight: 700; vertical-align: middle; }   /* 손품결론 유사물건 매매가로 고른 줄(2026-11-15) */
 .sdir { display: inline-block; margin-left: 3px; font-style: normal; font-size: 10px; color: #c3c9d4; cursor: pointer; }
 .sdir.on { color: var(--blue); }
 .fv { border: 0; background: none; color: #b3bac6; font-size: 11px; padding: 0 2px; margin-left: 2px; cursor: pointer; }
