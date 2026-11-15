@@ -20,7 +20,7 @@ export { pickCurrentRound } from '../../src/utils/auctionSchedule';
 // 수익분석에서 확정한 입찰안 — 목록 카드의 입찰가 · 매도가가 이 안의 값을 쓴다
 export { withConfirmedPlan, confirmedPlanOf, confirmedMarkOf } from '../../src/services/confirmedPlan';
 // 주소 → 지번 · 건물명 · 동층호 토막
-export { addressParts, addressWithName, hasBuildingName } from '../../src/utils/addressName';
+export { addressParts, addressWithName, buildingNameOf, hasBuildingName } from '../../src/utils/addressName';
 // 물건 종류 이름·배지 글자
 export { propTypeName, propTypeMark } from '../../src/utils/propertyType';
 // 수익 셈(세율 구간 · 누진공제 · 세후 순이익) — 입찰가산정과 같은 셈

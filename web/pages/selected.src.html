@@ -7424,10 +7424,19 @@ span.cal-day.has { cursor: help; }
   }
   /* 경매물건 — 유사도 기준의 가운데(전용 ㎡ · 사용승인 연도 · 층) */
   const sxMeSubject = (it) => { if (!it) return null; if (it.__ref) return { areaM2: Number(it.bldg) || 0, year: it.__year || 0, floor: sxMeFloor(it) }; const a = detailOf(it); const y = Number(String(a.approvalDate || '').replace(/[^\d]/g, '').slice(0, 4)) || 0; return { areaM2: Number(it.bldg) || 0, year: y, floor: sxMeFloor(it) }; };
-  const SXM_SPOT_KEY = 'ta.web.sale.spots'; const SXM_ELEV_KEY = 'ta.web.sale.elevs';
+  const SXM_SPOT_KEY = 'ta.web.sale.spots'; const SXM_ELEV_KEY = 'ta.web.sale.elevs'; const SXM_NAME_KEY = 'ta.web.sale.names';
   const sxmRead = (k) => { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { return {}; } };
-  const SXG = { spots: sxmRead(SXM_SPOT_KEY), elevs: sxmRead(SXM_ELEV_KEY), busy: false, again: false, phase: '', done: 0, total: 0, mv: null, mvP: null, host: null, ver: 0, fitKey: '', focus: '', tools: null, fs: (() => { try { return localStorage.getItem('ta.web.sale.fs') === '1'; } catch (e) { return false; } })(), groups: [] };
-  const sxmSave = () => { try { localStorage.setItem(SXM_SPOT_KEY, JSON.stringify(SXG.spots)); localStorage.setItem(SXM_ELEV_KEY, JSON.stringify(SXG.elevs)); } catch (e) { /* 그만 */ } };
+  const SXG = { spots: sxmRead(SXM_SPOT_KEY), elevs: sxmRead(SXM_ELEV_KEY), names: sxmRead(SXM_NAME_KEY), busy: false, again: false, phase: '', done: 0, total: 0, mv: null, mvP: null, host: null, ver: 0, fitKey: '', focus: '', tools: null, fs: (() => { try { return localStorage.getItem('ta.web.sale.fs') === '1'; } catch (e) { return false; } })(), groups: [] };
+  const sxmSave = () => { try { localStorage.setItem(SXM_SPOT_KEY, JSON.stringify(SXG.spots)); localStorage.setItem(SXM_ELEV_KEY, JSON.stringify(SXG.elevs)); localStorage.setItem(SXM_NAME_KEY, JSON.stringify(SXG.names)); } catch (e) { /* 그만 */ } };
+  /* 표 주소 건물명 — 주소가 지번 · 층호뿐이면 건축물대장 건물명, 없으면 같은 지번 다른 매각 줄 주소의 이름을 지번 뒤에 끼운다(어느 페이지든, 2026-11-16 사용자). 보일 때만 — 원래 주소 · 복사는 그대로 */
+  let sxRowNames = { rows: null, m: {} };
+  const sxNameOf = (full) => {
+    const T = CLOUD.T; if (!T || !T.addressWithName) return full;
+    const rows = saleRows() || [];
+    if (sxRowNames.rows !== rows) { const m = {}; rows.forEach((r) => { const a = String(r['소재지'] || ''); const n = T.buildingNameOf ? T.buildingNameOf(a) : ''; const k = sxLotKey(a); if (n && k && !m[k]) m[k] = n; }); sxRowNames = { rows, m }; }
+    const k = sxLotKey(full);
+    return T.addressWithName(full, (SXG.names && SXG.names[k]) || sxRowNames.m[k] || '');
+  };
   /* '인천광역시 서구 검암동 678-8, 3층302호' → '인천광역시 서구 검암동 678-8' (지번까지) */
   const sxLotAddr = (addr) => { const s = String(addr || ''); const m = AG_LOT_RE.exec(s); return m ? s.slice(0, m.index + m[0].length).replace(/,/g, ' ').replace(/\s+/g, ' ').trim() : ''; };
   const sxLotKey = (addr) => sxLotAddr(addr).replace(/\s+/g, '');
@@ -7481,7 +7490,7 @@ span.cal-day.has { cursor: help; }
     base.forEach((r) => { const a = sxLotAddr(r['소재지']); if (a) lots.set(a.replace(/\s+/g, ''), a); });
     const miss = [...lots].filter(([k]) => !(k in SXG.spots));
     const meSpot0 = me ? SXG.spots[sxLotKey(me.addr)] : null;
-    const nearOf = (ms) => (ms && T.getBuildingFacts && T.distM ? [...lots].filter(([k]) => !(k in SXG.elevs) && SXG.spots[k] && T.distM(ms, SXG.spots[k]) <= 1000) : []);
+    const nearOf = (ms) => (ms && T.getBuildingFacts && T.distM ? [...lots].filter(([k]) => (!(k in SXG.elevs) || !(k in SXG.names)) && SXG.spots[k] && T.distM(ms, SXG.spots[k]) <= 1000) : []);
     if (!miss.length && !nearOf(meSpot0).length) return;
     SXG.busy = true;
     try {
@@ -7499,7 +7508,7 @@ span.cal-day.has { cursor: help; }
       const near = nearOf(me ? SXG.spots[sxLotKey(me.addr)] : null);
       if (near.length) {
         Object.assign(SXG, { phase: 'elev', done: 0, total: near.length }); sxMapStatus();
-        await sxLimit(near, 3, async ([k, a]) => { const f = await T.getBuildingFacts(a).catch(() => null); SXG.elevs[k] = f ? f.elevator : null; SXG.done += 1; sxMapStatus(); });
+        await sxLimit(near, 3, async ([k, a]) => { const f = await T.getBuildingFacts(a).catch(() => null); SXG.elevs[k] = f ? f.elevator : null; SXG.names[k] = f ? String(f.name || '') : ''; SXG.done += 1; sxMapStatus(); });
         sxGeoFlush();
       }
     } finally {
@@ -7778,7 +7787,7 @@ span.cal-day.has { cursor: help; }
     const built = ym && ym !== 'nan' ? esc(ym) : (by ? String(by) : '-');
     const age = by ? `${CLOUD.T && CLOUD.T.buildingAgeOf ? CLOUD.T.buildingAgeOf(by) : new Date().getFullYear() - by + 1}년` : '-';
     const fl = r['층'] != null && r['층'] !== '' ? `${esc(String(r['층']))}층` : '-';
-    const full = String(r['소재지'] || ''); const addr = esc(sxShortAddr(full));
+    const full = String(r['소재지'] || ''); const addr = esc(sxShortAddr(sxNameOf(full)));
     const won = (v) => (Number(v) > 0 ? `<td class="r num">${agWon(v)}</td>` : '<td>-</td>');
     const off = sxIsOff(r); const rk = sxRowKey(r); const lk = sxLotKey(r['소재지']);
     /* 줄을 누르면 지도의 그 지번 점을 고른다(다시 누르면 풀림) — 지도에서 점을 눌러도 이 줄들이 같이 골라진다 */
@@ -7839,7 +7848,7 @@ span.cal-day.has { cursor: help; }
     const built = ym.length >= 6 ? `${ym.slice(0, 4)}.${ym.slice(4, 6)}` : (by ? String(by) : '-');
     const age = by ? `${CLOUD.T && CLOUD.T.buildingAgeOf ? CLOUD.T.buildingAgeOf(by) : new Date().getFullYear() - by + 1}년` : '-';
     const fm = /(\d+)\s*층/.exec(it.unit || ''); const fl = fm ? `${fm[1]}층` : '-';
-    const full = [it.addr, it.bld, it.unit].filter(Boolean).join(' '); const addr = esc(sxShortAddr(full));
+    const full = [it.addr, it.bld, it.unit].filter(Boolean).join(' '); const addr = esc(sxShortAddr(sxNameOf(full)));
     const won = (v) => (Number(v) > 0 ? `<td class="r num">${agWon(v)}</td>` : '<td>-</td>');
     return `<tr class="me"><td class="ck-td"></td><td class="num me-case"><span class="kind-me">경매물건</span><span class="cno">${esc(it.caseNo)}</span></td><td class="num">${it.date ? dotDate(it.date) : '-'}</td>${won(it.apr)}${won(it.min)}${(() => {
         const est = (v, t, html) => (v > 0 ? `<td class="r num sx-est" data-tip="${t}" data-tip-pos="top">${html}</td>` : '<td>-</td>');
