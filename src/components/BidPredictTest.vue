@@ -11,7 +11,7 @@ import { getBuildingFacts } from '../services/buildingFacts';
 import { fetchDongTradeDetails, type BuildingFacts } from '../services/publicDataApi';
 import { resolveRegionFromAddress } from '../services/regionResolver';
 import { buildingAgeOf } from '../utils/buildingAge';
-import { agentOnline, loadAgentDataset, loadDayLists, loadHits, saveDayCsv, sendAgentCommand, sendAgentStop, watchAgentStatus, type AgentStatus, type DayListRow, type HitDoc } from '../services/agentRemote';
+import { agentOnline, loadAgentDataset, loadDayLists, loadDayListsRange, loadHits, saveDayCsv, sendAgentCommand, sendAgentStop, watchAgentStatus, type AgentStatus, type DayListRow, type HitDoc } from '../services/agentRemote';
 import { readSheetRows } from '../services/saleExcel';
 import {
   BAND_NAMES, bandOf, caseKey, caseLabel, lotOf as lotParts, marketPriceAt, type TradeLite, csvRows, dongOf, fitPriceModel, fitRoundModel, fitViewModel, parseViewLines, predictRound, priceDist, readDayRows, roundOfRatio, roundsOf, similarBands, soldOf, viewBands,
@@ -532,6 +532,35 @@ const dayChips = computed(() => {
   return [...all.filter(([d]) => d < today).slice(-6), ...all.filter(([d]) => d >= today).slice(0, 6)].map(chip);
 });
 
+/* ===== 기일 달력 — 한 달 월~금, 날마다 법원 · 계별 건수(괄호 = 동 거르기의 동). 계별은 기일목록수집을 받은 날만, 나머지 날은 사건 차트의 다음 기일로 센 동 건수만.
+ * 탱크옥션 기일별물건처럼 모든 법원 · 계 건수는 나중에 마이가 그 달력을 받아 채운다(2026-11-15 사용자) ===== */
+const calMonth = ref(todayIso().slice(0, 7));
+const calDocs = ref<Awaited<ReturnType<typeof loadDayListsRange>>>([]);
+const loadCal = async () => { const m = calMonth.value; try { const got = await loadDayListsRange(`${m}-01`, `${m}-31`); if (m === calMonth.value) calDocs.value = got; } catch { if (m === calMonth.value) calDocs.value = []; } };
+watch(calMonth, () => { void loadCal(); }, { immediate: true });
+const calStep = (n: number) => { const [y, m] = calMonth.value.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); calMonth.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+const calDong = computed(() => dongFilter.value.trim());
+const calWeeks = computed(() => {
+  const [y, m] = calMonth.value.split('-').map(Number); const last = new Date(y, m, 0).getDate(); const today = todayIso();
+  const dongN = new Map<string, number>(); hitRounds.value.forEach((r) => dongN.set(r.date, (dongN.get(r.date) ?? 0) + 1));
+  const byDay = new Map<string, typeof calDocs.value>(); calDocs.value.forEach((d) => byDay.set(d.date, [...(byDay.get(d.date) ?? []), d]));
+  const cellOf = (day: number) => {
+    const d = `${calMonth.value}-${String(day).padStart(2, '0')}`; const docs = byDay.get(d) ?? []; const depts = docs.filter((x) => x.dept);
+    const use = depts.length ? depts : docs;   // 계별 문서가 있으면 그것만(CSV 는 같은 사건을 또 담는다)
+    const lines = use.map((x) => ({ label: x.dept ? `${x.court.replace(/^[^-]+-/, '')} ${x.dept.replace(/^경매/, '')}` : 'CSV', n: x.rows.length, dong: calDong.value ? x.rows.filter((r) => String(r.addr ?? '').includes(calDong.value)).length : 0 }));
+    return { d, day, total: use.reduce((s, x) => s + x.rows.length, 0), lines, dongN: dongN.get(d) ?? 0, today: d === today };
+  };
+  const weeks: Array<Array<ReturnType<typeof cellOf> | null>> = []; let wk: Array<ReturnType<typeof cellOf> | null> = [];
+  for (let day = 1; day <= last; day += 1) {
+    const wd = new Date(y, m - 1, day).getDay(); if (wd === 0 || wd === 6) continue;
+    if (wd === 1 && wk.length) { weeks.push(wk); wk = []; }
+    if (!wk.length) for (let k = 1; k < wd; k += 1) wk.push(null);
+    wk.push(cellOf(day));
+  }
+  if (wk.length) { while (wk.length < 5) wk.push(null); weeks.push(wk); }
+  return weeks;
+});
+
 /** 사건별 예측 머리 표 — 그날 법원 전체(작은 회색) · 보고 있는 동(단추 숫자). 단추를 누르면 아래 표를 거른다 */
 const fDept = ref(''); const fStat = ref(''); const fKind = ref('');
 watch(dayDate, () => { fDept.value = ''; fStat.value = ''; fKind.value = ''; });
@@ -635,6 +664,24 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <p class="bpt-sub">조회수수집 · 동 거르기의 동, 주택 사건마다 날짜별 조회수 · 처음엔 시작일 2025-06-15</p>
           <p v-if="hitInfo" class="bpt-sub">{{ hitInfo }}</p>
           <p class="bpt-sub">{{ agentNote || (agentOn ? agent?.message : '') || '집 PC 마이(agent.py)를 켜면 여기서 시킵니다' }}</p>
+        </div>
+        <div class="bpt-box bpt-cal">
+          <h3 class="bpt-colh">기일 달력
+            <span class="bpt-cal-nav"><button type="button" aria-label="이전 달" @click="calStep(-1)">‹</button><b>{{ Number(calMonth.slice(0, 4)) }}년 {{ Number(calMonth.slice(5)) }}월</b><button type="button" aria-label="다음 달" @click="calStep(1)">›</button></span>
+          </h3>
+          <div class="bpt-cal-grid" role="grid" :aria-label="`${calMonth} 기일 달력`">
+            <span v-for="w in ['월', '화', '수', '목', '금']" :key="w" class="hd">{{ w }}</span>
+            <template v-for="(wk, wi) in calWeeks" :key="wi">
+              <span v-for="(c, ci) in wk" :key="`${wi}-${ci}`" class="cell-wrap">
+                <button v-if="c" type="button" :class="['cell', { on: c.d === dayDate, today: c.today, has: c.lines.length || c.dongN }]" @click="dayDate = c.d">
+                  <span class="dn">{{ c.day }}<small v-if="c.total">총 {{ c.total }}</small></span>
+                  <span v-for="x in c.lines" :key="x.label" class="ln">{{ x.label }}<i v-if="calDong">({{ x.dong }})</i></span>
+                  <span v-if="!c.lines.length && c.dongN" class="ln dg">{{ calDong || '동' }} {{ c.dongN }}</span>
+                </button>
+              </span>
+            </template>
+          </div>
+          <p class="bpt-sub">괄호 · {{ calDong || '동 거르기의 동' }} 건수 · 계별은 기일목록수집을 받은 날만</p>
         </div>
         <div class="bpt-box grow">
           <h3>사건번호 · 주소 · 조회수</h3>
@@ -870,6 +917,23 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-in { display: flex; gap: 12px; flex-wrap: wrap; }
 .bpt-box { border: 1px solid #e3e7ee; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 260px; }
 .bpt-box.grow { flex: 1 1 420px; }
+.bpt-cal { flex: 1 1 370px; min-width: 370px; }   /* 기일 달력 — 기일 목록 · 조회수 수집 오른쪽 */
+.bpt-cal-nav { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #111827; }
+.bpt-cal-nav button { width: 24px; height: 24px; border: 1px solid #d5dbe5; border-radius: 6px; background: #fff; color: #374151; font: inherit; font-size: 14px; line-height: 1; cursor: pointer; padding: 0; }
+.bpt-cal-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid #e3e7ee; border-radius: 8px; overflow: hidden; }
+.bpt-cal-grid .hd { background: #f4f6fa; font-size: 12px; font-weight: 700; color: #374151; text-align: center; padding: 4px 0; border-bottom: 1px solid #e3e7ee; }
+.bpt-cal-grid .cell-wrap { border-right: 1px solid #eef1f6; border-bottom: 1px solid #eef1f6; min-height: 54px; display: flex; }
+.bpt-cal-grid .cell-wrap:nth-child(5n) { border-right: 0; }
+.bpt-cal-grid .cell { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 4px 3px; border: 0; border-radius: 0; background: #fff; font: inherit; font-size: 12px; color: #374151; text-align: left; cursor: pointer; }
+.bpt-cal-grid .cell:hover { background: #f5f8ff; }
+.bpt-cal-grid .cell .dn { font-weight: 700; color: #111827; display: flex; gap: 4px; align-items: baseline; white-space: nowrap; }
+.bpt-cal-grid .cell .dn small { font-size: 12px; font-weight: 400; color: #c4392f; }
+.bpt-cal-grid .cell .ln { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; letter-spacing: -0.4px; }   /* '본원 13계(1)' 이 칸 안에 들게 */
+.bpt-cal-grid .cell .ln i { font-style: normal; color: #1f5fe0; margin-left: 1px; }
+.bpt-cal-grid .cell .ln.dg { color: #1f5fe0; }
+.bpt-cal-grid .cell.today .dn { color: #1f5fe0; }
+.bpt-cal-grid .cell.on { background: #eaf1ff; box-shadow: inset 0 0 0 2px #2b6df3; }
+.bpt-cal-grid .cell:not(.has) { color: #9ca3af; }
 .bpt-box h3, .bpt-h3 { margin: 0; font-size: 15px; font-weight: 800; color: #111827; }
 .bpt-h3 small { margin-left: 6px; font-size: 12px; font-weight: 400; color: #4b5563; }
 .bpt-sub { margin: 0; font-size: 12px; color: #4b5563; }

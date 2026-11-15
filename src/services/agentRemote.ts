@@ -205,14 +205,16 @@ export const migrateLegacyAgentData = async (uid: string): Promise<boolean> => {
 export type DayListRow = { key: string; tid?: string; kind?: string; addr?: string; area?: number | null; appr?: number; min?: number; sold?: number; second?: number; bids?: number; status?: string; views?: Record<string, number> };
 export type DayListDoc = { id: string; date: string; court: string; dept: string; rows: DayListRow[]; by: string; at: number };
 const dayCol = () => collection(db(), 'saleData', 'dayList', 'days');
-/** 그 매각기일의 문서 전부(계마다 + CSV) */
-export const loadDayLists = async (date: string): Promise<DayListDoc[]> => {
-  const snaps = await getDocs(query(dayCol(), where('date', '==', date)));
-  return snaps.docs.map((d) => {
-    const x = d.data() as Partial<DayListDoc> & { at?: { toMillis(): number } };
-    return { id: d.id, date: String(x.date ?? ''), court: String(x.court ?? ''), dept: String(x.dept ?? ''), rows: Array.isArray(x.rows) ? x.rows : [], by: String(x.by ?? ''), at: x.at?.toMillis?.() ?? 0 };
-  });
+const dayDocOf = (d: { id: string; data(): unknown }): DayListDoc => {
+  const x = d.data() as Partial<DayListDoc> & { at?: { toMillis(): number } };
+  return { id: d.id, date: String(x.date ?? ''), court: String(x.court ?? ''), dept: String(x.dept ?? ''), rows: Array.isArray(x.rows) ? x.rows : [], by: String(x.by ?? ''), at: x.at?.toMillis?.() ?? 0 };
 };
+/** 그 매각기일의 문서 전부(계마다 + CSV) */
+export const loadDayLists = async (date: string): Promise<DayListDoc[]> =>
+  (await getDocs(query(dayCol(), where('date', '==', date)))).docs.map(dayDocOf);
+/** 기간 안 매각기일 문서 전부 — 기일 달력(한 달) */
+export const loadDayListsRange = async (from: string, to: string): Promise<DayListDoc[]> =>
+  (await getDocs(query(dayCol(), where('date', '>=', from), where('date', '<=', to)))).docs.map(dayDocOf);
 /** CSV(엑셀) 줄 — 그 매각기일의 '날짜_csv' 문서로 통째 저장 */
 export const saveDayCsv = async (date: string, rows: DayListRow[]): Promise<void> => {
   await setDoc(doc(dayCol(), `${date}_csv`), { date, court: '', dept: '', sptCd: '', dptCd: '', rows: rows.slice(0, 600), by: 'web', at: serverTimestamp() });
