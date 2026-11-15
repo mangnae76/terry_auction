@@ -914,6 +914,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-colbox .bpt-range { flex: 1 1 auto; min-width: 0; }
 .bpt-colbox .bpt-range input { flex: 1 1 0; min-width: 0; }
 .bpt-colbox .bpt-btns > .bpt-btn { flex: 1 1 0; padding: 0 6px; white-space: nowrap; }
+.bpt-colbox .bpt-drop { flex: 1 1 auto; align-content: center; }   /* 파일 칸 아래 끝 = 오른쪽 기일별물건 달력표 아래 끝 */
 .bpt-part { width: 100%; margin: 6px 0 2px; border: 0; border-top: 1px solid #e3e7ee; }   /* 기일목록 · 조회수 수집 아래 — 기일목록 파일 칸 가름줄 */
 .bpt-kv { display: flex; gap: 8px; }
 .bpt-kv > .k { flex: none; width: 3.2em; color: #9ca3af; }   /* 조회수 · 기간 이름표 */
