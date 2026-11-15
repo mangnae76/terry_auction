@@ -707,7 +707,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
           <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게(검암동 · 모든동 · 11-13 · 16 · 19 에서 잰 가장 넓은 값, 주소는 남는 폭) -->
-          <colgroup><col style="width: 80px" /><col style="width: 128px" /><col /><col style="width: 64px" /><col style="width: 80px" /><col style="width: 58px" /><col style="width: 80px" /><col style="width: 44px" /><col style="width: 100px" /><col style="width: 66px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 92px" /><col style="width: 100px" /><col style="width: 112px" /><col style="width: 100px" /><col style="width: 92px" /><col style="width: 112px" /></colgroup>
+          <colgroup><col style="width: 80px" /><col style="width: 128px" /><col /><col style="width: 64px" /><col style="width: 80px" /><col style="width: 58px" /><col style="width: 80px" /><col style="width: 44px" /><col style="width: 100px" /><col style="width: 66px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 92px" /><col style="width: 100px" /></colgroup>
           <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th>연식</th><th>전용</th><th>엘베</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
           <tbody>
             <tr v-for="it in shownItems" :key="it.key" :class="{ on: pick === it.key, off: !preds.has(it.key) }" @click="pick = pick === it.key ? '' : it.key">
@@ -757,7 +757,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td v-for="(b, i) in r.bids" :key="i" :class="['r', { win: r.sold > 0 && b > r.sold, lose: r.sold > 0 && b <= r.sold }]"><span class="bpt-nb">{{ won(b) }}</span></td>
               <td class="r">{{ r.urgent ? won(r.urgent) : '—' }}</td>
               <td class="r">{{ r.urgent ? won(r.urgent - r.bids[2]) : '—' }}</td>
-              <td class="r act-sold">{{ r.sold > 0 ? won(r.sold) : r.failed ? '유찰' : '입찰 전' }}</td>
+              <td class="r act-sold"><span v-if="r.sold > 0" class="bpt-nb">{{ won(r.sold) }}</span><template v-else>{{ r.failed ? '유찰' : '입찰 전' }}</template></td>
             </tr>
           </tbody>
         </table>
@@ -889,9 +889,9 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-day .bpt-tbl th, .bpt-day .bpt-tbl td { padding-left: 8px; padding-right: 8px; text-align: center; }   /* 사건별 예측은 머리 · 내용 모두 가운데(2026-11-14 사용자) */
 .bpt-day .bpt-tbl td.act-sold { font-weight: 700; }   /* 실제 낙찰가는 굵게 */
 /* 실제 낙찰가 — 흐린 빨강(채도 낮게), 두 표 모두(2026-11-15 사용자) */
-.bpt-tbl td.act-sold { color: #a8585a; }
-:root[data-theme="dark"] .bpt-tbl td.act-sold { color: #d49a9b; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bpt-tbl td.act-sold { color: #d49a9b; } }
+.bpt-tbl td.act-sold .bpt-nb { color: #a8585a; }   /* 숫자만 — 유찰 · 입찰 전 · '—'는 칠하지 않는다 */
+:root[data-theme="dark"] .bpt-tbl td.act-sold .bpt-nb { color: #d49a9b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bpt-tbl td.act-sold .bpt-nb { color: #d49a9b; } }
 .bpt-day .bpt-tbl td.addr, .bpt-day .bpt-tbl th.l { text-align: left; }   /* 주소는 머리 · 내용 모두 왼쪽 줄 맞춤 */
 .bpt-tbl.fixed { table-layout: fixed; }
 .bpt-tbl.fixed td { overflow: hidden; text-overflow: ellipsis; }

@@ -113,8 +113,13 @@ export const priceDist = (m: PriceModel, t: BidTarget, pi: number[]) => {
   /** 이 금액을 쓰면 이길 확률 = 낙찰가가 이보다 낮게 나올 확률 */
   const win = (w: number) => pi.reduce((s, p, k) => s + (p ? p * (m.res[k].filter((e) => center[k] * Math.exp(e) < w / t.min).length / m.res[k].length) : 0), 0);
   const q = (p: number) => { let lo = t.min, hi = t.min * 2.5; for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (win(mid) < p) lo = mid; else hi = mid; } return Math.round(hi / 10_000) * 10_000; };
-  return { bandWon, win, q, median: q(0.5), lo: q(0.25), hi: q(0.75) };
+  // 예상범위 — 차수마다 폭을 맞춘다(절반이 범위 안에 들게). 6월~11-12 시험: 신건은 76% 가 들어 너무 넓고, 3회차 이상은 40% 라 너무 좁았다(2026-11-15 사용자)
+  const median = q(0.5); const s = RANGE_SCALE[Math.min(Math.max(t.round, 1), 3)];
+  const r10 = (v: number) => Math.round(v / 10_000) * 10_000;
+  return { bandWon, win, q, median, lo: Math.max(t.min, r10(median - s * (median - q(0.25)))), hi: r10(median + s * (q(0.75) - median)) };
 };
+/** 차수별 예상범위 배율(25~75% 범위에 곱한다) — 신건 0.75 · 2회차 1.13 · 3회차 이상 2.0 */
+const RANGE_SCALE: Record<number, number> = { 1: 0.75, 2: 1.13, 3: 2.0 };
 
 /* ===== 조회수 → 응찰 인원 ===== */
 export type ViewPair = { key: string; views: number; bids: number };   // bids 0 = 유찰
