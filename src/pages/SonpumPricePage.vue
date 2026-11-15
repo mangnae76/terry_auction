@@ -365,6 +365,8 @@ const SORT_VAL: Record<string, (r: PriceRow) => number | string> = {
   area: (r) => r.areaM2, elev: (r) => r.elev ?? -1, year: (r) => r.buildYear ?? 0, dist: (r) => r.dist ?? 0, floor: (r) => r.floorNo, name: (r) => r.name,
 };
 // 늘 높은 값이 위로, 다시 누르면 원래 순서
+/** 두 줄 머리 — 아파트 면적(공급(전용)) · 웹 공시가(매매가율) */
+const hk2 = (k: string) => (k === 'area' && isAptKind) || (k === 'pub' && webEmbed);
 const sortBy = (k: string) => {
   // 웹 — 같은 머리글을 다시 누르면 내림 ↔ 오름
   if (webEmbed) { if (sortK.value === k) sortDir.value = sortDir.value === 'desc' ? 'asc' : 'desc'; else { sortK.value = k; sortDir.value = 'desc'; } return; }
@@ -1211,9 +1213,10 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <th v-if="webEmbed" class="ck-th" title="체크하면 매도가 예상 · 평균 · 건수에서 빠집니다">제외</th>
             <th>구분</th>
             <th v-for="c in shownCols" :key="c.key" :data-k="c.key" :aria-sort="sortK === c.key ? (webEmbed && sortDir === 'asc' ? 'ascending' : 'descending') : undefined" :class="{ hl: ['won', 'perPy', 'pub', 'gap'].includes(c.key) }">
-              <span class="hk" :title="c.key === 'gap' ? '전세 = 공시가 × 126%(보증보험 한도)' : undefined" @click="sortBy(c.key)">{{ c.key === 'pub' ? (webEmbed ? '공시가' : '공시가 / 매매가율') : c.key === 'gap' ? '전세 / 갭' : c.key === 'area' && isAptKind ? '면적' : c.label }}<small v-if="c.key === 'area' && isAptKind" class="hk-sub">공급(전용)</small><small v-if="c.key === 'pub' && webEmbed" class="hk-sub">매매가율</small></span>
-              <i v-if="webEmbed" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true" @click="sortBy(c.key)">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i>
-              <button v-else type="button" :class="['fv', { act: colFilter.isActive(c.key) }]" :aria-label="`${c.label} 값 거르기`" @click.stop="colFilter.open(c.key, $event)">▾</button>
+              <span class="hk" :title="c.key === 'gap' ? '전세 = 공시가 × 126%(보증보험 한도)' : undefined" @click="sortBy(c.key)">{{ c.key === 'pub' ? (webEmbed ? '공시가' : '공시가 / 매매가율') : c.key === 'gap' ? '전세 / 갭' : c.key === 'area' && isAptKind ? '면적' : c.label }}<small v-if="c.key === 'area' && isAptKind" class="hk-sub">공급(전용)<i v-if="webEmbed" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><small v-if="c.key === 'pub' && webEmbed" class="hk-sub">매매가율<i :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small></span>
+              <!-- 두 줄 머리(공시가 / 매매가율 · 면적 / 공급(전용))는 ▼ 를 아랫줄 오른쪽에 붙인다(2026-11-15 사용자) -->
+              <i v-if="webEmbed && !hk2(c.key)" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true" @click="sortBy(c.key)">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i>
+              <button v-else-if="!webEmbed" type="button" :class="['fv', { act: colFilter.isActive(c.key) }]" :aria-label="`${c.label} 값 거르기`" @click.stop="colFilter.open(c.key, $event)">▾</button>
             </th>
             <th class="acts-th"><span class="sr">바로가기</span></th>
           </tr></thead>
@@ -1581,6 +1584,9 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa.web td.r { text-align: center; }
 
 .pa.web th:has(.sdir) .hk::before { content: ""; display: inline-block; width: 13px; }
+/* 두 줄 머리 — ▼ 는 아랫줄에 있어 빈 자리도 아랫줄 앞에만. 윗줄은 그냥 가운데(윗줄만 밀려 들여쓴 것처럼 보였다, 2026-11-15 사용자) */
+.pa.web th:has(.hk-sub .sdir) .hk::before { content: none; }
+.pa.web .hk-sub:has(.sdir)::before { content: ""; display: inline-block; width: 13px; }
 .pa-list { position: relative; min-width: 0; }
 .pa-list .tbl-wrap { overflow-x: visible; }
 .pa-list table.even { table-layout: auto; width: 100%; }
@@ -1658,7 +1664,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .ck-th, .ck-td { width: 44px; text-align: center !important; }
 .ck-td input { width: 15px; height: 15px; accent-color: var(--blue); cursor: pointer; }
 tr.off td:not(.ck-td) { opacity: .42; text-decoration: line-through; }
-.sdir { margin-left: 3px; font-style: normal; font-size: 10px; color: #c3c9d4; cursor: pointer; }
+.sdir { display: inline-block; margin-left: 3px; font-style: normal; font-size: 10px; color: #c3c9d4; cursor: pointer; }
 .sdir.on { color: var(--blue); }
 .fv { border: 0; background: none; color: #b3bac6; font-size: 11px; padding: 0 2px; margin-left: 2px; cursor: pointer; }
 .fv:hover { color: var(--blue); }
