@@ -758,7 +758,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td><template v-if="it.target?.area">{{ /아파트/.test(kindOf(it)) ? '—' : `${it.target.area.toFixed(2)}㎡` }}<small class="bpt-at">{{ /아파트/.test(kindOf(it)) ? `(${it.target.area.toFixed(2)})` : `${(it.target.area / 3.305785).toFixed(2)}평` }}</small></template><template v-else>—</template></td>
               <td><span v-if="elevOf(it.addr) === undefined" class="ev u">·</span><span v-else-if="elevOf(it.addr) === null" class="ev u" title="건축물대장을 찾지 못했습니다">-</span><span v-else-if="elevOf(it.addr)! > 0" class="ev o two">{{ elevOf(it.addr) }}대<br>있음</span><span v-else class="ev x">없음</span></td>
               <td v-if="!it.viewAt" class="r">—</td>
-              <td v-else class="r">{{ it.views.toLocaleString('ko-KR') }}<small :class="['bpt-at', { after: stale(it.viewAt) }]">{{ it.viewAt === dayDate ? '당일' : it.viewAt.slice(5).replace('-', '.') }}{{ stale(it.viewAt) ? ' 덜 모음' : '' }}</small></td>
+              <td v-else class="r">{{ it.views.toLocaleString('ko-KR') }}<small :class="['bpt-at', { after: stale(it.viewAt) }]">{{ it.viewAt === dayDate ? '당일' : it.viewAt.slice(5).replace('-', '.') }}</small><small v-if="stale(it.viewAt)" class="bpt-at after">덜 모음</small></td>
               <td>{{ it.target ? `${it.target.round + 1}차` : '—' }}</td>
               <td class="r"><span v-if="it.target" class="bpt-nb">{{ won(it.target.min) }}<small v-if="it.target.appr" class="bpt-at bpt-nb">{{ apprPct(it.target.min, it.target.appr) }}</small></span><template v-else>자료 없음</template></td>
               <td>{{ sellOf(it.key) ? pct(sellOf(it.key)!.pSold) : '—' }}</td>
