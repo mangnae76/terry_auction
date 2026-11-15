@@ -5,6 +5,8 @@
  * 사건마다 예상 낙찰가 · 입찰가별 낙찰확률을 내고, 결과가 있는 사건은 맞혀본 차이를 보인다.
  * 조회수 규칙은 늘 '그 사건을 뺀 나머지'로 배운다(자기 결과로 자기를 맞히지 않게).
  */
+import InfoTip from './InfoTip.vue';
+import type { TipRow } from '../services/tipRows';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { getBuildingFacts } from '../services/buildingFacts';
@@ -109,6 +111,8 @@ function statOfRow(r: DayListRow & { date?: string }): string {
 const hitDocs = ref<HitDoc[]>([]);
 const hitInfo = ref('');
 const hitRange = ref('');   // 조회수가 있는 첫날 ~ 끝날
+/** '검암동 주택 사건 500건' 말풍선 — 조회수수집이 사건마다 같이 받아 오는 것 */
+const HIT_TIP: TipRow[] = [['출처', '탱크옥션 사건 화면 · MyAgent가 모음'], ['사건', '사건번호 · 주소 · 종류 · 면적 · 감정가'], ['결과', '낙찰가 · 응찰자수 · 2등 가격 · 유찰 횟수'], ['기일', '회차마다 날짜 · 결과, 다음 매각기일'], ['조회수', '날마다 조회수 · 유효조회수(그날 하루치)']];
 const loadHitDocs = async () => {
   const dong = dongFilter.value.trim();
   if (!/(동|가|읍|면|리)$/.test(dong)) { hitDocs.value = []; hitInfo.value = ''; hitRange.value = ''; return; }
@@ -643,8 +647,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             </div>
             <p v-if="progView && agent?.busy" class="bpt-sub num">{{ progView.what }}<template v-if="progView.left"> · {{ progView.left }}</template></p>
           </div>
-          <p v-if="hitInfo" class="bpt-sub bpt-kv"><span>조회수</span>{{ hitInfo }}</p>
-          <p v-if="hitRange" class="bpt-sub bpt-kv"><span>기간</span>{{ hitRange }}</p>
+          <p v-if="hitInfo" class="bpt-sub bpt-kv"><span class="k">조회수</span><InfoTip v-if="hitDocs.length" :rows="HIT_TIP" align="start">{{ hitInfo }}</InfoTip><template v-else>{{ hitInfo }}</template></p>
+          <p v-if="hitRange" class="bpt-sub bpt-kv"><span class="k">기간</span>{{ hitRange }}</p>
           <p v-if="agentNote || (agentOn && agent?.message)" class="bpt-sub">{{ agentNote || agent?.message }}</p>
           <hr class="bpt-part" />
           <label :class="['bpt-drop', { over: dropOver }]" @dragover.prevent="dropOver = true" @dragleave="dropOver = false" @drop.prevent="onDrop">
@@ -912,7 +916,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-colbox .bpt-btns > .bpt-btn { flex: 1 1 0; padding: 0 6px; white-space: nowrap; }
 .bpt-part { width: 100%; margin: 6px 0 2px; border: 0; border-top: 1px solid #e3e7ee; }   /* 기일목록 · 조회수 수집 아래 — 기일목록 파일 칸 가름줄 */
 .bpt-kv { display: flex; gap: 8px; }
-.bpt-kv > span { flex: none; width: 3.2em; color: #9ca3af; }   /* 조회수 · 기간 이름표 */
+.bpt-kv > .k { flex: none; width: 3.2em; color: #9ca3af; }   /* 조회수 · 기간 이름표 */
 .bpt-cal { flex: 1 1 370px; min-width: 370px; }   /* 기일 달력 — 기일 목록 · 조회수 수집 오른쪽 */
 .bpt-cal-nav { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #111827; }
 .bpt-cal-day { font-size: 13px; font-weight: 400; color: #374151; margin-left: 4px; }   /* 고른 매각기일 — 기일별물건 제목 오른쪽(날짜 칸 걷음, 달력에서 고른다) */
