@@ -9627,7 +9627,7 @@ const goBack = () => router.back();
                 <td class="adp-ruser-cell center">
                 <div v-for="c in rankConditions" :key="c" class="adp-ruser-cond-row center">
                   <input
-                    :class="['adp-ruser-rank', { typed: !!rankOf(c) }]"
+                    :class="['adp-ruser-rank', { typed: !!rankOf(c), app: !webEmbed }]"
                     inputmode="numeric"
                     placeholder="입력"
                     :title="autoRankNote(c)"
@@ -12403,6 +12403,8 @@ tr.tone-take { background: #fff5f5; }
 }
 /* 손으로 적은 등수는 파랗게 — 거리로 매긴 자동값(검정)과 한눈에 가른다 */
 .adp-ruser-rank.typed { color: #2b6df3; border-color: #b9cdf7; }
+/* 앱 — 등수가 없을 때 '입력' 안내는 굵기 없이 작게(2026-11-15 사용자) */
+.adp-ruser-rank.app::placeholder { font-weight: 400; font-size: 10px; color: #9ca3af; }
 /* 손으로 적은 값을 지우고 자동값으로 — 되돌릴 게 있을 때만 뜬다 */
 /* 줄 오른쪽 끝 — 아래 평균등수 칸과 같은 쪽에 선다 */
 /* 웹 — 입지등수 제목 옆 안내글(굵기 없음 · 회색). 초기화 단추는 오른쪽 그대로 */
