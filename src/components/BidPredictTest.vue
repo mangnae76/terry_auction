@@ -111,7 +111,9 @@ const hitInfo = ref('');
 const loadHitDocs = async () => {
   const dong = dongFilter.value.trim();
   if (!/(동|가|읍|면|리)$/.test(dong)) { hitDocs.value = []; hitInfo.value = ''; return; }
-  try { hitDocs.value = await loadHits(dong); hitInfo.value = hitDocs.value.length ? `${dong} 사건 차트 ${hitDocs.value.length.toLocaleString('ko-KR')}건` : `${dong} 사건 차트가 아직 없습니다`; }
+  // 기간 = 조회수가 있는 날만(차트 끝의 다음 기일 날짜는 뺀다)
+  try { hitDocs.value = await loadHits(dong); const ds = hitDocs.value.flatMap((h) => h.hd.filter((_, i) => (h.hc[i] ?? 0) > 0)).map((d) => d.replace(/\D/g, '')).filter((d) => d.length === 8 && d <= todayIso().replace(/\D/g, '')).sort(); const dot = (d: string) => `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6)}`;
+    hitInfo.value = hitDocs.value.length ? `${dong} 사건 ${hitDocs.value.length.toLocaleString('ko-KR')}건 · 날짜별 조회수${ds.length ? ` · ${dot(ds[0])} ~ ${dot(ds[ds.length - 1])}` : ''}` : `${dong} 사건 조회수가 아직 없습니다`; }
   catch { hitInfo.value = '사건 차트를 읽지 못했습니다'; }
 };
 watch(dongFilter, () => { void loadHitDocs(); }, { immediate: true });
@@ -617,13 +619,13 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
         <span class="bpt-note">{{ recsInfo }}</span>
       </header>
       <div class="bpt-in">
-        <div class="bpt-box">
+        <div class="bpt-box bpt-colbox">
           <h3 class="bpt-colh">기일 목록 · 조회수 수집
             <span :class="['bpt-conn', agentOn ? 'on' : 'off']"><i aria-hidden="true" />{{ agentOn ? 'MyAgent · ' : 'MyAgent' }}<template v-if="agentOn"><span class="ago">{{ agentAgo }}</span>초 전</template></span>
             <span v-if="agentOn && agent?.version" class="bpt-ver">{{ verLabel(agent.version) }}</span>
           </h3>
           <div class="bpt-pair"><label class="bpt-date">법원<input v-model="colCourt" type="text" class="court" /></label><label class="bpt-date">동선택<input v-model="dongFilter" type="text" class="court" placeholder="검암동" /></label></div>
-          <div class="bpt-range"><input v-model="colFrom" type="date" aria-label="시작일" /><span>~</span><input v-model="colTo" type="date" aria-label="끝일" /></div>
+          <div class="bpt-date">기간<div class="bpt-range"><input v-model="colFrom" type="date" aria-label="시작일" /><span>~</span><input v-model="colTo" type="date" aria-label="끝일" /></div></div>
           <div class="bpt-btns">
             <button type="button" class="bpt-btn line" :disabled="!agentOn || !!agent?.busy" @click="sendCmd('open')">브라우저열기</button>
             <button type="button" class="bpt-btn" :disabled="!agentOn || !agent?.ready || !!agent?.busy" @click="sendCmd('daylist')">기일목록수집</button>
@@ -639,14 +641,13 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             </div>
             <p v-if="progView && agent?.busy" class="bpt-sub num">{{ progView.what }}<template v-if="progView.left"> · {{ progView.left }}</template></p>
           </div>
-          <p class="bpt-sub">조회수수집 · 동선택의 동, 주택 사건마다 날짜별 조회수 · 처음엔 시작일 2025-06-15</p>
           <p v-if="hitInfo" class="bpt-sub">{{ hitInfo }}</p>
-          <p class="bpt-sub">{{ agentNote || (agentOn ? agent?.message : '') || 'MyAgent를 켜면 여기서 시킵니다' }}</p>
+          <p v-if="agentNote || (agentOn && agent?.message)" class="bpt-sub">{{ agentNote || agent?.message }}</p>
           <hr class="bpt-part" />
           <h3>기일 목록 파일</h3>
           <label :class="['bpt-drop', { over: dropOver }]" @dragover.prevent="dropOver = true" @dragleave="dropOver = false" @drop.prevent="onDrop">
             <span class="ic" aria-hidden="true">📂</span>
-            <b>엑셀 · CSV 파일 선택하기</b><span>또는 기일별물건 엑셀 · CSV를 이 칸에 끌어다 넣어 주세요.</span>
+            <b>엑셀 · CSV 파일 선택하기</b><span>또는 이 칸에 끌어다 넣어 주세요.</span>
             <input type="file" accept=".xlsx,.csv" hidden @change="onFile" />
           </label>
           <p v-if="dayName" class="bpt-sub">{{ dayName }} · {{ dayRows.length.toLocaleString('ko-KR') }}건</p>
@@ -901,6 +902,12 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-box { border: 1px solid #e3e7ee; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 260px; }
 .bpt-box.grow { flex: 1 1 420px; }
 .bpt-pair { display: flex; flex-wrap: wrap; gap: 8px 14px; }   /* 법원 · 동선택 한 줄 */
+/* 수집 상자 — 폭은 법원 · 동선택 줄이 정한다. 기간 · 단추 · 진행줄 · 안내 · 파일 칸은 그 오른쪽 끝(검암동 칸 끝)까지만 늘고 글은 그 안에서 줄내림 */
+.bpt-colbox { flex: none; width: max-content; }
+.bpt-colbox > :not(.bpt-pair):not(.bpt-colh) { contain: inline-size; }
+.bpt-colbox .bpt-range { flex: 1 1 auto; min-width: 0; }
+.bpt-colbox .bpt-range input { flex: 1 1 0; min-width: 0; }
+.bpt-colbox .bpt-btns > .bpt-btn { flex: 1 1 0; padding: 0 6px; white-space: nowrap; }
 .bpt-part { width: 100%; margin: 6px 0 2px; border: 0; border-top: 1px solid #e3e7ee; }   /* 기일 목록 · 조회수 수집 아래 — 기일 목록 파일 칸 가름줄 */
 .bpt-cal { flex: 1 1 370px; min-width: 370px; }   /* 기일 달력 — 기일 목록 · 조회수 수집 오른쪽 */
 .bpt-cal-nav { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #111827; }
