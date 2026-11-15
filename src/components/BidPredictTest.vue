@@ -225,7 +225,9 @@ const pct = (x: number) => `${Math.round(x * 100)}%`;
 /** 주소 복사 — 지도 · 로드뷰에서 입지 · 개별성을 볼 때 붙여 넣으려고(2026-11-14 사용자). 괄호 안 도로명 등은 뺀 지번 주소 */
 const copiedKey = ref('');
 let copyTimer: ReturnType<typeof setTimeout> | null = null;
-const copyAddr = async (it: Item) => {
+/** 표에 보일 주소 — 동부터('검암동 523-2 시크릿가든4차 4층402호'). 시 · 구는 빼고, 복사 단추는 전체 주소 */
+const shortAddr = (a: string) => { const m = a.match(/[가-힣0-9]+(?:동|가|읍|면|리)\s+(?:산\s*)?\d/); return m && m.index ? a.slice(m.index) : a; };
+const copyAddr = async (it: { key: string; addr: string }) => {
   const text = it.addr.replace(/\s*\(.*$/, '').replace(/\s*외\s*\d+필지\s*$/, '').trim();
   try { await navigator.clipboard.writeText(text); }
   catch { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 그만 */ } ta.remove(); }
@@ -393,13 +395,12 @@ const myQ = (p: Pred, prob: number, min: number) => {
 };
 /** 입찰가별 낙찰확률 표 — 그날 보고 있는 동의 예측 있는 사건 */
 const PROBS = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8];   // 5% 단위 — 시험에서 확률이 실제와 맞았던 50 ~ 80% 만(85% 넘게는 튄 낙찰 몇 건이 좌우)
-const I70 = PROBS.indexOf(0.7);   // 급매가와 차익은 70% 입찰가로
 /** 실제 낙찰가 칸은 끝난 기일만(다가오는 기일은 전부 '입찰 전') */
 const probPast = computed(() => !!dayDate.value && dayDate.value < todayIso());
 const probRows = computed(() => shownItems.value.filter((it) => it.target && preds.value.has(it.key)).map((it) => {
   const p = preds.value.get(it.key)!; const d = p.after ?? p.before;
   // 입찰자가 있을 때 이길 확률(조건부) — 시험에서 말한 대로 맞은 쪽. 아무도 안 올 확률까지 섞으면 50% 가 실제 72% 로 흐려졌다
-  return { key: it.key, addr: it.addr, min: it.target!.min, pSold: p.p0 != null ? 1 - p.p0 : null, bids: PROBS.map((q) => Math.max(it.target!.min, d.q(q))), urgent: mineUrgent.value.get(it.key) ?? 0, sold: it.result?.sold ?? 0, failed: !!it.failed };
+  return { key: it.key, addr: it.addr, min: it.target!.min, pSold: p.p0 != null ? 1 - p.p0 : null, bids: PROBS.map((q) => Math.max(it.target!.min, d.q(q))), sold: it.result?.sold ?? 0, failed: !!it.failed };
 }));
 /* 곡선 — 최저가 ~ 최저가 1.8배 */
 const curve = computed(() => {
@@ -476,8 +477,6 @@ const extVec = (addr: string, area: number | null, min: number, d: string): numb
   const v = [s && min > 0 ? Math.log(min / s.price) : 0, s ? 0 : 1, f ? (f.elevator > 0 ? 1 : 0) : 0, f?.households && aptAddrs.value.has(addr) ? Math.log(1 + f.households) : 0, f ? 0 : 1];
   extMemo.set(key, v); return v;
 };
-/** 선정물건 급매가 — 손품결론 급매가 칸(사용자가 ±300만 안으로 잡는 값, 2026-11-15) */
-const mineUrgent = computed(() => new Map(auctions.auctions.map((a) => [caseKey(a.caseNumber), Number(String(a.surveyForm?.urgentSalePrice ?? '').replace(/[^\d]/g, '')) || 0] as const).filter(([k, v]) => k && v > 0)));
 watch(() => [hitDocs.value.length, recs.value.length] as const, ([h, r]) => { if (h && r && !extReady.value && !extBusy.value) void loadExt(); });
 const xfRound = (r: Round) => extVec(r.addr, r.area, r.min, r.date);
 const pxPrice = (x: { addr: string; area: number | null; min: number; d: string }) => extVec(x.addr, x.area, x.min, x.d);
@@ -758,13 +757,12 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
           <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게(검암동 · 모든동 · 11-13 · 16 · 19 에서 잰 가장 넓은 값, 주소는 남는 폭) -->
-          <colgroup><col style="width: 68px" /><col style="width: 108px" /><col style="width: 156px" /><col style="width: 52px" /><col style="width: 72px" /><col style="width: 52px" /><col style="width: 60px" /><col style="width: 40px" /><col style="width: 92px" /><col style="width: 60px" /><col style="width: 60px" /><col style="width: 90px" /><col style="width: 60px" /><col style="width: 90px" /><col style="width: 88px" /><col style="width: 88px" /></colgroup>
-          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th>연식</th><th>전용</th><th>엘베</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
+          <colgroup><col style="width: 108px" /><col style="width: 224px" /><col style="width: 52px" /><col style="width: 72px" /><col style="width: 52px" /><col style="width: 60px" /><col style="width: 40px" /><col style="width: 92px" /><col style="width: 60px" /><col style="width: 60px" /><col style="width: 90px" /><col style="width: 60px" /><col style="width: 90px" /><col style="width: 88px" /><col style="width: 88px" /></colgroup>
+          <thead><tr><th>사건번호</th><th class="l">주소</th><th>연식</th><th>전용</th><th>엘베</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
           <tbody>
             <tr v-for="it in shownItems" :key="it.key" :class="{ on: pick === it.key, off: !preds.has(it.key) }" @click="pick = pick === it.key ? '' : it.key">
-              <td>{{ bidDay(it.target?.date || dayDate).slice(3) }}</td>
               <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button></td>
-              <td class="l addr" :data-tip="it.addr || undefined" data-tip-trunc><button v-if="it.addr" type="button" :class="['bpt-copy', { done: copiedKey === it.key }]" :data-tip="copiedKey === it.key ? '복사됨' : '주소복사'" :aria-label="`${caseLabel(it.key)} 주소 복사`" @click.stop="copyAddr(it)"><svg v-if="copiedKey !== it.key" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg><svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg></button>{{ it.addr || '—' }}</td>
+              <td class="l addr" :data-tip="it.addr || undefined" data-tip-trunc><button v-if="it.addr" type="button" :class="['bpt-copy', { done: copiedKey === it.key }]" :data-tip="copiedKey === it.key ? '복사됨' : '주소복사'" :aria-label="`${caseLabel(it.key)} 주소 복사`" @click.stop="copyAddr(it)"><svg v-if="copiedKey !== it.key" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg><svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg></button>{{ it.addr ? shortAddr(it.addr) : '—' }}</td>
               <td>{{ yearShow(it) ? `${yearShow(it)}` : '—' }}<small v-if="yearShow(it)" class="bpt-at">{{ buildingAgeOf(yearShow(it)!) }}년차</small></td>
               <td><template v-if="it.target?.area">{{ /아파트/.test(kindOf(it)) ? '—' : `${it.target.area.toFixed(2)}㎡` }}<small class="bpt-at">{{ /아파트/.test(kindOf(it)) ? `(${it.target.area.toFixed(2)})` : `${(it.target.area / 3.305785).toFixed(2)}평` }}</small></template><template v-else>—</template></td>
               <td><span v-if="elevOf(it.addr) === undefined" class="ev u">·</span><span v-else-if="elevOf(it.addr) === null" class="ev u" title="건축물대장을 찾지 못했습니다">-</span><span v-else-if="elevOf(it.addr)! > 0" class="ev o two">{{ elevOf(it.addr) }}대<br>있음</span><span v-else class="ev x">없음</span></td>
@@ -796,16 +794,15 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <h3 class="bpt-h3">입찰가별 낙찰확률 <small>{{ daySum.dong }} · {{ bidDay(dayDate) }} · 입찰자가 있을 때 그 확률로 이기는 입찰가</small></h3>
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
-          <colgroup><col style="width: 120px" /><col /><col style="width: 96px" /><col style="width: 68px" /><col v-for="p in PROBS" :key="p" style="width: 88px" /><col style="width: 112px" /><col v-if="probPast" style="width: 96px" /></colgroup>
-          <thead><tr><th>사건번호</th><th class="l">주소</th><th>최저가</th><th>입찰자<br>있을확률</th><th v-for="p in PROBS" :key="p" class="r">낙찰확률<br>{{ Math.round(p * 100) }}%</th><th class="r">70%로 쓸 때<br>급매가와 차익</th><th v-if="probPast" class="r">실제 낙찰가</th></tr></thead>
+          <colgroup><col style="width: 112px" /><col /><col style="width: 92px" /><col style="width: 68px" /><col v-for="p in PROBS" :key="p" style="width: 86px" /><col v-if="probPast" style="width: 96px" /></colgroup>
+          <thead><tr><th>사건번호</th><th class="l">주소</th><th>최저가</th><th>입찰자<br>있을확률</th><th v-for="p in PROBS" :key="p" class="r">낙찰확률<br>{{ Math.round(p * 100) }}%</th><th v-if="probPast" class="r">실제 낙찰가</th></tr></thead>
           <tbody>
             <tr v-for="r in probRows" :key="r.key">
               <td>{{ caseLabel(r.key) }}</td>
-              <td class="l addr" :data-tip="r.addr || undefined" data-tip-trunc>{{ r.addr }}</td>
+              <td class="l addr" :data-tip="r.addr || undefined" data-tip-trunc><button v-if="r.addr" type="button" :class="['bpt-copy', { done: copiedKey === r.key }]" :data-tip="copiedKey === r.key ? '복사됨' : '주소복사'" :aria-label="`${caseLabel(r.key)} 주소 복사`" @click.stop="copyAddr(r)"><svg v-if="copiedKey !== r.key" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg><svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg></button>{{ r.addr ? shortAddr(r.addr) : '—' }}</td>
               <td><span class="bpt-nb">{{ won(r.min) }}</span></td>
               <td>{{ r.pSold != null ? pct(r.pSold) : '—' }}</td>
               <td v-for="(b, i) in r.bids" :key="i" :class="['r', { win: r.sold > 0 && b > r.sold, lose: r.sold > 0 && b <= r.sold }]"><span class="bpt-nb">{{ won(b) }}</span></td>
-              <td class="r"><span v-if="r.urgent" class="bpt-nb">{{ won(r.urgent - r.bids[I70]) }}<small class="bpt-at bpt-nb">급매가 {{ won(r.urgent) }}</small></span><template v-else>—</template></td>
               <td v-if="probPast" class="r act-sold"><span v-if="r.sold > 0" class="bpt-nb">{{ won(r.sold) }}</span><template v-else>{{ r.failed ? '유찰' : '입찰 전' }}</template></td>
             </tr>
           </tbody>
@@ -992,7 +989,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl .l { text-align: left; }
 .bpt-tbl .r { text-align: right; }
 .bpt-tbl td.addr { max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
-.bpt-prob .bpt-tbl td.win { color: #15803d; font-weight: 700; }   /* 지난 기일 — 이 값이면 낙찰 */
+.bpt-prob .bpt-tbl td.win { color: #15803d; }   /* 지난 기일 — 이 값이면 낙찰(굵기 없이 — 끝자리가 회색 칸과 맞게) */
 .bpt-prob .bpt-tbl td.lose { color: #9ca3af; }   /* 지난 기일 — 이 값이면 짐 */
 .bpt-prob .bpt-tbl th, .bpt-prob .bpt-tbl td { vertical-align: middle; }   /* 차익 칸이 두 줄이어도 나머지는 줄 가운데 */
 .bpt-tbl td.strong { font-weight: 800; color: #1f5fe0; }
