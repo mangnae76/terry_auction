@@ -155,7 +155,7 @@ const roundModel = computed(() => (useHits.value ? fitRoundModel(roundsAt.value,
 
 try {
   const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null') as { dayRows?: DayRow[]; dayName?: string; dayDate?: string; viewsText?: string; pick?: string } | null;
-  if (s) { dayRows.value = s.dayRows ?? []; dayName.value = s.dayName ?? ''; dayDate.value = s.dayDate ?? ''; viewsText.value = s.viewsText ?? ''; pick.value = s.pick ?? ''; }
+  if (s) { dayRows.value = s.dayRows ?? []; dayName.value = s.dayName ?? ''; dayDate.value = s.dayDate ?? '';  pick.value = s.pick ?? ''; }
 } catch { /* 그만 */ }
 watch([dayRows, dayName, dayDate, viewsText, pick, dongFilter], () => {
   try { localStorage.setItem(STORE_KEY, JSON.stringify({ dayRows: dayRows.value, dayName: dayName.value, dayDate: dayDate.value, viewsText: viewsText.value, pick: pick.value, dong: dongFilter.value })); } catch { /* 그만 */ }
@@ -249,7 +249,7 @@ const viewOf = (v: Record<string, number> | undefined) => {
   const k = before[before.length - 1] ?? same[0];
   return k ? { n: v![k], at: k } : null;
 };
-/** 표에 올릴 줄 — 붙여넣은 글이 있으면 그것, 없으면 DB 목록(동 거르기)에서 조회수 있는 것 */
+/** 표에 올릴 줄 — 붙여넣은 글이 있으면 그것, 없으면 DB 목록(동선택)에서 조회수 있는 것 */
 const baseLines = computed(() => {
   const pasted = parseViewLines(viewsText.value);
   if (pasted.length) return pasted.map((l) => ({ ...l, viewAt: '붙여넣기' }));
@@ -410,7 +410,7 @@ const rule = computed(() => {
   return { dots, line, vm, vMax, bMax, sx, sy, twice: vm ? 2 ** vm.c : null };
 });
 
-/** DB 에 들어 있는 이 날 목록(동 거르기) — 사건번호 · 주소 · 조회수 */
+/** DB 에 들어 있는 이 날 목록(동선택) — 사건번호 · 주소 · 조회수 */
 const dbList = computed(() => {
   const f = dongFilter.value.trim();
   return dbRows.value.filter((d) => !f || d.addr.includes(f)).map((d) => {
@@ -418,7 +418,6 @@ const dbList = computed(() => {
     return { ...d, v: k ? { n: d.views[k], at: k, after: k > dayDate.value } : null };
   });
 });
-const nUnmatched = computed(() => items.value.filter((it) => !it.target).length);
 /* ===== 시세 · 입지 — 덧붙인 계산을 시험(2026-11-14 사용자: 사람 몰린 물건을 낮게 맞히는 까닭 ② 시세 대비 최저가 ③ 입지 · 개별성)
  * 시세는 매각일 이전 실거래만(국토부 연립다세대), 엘베 · 세대수 · 연식은 건축물대장(건물 자체라 날짜와 상관없음) ===== */
 const extTrades = ref<TradeLite[]>([]);
@@ -525,7 +524,7 @@ const WD = ['일', '월', '화', '수', '목', '금', '토'];
 /** 표 맨 왼쪽 입찰일 — '26.11.19(목)' */
 const bidDay = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? `${d.slice(2, 4)}.${d.slice(5, 7)}.${d.slice(8)}(${WD[new Date(`${d}T00:00:00`).getDay()]})` : '—');
 
-/* ===== 기일 달력 — 한 달 월~금, 날마다 법원 · 계별 건수(괄호 = 동 거르기의 동). 계별은 기일목록수집을 받은 날만, 나머지 날은 사건 차트의 다음 기일로 센 동 건수만.
+/* ===== 기일 달력 — 한 달 월~금, 날마다 법원 · 계별 건수(괄호 = 동선택의 동). 계별은 기일목록수집을 받은 날만, 나머지 날은 사건 차트의 다음 기일로 센 동 건수만.
  * 탱크옥션 기일별물건처럼 모든 법원 · 계 건수는 나중에 마이가 그 달력을 받아 채운다(2026-11-15 사용자) ===== */
 const calMonth = ref(todayIso().slice(0, 7));
 const calDocs = ref<Awaited<ReturnType<typeof loadDayListsRange>>>([]);
@@ -623,7 +622,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <span :class="['bpt-conn', agentOn ? 'on' : 'off']"><i aria-hidden="true" />{{ agentOn ? 'MyAgent · ' : 'MyAgent' }}<template v-if="agentOn"><span class="ago">{{ agentAgo }}</span>초 전</template></span>
             <span v-if="agentOn && agent?.version" class="bpt-ver">{{ verLabel(agent.version) }}</span>
           </h3>
-          <label class="bpt-date">법원<input v-model="colCourt" type="text" class="court" /></label>
+          <div class="bpt-pair"><label class="bpt-date">법원<input v-model="colCourt" type="text" class="court" /></label><label class="bpt-date">동선택<input v-model="dongFilter" type="text" class="court" placeholder="검암동" /></label></div>
           <div class="bpt-range"><input v-model="colFrom" type="date" aria-label="시작일" /><span>~</span><input v-model="colTo" type="date" aria-label="끝일" /></div>
           <div class="bpt-btns">
             <button type="button" class="bpt-btn line" :disabled="!agentOn || !!agent?.busy" @click="sendCmd('open')">브라우저열기</button>
@@ -640,9 +639,9 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             </div>
             <p v-if="progView && agent?.busy" class="bpt-sub num">{{ progView.what }}<template v-if="progView.left"> · {{ progView.left }}</template></p>
           </div>
-          <p class="bpt-sub">조회수수집 · 동 거르기의 동, 주택 사건마다 날짜별 조회수 · 처음엔 시작일 2025-06-15</p>
+          <p class="bpt-sub">조회수수집 · 동선택의 동, 주택 사건마다 날짜별 조회수 · 처음엔 시작일 2025-06-15</p>
           <p v-if="hitInfo" class="bpt-sub">{{ hitInfo }}</p>
-          <p class="bpt-sub">{{ agentNote || (agentOn ? agent?.message : '') || '집 PC 마이(agent.py)를 켜면 여기서 시킵니다' }}</p>
+          <p class="bpt-sub">{{ agentNote || (agentOn ? agent?.message : '') || 'MyAgent를 켜면 여기서 시킵니다' }}</p>
           <hr class="bpt-part" />
           <h3>기일 목록 파일</h3>
           <label :class="['bpt-drop', { over: dropOver }]" @dragover.prevent="dropOver = true" @dragleave="dropOver = false" @drop.prevent="onDrop">
@@ -671,13 +670,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             </template>
           </div>
           <p v-if="dbInfo" class="bpt-sub">{{ dbInfo }}</p>
-          <p class="bpt-sub">괄호 · {{ calDong || '동 거르기의 동' }} 건수 · 계별은 기일목록수집을 받은 날만</p>
-        </div>
-        <div class="bpt-box grow">
-          <h3>사건번호 · 주소 · 조회수</h3>
-          <textarea v-model="viewsText" rows="5" spellcheck="false" placeholder="손으로 넣을 때만 — 한 줄에 한 사건, 2026타경501308 검암동 493-4 정성드림빌 500&#10;조회수는 매각 전일까지 누적(줄 맨 끝 숫자)" />
-          <label class="bpt-date">동 거르기<input v-model="dongFilter" type="text" class="court" placeholder="비우면 전부" /></label>
-          <p class="bpt-sub">{{ items.length.toLocaleString('ko-KR') }}건<template v-if="nUnmatched"> · 자료 없음 {{ nUnmatched }}건</template> · 손으로 넣을 때만(비우면 DB 자료)</p>
+          <p class="bpt-sub">괄호 · {{ calDong || '동선택의 동' }} 건수 · 계별은 기일목록수집을 받은 날만</p>
         </div>
       </div>
     </section>
@@ -691,7 +684,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       </div>
       <p v-if="extMsg" class="bpt-sub">시세 · 입지 · {{ extMsg }}{{ extReady ? ' · 채점하기를 누르면 + 시세 · 입지 칸이 같이 나옵니다' : '' }}</p>
       <p v-if="gradeMsg" class="bpt-sub">{{ gradeMsg }}</p>
-      <p v-else-if="!hitRounds.length" class="bpt-sub">사건 차트 없음 · 동 거르기에 동을 적고 조회수수집 먼저</p>
+      <p v-else-if="!hitRounds.length" class="bpt-sub">사건 차트 없음 · 동선택에 동을 적고 조회수수집 먼저</p>
       <template v-if="grade">
         <div class="bpt-grade">
           <div class="bpt-tile"><span>맞힌 회차</span><b>{{ grade.total.n.toLocaleString('ko-KR') }}회차</b><small>매각 {{ grade.total.sold.toLocaleString('ko-KR') }} · 유찰 {{ (grade.total.n - grade.total.sold).toLocaleString('ko-KR') }}{{ grade.skipped ? ` · 배울 자료 모자라 뺌 ${grade.skipped}` : '' }}</small></div>
@@ -907,6 +900,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-in { display: flex; gap: 12px; flex-wrap: wrap; }
 .bpt-box { border: 1px solid #e3e7ee; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 260px; }
 .bpt-box.grow { flex: 1 1 420px; }
+.bpt-pair { display: flex; flex-wrap: wrap; gap: 8px 14px; }   /* 법원 · 동선택 한 줄 */
 .bpt-part { width: 100%; margin: 6px 0 2px; border: 0; border-top: 1px solid #e3e7ee; }   /* 기일 목록 · 조회수 수집 아래 — 기일 목록 파일 칸 가름줄 */
 .bpt-cal { flex: 1 1 370px; min-width: 370px; }   /* 기일 달력 — 기일 목록 · 조회수 수집 오른쪽 */
 .bpt-cal-nav { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #111827; }

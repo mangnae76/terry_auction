@@ -143,7 +143,7 @@ const splitSaleChunks = (recs: SaleRecord[], limit = 700_000): string[] => {
   return out;
 };
 
-/** 웹(파일 불러오기)에서 공용 매각물건 자료를 통째로 저장 — 그 사이 집 PC 수집 등으로 바뀌었으면(expectVersion 이 다르면) 저장하지 않는다.
+/** 웹(파일 불러오기)에서 공용 매각물건 자료를 통째로 저장 — 그 사이 MyAgent 수집 등으로 바뀌었으면(expectVersion 이 다르면) 저장하지 않는다.
  *  auction-web saveDataset 과 같은 모양(by: 'web'). 저장한 새 버전을 돌려준다 */
 export const saveSaleDataset = async (recs: SaleRecord[], expectVersion: number | null): Promise<number> => {
   if (recs.length > 20_000) throw new Error('한 번에 20,000건까지 저장할 수 있습니다.');
@@ -153,7 +153,7 @@ export const saveSaleDataset = async (recs: SaleRecord[], expectVersion: number 
     const cur = await tx.get(metaRef());
     const curMeta = cur.exists() ? (cur.data() as AgentDatasetMeta) : null;
     const curVersion = curMeta?.version ?? 0;
-    if (expectVersion !== null && curVersion !== expectVersion) throw new Error('그 사이 집 PC 수집 등으로 자료가 바뀌었습니다 — 다시 불러온 뒤 해 주세요.');
+    if (expectVersion !== null && curVersion !== expectVersion) throw new Error('그 사이 MyAgent 수집 등으로 자료가 바뀌었습니다 — 다시 불러온 뒤 해 주세요.');
     const version = curVersion + 1;
     chunks.forEach((data, i) => tx.set(doc(chunksCol(), String(i)), { i, data, v: version }));
     for (let i = chunks.length; i < (curMeta?.chunks ?? 0); i += 1) tx.delete(doc(chunksCol(), String(i)));
