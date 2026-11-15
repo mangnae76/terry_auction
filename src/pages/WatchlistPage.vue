@@ -687,7 +687,7 @@ watch(
             </ul>
           </template>
         </div>
-        <div class="wlp-filter-cell">
+        <div class="wlp-filter-cell sort">
           <button
             type="button"
             :class="['wlp-sort-btn', { on: sortMode === 'route' }]"
@@ -911,7 +911,7 @@ watch(
           <div class="wlp-card-meta">
             <span class="wlp-meta-date">
               <img :src="calendarDaysIcon" alt="" class="wlp-meta-date-icon" />
-              {{ shortYmd(item.eventDate) }}<template v-if="item.eventDate && weekdayLabel(item.eventDate)"> ({{ weekdayLabel(item.eventDate) }})</template>
+              {{ shortYmd(item.eventDate) }}<span v-if="item.eventDate && weekdayLabel(item.eventDate)" class="wlp-meta-dow">&nbsp;({{ weekdayLabel(item.eventDate) }})</span>
             </span>
             <span class="wlp-meta-court">{{ shortCourt(item.courtName) }}</span>
             <span class="wlp-meta-case">{{ item.caseNumber || DASH }}</span>
@@ -1324,11 +1324,11 @@ watch(
 /* 고르기 — 전체삭제와 같은 크기의 네모 단추 */
 .wlp-pick-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  box-sizing: border-box; height: 30px; width: 32px;
+  box-sizing: border-box; height: 30px; width: 28px;
   border: 1px solid #d5dbe6; background: #fff; border-radius: 8px;
   padding: 0; line-height: 1; color: #4b5563; cursor: pointer;
 }
-.wlp-pick-btn svg { width: 18px; height: 18px; }
+.wlp-pick-btn svg { width: 15px; height: 15px; }
 .wlp-pick-btn.on { background: #2b6df3; border-color: #2b6df3; color: #fff; }
 .wlp-pick-btn:disabled { opacity: 0.35; cursor: default; }
 .wlp-pick-btn:active { opacity: 0.55; }
@@ -1354,8 +1354,8 @@ watch(
 /* 숨긴 물건 드롭다운 */
 .wlp-hidden-note { position: relative; display: flex; min-width: 0; }
 /* 보관함 × 7 — 숨긴 물건 수 */
-.wlp-restore-ico { width: 18px; height: 18px; object-fit: contain; display: block; flex: 0 0 auto; }
-.wlp-restore-x { font-style: normal; font-size: 9.5px; color: #9ca3af; margin: 0 1px 0 2px; }
+.wlp-restore-ico { width: 15px; height: 15px; object-fit: contain; display: block; flex: 0 0 auto; }
+.wlp-restore-x { font-style: normal; font-size: 9px; color: #9ca3af; margin: 0 0 0 1px; }
 .wlp-hidden-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(15, 23, 42, 0.45); }
 /* 보관함 — 버튼 아래 드롭다운이면 화면 밖으로 밀려나서 가운데 팝업으로 띄운다 */
 .wlp-hidden-panel {
@@ -1451,7 +1451,7 @@ watch(
   display: inline-flex; align-items: center; justify-content: center; gap: 3px;
   box-sizing: border-box; height: 30px;
   border: 1px solid #e5e7eb; background: #fff; border-radius: 8px;
-  padding: 0 7px; font-size: 12px; font-weight: 400; line-height: 1; color: #111827;
+  padding: 0 5px; font-size: 12px; font-weight: 400; line-height: 1; color: #111827;
   cursor: pointer; white-space: nowrap;
 }
 .wlp-restore-btn:active { opacity: 0.55; }
@@ -1512,9 +1512,10 @@ watch(
 .wlp-card-meta {
   display: flex;
   align-items: center;
-  /* 날짜·법원·사건번호 사이는 글자 한 자쯤 띄운다 (가운뎃점 대신 여백으로 가른다) */
-  gap: 8px;
-  font-size: 12px;
+  /* 날짜·법원·사건번호 사이는 여백으로 가른다. 날짜에 요일이 붙어 길어져 법원 · 사건번호가 잘렸다 — 글자 · 여백을 조금 줄였다(2026-11-15 사용자, 앱) */
+  gap: 4px;
+  font-size: 11px;
+  letter-spacing: -0.2px;
   color: #4b5563;
   flex-wrap: nowrap;
   flex: 1 1 auto;
@@ -1526,19 +1527,19 @@ watch(
 .wlp-price-none { color: #9ca3af; }
 .wlp-meta-court { flex: 0 3 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wlp-meta-case { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wlp-meta-date-icon { width: 14px; height: 14px; object-fit: contain; flex-shrink: 0; }
+.wlp-meta-date-icon { width: 12px; height: 12px; object-fit: contain; flex-shrink: 0; }
 .wlp-meta-dday { flex: 0 0 auto; font-style: normal; font-weight: 700; color: #2b6df3; white-space: nowrap; }
 .wlp-card-past .wlp-meta-dday { color: #9ca3af; font-weight: 600; }
 .wlp-meta-sep { color: #cbd5e1; flex: 0 0 auto; }
 .wlp-card-actions {
   display: inline-flex;
-  gap: 3px;
+  gap: 1px;   /* 3 → 1 · 아이콘 칸 24 → 21 · 그림 16 → 14 — 첫 줄 사건번호가 잘리지 않게(2026-11-15 사용자) */
   align-items: center;
   flex-shrink: 0;
   margin-left: auto;
 }
 .wlp-card-icon {
-  width: 24px;
+  width: 21px;
   height: 30px;
   border: none;
   background: transparent;
@@ -1551,8 +1552,8 @@ watch(
   padding: 0;
   flex-shrink: 0;
 }
-.wlp-card-icon img { width: 16px; height: 16px; object-fit: contain; display: block; }
-.wlp-card-icon svg { width: 16px; height: 16px; display: block; }
+.wlp-card-icon img { width: 14px; height: 14px; object-fit: contain; display: block; }
+.wlp-card-icon svg { width: 14px; height: 14px; display: block; }
 .wlp-card-icon:active { background: #f1f5f9; }
 .wlp-card-close { color: #6b7280; }
 /* 중요도 별 — 채워지면 노란 별 안에 숫자를 얹는다 */
@@ -1564,7 +1565,7 @@ watch(
   margin-right: 2px;
 }
 /* 별도 복사·휴지통과 같은 16px — 셋이 같은 크기로 보여야 한다 */
-.wlp-card-star svg { width: 16px; height: 16px; }
+.wlp-card-star svg { width: 14px; height: 14px; }
 
 .wlp-type-mark {
   display: inline-flex; align-items: center; justify-content: center;
@@ -1624,7 +1625,8 @@ watch(
 .wlp-address span.done { text-decoration: line-through; color: #9ca3af; }
 .wlp-address span.done .wlp-addr-name { color: #9ca3af; }
 .wlp-address {
-  font-size: 13px;
+  font-size: 12px;   /* 13 → 12 · 자간 조금 — 단지 이름 · 호까지 한 줄에(안산파크푸르지오 잘림, 2026-11-15 사용자, 앱) */
+  letter-spacing: -0.45px;
   font-weight: 800;
   color: #111827;
   margin: 0;
@@ -1788,7 +1790,7 @@ watch(
   /* 물건종류 · 법원 · 정렬 · 보관함 · 전체삭제 — 앞 셋이 남는 폭을 나눠 갖는다 */
   background: transparent;
   padding: 3px 5px 4px;   /* 좌우 5px — 아래 카드와 같은 선에 세운다 */
-  gap: 7px;
+  gap: 5px;   /* 7 → 5 — 물건종류 · 법원 칸에 글이 두세 자는 보이게(2026-11-15 사용자) */
 }
 .wlp-filter-cell {
   position: relative;
@@ -1798,6 +1800,8 @@ watch(
 }
 /* 아이콘만 든 칸은 늘어나지 않는다 */
 .wlp-filter-cell.fixed { flex: 0 0 auto; }
+/* 정렬(날짜순 · 임장순)은 글 폭만 — 남는 폭은 물건종류 · 법원 칸에(글이 두세 자는 보이게, 2026-11-15 사용자) */
+.wlp-filter-cell.sort { flex: 0 0 auto; }
 .wlp-filter-cell.fixed .wlp-hidden-note { display: flex; }
 /* 위로 펼쳐지는 필터 */
 .wlp-filter-backdrop { position: fixed; inset: 0; z-index: 40; }
@@ -1825,7 +1829,7 @@ watch(
   width: 100%;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  padding: 5px 10px;
+  padding: 5px 6px;
   font-size: 12px;
   font-weight: 400;
   line-height: 1.35;
@@ -1836,8 +1840,8 @@ watch(
   -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%236b7280' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 8px center;
-  padding-right: 22px;
+  background-position: right 5px center;
+  padding-right: 15px;
 }
 .wlp-filter-btn {
   display: flex; align-items: center; gap: 5px;
@@ -1958,5 +1962,19 @@ watch(
     font-size: 13px;
   }
   .wlp-search-row { padding: 8px 10px; }
+}
+/* 360 폭 폰(앱) — 맨 끝에 둬야 위 기본 규칙을 덮는다(2026-11-15 사용자 '잘리지 않을 정도로 · 좁으면 요일 · D-day 빼도') */
+@media (max-width: 374px) {
+  .wlp-card-meta { gap: 4px; }
+  .wlp-meta-dow, .wlp-meta-dday { display: none; }
+  .wlp-meta-date-icon { width: 11px; height: 11px; }
+  .wlp-address { font-size: 11px; letter-spacing: -0.6px; }
+}
+/* 폰 폭(앱) — 거르기 줄: 보관함 · 휴지통의 '×'를 빼고 여백을 줄여 물건종류 · 법원 칸에 글이 두세 자 보이게(2026-11-15 사용자) */
+@media (max-width: 430px) {
+  .wlp-filter-bar { gap: 4px; }
+  .wlp-restore-btn { gap: 2px; padding: 0 4px; }
+  .wlp-restore-x { display: none; }
+  .wlp-filter-cell .wlp-sort-btn { padding: 5px 17px 5px 4px; font-size: 11.5px; background-position: right 4px center; }
 }
 </style>

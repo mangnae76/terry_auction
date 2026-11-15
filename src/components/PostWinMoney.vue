@@ -371,7 +371,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 
     <!-- ===== 세금분석 ===== -->
     <template v-else>
-      <div class="pwm-taxbar">
+      <div :class="['pwm-taxbar', { brief }]">
         <div v-if="!webEmbed" class="pwm-seg">
           <button type="button" :class="{ on: who === 'biz' }" @click="who = 'biz'">매매사업자</button>
           <button type="button" :class="{ on: who === 'person' }" @click="who = 'person'">개인</button>
@@ -582,6 +582,12 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-bizgo:hover { background: #e8efff; }
 .pwm-bizgo svg { width: 13px; height: 13px; }
 .pwm-biz em { font-style: normal; font-size: 13px; color: #b45309; }
+/* 앱 폰 폭 — 사업자 구분 · 내정보 · 수익분석 고치기를 한 줄에(줄어든 글 · 단추). 안내 글(em)만 아랫줄로(2026-11-15 사용자) */
+.pwm-taxbar.brief { flex-wrap: wrap; gap: 6px; }
+.pwm-taxbar.brief .pwm-biz { display: contents; font-size: 12.5px; white-space: nowrap; }
+.pwm-taxbar.brief .pwm-biz em { order: 9; flex: 1 0 100%; font-size: 11.5px; white-space: normal; }
+.pwm-taxbar.brief .pwm-bizgo { height: 24px; padding: 0 5px 0 8px; font-size: 11.5px; }
+.pwm-taxbar.brief .pwm-go { height: 26px; padding: 0 8px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
 /* 명도분석 두 묶음(웹) — 명도비 · 지연 비용 머리 줄 */
 /* 명도비 상자 — 머리 줄과 세부 항목을 한 바탕 안에. 바탕은 양옆 10px 내밀고 글은 제자리('원' 끝이 한 줄) */
 .pwm-grpbox { margin: 10px -10px 4px; padding: 2px 10px 6px; border-radius: 8px; background: #f5f7fb; }

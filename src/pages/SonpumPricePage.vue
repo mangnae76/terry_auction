@@ -99,12 +99,15 @@ const run = async () => {
 const dirty = computed(() => months.value !== loadedMonths.value);
 
 const region = computed(() => res.value?.region ?? null);
+/** 앱 화면(앱 시세분석 · 앱 손품조사 탭이 띄운 시세분석)인가 */
+const inAppView = !!props.app || inject<boolean>('sonApp', false);
 const regionText = computed(() => {
   const r = region.value;
   if (!r) return '';
   const sido = REGION_GROUPS.find((g) => g.districts.some((d) => d.lawdCode === r.lawdCd5))?.sido ?? r.sido;
   const gu = REGION_GROUPS.flatMap((g) => g.districts).find((d) => d.lawdCode === r.lawdCd5)?.label ?? r.sigungu;
-  return `${sido} ${gu} ${r.dong}`;
+  // 앱 — 시도(경기도)는 빼고 시군구부터. 필터 줄이 한 줄에 들어오게(2026-11-15 사용자)
+  return inAppView ? `${gu} ${r.dong}` : `${sido} ${gu} ${r.dong}`;
 });
 const lot = computed(() => res.value?.parts.lot ?? '');
 
@@ -1029,7 +1032,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? `매도가 예상 1(${kindF})` : `실거래가 예상(${kindF})` }}</InfoTip></span><span class="v pa-num">{{ view ? vfmt(view.est) : '-' }}</span><!-- 웹 — 0건이 돼도 아래 두 줄 자리를 그대로(칸 높이가 줄면 아래 필터 · 표가 통째로 올라갔다 내려왔다, 2026-11-12 사용자 '엘베 누르면 흔들려') --><span v-if="webEmbed || view?.capped" class="cap" :style="{ visibility: view?.capped ? 'visible' : 'hidden' }">보증보험 한도 적용</span><span v-if="webEmbed || view" class="s rad">{{ webEmbed ? (estFormula || '\u00a0') : `반경 ${radText(radius)} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` }}</span></div>
           <div class="tile"><span class="k">{{ kindF === '월세' ? '평균 평당 월세' : '평균 평당가' }}</span><span class="v pa-num">{{ view ? vPy(view.avgPy) : '-' }}</span></div>
           <!-- 선정물건 정보 — 유사 거래를 찾는 가운데 기준(실제 범위는 아래 「계산 조건」 줄) -->
-          <div v-if="isAptKind" class="tile"><span class="k">면적 공급(전용) / 연식</span><span class="v pa-num sm">{{ aptMyArea }}</span><span class="s">{{ me.year ? `${me.year}년식` : '-' }}</span></div>
+          <div v-if="isAptKind" class="tile area"><span class="k">면적 <small class="k-sub">공급(전용)</small> / 연식</span><span class="v pa-num sm">{{ aptMyArea }}</span><span class="s">{{ me.year ? `${me.year}년식` : '-' }}</span></div>
           <div v-else class="tile"><span class="k">전용 / 연식</span><span class="v pa-num sm">{{ myPy ? `${myPy.toFixed(2)}평` : '-' }} / {{ me.year ? `${me.year}년식` : '-' }}</span></div>
           <div class="tile"><span class="k">유사 거래건수</span><span class="v pa-num">{{ view?.n ?? 0 }}건</span></div>
         </div>
@@ -1803,6 +1806,13 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 .pa-wrap:is(.app, .phone) .pa-list table.even td.l { white-space: nowrap; }
 .pa-wrap:is(.app, .phone) .list-foot { font-size: 11px; }
 /* 앱 — 초록 칸: 위 줄 이름 · 반경 기간 건수, 아래 줄 금액(한 줄에 몰아 '1.…'로 잘리던 것, 2026-11-13). 보증보험 딱지는 금액 줄 오른쪽 */
+/* 앱 — 이름(매도가 예상 1) 한 줄 · 금액 · 계산식 줄 차례로. 계산식이 옆 칸을 먹어 이름이 세로로 쌓이던 것(2026-11-15 사용자) */
+.pa-wrap.app .tile.key > .k { grid-column: 1 / -1 !important; grid-row: 1 !important; white-space: nowrap; }
+.pa-wrap.app .tile.key > .s { grid-column: 1 / -1 !important; grid-row: 3 !important; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 앱 — 면적 칸을 조금 넓혀 '면적 공급(전용) / 연식' · '83.18㎡ (59.98)'을 한 줄로(공급(전용)은 작은 글) */
+.pa-wrap:is(.app, .phone) .tiles { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, .85fr); }
+.pa-wrap:is(.app, .phone) .tile.area .k, .pa-wrap:is(.app, .phone) .tile.area .v { white-space: nowrap; letter-spacing: -0.3px; }
+.pa-wrap:is(.app, .phone) .tile.area .k-sub { font-size: 9px; font-weight: 600; }
 .pa-wrap.app .tile.key { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; row-gap: 2px; text-align: left; }
 .pa-wrap.app .tile.key > .k { grid-area: 1 / 1; }
 .pa-wrap.app .tile.key > .s { grid-area: 1 / 2; }

@@ -4218,7 +4218,7 @@ const addLowRow = async () => {
   setMktVal('mkt.c.rowCount', String(Math.min(LOW_ROW_MAX, lowRowCount.value + 1)));
   await persistSurvey();
 };
-const LOW_ROW_FIELDS = ['area', 'addr', 'unit', 'saleAsk', 'note'];
+const LOW_ROW_FIELDS = ['area', 'supply', 'name', 'addr', 'unit', 'saleAsk', 'note'];
 /** 맨 마지막에 더한 줄부터 지운다. 적어 둔 값이 있으면 한 번 묻는다 */
 const removeLowRow = () => {
   const last = lowRowCount.value - 1;
@@ -4317,13 +4317,32 @@ const lowUnitTextG = (sim: boolean, index: number) => {
   const n = typed > 0 ? typed : lowUnitAutoG(sim, index);
   return n > 0 ? n.toLocaleString('ko-KR') : '-';
 };
-const lowAddrTypedG = (sim: boolean, index: number) => !!mktVal(lowKeyG(sim, index, 'addr')).trim();
+const lowAddrTypedG = (sim: boolean, index: number) => !!(mktVal(lowKeyG(sim, index, 'addr')).trim() || mktVal(lowKeyG(sim, index, 'name')).trim());
+/** 앱 호가매물(아파트) — 면적 두 줄(위 공급 · 아래 전용), 평 단추를 누르면 둘 다 평으로. 저장은 늘 ㎡(2026-11-15 사용자) */
+const lowAreaShow = (sim: boolean, index: number, f: 'area' | 'supply') => {
+  const raw = mktAreaNum(lowKeyG(sim, index, f));
+  // ㎡ 는 소수 둘째 자리까지만 보인다(59.9867 → 59.98, 칸에서 잘리지 않게)
+  return raw && areaUnit.value === 'py' ? (Number(raw) / PYEONG_TO_M2).toFixed(2) : raw.replace(/(\.\d{2})\d+$/, '$1');
+};
+const lowAreaSet = (sim: boolean, index: number, f: 'area' | 'supply', ev: Event) => {
+  const v = (ev.target as HTMLInputElement).value.replace(/[^\d.]/g, '');
+  setMktVal(lowKeyG(sim, index, f), v && areaUnit.value === 'py' ? String(Math.round(Number(v) * PYEONG_TO_M2 * 10000) / 10000) : v);
+};
+/** 경매아파트 공급 — 적지 않았으면 같은 단지 호실 목록에서 그 전용의 공급(흐린 글로만 보여 준다) */
+const lowSupplyAuto = (sim: boolean, index: number) => {
+  if (sim) return '';
+  const ex = Number(mktAreaNum(lowKeyG(false, index, 'area'))) || 0;
+  const sp = ex > 0 ? cmpSupplyOf(complexAreas.value?.groups ?? [], ex)?.lo ?? 0 : 0;
+  return sp > 0 ? (areaUnit.value === 'py' ? (sp / PYEONG_TO_M2).toFixed(2) : sp.toFixed(2)) : '';
+};
+/** 유사 줄 주소 — 앱은 아파트명(name) · 동층호(addr) 두 칸, 웹은 한 칸(addr). 지도 · 표시는 둘을 이어 쓴다 */
+const lowSimAddr = (index: number) => [mktVal(lowKeyG(true, index, 'name')).trim(), mktVal(lowKeyG(true, index, 'addr')).trim()].filter(Boolean).join(' ');
 /** 손품분석 ④ 호가분석 — 매물호가 머리 줄의 지도 단추 둘(부동산플래닛 P · 네이버 N). 매물을 찾아보고 손으로 적는다.
  *  줄마다 — 경매빌라는 이 물건 자리, 유사빌라는 그 줄에 적은 주소(없으면 이 동) */
 const subjectDong = computed(() => jibunAddress.value.split(/\s+/).find((t) => /[동리가]$/.test(t) && !/^\d/.test(t)) ?? '');
 const askKind = computed(() => (isApartment.value ? 'apt' : /오피스텔/.test(auction.value?.propertyType ?? '') ? 'officetel' : 'villa'));
 const openAskMap = (sim: boolean, site: 'planet' | 'naver', index = 0) => {
-  const typed = sim ? mktVal(lowKeyG(true, index, 'addr')).trim() : '';
+  const typed = sim ? lowSimAddr(index) : '';
   const region = jibunAddress.value.split(/\s+/).slice(0, 3).join(' ');
   if (site === 'naver') {
     if (!sim) { void openNaverSpot(fullAddress.value, askKind.value); return; }
@@ -4335,7 +4354,7 @@ const openAskMap = (sim: boolean, site: 'planet' | 'naver', index = 0) => {
   void openPlanetSpot(q).then((ok) => flashToast(ok ? `복사했습니다 — 부동산플래닛 검색칸에 붙여넣으세요(${q})` : `부동산플래닛 검색칸에 '${q}'를 넣으세요`, ok ? 'success' : 'info'));
 };
 const lowAddrTextG = (sim: boolean, index: number) => {
-  const typed = mktVal(lowKeyG(sim, index, 'addr')).trim();
+  const typed = sim ? lowSimAddr(index) : mktVal(lowKeyG(sim, index, 'addr')).trim();
   const head = sim ? '' : subjectBuildingLabel.value;
   if (!head) return typed || '-';
   if (!typed) return head;
@@ -6589,10 +6608,13 @@ const cmpBase = computed(() => {
   const nm = (r: SonPriceOut['rows'][number]) => (r.same ? `${supName.value || r.name}${r.dong ? ` ${r.dong}동` : ''}` : r.name);
   const who = o.rows.length ? `${nm(o.rows[0])}${o.n > 1 ? ` 외 ${o.n - 1}건` : ''}` : `고른 ${o.n}건`;
   const per = o.kind === '월세' ? '평당 월세' : '평당가';
-  const formula = o.avgPy && o.myPy ? `${who} ${o.n > 1 ? `평균 ${per}` : per} ${Math.round(o.avgPy / 1e4).toLocaleString('ko-KR')}만 × 전용 ${o.myPy.toFixed(2)}평 = ${cmpEok(o.est)}` : '';
+  // 앱 — '= 6.25억'은 바로 위 큰 숫자와 같아 빼고, 중간값은 '파크푸르지오 외 1건'으로 줄여 한 줄에(2026-11-15 사용자)
+  const eq = (v: number) => (appPrice ? '' : ` = ${cmpEok(v)}`);
+  const formula = o.avgPy && o.myPy ? `${who} ${o.n > 1 ? `평균 ${per}` : per} ${Math.round(o.avgPy / 1e4).toLocaleString('ko-KR')}만 × 전용 ${o.myPy.toFixed(2)}평${eq(o.est)}` : '';
   // 중간값 — 고른 거래가 2건 이상일 때 옆 칸에(평균을 한 건이 끌어내리는지 보이게, 2026-11-12 사용자)
   const med = o.n >= 2 && o.med ? o.med : 0;
-  const medFormula = med && o.medPy && o.myPy ? `${o.medName ? `${o.medName} ${per}` : `가운데 2건(${o.medPair || ''}) 평균 ${per}`} ${Math.round(o.medPy / 1e4).toLocaleString('ko-KR')}만 × 전용 ${o.myPy.toFixed(2)}평 = ${cmpEok(med)}` : '';
+  const medWho = o.medName ? `${o.medName} ${per}` : appPrice ? `${(o.medPair || '').split(' · ')[0]} 외 1건 평균 ${per}` : `가운데 2건(${o.medPair || ''}) 평균 ${per}`;
+  const medFormula = med && o.medPy && o.myPy ? `${medWho} ${Math.round(o.medPy / 1e4).toLocaleString('ko-KR')}만 × 전용 ${o.myPy.toFixed(2)}평${eq(med)}` : '';
   return { label: `시세분석 예상 ${o.kind}가`, value: o.est, note: '', formula, med, medFormula };
 });
 /** 예상가를 평균으로 낼지 중간값으로 낼지 — 두 칸 중 누른 것(물건 문서 개별성 값 'unit.base', 비우면 평균, 2026-11-12 사용자) */
@@ -10606,15 +10628,23 @@ const goBack = () => router.back();
                     <strong :class="['son-auto', { 'son-auto-empty': lowUnitTextG(g.sim, i - 1) === '-' }]" title="매매호가 ÷ 전용면적(평)으로 자동 계산합니다">{{ lowUnitTextG(g.sim, i - 1) === '-' ? '자동 입력' : lowUnitTextG(g.sim, i - 1) }}</strong>
                   </div>
                   <div class="cell">
-                    <small>전용면적</small>
-                    <span v-if="editingSurvey.listing" class="adp-mkt-unit">
+                    <small v-if="appPrice && isApartment">면적<em class="son-area-sub">공급(전용)</em></small>
+                    <small v-else>전용면적</small>
+                    <!-- 앱 아파트 — 위 공급 · 아래 전용, 평 단추로 둘 다 바뀐다(평일 땐 칸을 떠날 때 ㎡ 로 바꿔 적는다, 2026-11-15 사용자) -->
+                    <span v-if="editingSurvey.listing && appPrice && isApartment" class="son-area2">
+                      <span class="adp-mkt-unit"><input class="adp-mkt-input" inputmode="decimal" :value="lowAreaShow(g.sim, i - 1, 'supply')" :placeholder="lowSupplyAuto(g.sim, i - 1) || '공급'" :aria-label="`${g.label} 공급면적`" @input="areaUnit === 'm2' && lowAreaSet(g.sim, i - 1, 'supply', $event)" @change="areaUnit === 'py' && lowAreaSet(g.sim, i - 1, 'supply', $event)" />{{ areaUnit === 'py' ? '평' : '㎡' }}</span>
+                      <span class="adp-mkt-unit ex"><input :class="['adp-mkt-input', { need: !!mktVal(lowKeyG(g.sim, i - 1, 'saleAsk')) && !mktAreaNum(lowKeyG(g.sim, i - 1, 'area')) }]" inputmode="decimal" :value="lowAreaShow(g.sim, i - 1, 'area')" placeholder="전용" :aria-label="`${g.label} 전용면적`" @input="areaUnit === 'm2' && lowAreaSet(g.sim, i - 1, 'area', $event)" @change="areaUnit === 'py' && lowAreaSet(g.sim, i - 1, 'area', $event)" />{{ areaUnit === 'py' ? '평' : '㎡' }}</span>
+                    </span>
+                    <span v-else-if="editingSurvey.listing" class="adp-mkt-unit">
                       <input :class="['adp-mkt-input', { need: !!mktVal(lowKeyG(g.sim, i - 1, 'saleAsk')) && !mktAreaNum(lowKeyG(g.sim, i - 1, 'area')) }]" inputmode="decimal" :value="mktAreaNum(lowKeyG(g.sim, i - 1, 'area'))" placeholder="면적 입력" @input="setMktVal(lowKeyG(g.sim, i - 1, 'area'), ($event.target as HTMLInputElement).value)" />㎡
                     </span>
                     <strong v-else class="adp-mkt-area1">{{ mktAreaText(lowKeyG(g.sim, i - 1, 'area')) }}</strong>
                   </div>
                   <div class="cell">
                     <small>주소</small>
-                    <span v-if="editingSurvey.listing" class="son-addr-field"><em v-if="!g.sim && subjectBuildingName && !webEmbed" class="son-addr-head" :title="subjectBuildingName">{{ subjectBuildingName }}</em><input class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'addr'))" :placeholder="webEmbed ? `${lowKindWord}명 1동 1층 101호` : !g.sim ? (subjectHasDong ? '동층호 입력' : '층호 입력') : `${lowKindWord}명 · 층 · 호 입력`" @input="setMktVal(lowKeyG(g.sim, i - 1, 'addr'), ($event.target as HTMLInputElement).value)" /></span>
+                    <!-- 앱 — 두 줄: 위 단지명(경매아파트는 이 물건 단지, 유사는 적는 칸) · 아래 동층호(2026-11-15 사용자) -->
+                    <span v-if="editingSurvey.listing && appPrice" class="son-addr-field two"><em v-if="!g.sim" class="son-addr-head" :title="subjectBuildingName">{{ subjectBuildingName || '-' }}</em><input v-else class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'name'))" :placeholder="`${lowKindWord}명 입력`" @input="setMktVal(lowKeyG(g.sim, i - 1, 'name'), ($event.target as HTMLInputElement).value)" /><input class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'addr'))" :placeholder="!g.sim ? (subjectHasDong ? '동층호 입력' : '층호 입력') : '동층호 입력'" @input="setMktVal(lowKeyG(g.sim, i - 1, 'addr'), ($event.target as HTMLInputElement).value)" /></span>
+                    <span v-else-if="editingSurvey.listing" class="son-addr-field"><em v-if="g.sim && mktVal(lowKeyG(g.sim, i - 1, 'name'))" class="son-addr-head">{{ mktVal(lowKeyG(g.sim, i - 1, 'name')) }}</em><em v-if="!g.sim && subjectBuildingName && !webEmbed" class="son-addr-head" :title="subjectBuildingName">{{ subjectBuildingName }}</em><input class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'addr'))" :placeholder="webEmbed ? `${lowKindWord}명 1동 1층 101호` : !g.sim ? (subjectHasDong ? '동층호 입력' : '층호 입력') : `${lowKindWord}명 · 층 · 호 입력`" @input="setMktVal(lowKeyG(g.sim, i - 1, 'addr'), ($event.target as HTMLInputElement).value)" /></span>
                     <strong v-else :class="['adp-mkt-area1', 'adp-mkt-addr2', { typed: lowAddrTypedG(g.sim, i - 1) }]">{{ lowAddrTextG(g.sim, i - 1) }}</strong>
                     <span class="son-row-links">
                       <button type="button" class="son-map-go planet" aria-label="부동산플래닛" title="부동산플래닛에서 이 줄 주소 보기 — 동 · 지번을 복사해 둡니다" @click.stop="openAskMap(g.sim, 'planet', i - 1)">P</button>
@@ -10733,8 +10763,8 @@ const goBack = () => router.back();
         <!-- 앱 매각분석 — 운영자만(웹 손품조사 › 매각분석 탭처럼 '운영' 칩, 2026-11-13 사용자). 시세분석 카드 아래 같은 꼴 · 같은 접기 -->
         <section v-if="appPrice && isOperator" v-show="sonSub === 'sale'" class="adp-card son-under">
           <!-- 탭으로 여는 카드라 접기는 뺐다 — 접힌 채로 남아 탭을 눌러도 안이 비어 보였다(2026-11-13 사용자) -->
-          <header class="adp-card-head adp-survey-head sale-title">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" /></svg>매각분석<span class="adp-op-chip">운영</span><span v-if="saleSnap && saleHeadParts.region" class="sale-region">{{ saleHeadParts.region }}</span></h2><span v-if="saleSnap" class="sale-at">웹 기준 {{ saleSnapAt }}</span>
+          <header :class="['adp-card-head', 'adp-survey-head', 'sale-title', { one: appPrice }]">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" /></svg>매각분석<span v-if="!appPrice" class="adp-op-chip">운영</span><span v-if="saleSnap && saleHeadParts.region" class="sale-region">{{ saleHeadParts.region }}</span></h2><span v-if="saleSnap" class="sale-at">웹 기준 {{ saleSnapAt }}</span>
           </header>
           <div class="adp-mkt-body">
             <!-- 웹 손품조사 › 매각분석을 열면 웹이 물건에 남긴 결과(saleSnap)를 그대로 보여 준다 — 앱엔 계산이 없다(2026-11-13 사용자) -->
@@ -12908,6 +12938,11 @@ tr.tone-take { background: #fff5f5; }
 .sale-head-t { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; letter-spacing: -0.3px; }   /* 한 줄로(2026-11-14 사용자) */
 .sale-title { flex-wrap: wrap; row-gap: 2px; }   /* 제목 · 지역이 길면 기준 시각이 아래 줄 오른쪽으로 — 제목을 누르지 않는다 */
 .sale-title h2 { flex: 0 1 auto; white-space: nowrap; }
+/* 앱 — 운영 칩을 빼고 '매각분석 성포동 아파트'와 '웹 기준 …'을 한 줄에, 기준은 오른쪽 끝(2026-11-15 사용자). 좁으면 지역이 줄임표 */
+.sale-title.one { flex-wrap: nowrap; }
+.sale-title.one h2 { min-width: 0; overflow: hidden; }
+.sale-title.one .sale-region { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.sale-title.one .sale-at { flex: 0 0 auto; margin-left: auto; padding-left: 8px; }
 .sale-region { margin-left: 6px; font-size: 12px; font-weight: 400; color: #2b6df3; white-space: nowrap; }   /* 운영 칩 오른쪽 — 지역 · 종류 */
 .sale-at { margin-left: auto; font-size: 11.5px; font-weight: 400; color: #9ca3af; white-space: nowrap; }   /* 매각분석 제목 줄 오른쪽 끝 */
 .sale-bids { display: grid; gap: 6px; padding: 10px; border-radius: 10px; background: #f7f8fb; }
@@ -13248,7 +13283,8 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-kind.j { background: #fdf3e1; color: #b7791f; }
 .cmp-kind.m { background: #eef7f1; color: #22a55a; }
 /* 입지 창 — 비율(노선 · 학원 수)은 시설 이름 밑 작은 줄(점수 칸을 넘지 않게, 2026-11-12 사용자) */
-.cmp-base-f { display: block; margin-top: 2px; color: #2b6df3 !important; }   /* 호실 예상가 기준가 공식 줄 — 파랑(2026-11-12 사용자) */
+.cmp-base-f { display: block; margin-top: 2px; color: #2b6df3 !important; }
+.app-price .cmp-base-f, #appUnitSlot .cmp-base-f { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; letter-spacing: -0.3px; }   /* 앱 — 공식 한 줄(2026-11-15 사용자) */   /* 호실 예상가 기준가 공식 줄 — 파랑(2026-11-12 사용자) */
 .cmp-est > .son-demand.sup-tbl, .o-est .son-demand.sup-tbl { overflow-anchor: none; }   /* 리스트 줄이 바뀌어도 브라우저가 스크롤을 옮기지 않게(스크롤 고정점 끔) */
 .cmp-place .cmp-ratio { display: block; margin-top: 1px; font-size: 12px; font-weight: 400; color: #6b7280; }
 .cmp-tbl th[aria-sort], .cmp-tbl th:has(> .sdir) { cursor: pointer; white-space: nowrap; }
@@ -15208,6 +15244,18 @@ select.adp-pub-input option { text-align: center; }
 .app-price .son-addr-field .adp-mkt-input { flex: 1; text-align: left; }
 .app-price .son-addr-head { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: normal; font-size: 12px; color: #111827; }
 .app-price .son-addr-head + .adp-mkt-input { flex: 0 0 52px; width: 52px; }
+/* 앱 두 줄 칸 — 면적(위 공급 · 아래 전용) · 주소(위 단지명 · 아래 동층호). 칸 높이 32 × 2(2026-11-15 사용자) */
+.app-price .son-lowcase .adp-mkt-cells .cell > :is(.son-area2, .son-addr-field.two) { height: 64px; display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 0; }
+.app-price .son-area2 > .adp-mkt-unit { flex: 0 0 32px; height: 32px; padding: 0 4px 0 0; }
+.app-price .son-area2 > .adp-mkt-unit.ex, .app-price .son-addr-field.two > * + * { border-top: 1px dashed #e5e7eb; }
+.app-price .son-lowcase .adp-mkt-cells :is(.son-area2, .son-addr-field.two) .adp-mkt-input { height: 32px; }
+.app-price .son-addr-field.two { padding-left: 0; }
+.app-price .son-addr-field.two > .son-addr-head { flex: 0 0 32px; display: flex; align-items: center; padding: 0 6px; }
+.app-price .son-addr-field.two > .adp-mkt-input { flex: 0 0 32px; width: 100%; padding-left: 6px; }
+.app-price .son-lowcase .adp-mkt-cells:has(.son-area2, .son-addr-field.two) .cell > :not(small):not(.son-row-links) { height: 64px; }   /* 한 줄 칸도 두 줄 칸 높이에 맞춰 가운데 */
+/* 앱 아파트 — 면적 칸을 조금 넓혀 '면적 공급(전용)' 머리가 잘리지 않게 */
+.app-price .son-lowcase .adp-mkt-cells.c4:has(.son-area2) { grid-template-columns: minmax(0, 1fr) minmax(0, .9fr) minmax(0, 1.05fr) minmax(0, 1.35fr); }
+.app-price .son-area-sub { font-style: normal; font-size: 9px; font-weight: 600; color: #6b7280; margin-left: 2px; }
 .app-price .son-lowcase .adp-mkt-cells .cell.adp-mkt-wide .adp-mkt-input { text-align: left; padding-left: 10px; }
 /* P · N — '주소' 머리 칸 오른쪽(값 줄 높이가 다른 칸과 같게) */
 .app-price .son-lowcase .adp-mkt-cells .cell:has(.son-row-links) { position: relative; }
