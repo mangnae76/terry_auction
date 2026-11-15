@@ -1093,8 +1093,8 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-collect-row .sx-vsep { flex: none; margin: 0 4px; }
 .sx-bar { flex: 1 1 auto; min-width: 96px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .sx-bar b { display: block; height: 100%; background: var(--blue); transition: width .3s; }
-.sx-stop { height: 34px; padding: 0 14px; border: 1px solid var(--sx-accent); border-radius: 8px; background: none; color: var(--sx-accent); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }   /* 높이 · 글자 = 데이터로드 단추(.sx-tbtn) */
-.sx-stop:disabled { border-color: var(--line); color: var(--faint); cursor: default; }
+.sx-stop { min-width: 64px; height: 34px; padding: 0 12px; border: 1px solid var(--sx-accent); border-radius: 8px; background: none; color: var(--sx-accent); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }   /* 높이 · 글자 = 데이터로드 단추(.sx-tbtn) */
+.sx-stop:disabled { border-color: var(--line); color: var(--muted); cursor: default; }
 .sx-msg { display: flex; align-items: center; gap: 12px; padding-top: 10px; border-top: 1px solid var(--card-line); font-size: 13.5px; color: var(--text); }
 .sx-msg .sx-say { flex: 1 1 auto; min-width: 0; }
 .sx-msg { flex-wrap: wrap; }
@@ -8272,10 +8272,10 @@ span.cal-day.has { cursor: help; }
     /* 진행 — 수집 중이면 '데이터 수집 중', 숫자는 읍면동 수집이면 곳 수 · 빈칸채우기면 건 수(페이지 수가 아니다). 막대 위에는 지금 받는 곳(2026-11-08) */
     const st0 = s || {};   /* 도우미 상태를 아직 못 받았으면 빈 값 — s.enriching 을 바로 읽다 화면이 멈췄다(2026-11-08) */
     const enr = !!st0.enriching || st0.lastCmd === 'enrich';   /* 수집 끝에 빈칸채우기가 이어 돌 때도(enriching) */
-    const doing = !busy ? '대기 중' : enr ? '건축연도 채우는 중' : '데이터 수집 중';
+    /* 대기 중 · 수집 중 글은 걷고 중지 단추 하나로 — 쉬면 회색 '대기중', 돌면 '중지'. 건축연도 채우기는 숫자 앞에(2026-11-15) */
     const unit = enr ? '곳' : st0.lastCmd === 'queue' ? '곳' : '';   /* 건축연도는 건물 수, 읍면동 수집은 동네 수 */
     const target = busy && st0.target ? String(st0.target) : '';
-    const prog = `${target ? `<div class="sx-target">수집 중인 곳 <b>${esc(target)}</b></div>` : ''}<div class="sx-prog"><span class="sx-bar"><b style="width:${pr ? Math.min(100, Math.round((pr.i / pr.n) * 100)) : 0}%"></b></span><span>${doing}</span>${pr ? `<span class="num">${Number(pr.i).toLocaleString('ko-KR')} / ${Number(pr.n).toLocaleString('ko-KR')}${unit}</span>` : ''}<button type="button" class="sx-stop" data-act="ag-stop" ${busy ? '' : 'disabled'}>중지</button></div>`;
+    const prog = `${target ? `<div class="sx-target">수집 중인 곳 <b>${esc(target)}</b></div>` : ''}<div class="sx-prog"><span class="sx-bar"><b style="width:${pr ? Math.min(100, Math.round((pr.i / pr.n) * 100)) : 0}%"></b></span>${pr ? `<span class="num">${enr ? '건축연도 ' : ''}${Number(pr.i).toLocaleString('ko-KR')} / ${Number(pr.n).toLocaleString('ko-KR')}${unit}</span>` : ''}<button type="button" class="sx-stop" data-act="ag-stop" ${busy ? '' : 'disabled'}>${busy ? '중지' : '대기중'}</button></div>`;
     const m = AG.meta;
     const metaCnt = `저장 총 ${Number((m && m.count) || 0).toLocaleString('ko-KR')}건`;
     const metaUpd = m && m.updatedAt && m.updatedAt.toMillis && T.updateStamp ? `${T.UPDATE_PREFIX}${T.updateStamp(m.updatedAt.toMillis())}` : '';

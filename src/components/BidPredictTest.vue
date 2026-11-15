@@ -638,9 +638,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <p v-if="agentOn && agent?.busy && agent?.target" class="bpt-target">수집 중인 곳 <b>{{ agent.target }}</b></p>
             <div class="row" role="progressbar" :aria-valuenow="agent?.busy && progView ? progView.pct : 0" aria-valuemin="0" aria-valuemax="100">
               <span class="bar"><b :style="{ width: `${agent?.busy && progView ? progView.pct : progView?.pct === 100 ? 100 : 0}%` }" /></span>
-              <span>{{ agentOn && agent?.busy ? '데이터 수집 중' : '대기 중' }}</span>
               <span v-if="progView && (agent?.busy || progView.pct === 100)" class="num"><b>{{ progView.pct }}%</b></span>
-              <button type="button" class="bpt-stop" :disabled="!agentOn || !agent?.busy" @click="stopCmd">중지</button>
+              <button type="button" class="bpt-stop" :disabled="!agentOn || !agent?.busy" @click="stopCmd">{{ agentOn && agent?.busy ? '중지' : '대기중' }}</button>
             </div>
             <p v-if="progView && agent?.busy" class="bpt-sub num">{{ progView.what }}<template v-if="progView.left"> · {{ progView.left }}</template></p>
           </div>
@@ -1055,8 +1054,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-prog .bar b { display: block; height: 100%; background: #2b6df3; transition: width .3s; }
 .bpt-prog .num { font-variant-numeric: tabular-nums; }
 .bpt-prog .num b { color: #1f5fe0; }
-.bpt-stop { height: 34px; padding: 0 14px; border: 1px solid #c22e2e; border-radius: 8px; background: none; color: #c22e2e; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
-.bpt-stop:disabled { border-color: #e3e7ee; color: #c4c9d2; cursor: default; }
+.bpt-stop { min-width: 64px; height: 34px; padding: 0 12px; border: 1px solid #c22e2e; border-radius: 8px; background: none; color: #c22e2e; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.bpt-stop:disabled { border-color: #e3e7ee; color: #9ca3af; cursor: default; }   /* 대기중 · 중지 한 단추 — 쉬면 회색 '대기중', 수집 중이면 빨간 '중지'(폭 고정) */
 .bpt-grade-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .bpt-grade-head .bpt-h3 { margin-right: auto; }
 .bpt-grade { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
