@@ -30,6 +30,11 @@ export const SYNCED_UI_KEYS = [
   'ta.web.sale.mapSaved',    // [저장]한 거르기 조건
   'ta.web.sale.drop',        // 표에서 '제외'로 체크한 사례
   'ta.web.sale.x',           // 경매물건 감정가 · 표 정렬
+  // 다른 기기에서도 같게(2026-11-15 사용자) — 웹 마지막으로 본 물건 · 시장분석 조건(시장분석은 사용자 하나)
+  'ta.web.lastItem',         // 웹 — 마지막으로 본 물건(F5 · 수익분석 바로가기)
+  'son.market.priceQ',       // 시장분석 › 시세예측 › 시세분석 — 마지막 조회 주소 · 종류 · 기간
+  'adm.rank.period',         // 시장분석 › 거래랭킹 기간
+  'adm.bld.noNew',           // 시장분석 — 새 건물(신축 첫 해) 빼기
 ];
 const SYNCED = new Set(SYNCED_UI_KEYS);
 

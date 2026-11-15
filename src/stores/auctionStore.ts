@@ -1035,7 +1035,7 @@ export const useAuctionStore = defineStore('auction', () => {
   const lastWritten = new Map<string, Record<string, string>>();
   const saveTimes = new Map<string, number[]>();
   const fieldsOf = (a: AuctionDetail): Record<string, string> => Object.fromEntries(
-    Object.entries(a).filter(([k]) => k !== 'editLog' && k !== 'tabAt').map(([k, v]) => [k, sortedJson(v)]),
+    Object.entries(a).filter(([k]) => k !== 'editLog' && k !== 'tabAt' && k !== 'lastSavedAt').map(([k, v]) => [k, sortedJson(v)]),
   );
   const changedFields = (id: string, now: Record<string, string>): string[] => {
     const was = lastWritten.get(id);
@@ -1069,6 +1069,7 @@ export const useAuctionStore = defineStore('auction', () => {
     const items = editDetailOn() && !opts.note && !opts.silent ? changedLabels(changed, lastWritten.get(auction.id) ?? {}, fields) : [];
     lastWritten.set(auction.id, fields);
     if (!opts.silent && where) logEdit(auction, where, opts.note, items);
+    auction.lastSavedAt = now;   // 실제로 적을 때만 — 위 비교(fieldsOf)에서는 뺀다
     saveAuctionToLocal(auction);
     if (!isFirestoreAvailable()) {
       return;

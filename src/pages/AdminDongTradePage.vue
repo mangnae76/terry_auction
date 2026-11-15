@@ -126,7 +126,22 @@ const runPrice = () => {
   if (!address) return;
   priceQ.value = { address, kind: priceKind.value, months: priceMonths.value, at: Date.now() };   // at — 같은 조건도 조회를 누르면 다시 받는다
   try { localStorage.setItem(PRICE_Q_KEY, JSON.stringify(priceQ.value)); } catch { /* 그만 */ }
+  priceTouched = true;
 };
+/** 로그인 뒤 내 설정 DB 값이 들어오면(services/uiPrefSync) 시세분석 마지막 조회 · 거래랭킹 기간 · 새 건물 빼기를 다시 읽는다 — 이 창에서 이미 조회했으면 그대로 */
+let priceTouched = false;
+const onUiPrefs = () => {
+  try {
+    if (!priceTouched) {
+      const q = JSON.parse(localStorage.getItem(PRICE_Q_KEY) || 'null') as typeof priceQ.value;
+      if (q?.address && q.address !== priceQ.value?.address) { priceQ.value = q; priceAddr.value = q.address; priceKind.value = q.kind ?? 'villa'; priceMonths.value = q.months ?? 12; }
+    }
+    bldNoNew.value = localStorage.getItem(BLD_NEW_KEY) === '1';
+    if (props.rankMode && webEmbed) { const m = Number(localStorage.getItem(RANK_PERIOD_KEY)); if ([3, 6, 12, 24].includes(m) && m !== periodMonths.value) applyPeriod(m); }
+  } catch { /* 이 브라우저 값 그대로 */ }
+};
+onMounted(() => window.addEventListener('ui-prefs:loaded', onUiPrefs));
+onBeforeUnmount(() => window.removeEventListener('ui-prefs:loaded', onUiPrefs));
 const priceAuction = computed(() => (priceQ.value ? ({ id: `market-price:${priceQ.value.kind}:${priceQ.value.address}:${priceQ.value.months ?? 12}:${priceQ.value.at ?? 0}`, address: priceQ.value.address } as AuctionDetail) : null));
 const listView = ref<'map' | 'top' | 'bld' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case'>(props.rankMode ? 'map' : props.sonMode ? 'supply' : 'table');
 // 웹 — 맨 앞 '지도' 탭(예전 시장분석 › 거래랭킹). 조회할 때마다 mapRun 이 늘어 지도도 같은 조건으로 받는다
