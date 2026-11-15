@@ -108,13 +108,15 @@ function statOfRow(r: DayListRow & { date?: string }): string {
 /** 그 동 사건별 날짜별 조회수(마이가 차트에서 모은 것) → 회차표 */
 const hitDocs = ref<HitDoc[]>([]);
 const hitInfo = ref('');
+const hitRange = ref('');   // 조회수가 있는 첫날 ~ 끝날
 const loadHitDocs = async () => {
   const dong = dongFilter.value.trim();
-  if (!/(동|가|읍|면|리)$/.test(dong)) { hitDocs.value = []; hitInfo.value = ''; return; }
+  if (!/(동|가|읍|면|리)$/.test(dong)) { hitDocs.value = []; hitInfo.value = ''; hitRange.value = ''; return; }
   // 기간 = 조회수가 있는 날만(차트 끝의 다음 기일 날짜는 뺀다)
   try { hitDocs.value = await loadHits(dong); const ds = hitDocs.value.flatMap((h) => h.hd.filter((_, i) => (h.hc[i] ?? 0) > 0)).map((d) => d.replace(/\D/g, '')).filter((d) => d.length === 8 && d <= todayIso().replace(/\D/g, '')).sort(); const dot = (d: string) => `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6)}`;
-    hitInfo.value = hitDocs.value.length ? `${dong} 사건 ${hitDocs.value.length.toLocaleString('ko-KR')}건 · 날짜별 조회수${ds.length ? ` · ${dot(ds[0])} ~ ${dot(ds[ds.length - 1])}` : ''}` : `${dong} 사건 조회수가 아직 없습니다`; }
-  catch { hitInfo.value = '사건 차트를 읽지 못했습니다'; }
+    hitInfo.value = hitDocs.value.length ? `${dong} 주택 사건 ${hitDocs.value.length.toLocaleString('ko-KR')}건 · 날짜별 조회수` : `${dong} 사건 조회수가 아직 없습니다`;
+    hitRange.value = ds.length ? `${dot(ds[0])} ~ ${dot(ds[ds.length - 1])}` : ''; }
+  catch { hitInfo.value = '사건 차트를 읽지 못했습니다'; hitRange.value = ''; }
 };
 watch(dongFilter, () => { void loadHitDocs(); }, { immediate: true });
 watch(() => agent.value?.message, (m, o) => { if (m && m !== o && m.startsWith('조회수 수집 끝')) void loadHitDocs(); });
@@ -543,7 +545,8 @@ const calWeeks = computed(() => {
     const d = `${calMonth.value}-${String(day).padStart(2, '0')}`; const docs = byDay.get(d) ?? []; const depts = docs.filter((x) => x.dept);
     const use = depts.length ? depts : docs;   // 계별 문서가 있으면 그것만(CSV 는 같은 사건을 또 담는다)
     const lines = use.map((x) => ({ label: x.dept ? `${x.court.replace(/^[^-]+-/, '')} ${x.dept.replace(/^경매/, '')}` : 'CSV', n: x.rows.length, dong: calDong.value ? x.rows.filter((r) => String(r.addr ?? '').includes(calDong.value)).length : 0 }));
-    return { d, day, total: use.reduce((s, x) => s + x.rows.length, 0), lines, dongN: dongN.get(d) ?? 0, today: d === today };
+    const courts = [...new Set(use.map((x) => x.court).filter(Boolean))];   // 날짜 옆 이름 — 한 법원이면 '인천-본원 375', 여럿이면 '총 375'
+    return { d, day, court: courts.length === 1 ? courts[0] : '총', total: use.reduce((s, x) => s + x.rows.length, 0), lines, dongN: dongN.get(d) ?? 0, today: d === today };
   };
   const weeks: Array<Array<ReturnType<typeof cellOf> | null>> = []; let wk: Array<ReturnType<typeof cellOf> | null> = [];
   for (let day = 1; day <= last; day += 1) {
@@ -620,7 +623,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       </header>
       <div class="bpt-in">
         <div class="bpt-box bpt-colbox">
-          <h3 class="bpt-colh">기일 목록 · 조회수 수집
+          <h3 class="bpt-colh">기일목록 · 조회수 수집
             <span :class="['bpt-conn', agentOn ? 'on' : 'off']"><i aria-hidden="true" />{{ agentOn ? 'MyAgent · ' : 'MyAgent' }}<template v-if="agentOn"><span class="ago">{{ agentAgo }}</span>초 전</template></span>
             <span v-if="agentOn && agent?.version" class="bpt-ver">{{ verLabel(agent.version) }}</span>
           </h3>
@@ -641,13 +644,13 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             </div>
             <p v-if="progView && agent?.busy" class="bpt-sub num">{{ progView.what }}<template v-if="progView.left"> · {{ progView.left }}</template></p>
           </div>
-          <p v-if="hitInfo" class="bpt-sub">{{ hitInfo }}</p>
+          <p v-if="hitInfo" class="bpt-sub bpt-kv"><span>조회수</span>{{ hitInfo }}</p>
+          <p v-if="hitRange" class="bpt-sub bpt-kv"><span>기간</span>{{ hitRange }}</p>
           <p v-if="agentNote || (agentOn && agent?.message)" class="bpt-sub">{{ agentNote || agent?.message }}</p>
           <hr class="bpt-part" />
-          <h3>기일 목록 파일</h3>
           <label :class="['bpt-drop', { over: dropOver }]" @dragover.prevent="dropOver = true" @dragleave="dropOver = false" @drop.prevent="onDrop">
             <span class="ic" aria-hidden="true">📂</span>
-            <b>엑셀 · CSV 파일 선택하기</b><span>또는 이 칸에 끌어다 넣어 주세요.</span>
+            <b>기일목록 엑셀 · CSV 파일 선택하기</b><span>또는 이 칸에 끌어다 넣어 주세요.</span>
             <input type="file" accept=".xlsx,.csv" hidden @change="onFile" />
           </label>
           <p v-if="dayName" class="bpt-sub">{{ dayName }} · {{ dayRows.length.toLocaleString('ko-KR') }}건</p>
@@ -663,7 +666,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <template v-for="(wk, wi) in calWeeks" :key="wi">
               <span v-for="(c, ci) in wk" :key="`${wi}-${ci}`" class="cell-wrap">
                 <button v-if="c" type="button" :class="['cell', { on: c.d === dayDate, today: c.today, has: c.lines.length || c.dongN }]" @click="dayDate = c.d">
-                  <span class="dn">{{ c.day }}<small v-if="c.total">총 {{ c.total }}</small></span>
+                  <span class="dn">{{ c.day }}<small v-if="c.total">{{ c.court }} {{ c.total.toLocaleString('ko-KR') }}</small></span>
                   <span v-for="x in c.lines" :key="x.label" class="ln">{{ x.label }}<i v-if="calDong">({{ x.dong }})</i></span>
                   <span v-if="!c.lines.length && c.dongN" class="ln dg">{{ calDong || '동' }} {{ c.dongN }}</span>
                 </button>
@@ -908,7 +911,9 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-colbox .bpt-range { flex: 1 1 auto; min-width: 0; }
 .bpt-colbox .bpt-range input { flex: 1 1 0; min-width: 0; }
 .bpt-colbox .bpt-btns > .bpt-btn { flex: 1 1 0; padding: 0 6px; white-space: nowrap; }
-.bpt-part { width: 100%; margin: 6px 0 2px; border: 0; border-top: 1px solid #e3e7ee; }   /* 기일 목록 · 조회수 수집 아래 — 기일 목록 파일 칸 가름줄 */
+.bpt-part { width: 100%; margin: 6px 0 2px; border: 0; border-top: 1px solid #e3e7ee; }   /* 기일목록 · 조회수 수집 아래 — 기일목록 파일 칸 가름줄 */
+.bpt-kv { display: flex; gap: 8px; }
+.bpt-kv > span { flex: none; width: 3.2em; color: #9ca3af; }   /* 조회수 · 기간 이름표 */
 .bpt-cal { flex: 1 1 370px; min-width: 370px; }   /* 기일 달력 — 기일 목록 · 조회수 수집 오른쪽 */
 .bpt-cal-nav { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #111827; }
 .bpt-cal-day { font-size: 13px; font-weight: 400; color: #374151; margin-left: 4px; }   /* 고른 매각기일 — 기일별물건 제목 오른쪽(날짜 칸 걷음, 달력에서 고른다) */
