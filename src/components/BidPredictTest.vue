@@ -112,7 +112,7 @@ const hitDocs = ref<HitDoc[]>([]);
 const hitInfo = ref('');
 const hitRange = ref('');   // 조회수가 있는 첫날 ~ 끝날
 /** '검암동 주택 사건 500건' 말풍선 — 조회수수집이 사건마다 같이 받아 오는 것 */
-const HIT_TIP: TipRow[] = [['출처', '탱크옥션 사건 화면 · MyAgent가 모음'], ['사건', '사건번호 · 주소 · 종류 · 면적 · 감정가'], ['결과', '낙찰가 · 응찰자수 · 2등 가격 · 유찰 횟수'], ['기일', '회차마다 날짜 · 결과, 다음 매각기일'], ['조회수', '날마다 조회수 · 유효조회수(그날 하루치)']];
+const HIT_TIP: TipRow[] = [['사건', '사건번호 · 주소 · 종류 · 면적 · 감정가'], ['결과', '낙찰가 · 응찰자수 · 2등 가격 · 유찰 횟수'], ['기일', '회차마다 날짜 · 결과, 다음 매각기일'], ['조회수', '날마다 조회수 · 유효조회수(그날 하루치)']];
 const loadHitDocs = async () => {
   const dong = dongFilter.value.trim();
   if (!/(동|가|읍|면|리)$/.test(dong)) { hitDocs.value = []; hitInfo.value = ''; hitRange.value = ''; return; }
