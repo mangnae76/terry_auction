@@ -4845,11 +4845,12 @@ const sonConcLines = computed(() => {
   // 경매지번 실거래가 — 어떤 거래인지 표시(동일 평형 · 동일 층 / 동일 평형 / 평형 다름). 같은 평형이면 실거래가 그대로(평당가 반올림으로 619,999,998 처럼 몇 원 어긋나지 않게, 2026-11-15 사용자)
   // 사용자가 고른 것만(예전에 자동으로 들어간 값은 고른 게 아니라 쓰지 않는다, 2026-11-15 사용자)
   const apt = isApartment.value;   // 이름 · 안내 · 직접 고르기는 아파트만, 빌라는 예전 그대로(2026-11-15 사용자 '일단 아파트만')
+  // 아파트는 사용자가 고른 것만, 빌라는 자동(같은 건물 거래가 적어서, 2026-11-15 사용자)
   const cs = !apt ? mp?.caseSale : mp?.price?.casePick ? mp?.caseSale : null; const myM2 = Number(auction.value?.buildingAreaM2) || 0;
   const csSame = !!cs && cs.areaM2 > 0 && myM2 > 0 && Math.abs(cs.areaM2 - myM2) < 0.05;
   const myFloor = Number(String(sumVal('sum.floorCurrent') || '').replace(/[^\d]/g, '')) || 0;
   const csFloor = Number(String(cs?.floor ?? '').replace(/[^\d-]/g, '')) || 0;
-  const caseLine = line('caseSale', apt ? '① 경매지번 실거래가' : '경매지번 매매가', perPyOf(cs?.price ?? 0, cs?.areaM2 ?? 0), cs?.price ?? 0, '실거래 평당가', apt ? '유사물건 리스트에서 경매지번 거래 선택' : '');
+  const caseLine = line('caseSale', apt ? '① 경매지번 실거래가' : '경매지번 실거래가', perPyOf(cs?.price ?? 0, cs?.areaM2 ?? 0), cs?.price ?? 0, '실거래 평당가', apt ? '유사물건 리스트에서 경매지번 거래 선택' : '같은 건물 거래 중 자동 선택');
   if (cs && cs.price > 0) {
     caseLine.tag = csSame ? (myFloor && csFloor === myFloor ? '동일평형 · 동일층' : '동일평형') : '평형다름';   // '같은'이 아니라 '동일'(2026-11-15 사용자)
     // 어느 거래인지 — 날짜 · 층 · 동호(호실 목록으로 찾은 것, 여럿이면 '중 추정'). 같은 평형이면 실거래가 그대로, 다르면 평당가 × 우리 전용평
@@ -4869,8 +4870,8 @@ const sonConcLines = computed(() => {
       line('simSale', '유사물건 실거래가', perPyOf(mp?.simSale?.price ?? 0, mp?.simSale?.areaM2 ?? 0), mp?.simSale?.price ?? 0, '실거래 평당가', '유사물건 리스트에서 다른 건물 거래 선택'),
       { ...line('simAvg', '유사물건 평균 실거래가', mp?.simSalePerPy ?? 0, mp?.simSaleAvg ?? 0, '평균 평당가', '유사물건 리스트의 다른 건물 거래 평균'), ...(mp?.simSaleAvg ? { price: mp.simSaleAvg } : {}) },
     ] : [
-      line('simSale', apt ? '유사물건 실거래가' : '유사물건 매매가', perPyOf(mp?.simSale?.price ?? 0, mp?.simSale?.areaM2 ?? 0), mp?.simSale?.price ?? 0, '실거래 평당가', apt ? '유사물건 리스트에서 다른 건물 거래 선택' : ''),
-      line('condSale', apt ? '경매지번 평균 실거래가' : '유사물건 평균 매매가', mp?.condSalePerPy ?? 0, mp?.condSaleAvg ?? 0, '평균 평당가', apt ? '유사물건 리스트 평균(① 매도가 예상)' : ''),
+      line('simSale', '유사물건 실거래가', perPyOf(mp?.simSale?.price ?? 0, mp?.simSale?.areaM2 ?? 0), mp?.simSale?.price ?? 0, '실거래 평당가', apt ? '유사물건 리스트에서 다른 건물 거래 선택' : ''),
+      line('condSale', '유사물건 평균 실거래가', mp?.condSalePerPy ?? 0, mp?.condSaleAvg ?? 0, '평균 평당가', apt ? '유사물건 리스트 평균(① 매도가 예상)' : ''),
     ]),
     { key: 'askCase', label: lc.label, unit: ca?.unit ?? 0, price: ca?.price ?? 0, how: '', tag: '', guide: apt ? '호가분석에 적은 가장 낮은 호가' : '' },   // 호가는 파는 사람이 부른 값 그대로 — 평수로 바꾸지 않는다(2026-11-15 사용자)
     { key: 'askSim', label: ls.label, unit: sa?.unit ?? 0, price: sa?.price ?? 0, how: '', tag: '', guide: apt ? '호가분석에 적은 가장 낮은 호가' : '' },   // 호가는 공식 없이 부른 값 그대로(2026-11-15 사용자)
