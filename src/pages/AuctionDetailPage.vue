@@ -4858,20 +4858,24 @@ const sonConcLines = computed(() => {
     if (csSame) { caseLine.price = cs.price; caseLine.how = `${where} 실거래 그대로`; }
     else if (caseLine.how) caseLine.how = `${where} · ${caseLine.how}`;
   }
+  // ② 개별성 보정 줄 — 시세분석 ② 칸(개별성 보정 뒤 가운데 값) 그대로
+  const indivLine = (key: string, label: string) => { const v = cmpUnitClamp.value; const mid = v ? Math.round((v.lo + v.hi) / 2) : 0;
+    return { key, label, unit: mid > 0 && myPy > 0 ? Math.round(mid / myPy) : 0, price: mid, how: '', tag: '', guide: '시세분석 ② 매도가 예상(개별성 보정)' }; };
   return [
     caseLine,
     // 아파트 — '경매지번 평균 실거래가'를 경매지번 실거래가 바로 아래(2026-11-15 사용자). 빌라는 예전 순서 · 이름
     ...(apt ? [
       // ② 경매지번 실거래가 · 개별성 보정 — 시세분석 ② 칸(개별성 보정 뒤 가운데 값) 그대로(2026-11-15 사용자)
-      (() => { const v = cmpUnitClamp.value; const mid = v ? Math.round((v.lo + v.hi) / 2) : 0;
-        return { key: 'caseIndiv', label: '② 경매지번 실거래가 · 개별성 보정', unit: mid > 0 && myPy > 0 ? Math.round(mid / myPy) : 0, price: mid, how: '', tag: '', guide: '시세분석 ② 매도가 예상(개별성 보정)' }; })(),
+      indivLine('caseIndiv', '② 경매지번 실거래가 · 개별성 보정'),
       // 아파트 — 경매지번 실거래가 · 경매지번 평균 · 유사물건 실거래가 · 유사물건 평균 · 호가 둘(2026-11-15 사용자). 평균은 리스트 평균을 그대로(다시 곱하지 않는다)
       { ...line('caseAvg', '경매지번 평균 실거래가', mp?.caseSalePerPy ?? 0, mp?.caseSaleAvg ?? 0, '평균 평당가', '유사물건 리스트의 경매지번 거래 평균'), ...(mp?.caseSaleAvg ? { price: mp.caseSaleAvg } : {}) },
       line('simSale', '유사물건 실거래가', perPyOf(mp?.simSale?.price ?? 0, mp?.simSale?.areaM2 ?? 0), mp?.simSale?.price ?? 0, '실거래 평당가', '유사물건 리스트에서 다른 건물 거래 선택'),
       { ...line('simAvg', '유사물건 평균 실거래가', mp?.simSalePerPy ?? 0, mp?.simSaleAvg ?? 0, '평균 평당가', '유사물건 리스트의 다른 건물 거래 평균'), ...(mp?.simSaleAvg ? { price: mp.simSaleAvg } : {}) },
     ] : [
       line('simSale', '유사물건 실거래가', perPyOf(mp?.simSale?.price ?? 0, mp?.simSale?.areaM2 ?? 0), mp?.simSale?.price ?? 0, '실거래 평당가', apt ? '유사물건 리스트에서 다른 건물 거래 선택' : ''),
-      line('condSale', '유사물건 평균 실거래가', mp?.condSalePerPy ?? 0, mp?.condSaleAvg ?? 0, '평균 평당가', apt ? '유사물건 리스트 평균(① 매도가 예상)' : ''),
+      // 빌라 — ① 유사물건 평균 실거래가(= ① 매도가 예상) 바로 아래 ② 개별성 보정(2026-11-15 사용자)
+      { ...line('condSale', '① 유사물건 평균 실거래가', mp?.condSalePerPy ?? 0, mp?.condSaleAvg ?? 0, '평균 평당가', '유사물건 리스트 평균(① 매도가 예상)'), ...(mp?.condSaleAvg ? { price: mp.condSaleAvg } : {}) },
+      indivLine('simIndiv', '② 유사물건 평균 실거래가 · 개별성 보정'),
     ]),
     { key: 'askCase', label: lc.label, unit: ca?.unit ?? 0, price: ca?.price ?? 0, how: '', tag: '', guide: apt ? '호가분석에 적은 가장 낮은 호가' : '' },   // 호가는 파는 사람이 부른 값 그대로 — 평수로 바꾸지 않는다(2026-11-15 사용자)
     { key: 'askSim', label: ls.label, unit: sa?.unit ?? 0, price: sa?.price ?? 0, how: '', tag: '', guide: apt ? '호가분석에 적은 가장 낮은 호가' : '' },   // 호가는 공식 없이 부른 값 그대로(2026-11-15 사용자)
