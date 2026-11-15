@@ -92,10 +92,35 @@ export const median = (a: number[]) => {
 };
 
 /** 공시가 · 호수 — 그 지번 호실 중 같은 층 · 같은 면적(±0.05㎡). 호수는 하나뿐일 때만, 공시가는 여럿이면 가운데 값 */
-export const matchUnit = (units: ApartUnit[], areaM2: number, floor: number): { pub: number; ho: string } => {
-  const hit = units.filter((u) => Math.abs(u.areaM2 - areaM2) < 0.05 && Math.floor(Number(u.ho.replace(/\D/g, '')) / 100) === floor);
+/** 동 이름 맞추기 — '101동' · '101' 을 같게 */
+export const dongKey = (d?: string) => String(d ?? '').replace(/\s+/g, '').replace(/동$/, '');
+/** 같은 층 · 같은 전용(±0.05㎡) 호실 — 국토부가 동을 준 거래면 그 동 안에서만(2026-11-15 사용자 '동부터') */
+export const unitsAt = (units: ApartUnit[], areaM2: number, floor: number, dong?: string) => {
+  const dk = dongKey(dong);
+  return units.filter((u) => Math.abs(u.areaM2 - areaM2) < 0.05 && Math.floor(Number(u.ho.replace(/\D/g, '')) / 100) === floor && (!dk || dongKey(u.dong) === dk));
+};
+const unitText = (u: ApartUnit) => `${dongKey(u.dong) ? `${dongKey(u.dong)}동 ` : ''}${u.ho.replace(/\D/g, '')}호`;
+export const matchUnit = (units: ApartUnit[], areaM2: number, floor: number, dong?: string): { pub: number; ho: string } => {
+  const hit = unitsAt(units, areaM2, floor, dong);
   if (!hit.length) return { pub: 0, ho: '' };
-  return { pub: Math.round(median(hit.map((u) => u.price))), ho: hit.length === 1 ? `${hit[0].ho.replace(/\D/g, '')}호` : '' };
+  return { pub: Math.round(median(hit.map((u) => u.price))), ho: hit.length === 1 ? unitText(hit[0]) : '' };
+};
+/** 거래 한 건의 동 · 호 글 — 호실 목록(공동주택가격, 호마다 동)에서 같은 층 · 같은 전용 호실을 찾는다(2026-11-15 사용자).
+ *  하나면 '101동 1905호', 여럿(2~4)이면 '101동 1901호 · 103동 1905호 중 추정'(같은 동이면 '101동 1901·1905호 중 추정'),
+ *  호실을 못 찾으면 국토부가 준 동만 '101동'. 동을 모르면 지어내지 않는다 */
+export const unitLabelOf = (units: ApartUnit[], areaM2: number, floor: number, dong?: string): { text: string; dong: string; est: boolean } => {
+  const hit = unitsAt(units, areaM2, floor, dong);
+  const dk = dongKey(dong);
+  if (hit.length === 1) return { text: unitText(hit[0]), dong: dongKey(hit[0].dong) || dk, est: false };
+  if (hit.length >= 2 && hit.length <= 4) {
+    const ds = [...new Set(hit.map((u) => dongKey(u.dong)))];
+    const hos = [...hit].sort((a, b) => (a.dong + a.ho).localeCompare(b.dong + b.ho));
+    const text = ds.length === 1
+      ? `${ds[0] ? `${ds[0]}동 ` : ''}${hos.map((u) => u.ho.replace(/\D/g, '')).join('·')}호 중 추정`
+      : `${hos.map(unitText).join(' · ')} 중 추정`;
+    return { text, dong: ds.length === 1 ? ds[0] : dk, est: true };
+  }
+  return { text: dk ? `${dk}동` : '', dong: dk, est: false };
 };
 
 /** 면적이 범위 안인가 — 화면처럼 소수 둘째 자리 버림으로 견준다(실거래 84.3986 = 84.39 · 2026-11-11) */

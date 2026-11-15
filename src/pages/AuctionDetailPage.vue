@@ -4839,13 +4839,26 @@ const sonConcLines = computed(() => {
   // 조사가격은 평당가 × 우리 전용평 — 평수가 다른 거래 · 호가를 그대로 옮기면 우리 집 값이 아니다(2026-11-15 사용자). 평당가가 없으면 적힌 값 그대로
   const myPy = (Number(auction.value?.buildingAreaM2) || 0) / PYEONG_TO_M2;
   const ours = (unit: number, raw: number) => (unit > 0 && myPy > 0 ? Math.round(unit * myPy) : raw);
-  const line = (key: string, label: string, unit: number, raw: number, how: string) => ({ key, label, unit, price: ours(unit, raw), how: unit > 0 && myPy > 0 ? `${how} ${Math.round(unit / 1e4).toLocaleString('ko-KR')}만 × ${myPy.toFixed(2)}평` : '' });
+  const line = (key: string, label: string, unit: number, raw: number, how: string) => ({ key, label, unit, price: ours(unit, raw), how: unit > 0 && myPy > 0 ? `${how} ${Math.round(unit / 1e4).toLocaleString('ko-KR')}만 × ${myPy.toFixed(2)}평` : '', tag: '' });
+  // 경매지번 매매가 — 어떤 거래인지 표시(동일 평형 · 동일 층 / 동일 평형 / 평형 다름). 같은 평형이면 실거래가 그대로(평당가 반올림으로 619,999,998 처럼 몇 원 어긋나지 않게, 2026-11-15 사용자)
+  const cs = mp?.caseSale; const myM2 = Number(auction.value?.buildingAreaM2) || 0;
+  const csSame = !!cs && cs.areaM2 > 0 && myM2 > 0 && Math.abs(cs.areaM2 - myM2) < 0.05;
+  const myFloor = Number(String(sumVal('sum.floorCurrent') || '').replace(/[^\d]/g, '')) || 0;
+  const csFloor = Number(String(cs?.floor ?? '').replace(/[^\d-]/g, '')) || 0;
+  const caseLine = line('caseSale', '경매지번 매매가', perPyOf(cs?.price ?? 0, cs?.areaM2 ?? 0), cs?.price ?? 0, '실거래 평당가');
+  if (cs && cs.price > 0) {
+    caseLine.tag = csSame ? (myFloor && csFloor === myFloor ? '동일 평형 · 동일 층' : '동일 평형') : '평형 다름';   // '같은'이 아니라 '동일'(2026-11-15 사용자)
+    // 어느 거래인지 — 날짜 · 층 · 동호(호실 목록으로 찾은 것, 여럿이면 '중 추정'). 같은 평형이면 실거래가 그대로, 다르면 평당가 × 우리 전용평
+    const where = [String(cs.contractDate ?? '').slice(0, 10), csFloor ? `${csFloor}층` : '', cs.unitText ?? ''].filter(Boolean).join(' · ');
+    if (csSame) { caseLine.price = cs.price; caseLine.how = `${where} 실거래 그대로`; }
+    else if (caseLine.how) caseLine.how = `${where} · ${caseLine.how}`;
+  }
   return [
-    line('caseSale', '경매지번 매매가', perPyOf(mp?.caseSale?.price ?? 0, mp?.caseSale?.areaM2 ?? 0), mp?.caseSale?.price ?? 0, '실거래 평당가'),
+    caseLine,
     line('simSale', '유사물건 매매가', perPyOf(mp?.simSale?.price ?? 0, mp?.simSale?.areaM2 ?? 0), mp?.simSale?.price ?? 0, '실거래 평당가'),
     line('condSale', '유사물건 평균 매매가', mp?.condSalePerPy ?? 0, mp?.condSaleAvg ?? 0, '평균 평당가'),
-    { key: 'askCase', label: lc.label, unit: ca?.unit ?? 0, price: ca?.price ?? 0, how: '' },   // 호가는 파는 사람이 부른 값 그대로 — 평수로 바꾸지 않는다(2026-11-15 사용자)
-    { key: 'askSim', label: ls.label, unit: sa?.unit ?? 0, price: sa?.price ?? 0, how: '' },   // 호가는 공식 없이 부른 값 그대로(2026-11-15 사용자)
+    { key: 'askCase', label: lc.label, unit: ca?.unit ?? 0, price: ca?.price ?? 0, how: '', tag: '' },   // 호가는 파는 사람이 부른 값 그대로 — 평수로 바꾸지 않는다(2026-11-15 사용자)
+    { key: 'askSim', label: ls.label, unit: sa?.unit ?? 0, price: sa?.price ?? 0, how: '', tag: '' },   // 호가는 공식 없이 부른 값 그대로(2026-11-15 사용자)
   ];
 });
 const sonConcOff = (key: string) => mktVal(`son.conc.off.${key}`) === '1';
@@ -10689,7 +10702,7 @@ const goBack = () => router.back();
                 <thead><tr><th class="adp-conc-corner">구분</th><th>조사가격</th><th>평당가</th></tr></thead>
                 <tbody>
                   <tr v-for="l in sonConcLines" :key="l.key">
-                    <th :class="['adp-conc-side', { off: sonConcOff(l.key) }]"><label class="adp-conc-pick inline"><input type="checkbox" :checked="!sonConcOff(l.key)" @change="toggleSonConc(l.key)" /></label>{{ l.label }}</th>
+                    <th :class="['adp-conc-side', { off: sonConcOff(l.key) }]"><label class="adp-conc-pick inline"><input type="checkbox" :checked="!sonConcOff(l.key)" @change="toggleSonConc(l.key)" /></label>{{ l.label }}<em v-if="l.tag" :class="['adp-conc-tag', { diff: l.tag === '평형 다름' }]">{{ l.tag }}</em></th>
                     <td :class="['num', { off: sonConcOff(l.key) }]"><span class="adp-conc-v">{{ wonText(l.price) }}</span><small v-if="l.how" class="adp-conc-how">{{ l.how }}</small></td>
                     <td :class="['num', { off: sonConcOff(l.key) }]"><span class="adp-conc-v">{{ wonText(l.unit) }}</span></td>
                   </tr>
@@ -11516,6 +11529,9 @@ const goBack = () => router.back();
 .adp-diag-v.on { color: #2b6df3; } /* 값이 채워진 진단 칸 — 말소기준권리 · 인수·소멸 권리수 · 예측 난이도 모두 우리 파랑 */
 /* AI 명도 난이도 분석 — 왼쪽 예측 난이도 한 칸(높이를 오른쪽에 맞춤) · 오른쪽 세 칸은 위아래로 */
 .adp-evict { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px; padding: 2px 0 6px; }
+/* 경매지번 매매가 옆 표시 — 동일 평형(파랑) · 평형 다름(주황), 2026-11-15 사용자 */
+.adp-conc-tag { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: #eaf1ff; color: #2b6df3; font-style: normal; font-size: 12px; font-weight: 700; vertical-align: middle; white-space: nowrap; }
+.adp-conc-tag.diff { background: #fff1e6; color: #e8590c; }
 .adp-conc-how { display: block; margin-top: 2px; font-size: 12px !important; font-weight: 400; line-height: 1.3; color: #6b7280; }   /* 조사가격 계산 — 평당가 × 선정물건 면적(2026-11-15 사용자) */
 :root[data-theme="dark"] .adp-conc-how { color: #8b95a8; }
 .adp-conclude { padding: 2px 0 6px; }

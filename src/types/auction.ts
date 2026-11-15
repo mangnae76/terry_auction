@@ -398,6 +398,8 @@ export interface MarketPickRow {
   name: string;
   jibun: string;
   buildYear?: number;
+  /** 동 · 호 글 — 호실 목록으로 찾은 '101동 1905호' · 여럿이면 '… 중 추정'(경매지번 매매가, 2026-11-15) */
+  unitText?: string;
 }
 /** 시세조사 거르기 조건 — 기간선택(개월) · 시작~종료일자 · 면적(평) · 건축년도 */
 export interface MarketPickRange { months: number; from: string; to: string; areaMin: string; areaMax: string; buildMin: string; buildMax: string }

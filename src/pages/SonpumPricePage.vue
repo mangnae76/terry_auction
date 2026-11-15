@@ -11,7 +11,7 @@ import { computed, inject, nextTick, onBeforeUnmount, onMounted, onUpdated, ref,
 import type { AuctionDetail, MarketPickRow, MarketPicks, PriceView } from '../types/auction';
 import { analyzeAddress, floorOfHo, pickCaseTrade, type CasePropertyType, type CaseTradeResult, type CaseTradeRow } from '../services/caseTradeAnalysis';
 import {
-  PY, HUG_RATE, RADII, PERIODS, radText, periodText, simCond, simDefText, groupOf, floorNum, matchUnit, inRange,
+  PY, HUG_RATE, RADII, PERIODS, radText, periodText, simCond, simDefText, groupOf, floorNum, matchUnit, unitLabelOf, inRange,
   estStats, jeonseEstimate, distM, visitOrder, areaIn, type PriceCond, type PriceRow,
   type SonPriceOut,
 } from '../services/priceAnalysis';
@@ -156,7 +156,8 @@ const myLabel = computed(() => {
   const ho = p?.ho ? `${p.ho}호` : '';
   return [nm || [region.value?.dong, lot.value].filter(Boolean).join(' '), dong, ho].filter(Boolean).join(' ');
 });
-const myAddr = computed(() => [region.value?.dong, lot.value, res.value?.price?.name || sameRaw.value[0]?.name, res.value?.parts.ho ? `${res.value.parts.ho}호` : ''].filter(Boolean).join(' '));
+// 선정물건 동도 — 주소의 '101동'(유사물건 줄처럼 동 · 호, 2026-11-15 사용자)
+const myAddr = computed(() => [region.value?.dong, lot.value, res.value?.price?.name || sameRaw.value[0]?.name, myDong.value ? `${myDong.value}동` : '', res.value?.parts.ho ? `${res.value.parts.ho}호` : ''].filter(Boolean).join(' '));
 
 // ===== 좌표 · 공시가 호실 · 엘베 — 지번마다 한 번(값은 각 서비스가 저장해 둔다) =====
 type Spot = { lat: number; lng: number } | null;
@@ -264,7 +265,7 @@ const periodRows = computed<CaseTradeRow[]>(() => {
 const allRows = computed<PriceRow[]>(() => periodRows.value.map((r, i) => {
   const group = groupOf(r.kind)!;
   const floorNo = floorNum(r.floor);
-  const u = matchUnit(units.value[r.jibun] ?? [], r.areaM2, floorNo);
+  const u = matchUnit(units.value[r.jibun] ?? [], r.areaM2, floorNo, r.dong);
   const py = r.areaM2 / PY;
   return {
     ...r, id: `${i}|${r.contractDate}|${r.jibun}|${r.price}`, group, floorNo, ...u,
@@ -302,7 +303,7 @@ const kindCount = (k: Kind) => candidates.value.filter((r) => r.group === k).len
 const gapText = (r: PriceRow) => (r.pub ? (r.price - r.pub * HUG_RATE < 0 ? '갭 마이너스' : '갭 있음') : '공시가 없음');
 const elevText = (r: PriceRow) => (r.elev === undefined ? '조회 중' : r.elev === null ? '-' : r.elev > 0 ? `${r.elev}대있음` : '없음');
 // 아파트 동(653동)도 — 같은 단지 안에서 어느 동 거래인지 보이게(2026-11-11 사용자). 국토부가 동을 안 준 거래는 비운다
-const addrOf = (r: PriceRow) => [r.umdNm, r.jibun, r.name, r.dong ? `${String(r.dong).replace(/동$/, '')}동` : '', r.ho || hoCand(r)].filter(Boolean).join(' ');   // 앱 · 웹 같게 — 확정 호, 아니면 후보 '401·402호 중'
+const addrOf = (r: PriceRow) => [r.umdNm, r.jibun, r.name, hoCand(r)].filter(Boolean).join(' ');   // 앱 · 웹 같게 — 확정 호, 아니면 후보 '401·402호 중'
 /** 표에 보이는 주소 — 선정물건과 같은 읍면동이면 동 이름을 빼 짧게(말풍선 · 정렬은 전체 주소) */
 const addrShort = (r: PriceRow) => { const a = addrOf(r); const d = region.value?.dong; return d && r.umdNm === d ? a.replace(new RegExp(`^${d}\\s+`), '') : a; };
 const COLS: Array<ColumnDef<PriceRow>> = [
@@ -324,6 +325,8 @@ if (sv?.keep) colFilter.picked.value = { ...colFilter.picked.value, ...sv.keep }
 const webEmbed = inject<boolean>('webEmbed', false) || !!props.app;
 const shownCols = COLS;
 /** 선정물건 호 — 주소의 '402호' */
+/** 선정물건 동 — 주소의 '101동 23층2301호'에서 101(동 이름에 한글 읍면동은 뺀다) */
+const myDong = computed(() => { const m = String(props.auction?.address ?? '').match(/([0-9A-Za-z]+)동\s*(?:제?\d+층\s*)?\d{2,5}\s*호/); return m ? m[1] : ''; });
 const myHo = computed(() => { const m = String(props.auction?.address ?? '').match(/(?:^|\s|층|동)(\d{2,5})\s*호/); return m ? `${m[1]}호` : '-'; });
 /** 앱 손품조사 탭이 띄운 웹 시세분석 — 지도만 뺀다(2026-11-12 사용자 '앱에서는 지도 기능만 없이') */
 const sonApp = inject<boolean>('sonApp', false);
@@ -340,12 +343,12 @@ const myOwnDates = computed(() => new Set((props.auction?.registryRows ?? []).fi
 /** 호 — ① 그 지번 호실 목록(공동주택가격 · 호마다 전용)에서 같은 층 · 같은 전용(±0.05㎡)이 하나뿐이면 그 호(동까지)
  *  ② 둘 이상이면 후보 '401 · 402호 중' ③ 선정물건 등기부 소유권이전 접수일 = 실거래 등기일자면 선정물건 호 ④ 그 밖은 '모름'(2026-11-14 사용자) */
 /** 주소 끝에 붙일 호 후보 — 같은 층 · 같은 전용(±0.05㎡) 호가 둘 ~ 넷이면 '401·402호 중'(하나면 위 r.ho 가 이미 확정), 등기 짝이 맞으면 선정물건 호 */
-function hoCand(r: PriceRow): string {
-  if (r.rgstDate && r.jibun && r.jibun === lot.value && myOwnDates.value.has(ymdOf(r.rgstDate)) && myHo.value !== '-') return myHo.value;
-  const hos = [...new Set((units.value[r.jibun] ?? []).filter((u) => Math.abs(u.areaM2 - r.areaM2) < 0.05 && Math.floor(Number(u.ho.replace(/\D/g, '')) / 100) === r.floorNo).map((u) => u.ho.replace(/\D/g, '')))].sort();
-  if (hos.length === 1) return `${hos[0]}호`;
-  return hos.length >= 2 && hos.length <= 4 ? `${hos.join('·')}호 중` : '';
+/** 거래 한 건의 동 · 호 — 등기 짝이 맞으면 선정물건 동 · 호, 아니면 호실 목록에서(동까지, 여럿이면 '중 추정', 2026-11-15 사용자) */
+function unitOfRow(r: { jibun: string; areaM2: number; floor?: string; floorNo?: number; dong?: string; rgstDate?: string }) {
+  if (r.rgstDate && r.jibun && r.jibun === lot.value && myOwnDates.value.has(ymdOf(r.rgstDate)) && myHo.value !== '-') return { text: [myDong.value ? `${myDong.value}동` : '', myHo.value].filter(Boolean).join(' '), dong: myDong.value, est: false };
+  return unitLabelOf(units.value[r.jibun] ?? [], r.areaM2, r.floorNo ?? floorNum(r.floor ?? ''), r.dong);
 }
+function hoCand(r: PriceRow): string { return unitOfRow(r).text; }
 const isOff = (r: PriceRow) => webEmbed && dropped.value.includes(rowKey(r));
 /** 앱 표 주소 말풍선 — 누른 칸 바로 아래(화면 밖으로 나가지 않게), 다시 누르거나 밖을 누르거나 스크롤하면 닫는다 */
 const addrTip = ref<{ text: string; style: Record<string, string> } | null>(null);
@@ -541,6 +544,19 @@ const widen = (w: 'r' | 's' | 'p') => {
 // ===== 저장 — 0.8초 뒤 물건 문서(marketPicks)에. 손품결론이 실거래가 예상을 읽는다 =====
 const saving = ref(false);
 const savedAt = ref(store.auctions.find((x) => x.id === props.auction.id)?.marketPicks?.savedAt ?? 0);
+/** 경매지번 매매가 — 아파트는 같은 동 · 같은 평형부터(같은 층이 있으면 그것, 없으면 가장 최근), 없으면 같은 건물 같은 평형 · 같은 층 → 가장 가까운 평형.
+ *  동은 국토부가 준 동, 없으면 호실 목록에서 한 동으로 좁혀질 때만. 기간은 고른 기간, 매매가 없으면 2년(2026-11-15 사용자) */
+const caseSalePick = computed(() => {
+  const kinds: Array<CaseTradeRow['kind']> = ['매매', '직거래'];
+  const pick = (rows: CaseTradeRow[]) => {
+    if (isAptKind && myDong.value) {
+      const sameDong = rows.filter((r) => kinds.includes(r.kind) && r.price > 0 && Math.abs(r.areaM2 - me.value.areaM2) < 0.05 && unitOfRow(r).dong === myDong.value && !unitOfRow(r).est);
+      if (sameDong.length) return pickCaseTrade(sameDong, kinds, me.value.areaM2, me.value.floor);
+    }
+    return pickCaseTrade(rows, kinds, me.value.areaM2, me.value.floor);
+  };
+  return pick(sameRaw.value) ?? pick(sameRaw2y.value);
+});
 const savedSim = store.auctions.find((x) => x.id === props.auction.id)?.marketPicks?.simSale ?? null;
 const toPick = (r: CaseTradeRow | null): MarketPickRow | null => (r ? {
   kind: r.kind, contractDate: r.contractDate, amount: r.amount, price: r.price, areaM2: r.areaM2, floor: r.floor,
@@ -558,7 +574,7 @@ const body = computed((): Omit<MarketPicks, 'savedAt'> => {
   };
   return {
     // 같은 건물 거래는 손품결론 「경매지번 매매가」 자리 — 같은 평형 · 같은 층 → 같은 평형 → 가까운 평형
-    caseSale: toPick(pickCaseTrade(sameRaw.value, ['매매', '직거래'], me.value.areaM2, me.value.floor) ?? pickCaseTrade(sameRaw2y.value, ['매매', '직거래'], me.value.areaM2, me.value.floor)),
+    caseSale: caseSalePick.value ? { ...toPick(caseSalePick.value)!, unitText: unitOfRow(caseSalePick.value).text } : null,
     caseJeonse: toPick(pickCaseTrade(sameRaw.value, ['전세'], me.value.areaM2, me.value.floor)),
     caseManual: { sale: false, jeonse: false },
     simSale: simPick.value ? (toPick(allRows.value.find((r) => rowKey(r) === simPick.value) ?? null) ?? savedSim) : null, simJeonse: null,
@@ -947,7 +963,7 @@ if (typeof window !== 'undefined' && webEmbed && !props.app) {
   onBeforeUnmount(() => { window.removeEventListener('scroll', onEstScroll); window.removeEventListener('resize', onEstResize); estRo?.disconnect(); if (estRaf) cancelAnimationFrame(estRaf); stickProbe?.remove(); stickProbe = null; });
 }
 /** 전체화면 유사물건 — 그 건물 거래들의 호(확정 · 후보), 서로 다른 것만 */
-const hosOf = (g: { list: PriceRow[] }) => [...new Set(g.list.filter((r) => !isOff(r)).map((r) => r.ho || hoCand(r)).filter(Boolean))].join(' · ');
+const hosOf = (g: { list: PriceRow[] }) => [...new Set(g.list.filter((r) => !isOff(r)).map((r) => hoCand(r)).filter(Boolean))].join(' · ');
 const fsList = computed(() => [...mapGroups.value].sort((a, b) => (orderOf.value[a.jibun] ?? 999) - (orderOf.value[b.jibun] ?? 999)));
 /** 표 줄을 누르면 지도의 그 점이 커지고 이름표가 뜬다 — 경매지번(같은 건물) 줄 · 맨 위 빨간 줄은 빨간 점(2026-11-10) */
 const pickMine = () => { focus.value = ''; meOpen.value = !meOpen.value; };
