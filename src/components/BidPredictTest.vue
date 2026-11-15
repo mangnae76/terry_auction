@@ -706,7 +706,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
         </tbody>
       </table>
       <p class="bpt-sub">예측 · {{ daySum.dong }}만(다른 동은 목록만, 구현 예정) · / 뒤 숫자 · 그날 법원 전체(고른 계)</p>
-      <div class="table-wrap bpt-tbl-wrap">
+      <div class="table-wrap bpt-tbl-wrap fit">
         <table class="bpt-tbl fixed">
           <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게(검암동 · 모든동 · 11-13 · 16 · 19 에서 잰 가장 넓은 값, 주소는 남는 폭) -->
           <colgroup><col style="width: 72px" /><col style="width: 116px" /><col style="width: 192px" /><col style="width: 56px" /><col style="width: 76px" /><col style="width: 52px" /><col style="width: 64px" /><col style="width: 40px" /><col style="width: 96px" /><col style="width: 64px" /><col style="width: 60px" /><col style="width: 92px" /><col style="width: 60px" /><col style="width: 92px" /><col style="width: 88px" /><col style="width: 92px" /></colgroup>
@@ -896,6 +896,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bpt-tbl td.act-sold .bpt-nb { color: #ff7a8a; } }
 .bpt-day .bpt-tbl td.addr, .bpt-day .bpt-tbl th.l { text-align: left; }   /* 주소는 머리 · 내용 모두 왼쪽 줄 맞춤 */
 .bpt-tbl.fixed { table-layout: fixed; }
+.bpt-tbl-wrap.fit { width: fit-content; max-width: 100%; }   /* 사건별 예측 — 넓은 화면에서도 칸 폭 합(1,312px)만큼만, 남는 폭을 칸마다 나눠 벌어지지 않게 */
+.bpt-tbl-wrap.fit > .bpt-tbl { width: 1312px; }   /* 고정 칸 표는 폭을 적어야 칸 폭대로 그린다(auto 면 글에 맞춰 다시 벌어짐) */
 .bpt-tbl.fixed td { overflow: hidden; text-overflow: ellipsis; }
 .bpt-tbl.fixed td.addr { max-width: none; }
 .bpt-tbl .bpt-nb { display: inline-block; min-width: min(11ch, 100%); max-width: 100%; text-align: right; font-variant-numeric: tabular-nums; }   /* 칸보다 넓으면 줄임표(…)가 붙었다 — 칸 안에서만   /* 금액 — 가운데 칸 안에서 끝자리 세로 맞춤 */
