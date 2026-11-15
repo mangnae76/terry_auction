@@ -237,6 +237,8 @@ const fillElevs = async () => {
 };
 /** 차이 금액 — '+4,660,000' · '−1,020,000' */
 const signWon = (x: number) => `${x >= 0 ? '+' : '−'}${won(Math.abs(x))}`;
+/** 감정가 대비 % — 최저가 · 예상 낙찰가 · 실제 낙찰가 아랫줄(차이 칸과 같은 꼴) */
+const apprPct = (v: number, appr: number) => `${(v / appr * 100).toFixed(1).replace(/\.0$/, '')}%`;
 const sgn = (x: number) => `${x >= 0 ? '+' : '−'}${Math.abs(x * 100).toFixed(1)}%`;
 
 /** DB 를 먼저, 없으면 이 브라우저에 읽어 둔 파일 */
@@ -707,7 +709,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
           <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게(검암동 · 모든동 · 11-13 · 16 · 19 에서 잰 가장 넓은 값, 주소는 남는 폭) -->
-          <colgroup><col style="width: 80px" /><col style="width: 128px" /><col /><col style="width: 64px" /><col style="width: 80px" /><col style="width: 58px" /><col style="width: 80px" /><col style="width: 44px" /><col style="width: 100px" /><col style="width: 66px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 92px" /><col style="width: 100px" /></colgroup>
+          <colgroup><col style="width: 80px" /><col style="width: 128px" /><col style="width: 240px" /><col style="width: 64px" /><col style="width: 80px" /><col style="width: 58px" /><col style="width: 80px" /><col style="width: 44px" /><col style="width: 100px" /><col style="width: 66px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 92px" /><col style="width: 100px" /></colgroup>
           <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th>연식</th><th>전용</th><th>엘베</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
           <tbody>
             <tr v-for="it in shownItems" :key="it.key" :class="{ on: pick === it.key, off: !preds.has(it.key) }" @click="pick = pick === it.key ? '' : it.key">
@@ -720,13 +722,13 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td v-if="!it.viewAt" class="r">—</td>
               <td v-else class="r">{{ it.views.toLocaleString('ko-KR') }}<small :class="['bpt-at', { after: stale(it.viewAt) }]">{{ it.viewAt === dayDate ? '당일' : it.viewAt.slice(5).replace('-', '.') }}{{ stale(it.viewAt) ? ' 덜 모음' : '' }}</small></td>
               <td>{{ it.target ? `${it.target.round + 1}차` : '—' }}</td>
-              <td class="r"><span v-if="it.target" class="bpt-nb">{{ won(it.target.min) }}</span><template v-else>자료 없음</template></td>
+              <td class="r"><span v-if="it.target" class="bpt-nb">{{ won(it.target.min) }}<small v-if="it.target.appr" class="bpt-at bpt-nb">{{ apprPct(it.target.min, it.target.appr) }}</small></span><template v-else>자료 없음</template></td>
               <td>{{ sellOf(it.key) ? pct(sellOf(it.key)!.pSold) : '—' }}</td>
               <td class="r">{{ sellOf(it.key) ? `${sellOf(it.key)!.expBids.toFixed(1)}명` : '—' }}</td>
-              <td v-if="preds.get(it.key)" class="r strong"><span class="bpt-nb">{{ won((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}</span></td>
+              <td v-if="preds.get(it.key)" class="r strong"><span class="bpt-nb">{{ won((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small v-if="it.target?.appr" class="bpt-at bpt-nb">{{ apprPct((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median, it.target.appr) }}</small></span></td>
               <td v-else>—</td>
               <td class="r">{{ it.result ? (it.result.sold > 0 ? (it.result.bids ? `${it.result.bids}명` : '모름') : '유찰') : '입찰 전' }}</td>
-              <td class="r act-sold"><span v-if="it.result && it.result.sold > 0" class="bpt-nb">{{ won(it.result.sold) }}</span><template v-else>—</template></td>
+              <td class="r act-sold"><span v-if="it.result && it.result.sold > 0" class="bpt-nb">{{ won(it.result.sold) }}<small v-if="it.target?.appr" class="bpt-at bpt-nb">{{ apprPct(it.result.sold, it.target.appr) }}</small></span><template v-else>—</template></td>
               <td v-if="it.result && it.result.sold > 0 && preds.get(it.key)" class="r"><span class="bpt-nb">{{ signWon(it.result.sold - (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small class="bpt-at bpt-nb">{{ sgn(it.result.sold / (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median - 1) }}</small></span></td>
               <td v-else class="r">—</td>
               <td v-if="preds.get(it.key)" class="r two"><span class="bpt-nb rng">{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).lo) }} ~<small>{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).hi) }}<i class="ghost" aria-hidden="true"> ~</i></small></span></td>
@@ -969,6 +971,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-btn:disabled { opacity: .45; cursor: default; }
 .bpt-at { display: block; font-size: 12px; color: #6b7280; }
 .bpt-at.after { color: #c4392f; }
+.bpt-tbl td .bpt-nb small.bpt-at { font-weight: 400; color: #6b7280; }   /* 금액 아랫줄 % — 굵은 · 색 칸(예상 · 실제 낙찰가)에서도 차이 칸처럼 회색 보통 굵기 */
 /* 매각분석 › 인근매각사례 데이터수집과 같은 꼴(연결 알약 · 진행 막대 · 중지) — selected.src.html .sx-conn · .sx-prog */
 .bpt-colh { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .bpt-conn { display: inline-flex; align-items: center; gap: 4px; height: 16px; padding: 0 7px; line-height: 16px; border-radius: 999px; background: #eef1f6; color: #6b7280; font-size: 12px; font-weight: 400; white-space: nowrap; }
