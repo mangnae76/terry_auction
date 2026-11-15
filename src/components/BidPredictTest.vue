@@ -449,12 +449,14 @@ const loadExt = async () => {
   } catch { extMsg.value = '시세 · 입지 자료를 받지 못함'; }
   finally { extBusy.value = false; }
 };
-/** 덧붙일 값 — [시세 대비 최저가(ln), 시세 못 잡음, 엘베, 세대수(ln), 대장 못 찾음] */
+/** 아파트 사건 주소 — 세대수는 아파트만(빌라는 한 동 몇 세대라 뜻이 없다, 2026-11-15 사용자). 종별을 모르는 매각 자료 줄은 빌라로 본다 */
+const aptAddrs = computed(() => new Set(hitDocs.value.filter((h) => /아파트/.test(h.kind)).map((h) => h.addr)));
+/** 덧붙일 값 — [시세 대비 최저가(ln), 시세 못 잡음, 엘베, 세대수(ln, 아파트만 · 빌라 0), 대장 못 찾음] */
 const extVec = (addr: string, area: number | null, min: number, d: string): number[] => {
   const key = `${addr}|${area}|${min}|${d}`; const hit = extMemo.get(key); if (hit) return hit;
   const l = lotParts(addr); const f = extFacts.value[`${l.dong} ${l.jibun}`];
   const y = f?.year || yearOfAddr(addr) || null; const s = marketPriceAt(extTrades.value, addr, area, y, d);
-  const v = [s && min > 0 ? Math.log(min / s.price) : 0, s ? 0 : 1, f ? (f.elevator > 0 ? 1 : 0) : 0, f?.households ? Math.log(1 + f.households) : 0, f ? 0 : 1];
+  const v = [s && min > 0 ? Math.log(min / s.price) : 0, s ? 0 : 1, f ? (f.elevator > 0 ? 1 : 0) : 0, f?.households && aptAddrs.value.has(addr) ? Math.log(1 + f.households) : 0, f ? 0 : 1];
   extMemo.set(key, v); return v;
 };
 /** 선정물건 급매가 — 손품결론 급매가 칸(사용자가 ±300만 안으로 잡는 값, 2026-11-15) */
