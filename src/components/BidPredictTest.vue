@@ -94,8 +94,10 @@ const loadDb = async () => {
       d.rows.forEach((r) => { const k = r.kind || '기타'; kinds[k] = (kinds[k] ?? 0) + 1; const s = statOfRow(r); stats[s] = (stats[s] ?? 0) + 1; });
       return { court: d.court, dept: d.dept, n: d.rows.length, kinds, stats, keys: d.rows.map((r) => r.key) };
     }).sort((a, b) => (parseInt(a.dept, 10) || 0) - (parseInt(b.dept, 10) || 0));
-    dbInfo.value = docs.length ? `DB ${docs.length}개 목록(${docs.map((d) => d.dept || 'CSV').join(' · ')}) · ${m.size.toLocaleString('ko-KR')}건` : 'DB에 이 날 목록이 없습니다';
-  } catch { dbInfo.value = 'DB 목록을 읽지 못했습니다'; }
+    // 매각기일 옆 한 줄 — '인천-본원 5계 · 8계 370건'(계마다 문서 하나, 건수는 겹친 사건 뺀 합)
+    const courts = [...new Set(docs.map((d) => d.court).filter(Boolean))]; const depts = docs.filter((d) => d.dept).map((d) => d.dept.replace(/^경매/, ''));
+    dbInfo.value = docs.length ? `${courts.join(' · ')} ${depts.length ? depts.join(' · ') : 'CSV'} ${m.size.toLocaleString('ko-KR')}건` : '기일목록 없음';
+  } catch { dbInfo.value = '기일목록을 읽지 못했습니다'; }
 };
 watch(dayDate, () => { void loadDb(); }, { immediate: true });
 /** 기일 목록 한 줄의 그날 현황 — 매각 · 유찰(다음 기일로 넘어감) · 입찰 전 · 그 밖(취하 · 변경 …) */
@@ -661,7 +663,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
         </div>
         <div class="bpt-box bpt-cal">
           <h3 class="bpt-colh">기일별물건
-            <span v-if="dayDate" class="bpt-cal-day">매각기일 <b>{{ Number(dayDate.slice(5, 7)) }}월 {{ Number(dayDate.slice(8)) }}일 ({{ WD[new Date(`${dayDate}T00:00:00`).getDay()] }})</b></span>
+            <span v-if="dayDate" class="bpt-cal-day">매각기일 <b>{{ Number(dayDate.slice(5, 7)) }}월 {{ Number(dayDate.slice(8)) }}일 ({{ WD[new Date(`${dayDate}T00:00:00`).getDay()] }})</b><small v-if="dbInfo">{{ dbInfo }}</small></span>
             <span class="bpt-cal-nav"><button type="button" aria-label="이전 달" @click="calStep(-1)">‹</button><b>{{ Number(calMonth.slice(0, 4)) }}년 {{ Number(calMonth.slice(5)) }}월</b><button type="button" aria-label="다음 달" @click="calStep(1)">›</button></span>
           </h3>
           <div class="bpt-cal-grid" role="grid" :aria-label="`${calMonth} 기일별물건`">
@@ -676,7 +678,6 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               </span>
             </template>
           </div>
-          <p v-if="dbInfo" class="bpt-sub">{{ dbInfo }}</p>
           <p class="bpt-sub">괄호 · {{ calDong || '동선택의 동' }} 건수 · 계별은 기일목록수집을 받은 날만</p>
         </div>
       </div>
@@ -921,6 +922,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-cal-nav { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #111827; }
 .bpt-cal-day { font-size: 13px; font-weight: 400; color: #374151; margin-left: 4px; }   /* 고른 매각기일 — 기일별물건 제목 오른쪽(날짜 칸 걷음, 달력에서 고른다) */
 .bpt-cal-day b { color: #2b6df3; font-weight: 700; }
+.bpt-cal-day small { margin-left: 8px; font-size: 13px; color: #6b7280; }   /* 그날 기일목록 — '인천-본원 5계 · 8계 370건' */
 .bpt-cal-nav button { width: 24px; height: 24px; border: 1px solid #d5dbe5; border-radius: 6px; background: #fff; color: #374151; font: inherit; font-size: 14px; line-height: 1; cursor: pointer; padding: 0; }
 .bpt-cal-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid #e3e7ee; border-radius: 8px; overflow: hidden; }
 .bpt-cal-grid .hd { background: #f4f6fa; font-size: 12px; font-weight: 700; color: #374151; text-align: center; padding: 4px 0; border-bottom: 1px solid #e3e7ee; }
