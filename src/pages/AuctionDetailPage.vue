@@ -13606,9 +13606,13 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .sup-nv:hover { border-color: #2b6df3; color: #2b6df3; }
 .sup-in::placeholder { color: #aebbd6; font-size: 14px; font-weight: 400; }
 /* 앱 ④ 단지 수급분석 — 폰 폭: 칸 둘씩 두 줄, 글 · 숫자 작게, 합격선은 숫자 아래 줄(웹 꼴 그대로면 글이 겹쳤다, 2026-11-15 사용자) */
-.o-sup.app { padding: 12px 12px 12px; }
-.o-sup.app .sup-scope { margin: 0 0 10px; font-size: 14px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; }
-.o-sup.app .sup-scope .area { margin-left: 0; }
+.o-sup.app { padding: 12px; }
+/* 제목 — ③ 읍면동 수급분석과 같은 글자(13 · 800) · 번호 뒤 간격(4px) · 왼쪽 선(2026-11-15 사용자) */
+.o-sup.app .sup-scope { margin: 0 0 10px -2px; font-size: 13px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0; }
+.o-sup.app .sup-scope .area { margin-left: 6px; }
+.o-sup.app .sup-scope .cmp-q { margin-top: 2px; }
+/* 거래량 — '단지 총 연 34 | 연 6 | 월 0.5' 숫자만, '건'은 뺀다(2026-11-15 사용자) */
+.o-sup.app .sup-scope + .sup-row .sup-cell:first-child .sup-u { display: none; }
 .o-sup.app .sup-scope .cmp-q { flex: 1 0 100%; font-size: 12px; font-weight: 400; color: #6b7280; }
 .o-sup.app .sup-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
 .o-sup.app .sup-h { padding: 6px 4px; font-size: 12px; white-space: nowrap; }
