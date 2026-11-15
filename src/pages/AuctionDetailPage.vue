@@ -3208,10 +3208,13 @@ watch([() => auction.value?.id, () => webEmbed] as const, async ([id, web]) => {
   supRows.value = []; supLoaded.value = false; supDongRows.value = []; supAllRows.value = []; supRegion.value = null;
   const a = auction.value;
   // 아파트 · 빌라 모두 — 빌라도 입지비교(건물마다)에 이 실거래를 쓴다(2026-11-12). 단지 수급 상자는 아파트만 보인다
-  if (!id || !web || !a?.address || (!isApartment.value && !sonpumMode)) return;
+  // 앱 — ④ 단지 수급분석(아파트)에 쓸 이 단지 거래만 받는다. 입지비교는 웹 저장본으로 그려 시군구 거래는 받지 않는다(2026-11-15 사용자)
+  const appSup = !web && appPrice && isApartment.value;
+  if (!id || !(web || appSup) || !a?.address || (!isApartment.value && !sonpumMode)) return;
   const out = await analyzeAddress({ address: a.address, propertyType: priceKind.value, years: 1 }).catch(() => null);
   if (auction.value?.id !== id) return;
   supRows.value = out?.rows ?? []; supLoaded.value = true;
+  if (!web) return;
   supDongRows.value = out?.dongRows ?? []; supAllRows.value = out?.allRows ?? []; supRegion.value = out?.region ?? null;   // 단지 입지비교 — 같은 동 · 시군구 줄, 내 좌표
 }, { immediate: true });
 const supDeals = computed(() => {
@@ -5951,7 +5954,8 @@ const cmpMePt = computed(() => (supRegion.value?.lat ? { lat: supRegion.value.la
 /** ===== 매매수요 저장본(2026-11-12 사용자) — 필터로 뽑은 리스트는 사용자 데이터라 바뀌면 안 된다.
  *  필터가 저장본과 같으면 새로 계산하지 않고 저장본(실거래 · 좌표 · 시설 거리)으로 그린다. 필터를 바꾸면 새로 계산하고, 다 받으면 자동으로 다시 저장한다. ===== */
 // 비교 건물이 하나도 없는 저장본은 쓰지 않는다 — 실거래를 못 받았을 때 빈 리스트가 굳어 버리지 않게
-const cmpSnap = computed<DemandSnap | null>(() => { const sn = auction.value?.demandSnap; return sn?.v === 1 && sn.rows.some((r) => !r.mine) ? sn : null; });
+// 비교 단지 없이 선정물건만 남은 저장본도 쓴다 — 실거래를 받아 둔 것(선정물건 거래가 있음)이면 거르기에 다른 단지가 다 빠진 것이라 선정물건이 1등(2026-11-15 사용자)
+const cmpSnap = computed<DemandSnap | null>(() => { const sn = auction.value?.demandSnap; return sn?.v === 1 && (sn.rows.some((r) => !r.mine) || sn.rows.some((r) => r.mine && (r.deals?.length ?? 0) > 0)) ? sn : null; });
 /** 조회하기를 누르면 저장본이 있어도 새로 받는다 — 같은 조건으로 눌러도 '조회가 안 된다'고 느끼지 않게(2026-11-12). 저장하기 · 다른 물건이면 풀린다 */
 const cmpForce = ref(false);
 watch(() => auction.value?.id, () => { cmpForce.value = false; });
@@ -6422,6 +6426,18 @@ const cmpGiveUp = ref(false);
 let cmpGiveUpT = 0;
 watch(cmpLoading, (on) => { window.clearTimeout(cmpGiveUpT); cmpGiveUp.value = false; if (on) cmpGiveUpT = window.setTimeout(() => { cmpGiveUp.value = true; }, 30000); }, { immediate: true });
 const cmpHold = computed(() => cmpLoading.value && !cmpGiveUp.value);
+/** 선정물건 말고 남은 단지(빌라)가 없을 때 안내 한 줄 — 어느 범위로 걸렀는지 · 어떻게 넓히나 */
+const cmpNoOther = computed(() => {
+  if (cmpHold.value || !cmpRows.value.length || cmpRows.value.some((r) => !r.mine)) return '';
+  const [ylo, yhi] = cmpYear2.value; const [alo, ahi] = cmpArea2.value;
+  const yr = ylo > 0 && yhi < 9999 ? `건축 ${ylo}~${yhi}년` : '';
+  const ar = alo > 0 && ahi < 9999 ? `전용 ${Math.round(alo).toLocaleString('ko-KR')}~${Math.round(ahi).toLocaleString('ko-KR')}㎡` : '';
+  const rng = [yr, ar].filter(Boolean).join(' · ');
+  const how = !webEmbed ? '' : cmpModeR.value === 'sim' ? ' 다른 단지와 견주려면 기준을 직접범위로 바꿔 건축년도 · 면적을 넓히거나 유사도를 낮춰 보세요.' : ' 다른 단지와 견주려면 건축년도 · 면적 범위를 넓혀 보세요.';
+  const me = (isApartment.value ? supName.value : '') || `선정 ${cmpN.value}`;
+  // 견줄 곳이 없으면 이 지역에서 선정물건이 1등(순위 칸도 1, 2026-11-15 사용자)
+  return `${rng ? `${rng} 범위에` : '이 조건에'} 비교할 ${cmpN.value}가 없어 ${me}가 이 지역 1등입니다.${how}`;
+});
 // 받는 동안엔 바로 전에 보여 준 리스트 · 말풍선을 그대로 둔다(지웠다 다시 그리지 않는다, 2026-11-12 사용자 '굳이 왜 지워야 되냐'). 처음이라 보여 준 게 없으면 선정물건만
 let cmpShown: CmpRow[] = [];
 watch(() => auction.value?.id, () => { cmpShown = []; });
@@ -9666,7 +9682,8 @@ const goBack = () => router.back();
                   </table>
                 </div>
               </div>
-              <p v-else class="adp-sub-note">웹 손품조사 › 매매수요에서 리스트를 저장하면 여기에 같이 나옵니다.</p>
+              <p v-if="cmpSnapOn && cmpNoOther" class="adp-sub-note">{{ cmpNoOther }}</p>
+              <p v-if="!(cmpSnapOn && cmpRows.length)" class="adp-sub-note">웹 손품조사 › 매매수요에서 리스트를 저장하면 여기에 같이 나옵니다.</p>
             </div>
             <div v-if="sonpumMode" class="o-demand"><slot name="son-demand" /></div>
             <template v-if="!sonpumMode">
@@ -9871,7 +9888,7 @@ const goBack = () => router.back();
 
             <!-- 웹 단지 수요분석 — 단지 수급(2026-11-10 시험, 웹만). 위 동 수요분석 표 바로 아래에 붙여 둘을 한 묶음으로(입지/개별성 위). 위 수요분석(AdminRegionDemandPage)의 ① 기초수치 · ② 수요지표와 같은 틀 · 글자 · 칸 크기 -->
             <!-- 아파트만 — 빌라는 단지 개념이 없다 -->
-            <section v-if="webEmbed && isApartment" class="adp-dm-block boxed sup-dm o-sup">
+            <section v-if="(webEmbed || appPrice) && isApartment" :class="['adp-dm-block', 'boxed', 'sup-dm', 'o-sup', { app: appPrice }]">
               <!-- 제목 '수요분석' 왼쪽, 단지 이름은 오른쪽에 알약 없이 파란 글(2026-11-11 사용자) -->
               <p class="sup-scope"><span class="cmp-no">④</span>단지 수급분석<span class="area">{{ supName || '단지' }}</span><small class="cmp-q">이 단지는 내놓으면 얼마나 빨리 팔릴까?</small></p>
               <div class="sup-row">
@@ -10264,6 +10281,8 @@ const goBack = () => router.back();
                   </table>
                 </div>
               </div>
+              <!-- 비교할 단지(빌라)가 하나도 없을 때 — 표가 고장 난 줄 알았다(안산파크푸르지오 유사도 80% · 건축 2013~2023 에 구축 단지가 모두 빠짐, 2026-11-15 사용자) -->
+              <p v-if="webEmbed && cmpNoOther" class="cmp-noroom cmp-none">{{ cmpNoOther }}</p>
               <!-- 밑 받침 — 필터를 보다가 리스트가 줄면 페이지가 짧아져 브라우저가 화면을 끌어올렸다. 줄어든 만큼 잠깐 받쳐 두고, 화면 밖으로 나가면 걷는다(2026-11-12 사용자) -->
               <div v-if="cmpSpacer" class="cmp-spacer" :style="{ height: `${cmpSpacer}px` }" aria-hidden="true" ref="cmpSpacerEl" />
               <!-- 선정물건에서 직접 고를 것 — 비어 있는 현장 · 수동 칸만. 누르면 그 점수 팝업(2026-11-11 시안) -->
@@ -13148,6 +13167,7 @@ tr.tone-take { background: #fff5f5; }
 .cmp-persona .val { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 6px; background: #f3f5f9; font-size: 14px; font-weight: 700; color: #111827; white-space: nowrap; }
 .cmp-persona .sep { width: 1px; height: 22px; background: #dde3ee; }
 .cmp-persona .val.stack { display: inline-grid; justify-items: center; }
+.cmp-noroom.cmp-none { margin: 8px 0 0; }
 .cmp-noroom { margin: 0 0 8px; padding: 10px 12px; border: 1px dashed #dde3ee; border-radius: 8px; background: #f7f9fc; font-size: 13px; color: #6b7280; }
 .cmp-noroom b { color: #111827; }
 .cmp-persona .val.stack > span { grid-area: 1 / 1; visibility: hidden; }
@@ -13582,6 +13602,27 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .sup-nv { display: inline-flex; align-items: center; gap: 2px; height: 20px; margin-left: 6px; padding: 0 6px; border: 1px solid #dde3ee; border-radius: 999px; background: #fff; color: #6b7280; font-family: inherit; font-size: 12px; font-weight: 400; vertical-align: middle; cursor: pointer; } /* 링크일 뿐이라 작게 · 회색 · 굵기 없이(웹 글자 하한 12) */   /* 위 수요분석 '네이버매물'(.nv-btn)과 같은 꼴 */
 .sup-nv:hover { border-color: #2b6df3; color: #2b6df3; }
 .sup-in::placeholder { color: #aebbd6; font-size: 14px; font-weight: 400; }
+/* 앱 ④ 단지 수급분석 — 폰 폭: 칸 둘씩 두 줄, 글 · 숫자 작게, 합격선은 숫자 아래 줄(웹 꼴 그대로면 글이 겹쳤다, 2026-11-15 사용자) */
+.o-sup.app { padding: 12px 12px 12px; }
+.o-sup.app .sup-scope { margin: 0 0 10px; font-size: 14px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; }
+.o-sup.app .sup-scope .area { margin-left: 0; }
+.o-sup.app .sup-scope .cmp-q { flex: 1 0 100%; font-size: 12px; font-weight: 400; color: #6b7280; }
+.o-sup.app .sup-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+.o-sup.app .sup-h { padding: 6px 4px; font-size: 12px; white-space: nowrap; }
+.o-sup.app .sup-plain { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.o-sup.app .sup-b { padding: 10px 4px; flex-wrap: wrap; gap: 4px; }
+.o-sup.app .sup-b b { font-size: 15px; flex-wrap: wrap; justify-content: center; row-gap: 2px; }
+.o-sup.app .sup-b b .sup-bar { margin: 0 4px; }
+.o-sup.app .sup-row + .sup-row .sup-b b .sup-bar { display: none; }
+.o-sup.app .sup-row + .sup-row .sup-b b .sup-pass { flex: 0 0 100%; text-align: center; font-size: 11px; }
+.o-sup.app .sup-pre, .o-sup.app .sup-u { font-size: 11px; }
+.o-sup.app .sup-in { width: 80px; height: 30px; font-size: 15px; padding: 0 8px; }
+.o-sup.app .sup-in::placeholder { font-size: 12px; }
+.o-sup.app .sup-nv { margin-left: 0; }
+.o-sup.app .sup-opinion { padding: 12px 14px; }
+.o-sup.app .sup-opinion b { font-size: 13px; }
+.o-sup.app .sup-opinion b::before { font-size: 11px; }
+.o-sup.app .sup-opinion span { font-size: 12.5px; line-height: 1.55; }
 .sup-note { margin: -6px 2px 0; font-size: 12px; color: #6b7280; line-height: 1.6; }
 .adp-dm-sub { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 3px 2px 2px; font-size: 13px; font-weight: 800; color: #111827; }
 .adp-dm-sub .adp-edit-btn { margin-left: auto; }
