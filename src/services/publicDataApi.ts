@@ -124,9 +124,9 @@ const RETRYABLE_STATUS = new Set([502, 503, 504, 408]);
 /** 일일 한도를 다 쓰면 자정까지 아무리 불러도 429다 — 한 번 겪으면 그날은 더 안 부른다 */
 export const QUOTA_EXCEEDED_MSG = '국토부 API 일일 요청 한도를 다 썼습니다 — 자정이 지나면 다시 됩니다.';
 // 한도는 API마다 따로다 — 건축물대장(세대수)을 많이 불러 막혀도 실거래 조회까지 막으면 안 된다
-type QuotaFamily = 'trade' | 'bld';
-const quotaBlockedAt: Record<QuotaFamily, number> = { trade: 0, bld: 0 };
-const familyOf = (url: URL): QuotaFamily => (/BldRgst|ArchPms/i.test(url.pathname) ? 'bld' : 'trade');
+type QuotaFamily = 'trade' | 'bld' | 'kapt';
+const quotaBlockedAt: Record<QuotaFamily, number> = { trade: 0, bld: 0, kapt: 0 };
+const familyOf = (url: URL): QuotaFamily => (/BldRgst|ArchPms/i.test(url.pathname) ? 'bld' : /AptListService|AptBasisInfo/i.test(url.pathname) ? 'kapt' : 'trade');
 const quotaResetAt = (at: number) => {
   const d = new Date(at);
   d.setHours(24, 0, 0, 0); // 다음 자정
@@ -205,6 +205,15 @@ const requestJson = async (url: URL) => {
     }
   }
   throw lastErr instanceof Error ? lastErr : new Error('API 요청 실패');
+};
+
+/** 공공데이터 API 하나를 부른다 — 키 · 중계 · 한도 · 재시도는 위와 같게(K-apt 단지 목록 · 기본정보, 2026-11-15) */
+export const requestDataApi = async (path: string, params: Record<string, string | number>) => {
+  const url = buildApiUrl(path);
+  setServiceKey(url);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
+  url.searchParams.set('_type', 'json');
+  return requestJson(url);
 };
 
 const asArray = (value: unknown): Record<string, unknown>[] => {

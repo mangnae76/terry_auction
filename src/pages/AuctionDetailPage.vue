@@ -30,6 +30,7 @@ import {
   FIELD_CHECKLIST, FIELD_EXTERIOR_CHECKS, FIELD_INTERIOR_CHECKS, FIELD_MANAGE_CHECKS, FIELD_SAFETY_CHECKS, FIELD_COMFORT_CHECKS,
 } from '../services/fieldChecklist';
 import { getBuildingFacts } from '../services/buildingFacts';
+import { kaptFactsOf, kaptParkPerHome, type KaptFacts } from '../services/kaptApi';
 import { loadBuildingFacts } from '../services/buildingGroup';
 import { complexNameOf, totalParkingOf } from '../services/aptComplex';
 import { getComplexAreas, supplyRowsOf, areaUnitsOf, sameExclusiveCountOf, type ComplexAreas } from '../services/complexAreas';
@@ -3317,6 +3318,31 @@ watch(() => auction.value?.id, async (id) => {
   if (changed) void persistSurvey({ silent: true });   // 건축물대장 자동 채움 — 최근 작성에 남기지 않는다
 }, { immediate: true });
 
+// K-apt — 아파트는 오래된 단지도 관리 단지면 주차 · 승강기 · 세대수가 있다(건축물대장 총괄표제부가 빈 구축, 2026-11-15 사용자).
+// 비어 있는 칸만 채운다(사람이 넣은 값 · PDF · 건축물대장 값은 덮지 않는다)
+const kaptSgg = ref('');
+watch(() => `${auction.value?.id ?? ''}|${isApartment.value}`, async () => {
+  const id = auction.value?.id; const a = auction.value;
+  kaptSgg.value = '';
+  if (!id || !a?.address || !isApartment.value) return;
+  const region = await resolveRegionFromAddress(a.address).catch(() => null);
+  if (!region?.lawdCd5 || auction.value?.id !== id) return;
+  kaptSgg.value = region.lawdCd5;
+  const v0 = surveyForm.value?.indivValues ?? {};
+  const needParking = !/^\d+$/.test(v0['ind.parking'] ?? '') || Number(v0['ind.parking']) === 0;
+  const needUnits = !sumVal('sum.units');
+  if (!needParking && v0['ind.elevator'] && !needUnits) return;
+  const f = await kaptFactsOf(region.lawdCd5, region.dong, supName.value, region.jibun);
+  if (!f || auction.value?.id !== id) return;
+  const sf = surveyForm.value; if (!sf.indivValues) sf.indivValues = {};
+  const v = sf.indivValues; let changed = false;
+  const park = f.parkUp + f.parkDown;
+  if ((!/^\d+$/.test(v['ind.parking'] ?? '') || Number(v['ind.parking']) === 0) && park > 0) { v['ind.parking'] = String(park); changed = true; }
+  if (!v['ind.elevator']) { v['ind.elevator'] = f.elevators > 0 ? 'O' : 'X'; changed = true; }
+  if (!sumVal('sum.units') && f.households > 0) { setSumVal('sum.units', String(f.households)); changed = true; }
+  if (changed) void persistSurvey({ silent: true });
+}, { immediate: true });
+
 // 카드마다·단락마다 따로 여닫는다. deal = 급매가의 1.실거래가 조사,
 // listing = 2.저렴매물조사 (예전에는 둘이 location 하나를 같이 썼다)
 // 손품분석 ④ 호가분석은 편집 단추 없이 칸이 늘 열려 있다(적으면 손을 멈출 때 저장)
@@ -6586,6 +6612,38 @@ const cmpFloorsText = computed(() => {
 });
 const zoneCmpOf = (id: string) => (indivValue(`${id}.cmp`) === 'up' ? 1 : indivValue(`${id}.cmp`) === 'down' ? -1 : 0);
 const pickZoneCmp = (id: string, v: string) => { setIndivValue(`${id}.cmp`, v === 'eq' ? '' : v); persistSoon(); };
+/** 시세분석에서 고른 다른 단지 — K-apt 주차 · 승강기(아파트, 2026-11-15). '다른 단지와 비교'를 고를 때 옆에서 견주게 */
+const kaptOthers = ref<Record<string, KaptFacts | null>>({});
+const kaptOtherKeys = computed(() => {
+  if (!isApartment.value || !kaptSgg.value) return [];
+  const m = new Map<string, { umd: string; name: string; jibun: string }>();
+  (sonPriceOut?.value?.rows ?? []).filter((r) => !r.same && r.umd).forEach((r) => m.set(`${r.umd}|${r.name}|${r.jibun ?? ''}`, { umd: r.umd!, name: r.name, jibun: r.jibun ?? '' }));
+  return [...m.entries()];
+});
+watch(() => kaptOtherKeys.value.map(([k]) => k).join('/'), async () => {
+  const sgg = kaptSgg.value;
+  await Promise.all(kaptOtherKeys.value.map(async ([k, r]) => {
+    if (k in kaptOthers.value) return;
+    const f = await kaptFactsOf(sgg, r.umd, r.name, r.jibun);
+    kaptOthers.value = { ...kaptOthers.value, [k]: f };
+  }));
+}, { immediate: true });
+/** '다른 단지와 비교' 칸 아래 한 줄 — 주차는 세대당 대수, 엘베는 몇 곳에 있나. 모르는 단지는 뺀다 */
+const kaptOtherNote = (id: string) => {
+  const fs = kaptOtherKeys.value.map(([k]) => kaptOthers.value[k]).filter((f): f is KaptFacts => !!f);
+  if (!fs.length) return '';
+  if (id === 'ind.parking') {
+    const ps = fs.map(kaptParkPerHome).filter((n) => n > 0).sort((a, b) => a - b);
+    if (!ps.length) return '';
+    const t = (n: number) => n.toFixed(1);
+    return `다른 단지 세대당 ${ps.length > 1 && t(ps[0]) !== t(ps[ps.length - 1]) ? `${t(ps[0])}~${t(ps[ps.length - 1])}` : t(ps[0])}대`;
+  }
+  if (id === 'ind.elevator') {
+    const on = fs.filter((f) => f.elevators > 0).length;
+    return on === fs.length ? '다른 단지 승강기 모두 있음' : on === 0 ? '다른 단지 승강기 모두 없음' : `다른 단지 ${fs.length}곳 중 ${on}곳 승강기 있음`;
+  }
+  return '';
+};
 const zoneSignOf = (id: string) => (zoneMatched(id) ? 0 : zoneCmpOf(id));   // 아파트도 손품으로 다른 단지를 알 수 있어 같은 방식(2026-11-13 사용자)
 const adjOf = (sg: number, id: string): [number, number] => {
   const [a, b] = rateOf(id).map(Math.abs) as [number, number];
@@ -10265,7 +10323,7 @@ const goBack = () => router.back();
                         <b v-else>{{ indivAutoText(item) }}</b>
                       </td>
                       <td class="n"><span class="cmp-rate-in"><input inputmode="decimal" :value="rateTyped(item.id)" :placeholder="indivRateNum(item)" :aria-label="`${item.label} 비율`" @input="indivRateInput(item.id, ($event.target as HTMLInputElement).value)" />%<button v-if="webEmbed" type="button" :class="['cmp-rate-reset', { on: !!rateTyped(item.id) }]" :tabindex="rateTyped(item.id) ? 0 : -1" :aria-label="`${item.label} 기본값으로`" :data-tip="rateTyped(item.id) ? '기본값으로' : undefined" @click="resetIndivValue(`${item.id}.rate`)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg></button></span></td>
-                      <td class="cmp-zone-cmp-td"><span v-if="zoneMatched(item.id)" class="cmp-zone-match">시세분석 조건으로 맞춤 · 0%</span><span v-else class="cmp-ind-seg cmp-zone-cmp" role="radiogroup" :aria-label="`${item.label} — ${isApartment ? '이 단지가 다른 단지보다' : '경매빌라가 다른 빌라보다'}`"><button v-for="c in ZONE_CMP" :key="c.v" type="button" role="radio" :aria-checked="zoneCmpOf(item.id) === c.sg" :class="[c.v, { on: zoneCmpOf(item.id) === c.sg }]"  @click="pickZoneCmp(item.id, c.v)"><span class="k">{{ c.label }}</span><small v-if="c.sg">{{ cmpPct(c.sg, item.id) }}</small></button></span></td></tr>
+                      <td class="cmp-zone-cmp-td"><span v-if="zoneMatched(item.id)" class="cmp-zone-match">시세분석 조건으로 맞춤 · 0%</span><span v-else class="cmp-ind-seg cmp-zone-cmp" role="radiogroup" :aria-label="`${item.label} — ${isApartment ? '이 단지가 다른 단지보다' : '경매빌라가 다른 빌라보다'}`"><button v-for="c in ZONE_CMP" :key="c.v" type="button" role="radio" :aria-checked="zoneCmpOf(item.id) === c.sg" :class="[c.v, { on: zoneCmpOf(item.id) === c.sg }]"  @click="pickZoneCmp(item.id, c.v)"><span class="k">{{ c.label }}</span><small v-if="c.sg">{{ cmpPct(c.sg, item.id) }}</small></button></span><small v-if="isApartment && !zoneMatched(item.id) && kaptOtherNote(item.id)" class="cmp-kapt">{{ kaptOtherNote(item.id) }}</small></td></tr>
                   </tbody>
                 </table></div></div>
                 <div class="son-demand sup-tbl t-unit"><div class="adm-table-wrap"><table class="adm-table cmp-tbl cmp-tbl-zone">
@@ -13240,6 +13298,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 #appUnitSlot .adp-ind-adj small { display: block; font-size: 10px; }
 #appUnitSlot .cmp-two { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .cmp-zone-match { display: block; font-size: 12px; color: #9ca3af; }   /* 보정 0 — 시세분석에서 이미 같은 조건으로 걸렀다 */
+.cmp-kapt { display: block; margin-top: 4px; font-size: 12px; color: var(--text-sub, #6b7280); text-align: center; white-space: normal; }   /* 다른 단지 K-apt 주차 · 승강기(2026-11-15) */
 .cmp-th-hint { display: block; font-weight: 400; font-size: 12px; color: #2563eb; white-space: normal; }   /* '내용' 아래 줄 — 옆 칸과 겹치지 않게 */   /* 내용 머리 옆 파란 안내(2026-11-11 사용자) */
 /* 빌라 개별성 — 나음 +% · 같음 · 못함 −% (2026-11-13). 좁은 칸에서도 넘치지 않게 세 칸 같은 폭, 이름 위 · % 아래 두 줄 */
 .cmp-ind-seg.cmp-zone-cmp { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; width: 100%; box-sizing: border-box; }
