@@ -4324,6 +4324,8 @@ const lowAddrTypedG = (sim: boolean, index: number) => !!(mktVal(lowKeyG(sim, in
 /** 앱 호가매물(아파트) — 면적 두 줄(위 공급 · 아래 전용), 평 단추를 누르면 둘 다 평으로. 저장은 늘 ㎡(2026-11-15 사용자) */
 const lowAreaShow = (sim: boolean, index: number, f: 'area' | 'supply') => {
   const raw = mktAreaNum(lowKeyG(sim, index, f));
+  // 경매아파트 공급 — 적지 않았으면 같은 단지 값을 글로(흐린 안내가 아니라 검은 값, 2026-11-15 사용자)
+  if (!raw && f === 'supply' && !sim) return lowSupplyAuto(sim, index);
   // ㎡ 는 소수 둘째 자리까지만 보인다(59.9867 → 59.98, 칸에서 잘리지 않게)
   return raw && areaUnit.value === 'py' ? (Number(raw) / PYEONG_TO_M2).toFixed(2) : raw.replace(/(\.\d{2})\d+$/, '$1');
 };
@@ -6417,7 +6419,8 @@ const cmpFetched = computed(() => {
   return true;
 });
 /** 다 받았고 비교 건물도 있다 — 저장할 수 있다 */
-const cmpLiveReady = computed(() => cmpFetched.value && cmpList.value.some((c) => !c.mine));   // 비교 건물이 없으면 저장하지 않는다(다음에 열 때 다시 계산)
+// 비교 건물이 없어도 선정물건 실거래를 받았으면 저장한다 — 거르기에 다른 단지가 다 빠진 것이라 선정물건 1등으로 앱에 보낸다(2026-11-15 사용자). 거래도 없으면 저장하지 않는다
+const cmpLiveReady = computed(() => cmpFetched.value && cmpList.value.some((c) => !c.mine || c.deals.length > 0));
 /** 조회 중 — 조회하기를 눌렀고 아직 다 받지 못했다(단추에 '조회 중…') */
 const cmpLoading = computed(() => cmpQueried.value && !cmpSnapOn.value && !cmpFetched.value);
 /** 받는 동안엔 리스트 · 지도 말풍선을 하나씩 붙이지 않고 선정물건만 — 다 받으면 한 번에 그린다(2026-11-12 사용자).
@@ -10651,7 +10654,7 @@ const goBack = () => router.back();
                     <small v-else>전용면적</small>
                     <!-- 앱 아파트 — 위 공급 · 아래 전용, 평 단추로 둘 다 바뀐다(평일 땐 칸을 떠날 때 ㎡ 로 바꿔 적는다, 2026-11-15 사용자) -->
                     <span v-if="editingSurvey.listing && appPrice && isApartment" class="son-area2">
-                      <span class="adp-mkt-unit"><input class="adp-mkt-input" inputmode="decimal" :value="lowAreaShow(g.sim, i - 1, 'supply')" :placeholder="lowSupplyAuto(g.sim, i - 1) || '공급'" :aria-label="`${g.label} 공급면적`" @input="areaUnit === 'm2' && lowAreaSet(g.sim, i - 1, 'supply', $event)" @change="areaUnit === 'py' && lowAreaSet(g.sim, i - 1, 'supply', $event)" />{{ areaUnit === 'py' ? '평' : '㎡' }}</span>
+                      <span class="adp-mkt-unit"><input class="adp-mkt-input" inputmode="decimal" :value="lowAreaShow(g.sim, i - 1, 'supply')" placeholder="공급" :aria-label="`${g.label} 공급면적`" @input="areaUnit === 'm2' && lowAreaSet(g.sim, i - 1, 'supply', $event)" @change="areaUnit === 'py' && lowAreaSet(g.sim, i - 1, 'supply', $event)" />{{ areaUnit === 'py' ? '평' : '㎡' }}</span>
                       <span class="adp-mkt-unit ex"><input :class="['adp-mkt-input', { need: !!mktVal(lowKeyG(g.sim, i - 1, 'saleAsk')) && !mktAreaNum(lowKeyG(g.sim, i - 1, 'area')) }]" inputmode="decimal" :value="lowAreaShow(g.sim, i - 1, 'area')" placeholder="전용" :aria-label="`${g.label} 전용면적`" @input="areaUnit === 'm2' && lowAreaSet(g.sim, i - 1, 'area', $event)" @change="areaUnit === 'py' && lowAreaSet(g.sim, i - 1, 'area', $event)" />{{ areaUnit === 'py' ? '평' : '㎡' }}</span>
                     </span>
                     <span v-else-if="editingSurvey.listing" class="adp-mkt-unit">
