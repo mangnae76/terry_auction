@@ -521,16 +521,9 @@ const rate = (x: number, n: number) => (n ? `${Math.round((x / n) * 100)}%` : '�
 const errPct = (x: number, n: number) => (n ? `${((x / n) * 100).toFixed(1)}%` : '—');
 const goDay = (d: string) => { dayDate.value = d; requestAnimationFrame(() => document.querySelector('.bpt-day')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); };
 
-/** 기일 칩 — 사건 차트에 있는 매각기일. 다가오는 기일과 최근 지난 기일 */
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
 /** 표 맨 왼쪽 입찰일 — '26.11.19(목)' */
 const bidDay = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? `${d.slice(2, 4)}.${d.slice(5, 7)}.${d.slice(8)}(${WD[new Date(`${d}T00:00:00`).getDay()]})` : '—');
-const dayChips = computed(() => {
-  const cnt = new Map<string, number>(); hitRounds.value.forEach((r) => cnt.set(r.date, (cnt.get(r.date) ?? 0) + 1));
-  const all = [...cnt.entries()].sort((a, b) => a[0].localeCompare(b[0])); const today = todayIso();
-  const chip = ([d, n]: [string, number]) => ({ d, n, label: `${Number(d.slice(5, 7))}.${Number(d.slice(8))}(${WD[new Date(`${d}T00:00:00`).getDay()]})`, ahead: d >= today });
-  return [...all.filter(([d]) => d < today).slice(-6), ...all.filter(([d]) => d >= today).slice(0, 6)].map(chip);
-});
 
 /* ===== 기일 달력 — 한 달 월~금, 날마다 법원 · 계별 건수(괄호 = 동 거르기의 동). 계별은 기일목록수집을 받은 날만, 나머지 날은 사건 차트의 다음 기일로 센 동 건수만.
  * 탱크옥션 기일별물건처럼 모든 법원 · 계 건수는 나중에 마이가 그 달력을 받아 채운다(2026-11-15 사용자) ===== */
@@ -538,6 +531,7 @@ const calMonth = ref(todayIso().slice(0, 7));
 const calDocs = ref<Awaited<ReturnType<typeof loadDayListsRange>>>([]);
 const loadCal = async () => { const m = calMonth.value; try { const got = await loadDayListsRange(`${m}-01`, `${m}-31`); if (m === calMonth.value) calDocs.value = got; } catch { if (m === calMonth.value) calDocs.value = []; } };
 watch(calMonth, () => { void loadCal(); }, { immediate: true });
+watch(dayDate, (d) => { if (/^\d{4}-\d{2}/.test(d) && d.slice(0, 7) !== calMonth.value) calMonth.value = d.slice(0, 7); }, { immediate: true });   // 매각기일을 고르면 달력도 그 달로
 const calStep = (n: number) => { const [y, m] = calMonth.value.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); calMonth.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
 const calDong = computed(() => dongFilter.value.trim());
 const calWeeks = computed(() => {
@@ -625,21 +619,6 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       </header>
       <div class="bpt-in">
         <div class="bpt-box">
-          <h3>기일 목록 파일</h3>
-          <label :class="['bpt-drop', { over: dropOver }]" @dragover.prevent="dropOver = true" @dragleave="dropOver = false" @drop.prevent="onDrop">
-            <span class="ic" aria-hidden="true">📂</span>
-            <b>엑셀 · CSV 파일 선택하기</b><span>또는 기일별물건 엑셀 · CSV를 이 칸에 끌어다 넣어 주세요.</span>
-            <input type="file" accept=".xlsx,.csv" hidden @change="onFile" />
-          </label>
-          <p v-if="dayName" class="bpt-sub">{{ dayName }} · {{ dayRows.length.toLocaleString('ko-KR') }}건</p>
-          <label class="bpt-date">매각기일<input v-model="dayDate" type="date" /></label>
-          <div v-if="dayChips.length" class="bpt-chips" role="group" aria-label="매각기일 고르기">
-            <button v-for="c in dayChips" :key="c.d" type="button" :class="['bpt-chip', { on: c.d === dayDate, ahead: c.ahead }]" :title="`${c.d} · 검암동 ${c.n}건`" @click="dayDate = c.d">{{ c.label }}<small>{{ c.n }}</small></button>
-          </div>
-          <p v-if="dbInfo" class="bpt-sub">{{ dbInfo }}</p>
-          <p v-if="fileMsg" class="bpt-warn">{{ fileMsg }}</p>
-        </div>
-        <div class="bpt-box">
           <h3 class="bpt-colh">기일 목록 · 조회수 수집
             <span :class="['bpt-conn', agentOn ? 'on' : 'off']"><i aria-hidden="true" />{{ agentOn ? 'MyAgent · ' : 'MyAgent' }}<template v-if="agentOn"><span class="ago">{{ agentAgo }}</span>초 전</template></span>
             <span v-if="agentOn && agent?.version" class="bpt-ver">{{ verLabel(agent.version) }}</span>
@@ -664,12 +643,22 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <p class="bpt-sub">조회수수집 · 동 거르기의 동, 주택 사건마다 날짜별 조회수 · 처음엔 시작일 2025-06-15</p>
           <p v-if="hitInfo" class="bpt-sub">{{ hitInfo }}</p>
           <p class="bpt-sub">{{ agentNote || (agentOn ? agent?.message : '') || '집 PC 마이(agent.py)를 켜면 여기서 시킵니다' }}</p>
+          <hr class="bpt-part" />
+          <h3>기일 목록 파일</h3>
+          <label :class="['bpt-drop', { over: dropOver }]" @dragover.prevent="dropOver = true" @dragleave="dropOver = false" @drop.prevent="onDrop">
+            <span class="ic" aria-hidden="true">📂</span>
+            <b>엑셀 · CSV 파일 선택하기</b><span>또는 기일별물건 엑셀 · CSV를 이 칸에 끌어다 넣어 주세요.</span>
+            <input type="file" accept=".xlsx,.csv" hidden @change="onFile" />
+          </label>
+          <p v-if="dayName" class="bpt-sub">{{ dayName }} · {{ dayRows.length.toLocaleString('ko-KR') }}건</p>
+          <p v-if="fileMsg" class="bpt-warn">{{ fileMsg }}</p>
         </div>
         <div class="bpt-box bpt-cal">
-          <h3 class="bpt-colh">기일 달력
+          <h3 class="bpt-colh">기일별물건
+            <label class="bpt-date bpt-cal-day">매각기일<input v-model="dayDate" type="date" /></label>
             <span class="bpt-cal-nav"><button type="button" aria-label="이전 달" @click="calStep(-1)">‹</button><b>{{ Number(calMonth.slice(0, 4)) }}년 {{ Number(calMonth.slice(5)) }}월</b><button type="button" aria-label="다음 달" @click="calStep(1)">›</button></span>
           </h3>
-          <div class="bpt-cal-grid" role="grid" :aria-label="`${calMonth} 기일 달력`">
+          <div class="bpt-cal-grid" role="grid" :aria-label="`${calMonth} 기일별물건`">
             <span v-for="w in ['월', '화', '수', '목', '금']" :key="w" class="hd">{{ w }}</span>
             <template v-for="(wk, wi) in calWeeks" :key="wi">
               <span v-for="(c, ci) in wk" :key="`${wi}-${ci}`" class="cell-wrap">
@@ -681,6 +670,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               </span>
             </template>
           </div>
+          <p v-if="dbInfo" class="bpt-sub">{{ dbInfo }}</p>
           <p class="bpt-sub">괄호 · {{ calDong || '동 거르기의 동' }} 건수 · 계별은 기일목록수집을 받은 날만</p>
         </div>
         <div class="bpt-box grow">
@@ -917,8 +907,11 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-in { display: flex; gap: 12px; flex-wrap: wrap; }
 .bpt-box { border: 1px solid #e3e7ee; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 260px; }
 .bpt-box.grow { flex: 1 1 420px; }
+.bpt-part { width: 100%; margin: 6px 0 2px; border: 0; border-top: 1px solid #e3e7ee; }   /* 기일 목록 · 조회수 수집 아래 — 기일 목록 파일 칸 가름줄 */
 .bpt-cal { flex: 1 1 370px; min-width: 370px; }   /* 기일 달력 — 기일 목록 · 조회수 수집 오른쪽 */
 .bpt-cal-nav { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #111827; }
+.bpt-cal-day { font-weight: 400; margin-left: 4px; }   /* 매각기일 — 기일 달력 제목 오른쪽 */
+.bpt-cal-day input { height: 28px; }
 .bpt-cal-nav button { width: 24px; height: 24px; border: 1px solid #d5dbe5; border-radius: 6px; background: #fff; color: #374151; font: inherit; font-size: 14px; line-height: 1; cursor: pointer; padding: 0; }
 .bpt-cal-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid #e3e7ee; border-radius: 8px; overflow: hidden; }
 .bpt-cal-grid .hd { background: #f4f6fa; font-size: 12px; font-weight: 700; color: #374151; text-align: center; padding: 4px 0; border-bottom: 1px solid #e3e7ee; }
@@ -1058,12 +1051,6 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-prog .num b { color: #1f5fe0; }
 .bpt-stop { height: 34px; padding: 0 14px; border: 1px solid #c22e2e; border-radius: 8px; background: none; color: #c22e2e; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
 .bpt-stop:disabled { border-color: #e3e7ee; color: #c4c9d2; cursor: default; }
-.bpt-chips { display: flex; flex-wrap: wrap; gap: 6px; max-width: 320px; }
-.bpt-chip { height: 28px; padding: 0 9px; border: 1px solid #d5dbe5; border-radius: 999px; background: #fff; color: #374151; font: inherit; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
-.bpt-chip small { font-size: 12px; color: #9ca3af; }
-.bpt-chip.ahead { border-color: #b9cbf5; color: #1f5fe0; }
-.bpt-chip.on { background: #2b6df3; border-color: #2b6df3; color: #fff; }
-.bpt-chip.on small { color: #dbe5fa; }
 .bpt-grade-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .bpt-grade-head .bpt-h3 { margin-right: auto; }
 .bpt-grade { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
