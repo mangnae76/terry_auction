@@ -10398,7 +10398,7 @@ const goBack = () => router.back();
                 <!-- 기준가 칸은 뺐다 — 위 기준가 카드와 같은 값이라 겹친다(2026-11-11 사용자) -->
                 <div class="cmp-tiles two">
                   <div class="cmp-tile"><span class="k">보정</span><span class="v">{{ unitAdjText }}</span></div>
-                  <div class="cmp-tile key est2"><span class="k">{{ webEmbed ? '매도가 예상 2 · 개별성 보정' : `선정물건 예상 ${unitKind}가` }}</span><span class="v">{{ cmpUnitEst }}</span><span v-if="cmpUnitFormula" class="s cut">{{ cmpUnitFormula }}</span><span v-if="zoneShareNote" class="s cut">{{ zoneShareNote }}</span><span v-if="cmpUnitClamp?.cut" class="s cut">{{ cmpUnitClamp.cut }}</span></div>
+                  <div class="cmp-tile key est2"><span class="k">{{ webEmbed ? '② 매도가 예상 · 개별성 보정' : `② 선정물건 예상 ${unitKind}가` }}</span><span class="v">{{ cmpUnitEst }}</span><span v-if="cmpUnitFormula" class="s cut">{{ cmpUnitFormula }}</span><span v-if="zoneShareNote" class="s cut">{{ zoneShareNote }}</span><span v-if="cmpUnitClamp?.cut" class="s cut">{{ cmpUnitClamp.cut }}</span></div>
                 </div>
               </div>
             </section>
@@ -13442,7 +13442,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-deals .cmp-tbl th small.inl, .cmp-tbl th small.inl { display: inline !important; margin-left: 2px; }   /* 말머리 한 줄 — 보고 있는 단지 표 */
 .cmp-tile.off .v { font-size: 12.5px; font-weight: 400; color: #9ca3af; }   /* 동 전체일 때 비워 둔 칸 */
 .cmp-tile.key .s.cut { font-size: 12px; font-weight: 400; color: rgba(255, 255, 255, .9); }
-/* 매도가 예상 2(개별성 보정 뒤) — 초록(매도가 예상 1) 다음 흐린 노랑으로 구분(2026-11-15 사용자) */
+/* ② 매도가 예상(개별성 보정 뒤) — 초록(① 매도가 예상) 다음 흐린 노랑으로 구분(2026-11-15 사용자) */
 .cmp-tile.key.est2 { background: #fdf6d6; box-shadow: 0 0 0 1.5px #ecd77e inset; }
 .cmp-tile.key.est2 .k { color: #7a5d00; }
 .cmp-tile.key.est2 .v { color: #3f3200; }

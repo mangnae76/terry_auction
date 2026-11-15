@@ -1029,7 +1029,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <div class="est">
         <!-- 웹 — 중간값 · 최저 · 최고는 뺐다. 거래가를 내 평수로 바꿔 만든 값이라 실제로 거래된 값이 아니다(2026-11-11 사용자) -->
         <div :class="['tiles', { four: !props.app }]">
-          <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? `매도가 예상 1(${kindF})` : `실거래가 예상(${kindF})` }}</InfoTip></span><span class="v pa-num">{{ view ? vfmt(view.est) : '-' }}</span><!-- 웹 — 0건이 돼도 아래 두 줄 자리를 그대로(칸 높이가 줄면 아래 필터 · 표가 통째로 올라갔다 내려왔다, 2026-11-12 사용자 '엘베 누르면 흔들려') --><span v-if="webEmbed || view?.capped" class="cap" :style="{ visibility: view?.capped ? 'visible' : 'hidden' }">보증보험 한도 적용</span><span v-if="webEmbed || view" class="s rad">{{ webEmbed ? (estFormula || '\u00a0') : `반경 ${radText(radius)} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` }}</span></div>
+          <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? `① 매도가 예상(${kindF})` : `실거래가 예상(${kindF})` }}</InfoTip></span><span class="v pa-num">{{ view ? vfmt(view.est) : '-' }}</span><!-- 웹 — 0건이 돼도 아래 두 줄 자리를 그대로(칸 높이가 줄면 아래 필터 · 표가 통째로 올라갔다 내려왔다, 2026-11-12 사용자 '엘베 누르면 흔들려') --><span v-if="webEmbed || view?.capped" class="cap" :style="{ visibility: view?.capped ? 'visible' : 'hidden' }">보증보험 한도 적용</span><span v-if="webEmbed || view" class="s rad">{{ webEmbed ? (estFormula || '\u00a0') : `반경 ${radText(radius)} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` }}</span></div>
           <div class="tile"><span class="k">{{ kindF === '월세' ? '평균 평당 월세' : '평균 평당가' }}</span><span class="v pa-num">{{ view ? vPy(view.avgPy) : '-' }}</span></div>
           <!-- 선정물건 정보 — 유사 거래를 찾는 가운데 기준(실제 범위는 아래 「계산 조건」 줄) -->
           <div v-if="isAptKind" class="tile area"><span class="k">면적 <small class="k-sub">공급(전용)</small> / 연식</span><span class="v pa-num sm">{{ aptMyArea }}</span><span class="s">{{ me.year ? `${me.year}년식` : '-' }}</span></div>
@@ -1806,7 +1806,7 @@ td.acts-td, th.acts-th { width: 1%; padding-left: 4px !important; padding-right:
 .pa-wrap:is(.app, .phone) .pa-list table.even td.l { white-space: nowrap; }
 .pa-wrap:is(.app, .phone) .list-foot { font-size: 11px; }
 /* 앱 — 초록 칸: 위 줄 이름 · 반경 기간 건수, 아래 줄 금액(한 줄에 몰아 '1.…'로 잘리던 것, 2026-11-13). 보증보험 딱지는 금액 줄 오른쪽 */
-/* 앱 — 이름(매도가 예상 1) 한 줄 · 금액 · 계산식 줄 차례로. 계산식이 옆 칸을 먹어 이름이 세로로 쌓이던 것(2026-11-15 사용자) */
+/* 앱 — 이름(① 매도가 예상) 한 줄 · 금액 · 계산식 줄 차례로. 계산식이 옆 칸을 먹어 이름이 세로로 쌓이던 것(2026-11-15 사용자) */
 .pa-wrap.app .tile.key > .k { grid-column: 1 / -1 !important; grid-row: 1 !important; white-space: nowrap; }
 .pa-wrap.app .tile.key > .s { grid-column: 1 / -1 !important; grid-row: 3 !important; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* 앱 — 면적 칸을 조금 넓혀 '면적 공급(전용) / 연식' · '83.18㎡ (59.98)'을 한 줄로(공급(전용)은 작은 글) */
