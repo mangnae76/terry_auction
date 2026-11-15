@@ -157,11 +157,15 @@ const leadDays = computed(() => {
   return Math.max(0, Math.round((new Date(`${dayDate.value}T00:00:00Z`).getTime() - new Date(`${up}T00:00:00Z`).getTime()) / 864e5) - 1);
 });
 const roundsAt = computed<Round[]>(() => (leadDays.value ? hitDocs.value.flatMap((h) => roundsOf(h, undefined, leadDays.value)) : hitRounds.value));
+/** 매각 · 유찰 확률은 유효조회수(그날 본 사람 수)로 — 6월 ~ 11-12 시험에서 확률 오차(Brier) 0.1236 → 0.1176. 응찰 인원 · 낙찰가는 조회수 그대로(유효조회수로 바꾸면 낙찰가가 7.19 → 7.55% 로 나빠졌다, 2026-11-15) */
+const effOf = (h: HitDoc) => ({ ...h, hc: h.he });
+const roundsAtE = computed<Round[]>(() => hitDocs.value.flatMap((h) => roundsOf(effOf(h), undefined, leadDays.value || 0)));
 /** 이 매각기일 회차 — 붙여넣은 글이 없고 차트 자료가 있으면 이것으로 맞힌다 */
 const dayRounds = computed(() => (parseViewLines(viewsText.value).length ? [] : roundsAt.value.filter((r) => r.date === dayDate.value)));
 const useHits = computed(() => dayRounds.value.length > 0);
 /** 그날 이전 회차로만 배운 규칙(누적 조회수 + 마지막 7일 + 회차) */
-const roundModel = computed(() => (useHits.value ? fitRoundModel(roundsAt.value, dayDate.value, extReady.value ? xfRound : undefined) : null));   // 시세 · 입지 자료가 있으면 같이(6월 ~ 11-12 시험에서 낙찰가 7.6% → 7.2%)
+const roundModel = computed(() => (useHits.value ? fitRoundModel(roundsAt.value, dayDate.value, extReady.value ? xfRound : undefined) : null));
+const roundModelE = computed(() => (useHits.value ? fitRoundModel(roundsAtE.value, dayDate.value, extReady.value ? xfRound : undefined) : null));   // 시세 · 입지 자료가 있으면 같이(6월 ~ 11-12 시험에서 낙찰가 7.6% → 7.2%)
 
 try {
   const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null') as { dayRows?: DayRow[]; dayName?: string; dayDate?: string; viewsText?: string; pick?: string } | null;
@@ -338,7 +342,8 @@ type Pred = { before: ReturnType<typeof priceDist>; after: ReturnType<typeof pri
 /** 차트 모드 — 입찰자 있을확률 · 예상응찰(신건도) */
 const sellMap = computed(() => {
   const m = new Map<string, { pSold: number; pi: number[]; expBids: number }>(); const rm = roundModel.value;
-  if (rm) dayRounds.value.forEach((r) => m.set(r.key, predictRound(rm, r)));
+  const rmE = roundModelE.value; const eOf = new Map(roundsAtE.value.filter((r) => r.date === dayDate.value).map((r) => [r.key, r]));
+  if (rm) dayRounds.value.forEach((r) => { const p = predictRound(rm, r); const re = eOf.get(r.key); m.set(r.key, rmE && re ? { ...p, pSold: predictRound(rmE, re).pSold } : p); });
   return m;
 });
 const preds = computed(() => {
@@ -489,7 +494,7 @@ const runGrade = async () => {
   grading.value = true; gradeMsg.value = ''; grade.value = null;
   await new Promise((r) => setTimeout(r, 20));
   try {
-    const R = hitRounds.value; const from = gradeFrom.value; const to = gradeTo.value;
+    const R = hitRounds.value; const RE = hitDocs.value.flatMap((h) => roundsOf(effOf(h))); const eKey = new Map(RE.map((r) => [`${r.key}|${r.date}|${r.round}`, r])); const from = gradeFrom.value; const to = gradeTo.value;
     const ok = (r: Round) => r.complete && r.round <= 4 && (r.result === 'fail' || (r.result === 'sold' && r.bids > 0));
     const T = R.filter((r) => ok(r) && r.date >= from && r.date <= to);
     const dates = [...new Set(T.map((r) => r.date))].sort();
@@ -497,15 +502,17 @@ const runGrade = async () => {
     const REP = [1, 2, 5, 8, 15];
     for (let di = 0; di < dates.length; di++) {
       const d = dates[di]; const m = fitRoundModel(R, d); const useX = extReady.value; const mx = useX ? fitRoundModel(R, d, xfRound) : null;
+      const mE = fitRoundModel(RE, d); const mxE = useX ? fitRoundModel(RE, d, xfRound) : null;   // 매각 · 유찰 확률은 유효조회수
       const rows = T.filter((r) => r.date === d);
       if (!m) { skipped += rows.length; continue; }
       const rate: Record<number, [number, number]> = {};
       R.filter((r) => ok(r) && r.date < d).forEach((r) => { const g = Math.min(r.round, 3); rate[g] = rate[g] ?? [0, 0]; rate[g][0] += r.result === 'sold' ? 1 : 0; rate[g][1] += 1; });
       const a = { ...acc0(), date: d };
       for (const r of rows) {
+        const re = eKey.get(`${r.key}|${r.date}|${r.round}`); const ps = mE && re ? predictRound(mE, re).pSold : predictRound(m, r).pSold; const ps2 = mxE && re ? predictRound(mxE, re).pSold : mx ? predictRound(mx, r).pSold : ps;
         const p = predictRound(m, r); const p2 = mx ? predictRound(mx, r) : p; const g = rate[Math.min(r.round, 3)]; const pb = g ? (g[0] + 1) / (g[1] + 2) : 0.5;
         const sold = r.result === 'sold';
-        for (const x of [a, total]) { x.n += 1; x.sold += sold ? 1 : 0; x.sell[0] += (pb >= 0.5) === sold ? 1 : 0; x.sell[1] += (p.pSold >= 0.5) === sold ? 1 : 0; x.sell[2] += (p2.pSold >= 0.5) === sold ? 1 : 0; x.ext = !!mx; }
+        for (const x of [a, total]) { x.n += 1; x.sold += sold ? 1 : 0; x.sell[0] += (pb >= 0.5) === sold ? 1 : 0; x.sell[1] += (ps >= 0.5) === sold ? 1 : 0; x.sell[2] += (ps2 >= 0.5) === sold ? 1 : 0; x.ext = !!mx; }
         if (!sold) continue;
         const tg: BidTarget = { round: r.round, appr: r.appr, min: r.min, area: r.area, year: yearOfAddr(r.addr), floor: Number(r.addr.match(/(\d+)층/)?.[1] ?? 0) || null, date: r.date, dong: dongOf(r.addr) };
         const sim = similarBands(recs.value, tg); const eb0 = sim.pi.reduce((s, q, k) => s + q * REP[k], 0);
