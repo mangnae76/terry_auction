@@ -939,6 +939,10 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl tr:last-child td { border-bottom: 0; }
 .bpt-day .bpt-tbl th, .bpt-day .bpt-tbl td { padding-left: 8px; padding-right: 8px; text-align: center; }   /* 사건별 예측은 머리 · 내용 모두 가운데(2026-11-14 사용자) */
 .bpt-day .bpt-tbl td.act-sold { font-weight: 700; }   /* 실제 낙찰가는 굵게 */
+/* 실제 낙찰가 — 흐린 빨강(채도 낮게), 두 표 모두(2026-11-15 사용자) */
+.bpt-tbl td.act-sold { color: #a8585a; }
+:root[data-theme="dark"] .bpt-tbl td.act-sold { color: #d49a9b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bpt-tbl td.act-sold { color: #d49a9b; } }
 .bpt-day .bpt-tbl td.addr, .bpt-day .bpt-tbl th.l { text-align: left; }   /* 주소는 머리 · 내용 모두 왼쪽 줄 맞춤 */
 .bpt-tbl.fixed { table-layout: fixed; }
 .bpt-tbl.fixed td { overflow: hidden; text-overflow: ellipsis; }
