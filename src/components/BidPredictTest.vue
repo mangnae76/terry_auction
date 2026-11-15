@@ -678,7 +678,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               </span>
             </template>
           </div>
-          <p class="bpt-sub">괄호 · {{ calDong || '동선택의 동' }} 건수 · 계별은 기일목록수집을 받은 날만</p>
+          <p class="bpt-sub">본원 6계(4) · 4는 {{ calDong || '동선택의 동' }} 건수</p>
         </div>
       </div>
     </section>
