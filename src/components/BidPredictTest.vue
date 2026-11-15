@@ -47,7 +47,7 @@ watch([colFrom, colTo], () => { try { localStorage.setItem(COL_KEY, JSON.stringi
 const colCourt = ref('인천-본원');
 const agent = ref<AgentStatus | null>(null);
 const agentNote = ref('');
-const agentOn = computed(() => agentOnline(agent.value));
+const agentOn = computed(() => agentOnline(agent.value, nowMs.value));   // 1초 시계로 다시 본다 — 시계 없이 두면 마이가 꺼져 새 소식이 안 와도 녹색이 남았다(2026-11-15)
 let stopAgent: (() => void) | null = null;
 /** 매각분석 수집 화면과 같은 연결 알약 — 'N초 전'은 1초마다 */
 const nowMs = ref(Date.now());
