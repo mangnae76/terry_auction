@@ -14,7 +14,7 @@ import { buildingAgeOf } from '../utils/buildingAge';
 import { agentOnline, loadAgentDataset, loadDayLists, loadHits, saveDayCsv, sendAgentCommand, sendAgentStop, watchAgentStatus, type AgentStatus, type DayListRow, type HitDoc } from '../services/agentRemote';
 import { readSheetRows } from '../services/saleExcel';
 import {
-  BAND_NAMES, bandOf, caseKey, caseLabel, fitKModel, kDist, lotOf as lotParts, marketPriceAt, saleTradeAt, type TradeLite, csvRows, dongOf, fitPriceModel, fitRoundModel, fitViewModel, parseViewLines, predictRound, priceDist, readDayRows, roundOfRatio, roundsOf, similarBands, soldOf, viewBands,
+  BAND_NAMES, bandOf, caseKey, caseLabel, lotOf as lotParts, marketPriceAt, type TradeLite, csvRows, dongOf, fitPriceModel, fitRoundModel, fitViewModel, parseViewLines, predictRound, priceDist, readDayRows, roundOfRatio, roundsOf, similarBands, soldOf, viewBands,
   type BidTarget, type DayRow, type Round, type ViewPair,
 } from '../services/bidPredict';
 
@@ -59,7 +59,6 @@ const unpick = (e: MouseEvent) => { const t = e.target as Element | null; if (pi
 onMounted(() => document.addEventListener('mousedown', unpick));
 onBeforeUnmount(() => document.removeEventListener('mousedown', unpick));
 /* 운영자 시험용 — 화면이 쓰는 자료를 그대로 꺼내 화면 밖에서 여러 방식을 견줘 본다(읽기만, 2026-11-15) */
-onMounted(() => { (window as unknown as Record<string, unknown>).__bptData = () => JSON.parse(JSON.stringify({ recs: recs.value, hitDocs: hitDocs.value, trades: extTrades.value, rents: extRents.value, facts: extFacts.value, dbRows: dbRows.value })); });
 const agentAgo = computed(() => { const at = agent.value?.at?.toMillis?.(); return at ? Math.max(0, Math.round((nowMs.value - at) / 1000)) : 0; });
 /** 'web-agent 2026.11.14-2' → 'ver.26.11.14-2'(매각분석과 같게) */
 const verLabel = (v: string) => { const m = /(\d{4})\.(\d{2})\.(\d{2})(-\d+)?/.exec(v); return m ? `ver.${m[1].slice(2)}.${m[2]}.${m[3]}${m[4] || ''}` : v.replace(/^web-agent\s*/, ''); };
@@ -354,18 +353,6 @@ const preds = computed(() => {
   return out;
 });
 
-/** 새 방식(k) — 표의 매매 실거래가 · 새 예상 낙찰가 칸 */
-const predsK = computed(() => {
-  const out = new Map<string, NonNullable<ReturnType<typeof kPredOf>>>();
-  if (!recs.value.length || !extTrades.value.length) return out;
-  for (const it of items.value) {
-    if (!it.target || it.target.round < 1) continue;
-    const pi = sellMap.value.get(it.key)?.pi ?? similarBands(recs.value, it.target).pi;
-    const k = kPredOf({ ...it.target, addr: it.addr, key: it.key }, pi); if (k) out.set(it.key, k);
-  }
-  return out;
-});
-const HOW_SHORT: Record<string, string> = { '같은 건물 같은 평형': '같은평형', '같은 건물 다른 평형': '다른평형', '유사물건': '유사물건', '손품 매매가': '손품조사' };
 const sel = computed(() => items.value.find((it) => it.key === pick.value && preds.value.has(it.key)) ?? items.value.find((it) => preds.value.has(it.key)) ?? null);
 const selP = computed(() => (sel.value ? preds.value.get(sel.value.key) ?? null : null));
 
@@ -433,7 +420,6 @@ const nUnmatched = computed(() => items.value.filter((it) => !it.target).length)
 /* ===== 시세 · 입지 — 덧붙인 계산을 시험(2026-11-14 사용자: 사람 몰린 물건을 낮게 맞히는 까닭 ② 시세 대비 최저가 ③ 입지 · 개별성)
  * 시세는 매각일 이전 실거래만(국토부 연립다세대), 엘베 · 세대수 · 연식은 건축물대장(건물 자체라 날짜와 상관없음) ===== */
 const extTrades = ref<TradeLite[]>([]);
-const extRents = ref<TradeLite[]>([]);   // 전세(보증금) — 같은 건물 전세보다 낮은 매매는 다운계약 의심으로 뺀다
 const extFacts = ref<Record<string, BuildingFacts | null>>({});
 const extMsg = ref(''); const extBusy = ref(false);
 const extDone = ref(false);
@@ -449,9 +435,6 @@ const loadExt = async () => {
     const res = await fetchDongTradeDetails({ lawdCd5: lawd, propertyType: 'villa', months: 30 });
     if (res.error && !res.rows.length) { extMsg.value = res.error; return; }
     extTrades.value = res.rows.filter((r) => r.kind !== '계약해제' && r.umdNm === dong).map((r) => ({ t: r.contractDate.replace(/\./g, '-'), price: r.priceWon, area: r.areaM2, dong: r.umdNm, jibun: r.jibun, year: r.buildYear, direct: r.kind === '직거래' }));
-    extMsg.value = '전세 받는 중(30개월)';
-    const rent = await fetchDongTradeDetails({ lawdCd5: lawd, propertyType: 'villa', months: 30, dealKind: 'jeonse' });
-    extRents.value = rent.rows.filter((r) => r.umdNm === dong).map((r) => ({ t: r.contractDate.replace(/\./g, '-'), price: r.priceWon, area: r.areaM2, dong: r.umdNm, jibun: r.jibun, year: r.buildYear }));
     const lots = new Map<string, string>();
     [...hitDocs.value.map((h) => h.addr), ...recs.value.map((r) => r.addr)].forEach((a) => { const l = lotParts(a); if (l.dong === dong && l.jibun) lots.set(`${l.dong} ${l.jibun}`, a); });
     let i = 0;
@@ -472,29 +455,8 @@ const extVec = (addr: string, area: number | null, min: number, d: string): numb
   const v = [s && min > 0 ? Math.log(min / s.price) : 0, s ? 0 : 1, f ? (f.elevator > 0 ? 1 : 0) : 0, f?.households ? Math.log(1 + f.households) : 0, f ? 0 : 1];
   extMemo.set(key, v); return v;
 };
-/* ===== 새 방식 — 낙찰가 ÷ 그 건물 매매 실거래가(k). 감정가는 안 쓴다(2026-11-15 사용자). 응찰 인원 확률은 지금 것 그대로 ===== */
-const tradeMemo = new Map<string, ReturnType<typeof saleTradeAt>>();
-const tradeAt = (addr: string, area: number | null, year: number | null, d: string) => {
-  const key = `${addr}|${area}|${d}`; if (tradeMemo.has(key)) return tradeMemo.get(key)!;
-  const l = lotParts(addr); const f = extFacts.value[`${l.dong} ${l.jibun}`];
-  const v = saleTradeAt(extTrades.value, extRents.value, addr, area, f?.year || year || yearOfAddr(addr) || null, d);
-  tradeMemo.set(key, v); return v;
-};
-watch([extTrades, extRents, extFacts], () => tradeMemo.clear());   // 건축물대장이 들어오는 대로 연식이 채워진다
-const soldTrade = (r: { addr: string; area: number | null; year: number | null; d: string }) => tradeAt(r.addr, r.area, r.year, r.d)?.price ?? null;
-/** 그 물건 · 그날 새 방식 예측 — 매매 실거래가 · 분포. 못 잡으면 null */
-/** 선정물건 — 손품조사에서 잡은 매매가(빌라 · 호실 개별성 보정 뒤). 급매가가 아니다(2026-11-15 사용자) */
-const mineSale = computed(() => new Map(auctions.auctions.map((a) => [caseKey(a.caseNumber), Number(a.surveyForm?.indivValues?.['unit.est']) || Number(a.marketPicks?.price?.estSale) || 0] as const).filter(([k, v]) => k && v > 0)));   // 개별성 보정 뒤 값(선정물건 호실 예상가)이 먼저, 없으면 시세분석 매도가 예상
 /** 선정물건 급매가 — 손품결론 급매가 칸(사용자가 ±300만 안으로 잡는 값, 2026-11-15) */
 const mineUrgent = computed(() => new Map(auctions.auctions.map((a) => [caseKey(a.caseNumber), Number(String(a.surveyForm?.urgentSalePrice ?? '').replace(/[^\d]/g, '')) || 0] as const).filter(([k, v]) => k && v > 0)));
-const kPredOf = (tg: BidTarget & { addr: string; key?: string }, pi: number[]) => {
-  if (!extTrades.value.length || tg.round < 1) return null;   // 실거래만 들어오면 바로(건축물대장 399곳을 다 기다리지 않는다, 2026-11-15 사용자)
-  const own = tg.key ? mineSale.value.get(tg.key) : 0;
-  const base = own ? { price: own, how: '손품 매매가', n: 0, drop: 0, months: 12 as const } : tradeAt(tg.addr, tg.area, tg.year, tg.date); if (!base) return null;
-  const km = fitKModel(recs.value, tg, soldTrade); if (!km) return null;
-  const urg = tg.key ? mineUrgent.value.get(tg.key) ?? 0 : 0;
-  return { base, km, dist: kDist(km, base.price, tg.min, pi), urgent: urg ? { price: urg, dist: kDist(km, urg, tg.min, pi) } : null };
-};
 watch(() => [hitDocs.value.length, recs.value.length] as const, ([h, r]) => { if (h && r && !extReady.value && !extBusy.value) void loadExt(); });
 const xfRound = (r: Round) => extVec(r.addr, r.area, r.min, r.date);
 const pxPrice = (x: { addr: string; area: number | null; min: number; d: string }) => extVec(x.addr, x.area, x.min, x.d);
@@ -503,8 +465,8 @@ const pxPrice = (x: { addr: string; area: number | null; min: number; d: string 
  * 조회수 없이(같은 회차 팔린 비율 · 비슷한 물건 인원) ↔ 조회수 반영(누적 + 마지막 7일 + 회차) 나란히 */
 const gradeFrom = ref('2026-06-01');
 const gradeTo = ref(plusDays(todayIso(), -1));
-type GradeAcc = { n: number; sold: number; sell: number[]; band: number[]; nb: number; err: number[]; inR: number[]; np: number; ext: boolean; nk: number; ek: number; eo: number; ik: number; io: number };   // nk … — 새 방식(k)을 낼 수 있던 건만, 같은 건의 지금 방식(eo · io)과 나란히   // [조회수 없이, 조회수 반영, + 시세 · 입지]
-const acc0 = (): GradeAcc => ({ n: 0, sold: 0, sell: [0, 0, 0], band: [0, 0, 0], nb: 0, err: [0, 0, 0], inR: [0, 0, 0], np: 0, ext: false, nk: 0, ek: 0, eo: 0, ik: 0, io: 0 });
+type GradeAcc = { n: number; sold: number; sell: number[]; band: number[]; nb: number; err: number[]; inR: number[]; np: number; ext: boolean };   // nk … — 새 방식(k)을 낼 수 있던 건만, 같은 건의 지금 방식(eo · io)과 나란히   // [조회수 없이, 조회수 반영, + 시세 · 입지]
+const acc0 = (): GradeAcc => ({ n: 0, sold: 0, sell: [0, 0, 0], band: [0, 0, 0], nb: 0, err: [0, 0, 0], inR: [0, 0, 0], np: 0, ext: false });
 const grade = ref<{ total: GradeAcc; days: Array<GradeAcc & { date: string }>; skipped: number; from: string; to: string } | null>(null);
 const grading = ref(false);
 const gradeMsg = ref('');
@@ -542,11 +504,6 @@ const runGrade = async () => {
         for (const x of [a, total]) {
           x.np += 1; x.err[0] += Math.abs(r.sold / d0.median - 1); x.err[1] += Math.abs(r.sold / d1.median - 1); x.err[2] += Math.abs(r.sold / d2.median - 1);
           x.inR[0] += r.sold >= d0.lo && r.sold <= d0.hi ? 1 : 0; x.inR[1] += r.sold >= d1.lo && r.sold <= d1.hi ? 1 : 0; x.inR[2] += r.sold >= d2.lo && r.sold <= d2.hi ? 1 : 0;
-        }
-        const kp = useX ? kPredOf(tgx, p2.pi) : null;
-        if (kp) for (const x of [a, total]) {
-          x.nk += 1; x.ek += Math.abs(r.sold / kp.dist.median - 1); x.eo += Math.abs(r.sold / d2.median - 1);
-          x.ik += r.sold >= kp.dist.lo && r.sold <= kp.dist.hi ? 1 : 0; x.io += r.sold >= d2.lo && r.sold <= d2.hi ? 1 : 0;
         }
       }
       days.push(a);
@@ -699,8 +656,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <div class="bpt-tile"><span>맞힌 회차</span><b>{{ grade.total.n.toLocaleString('ko-KR') }}회차</b><small>매각 {{ grade.total.sold.toLocaleString('ko-KR') }} · 유찰 {{ (grade.total.n - grade.total.sold).toLocaleString('ko-KR') }}{{ grade.skipped ? ` · 배울 자료 모자라 뺌 ${grade.skipped}` : '' }}</small></div>
           <div class="bpt-tile key"><span>매각 · 유찰 맞힘</span><b>{{ rate(grade.total.sell[1], grade.total.n) }}</b><small>조회수 없이 {{ rate(grade.total.sell[0], grade.total.n) }}<template v-if="grade.total.ext"> · + 시세·입지 <b>{{ rate(grade.total.sell[2], grade.total.n) }}</b></template></small></div>
           <div class="bpt-tile key"><span>인원 구간 맞힘(매각된 것)</span><b>{{ rate(grade.total.band[1], grade.total.nb) }}</b><small>조회수 없이 {{ rate(grade.total.band[0], grade.total.nb) }}<template v-if="grade.total.ext"> · + 시세·입지 <b>{{ rate(grade.total.band[2], grade.total.nb) }}</b></template></small></div>
-          <div class="bpt-tile key"><span>낙찰가 평균 차이</span><b>{{ errPct(grade.total.err[1], grade.total.np) }}</b><small>조회수 없이 {{ errPct(grade.total.err[0], grade.total.np) }}<template v-if="grade.total.ext"> · + 시세·입지 <b>{{ errPct(grade.total.err[2], grade.total.np) }}</b></template> · {{ grade.total.np }}건<template v-if="grade.total.nk"><br>새 방식(낙찰가 ÷ 매매 실거래가) <b>{{ errPct(grade.total.ek, grade.total.nk) }}</b> · 같은 {{ grade.total.nk }}건 지금 방식 {{ errPct(grade.total.eo, grade.total.nk) }}</template></small></div>
-          <div class="bpt-tile key"><span>예상범위 안</span><b>{{ rate(grade.total.inR[1], grade.total.np) }}</b><small>조회수 없이 {{ rate(grade.total.inR[0], grade.total.np) }}<template v-if="grade.total.ext"> · + 시세·입지 <b>{{ rate(grade.total.inR[2], grade.total.np) }}</b></template> · 50%가 정상<template v-if="grade.total.nk"><br>새 방식 <b>{{ rate(grade.total.ik, grade.total.nk) }}</b> · 같은 건 지금 방식 {{ rate(grade.total.io, grade.total.nk) }}</template></small></div>
+          <div class="bpt-tile key"><span>낙찰가 평균 차이</span><b>{{ errPct(grade.total.err[1], grade.total.np) }}</b><small>조회수 없이 {{ errPct(grade.total.err[0], grade.total.np) }}<template v-if="grade.total.ext"> · + 시세·입지 <b>{{ errPct(grade.total.err[2], grade.total.np) }}</b></template> · {{ grade.total.np }}건</small></div>
+          <div class="bpt-tile key"><span>예상범위 안</span><b>{{ rate(grade.total.inR[1], grade.total.np) }}</b><small>조회수 없이 {{ rate(grade.total.inR[0], grade.total.np) }}<template v-if="grade.total.ext"> · + 시세·입지 <b>{{ rate(grade.total.inR[2], grade.total.np) }}</b></template> · 50%가 정상</small></div>
         </div>
         <div class="table-wrap bpt-tbl-wrap bpt-scroll">
           <table class="bpt-tbl">
@@ -712,7 +669,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
                 <td class="r">{{ g.sold }}</td>
                 <td class="r">{{ rate(g.sell[1], g.n) }}<small class="bpt-at">없이 {{ rate(g.sell[0], g.n) }}</small></td>
                 <td class="r">{{ rate(g.band[1], g.nb) }}<small class="bpt-at">없이 {{ rate(g.band[0], g.nb) }}</small></td>
-                <td class="r">{{ errPct(g.err[1], g.np) }}<small class="bpt-at">없이 {{ errPct(g.err[0], g.np) }}{{ g.nk ? ` · 새 ${errPct(g.ek, g.nk)}` : '' }}</small></td>
+                <td class="r">{{ errPct(g.err[1], g.np) }}<small class="bpt-at">없이 {{ errPct(g.err[0], g.np) }}</small></td>
                 <td class="r">{{ g.np ? `${g.inR[1]} / ${g.np}` : '—' }}</td>
               </tr>
             </tbody>
@@ -751,7 +708,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
         <table class="bpt-tbl fixed">
           <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게(검암동 · 모든동 · 11-13 · 16 · 19 에서 잰 가장 넓은 값, 주소는 남는 폭) -->
           <colgroup><col style="width: 80px" /><col style="width: 128px" /><col /><col style="width: 64px" /><col style="width: 80px" /><col style="width: 58px" /><col style="width: 80px" /><col style="width: 44px" /><col style="width: 100px" /><col style="width: 66px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 66px" /><col style="width: 96px" /><col style="width: 92px" /><col style="width: 100px" /><col style="width: 112px" /><col style="width: 100px" /><col style="width: 92px" /><col style="width: 112px" /></colgroup>
-          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th>연식</th><th>전용</th><th>엘베</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th><th class="r kn">매매<br>실거래가</th><th class="r kn">새 예상<br>낙찰가</th><th class="r kn">새 차이</th><th class="r kn">급매가 기준<br>낙찰가</th></tr></thead>
+          <thead><tr><th>입찰일</th><th>사건번호</th><th class="l">주소</th><th>연식</th><th>전용</th><th>엘베</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
           <tbody>
             <tr v-for="it in shownItems" :key="it.key" :class="{ on: pick === it.key, off: !preds.has(it.key) }" @click="pick = pick === it.key ? '' : it.key">
               <td>{{ bidDay(it.target?.date || dayDate).slice(3) }}</td>
@@ -774,14 +731,6 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td v-else class="r">—</td>
               <td v-if="preds.get(it.key)" class="r two"><span class="bpt-nb rng">{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).lo) }} ~<small>{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).hi) }}<i class="ghost" aria-hidden="true"> ~</i></small></span></td>
               <td v-else>—</td>
-              <td v-if="predsK.get(it.key)" class="r kn"><span class="bpt-nb">{{ won(predsK.get(it.key)!.base.price) }}</span><small class="bpt-at">{{ HOW_SHORT[predsK.get(it.key)!.base.how] }}{{ predsK.get(it.key)!.base.n ? ` ${predsK.get(it.key)!.base.n}건` : '' }}{{ predsK.get(it.key)!.base.months === 24 ? ' · 2년' : '' }}</small></td>
-              <td v-else class="kn">—</td>
-              <td v-if="predsK.get(it.key)" class="r strong kn"><span class="bpt-nb">{{ won(predsK.get(it.key)!.dist.median) }}</span></td>
-              <td v-else class="kn">—</td>
-              <td v-if="it.result && it.result.sold > 0 && predsK.get(it.key)" class="r kn"><span class="bpt-nb">{{ signWon(it.result.sold - predsK.get(it.key)!.dist.median) }}<small class="bpt-at bpt-nb">{{ sgn(it.result.sold / predsK.get(it.key)!.dist.median - 1) }}</small></span></td>
-              <td v-else class="r kn">—</td>
-              <td v-if="predsK.get(it.key)?.urgent" class="r kn"><span class="bpt-nb">{{ won(predsK.get(it.key)!.urgent!.dist.median) }}</span><small class="bpt-at">급매 {{ manN(predsK.get(it.key)!.urgent!.price) }}{{ it.result && it.result.sold > 0 ? ` · ${sgn(it.result.sold / predsK.get(it.key)!.urgent!.dist.median - 1)}` : '' }}</small></td>
-              <td v-else class="kn">—</td>
             </tr>
           </tbody>
         </table>
@@ -963,7 +912,6 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl .l { text-align: left; }
 .bpt-tbl .r { text-align: right; }
 .bpt-tbl td.addr { max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
-.bpt-tbl :is(th, td).kn { background: rgba(43, 109, 243, .05); }
 .bpt-prob .bpt-tbl td.win { color: #15803d; font-weight: 700; }   /* 지난 기일 — 이 값이면 낙찰 */
 .bpt-prob .bpt-tbl td.lose { color: #9ca3af; }   /* 새 방식(낙찰가 ÷ 매매 실거래가) 칸 — 지금 방식과 나란히 시험(2026-11-15) */
 .bpt-tbl td.strong { font-weight: 800; color: #1f5fe0; }
