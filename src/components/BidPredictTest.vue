@@ -392,11 +392,14 @@ const myQ = (p: Pred, prob: number, min: number) => {
   return Math.round(hi / 10_000) * 10_000;
 };
 /** 입찰가별 낙찰확률 표 — 그날 보고 있는 동의 예측 있는 사건 */
-const PROBS = [0.5, 0.6, 0.7, 0.8];
+const PROBS = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8];   // 5% 단위 — 시험에서 확률이 실제와 맞았던 50 ~ 80% 만(85% 넘게는 튄 낙찰 몇 건이 좌우)
+const I70 = PROBS.indexOf(0.7);   // 급매가와 차익은 70% 입찰가로
+/** 실제 낙찰가 칸은 끝난 기일만(다가오는 기일은 전부 '입찰 전') */
+const probPast = computed(() => !!dayDate.value && dayDate.value < todayIso());
 const probRows = computed(() => shownItems.value.filter((it) => it.target && preds.value.has(it.key)).map((it) => {
   const p = preds.value.get(it.key)!; const d = p.after ?? p.before;
   // 입찰자가 있을 때 이길 확률(조건부) — 시험에서 말한 대로 맞은 쪽. 아무도 안 올 확률까지 섞으면 50% 가 실제 72% 로 흐려졌다
-  return { key: it.key, addr: it.addr, min: it.target!.min, med: d.median, pSold: p.p0 != null ? 1 - p.p0 : null, bids: PROBS.map((q) => Math.max(it.target!.min, d.q(q))), urgent: mineUrgent.value.get(it.key) ?? 0, sold: it.result?.sold ?? 0, failed: !!it.failed };
+  return { key: it.key, addr: it.addr, min: it.target!.min, pSold: p.p0 != null ? 1 - p.p0 : null, bids: PROBS.map((q) => Math.max(it.target!.min, d.q(q))), urgent: mineUrgent.value.get(it.key) ?? 0, sold: it.result?.sold ?? 0, failed: !!it.failed };
 }));
 /* 곡선 — 최저가 ~ 최저가 1.8배 */
 const curve = computed(() => {
@@ -793,19 +796,17 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <h3 class="bpt-h3">입찰가별 낙찰확률 <small>{{ daySum.dong }} · {{ bidDay(dayDate) }} · 입찰자가 있을 때 그 확률로 이기는 입찰가</small></h3>
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
-          <colgroup><col style="width: 128px" /><col /><col style="width: 104px" /><col style="width: 80px" /><col style="width: 104px" /><col v-for="p in PROBS" :key="p" style="width: 104px" /><col style="width: 104px" /><col style="width: 120px" /><col style="width: 104px" /></colgroup>
-          <thead><tr><th>사건번호</th><th class="l">주소</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상 낙찰가</th><th v-for="p in PROBS" :key="p" class="r">낙찰확률<br>{{ Math.round(p * 100) }}%</th><th class="r">급매가</th><th class="r">70%로 쓸 때<br>급매가와 차익</th><th class="r">실제 낙찰가</th></tr></thead>
+          <colgroup><col style="width: 120px" /><col /><col style="width: 96px" /><col style="width: 68px" /><col v-for="p in PROBS" :key="p" style="width: 88px" /><col style="width: 112px" /><col v-if="probPast" style="width: 96px" /></colgroup>
+          <thead><tr><th>사건번호</th><th class="l">주소</th><th>최저가</th><th>입찰자<br>있을확률</th><th v-for="p in PROBS" :key="p" class="r">낙찰확률<br>{{ Math.round(p * 100) }}%</th><th class="r">70%로 쓸 때<br>급매가와 차익</th><th v-if="probPast" class="r">실제 낙찰가</th></tr></thead>
           <tbody>
             <tr v-for="r in probRows" :key="r.key">
               <td>{{ caseLabel(r.key) }}</td>
               <td class="l addr" :data-tip="r.addr || undefined" data-tip-trunc>{{ r.addr }}</td>
-              <td class="r"><span class="bpt-nb">{{ won(r.min) }}</span></td>
+              <td><span class="bpt-nb">{{ won(r.min) }}</span></td>
               <td>{{ r.pSold != null ? pct(r.pSold) : '—' }}</td>
-              <td class="r strong"><span class="bpt-nb">{{ won(r.med) }}</span></td>
               <td v-for="(b, i) in r.bids" :key="i" :class="['r', { win: r.sold > 0 && b > r.sold, lose: r.sold > 0 && b <= r.sold }]"><span class="bpt-nb">{{ won(b) }}</span></td>
-              <td class="r">{{ r.urgent ? won(r.urgent) : '—' }}</td>
-              <td class="r">{{ r.urgent ? won(r.urgent - r.bids[2]) : '—' }}</td>
-              <td class="r act-sold"><span v-if="r.sold > 0" class="bpt-nb">{{ won(r.sold) }}</span><template v-else>{{ r.failed ? '유찰' : '입찰 전' }}</template></td>
+              <td class="r"><span v-if="r.urgent" class="bpt-nb">{{ won(r.urgent - r.bids[I70]) }}<small class="bpt-at bpt-nb">급매가 {{ won(r.urgent) }}</small></span><template v-else>—</template></td>
+              <td v-if="probPast" class="r act-sold"><span v-if="r.sold > 0" class="bpt-nb">{{ won(r.sold) }}</span><template v-else>{{ r.failed ? '유찰' : '입찰 전' }}</template></td>
             </tr>
           </tbody>
         </table>
@@ -992,7 +993,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl .r { text-align: right; }
 .bpt-tbl td.addr { max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
 .bpt-prob .bpt-tbl td.win { color: #15803d; font-weight: 700; }   /* 지난 기일 — 이 값이면 낙찰 */
-.bpt-prob .bpt-tbl td.lose { color: #9ca3af; }   /* 새 방식(낙찰가 ÷ 매매 실거래가) 칸 — 지금 방식과 나란히 시험(2026-11-15) */
+.bpt-prob .bpt-tbl td.lose { color: #9ca3af; }   /* 지난 기일 — 이 값이면 짐 */
+.bpt-prob .bpt-tbl th, .bpt-prob .bpt-tbl td { vertical-align: middle; }   /* 차익 칸이 두 줄이어도 나머지는 줄 가운데 */
 .bpt-tbl td.strong { font-weight: 800; color: #1f5fe0; }
 .bpt-tbl tbody tr { cursor: pointer; }
 .bpt-tbl tbody tr.ro { cursor: default; }
