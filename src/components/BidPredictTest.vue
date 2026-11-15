@@ -12,6 +12,7 @@ import { useAuctionStore } from '../stores/auctionStore';
 import { getBuildingFacts } from '../services/buildingFacts';
 import type { BuildingFacts } from '../services/publicDataApi';
 import { buildingAgeOf } from '../utils/buildingAge';
+import { addressWithName, buildingNameOf } from '../utils/addressName';
 import { agentOnline, loadAgentDataset, loadDayLists, loadDayListsRange, loadHits, saveDayCsv, sendAgentCommand, sendAgentStop, watchAgentStatus, type AgentStatus, type DayListRow, type HitDoc } from '../services/agentRemote';
 import { readSheetRows } from '../services/saleExcel';
 import {
@@ -226,6 +227,10 @@ const copiedKey = ref('');
 let copyTimer: ReturnType<typeof setTimeout> | null = null;
 /** 표에 보일 주소 — 동부터('검암동 523-2 시크릿가든4차 4층402호'). 시 · 구는 빼고, 복사 단추는 전체 주소 */
 const shortAddr = (a: string) => { const m = a.match(/[가-힣0-9]+(?:동|가|읍|면|리)\s+(?:산\s*)?\d/); return m && m.index ? a.slice(m.index) : a; };
+/** 표 주소 — 주소에 건물명이 없으면 건축물대장 건물명(없으면 같은 지번 다른 사건 주소의 이름)을 끼운다('검암동 634-7 ○○빌라 2층202호'). 복사는 원래 주소 그대로 */
+/** 지번마다 다른 사건 주소에 적힌 건물명 — 대장에 이름이 없는 필지(검암동 129곳 중 100곳)를 채운다 */
+const nameByLot = computed(() => { const m = new Map<string, string>(); [...hitDocs.value.map((h) => h.addr), ...recs.value.map((r) => r.addr)].forEach((a) => { const n = buildingNameOf(a); if (!n) return; const l = lotParts(a); const k = `${l.dong} ${l.jibun}`; if (!m.has(k)) m.set(k, n); }); return m; });
+const tblAddr = (a: string) => { const l = lotParts(a); const k = `${l.dong} ${l.jibun}`; return shortAddr(addressWithName(a, extFacts.value[k]?.name || nameByLot.value.get(k))); };
 const copyAddr = async (it: { key: string; addr: string }) => {
   const text = it.addr.replace(/\s*\(.*$/, '').replace(/\s*외\s*\d+필지\s*$/, '').trim();
   try { await navigator.clipboard.writeText(text); }
@@ -753,7 +758,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <tbody>
             <tr v-for="it in shownItems" :key="it.key" :class="{ on: pick === it.key, off: !preds.has(it.key) }" @click="pick = pick === it.key ? '' : it.key">
               <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button></td>
-              <td class="l addr" :data-tip="it.addr || undefined" data-tip-trunc><button v-if="it.addr" type="button" :class="['bpt-copy', { done: copiedKey === it.key }]" :data-tip="copiedKey === it.key ? '복사됨' : '주소복사'" :aria-label="`${caseLabel(it.key)} 주소 복사`" @click.stop="copyAddr(it)"><svg v-if="copiedKey !== it.key" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg><svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg></button>{{ it.addr ? shortAddr(it.addr) : '—' }}</td>
+              <td class="l addr" :data-tip="it.addr || undefined" data-tip-trunc><button v-if="it.addr" type="button" :class="['bpt-copy', { done: copiedKey === it.key }]" :data-tip="copiedKey === it.key ? '복사됨' : '주소복사'" :aria-label="`${caseLabel(it.key)} 주소 복사`" @click.stop="copyAddr(it)"><svg v-if="copiedKey !== it.key" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg><svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg></button>{{ it.addr ? tblAddr(it.addr) : '—' }}</td>
               <td>{{ yearShow(it) ? `${yearShow(it)}` : '—' }}<small v-if="yearShow(it)" class="bpt-at">{{ buildingAgeOf(yearShow(it)!) }}년차</small></td>
               <td><template v-if="it.target?.area">{{ /아파트/.test(kindOf(it)) ? '—' : `${it.target.area.toFixed(2)}㎡` }}<small class="bpt-at">{{ /아파트/.test(kindOf(it)) ? `(${it.target.area.toFixed(2)})` : `${(it.target.area / 3.305785).toFixed(2)}평` }}</small></template><template v-else>—</template></td>
               <td><span v-if="elevOf(it.addr) === undefined" class="ev u">·</span><span v-else-if="elevOf(it.addr) === null" class="ev u" title="건축물대장을 찾지 못했습니다">-</span><span v-else-if="elevOf(it.addr)! > 0" class="ev o two">{{ elevOf(it.addr) }}대<br>있음</span><span v-else class="ev x">없음</span></td>
@@ -790,7 +795,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <tbody>
             <tr v-for="r in probRows" :key="r.key">
               <td>{{ caseLabel(r.key) }}</td>
-              <td class="l addr" :data-tip="r.addr || undefined" data-tip-trunc><button v-if="r.addr" type="button" :class="['bpt-copy', { done: copiedKey === r.key }]" :data-tip="copiedKey === r.key ? '복사됨' : '주소복사'" :aria-label="`${caseLabel(r.key)} 주소 복사`" @click.stop="copyAddr(r)"><svg v-if="copiedKey !== r.key" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg><svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg></button>{{ r.addr ? shortAddr(r.addr) : '—' }}</td>
+              <td class="l addr" :data-tip="r.addr || undefined" data-tip-trunc><button v-if="r.addr" type="button" :class="['bpt-copy', { done: copiedKey === r.key }]" :data-tip="copiedKey === r.key ? '복사됨' : '주소복사'" :aria-label="`${caseLabel(r.key)} 주소 복사`" @click.stop="copyAddr(r)"><svg v-if="copiedKey !== r.key" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg><svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg></button>{{ r.addr ? tblAddr(r.addr) : '—' }}</td>
               <td><span class="bpt-nb">{{ won(r.min) }}</span></td>
               <td>{{ r.pSold != null ? pct(r.pSold) : '—' }}</td>
               <td v-for="(b, i) in r.bids" :key="i" :class="['r', { win: r.sold > 0 && b > r.sold, lose: r.sold > 0 && b <= r.sold }]"><span class="bpt-nb">{{ won(b) }}</span></td>
