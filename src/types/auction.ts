@@ -417,6 +417,11 @@ export interface MarketPicks {
   condSaleAvg: number;
   /** ③ 평균 매매가의 평당가(평균 금액 ÷ 평균 전용평) — 손품결론이 쓴다 */
   condSalePerPy?: number;
+  /** 유사물건 리스트(평균에 든 매매)를 같은 건물 · 다른 건물로 나눈 평균 — 손품결론 '경매지번 평균 실거래가' · '유사물건 평균 실거래가'(아파트, 2026-11-15 사용자) */
+  caseSaleAvg?: number;
+  caseSalePerPy?: number;
+  simSaleAvg?: number;
+  simSalePerPy?: number;
   condJeonseAvg: number;
   pubPrice: number;
   hugJeonse: number;
@@ -471,6 +476,8 @@ export interface PriceView {
   ho?: Record<string, string>;
   /** 웹 — 손품결론 '유사물건 매매가'로 고른 다른 건물 매매 한 줄(줄 열쇠, 2026-11-15 사용자) */
   simPick?: string;
+  /** 웹 — 손품결론 '경매지번 매매가'로 고른 같은 건물 매매 한 줄(줄 열쇠). 자동으로 고르지 않는다(2026-11-15 사용자) */
+  casePick?: string;
   /** 실거래가 예상(매매 · 전세)과 평균 평당가 · 유사 매매 건수 */
   estSale: number;
   estJeonse: number;

@@ -5,6 +5,7 @@
 // 화면이 아니라 여기에 둔 까닭: 셈은 시험으로 지키고, 화면(SonpumPricePage)은 그리기만 한다.
 import type { CaseTradeRow } from './caseTradeAnalysis';
 import type { ApartUnit } from './vworldApi';
+import type { MarketPicks } from '../types/auction';
 
 export const PY = 3.305785;
 /** 보증보험 전세 한도 — 공동주택가 × 126% */
@@ -32,6 +33,8 @@ export type SonPriceOut = {
   /** 시세분석에서 엘베(있음 · 없음)로 걸렀나 · 건축 연도 범위로 걸렀나 — 걸렀으면 그 개별성은 이미 맞춰져 보정 0 */
   elevFiltered?: boolean;
   yearFiltered?: boolean;
+  /** 저장 전 고른 값 — 손품결론 시세결론이 저장하기 전에도 바로 쓴다(경매지번 · 유사물건 실거래가 · 평균, 2026-11-15 사용자) */
+  picks?: Partial<Pick<MarketPicks, 'caseSale' | 'simSale' | 'condSaleAvg' | 'condSalePerPy' | 'caseSaleAvg' | 'caseSalePerPy' | 'simSaleAvg' | 'simSalePerPy' | 'price'>>;
 };
 export const RADII = [100, 300, 500, 1000] as const;
 export const PERIODS = [3, 6, 12, 24] as const;   // 3년은 뺐다(2026-11-02)
@@ -143,7 +146,9 @@ export const estStats = (rows: PriceRow[], myPy: number): EstStats | null => {
   if (!rows.length || myPy <= 0) return null;
   const mine = rows.map((r) => r.perPy * myPy);
   const avgPy = rows.reduce((t, r) => t + r.perPy, 0) / rows.length;
-  return { n: rows.length, est: r4(avgPy * myPy), med: r4(median(mine)), min: r4(Math.min(...mine)), max: r4(Math.max(...mine)), avgPy: r4(avgPy) };
+  // 원 단위 그대로 — 만 원으로 반올림하면 시세결론(평당가 × 평)과 몇만 원씩 어긋났다(2026-11-15 사용자 '반올림하지 말고')
+  const w = (v: number) => Math.round(v);
+  return { n: rows.length, est: w(avgPy * myPy), med: w(median(mine)), min: w(Math.min(...mine)), max: w(Math.max(...mine)), avgPy: w(avgPy) };
 };
 
 /** 실거래가 예상(전세) = min(유사 전세 예상, 보증보험 한도). 전세 거래가 없으면 한도만 */

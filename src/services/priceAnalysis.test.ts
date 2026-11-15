@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { distM, estStats, inRange, jeonseEstimate, matchUnit, PY, r4, simCond, simDefText, visitOrder, type PriceRow } from './priceAnalysis';
+import { distM, estStats, inRange, jeonseEstimate, matchUnit, PY, simCond, simDefText, visitOrder, type PriceRow } from './priceAnalysis';
 
 const row = (p: Partial<PriceRow>): PriceRow => ({
   id: String(Math.random()), kind: '매매', group: '매매', contractDate: '2026.10.01', amount: '', price: 200_000_000, areaM2: 66, floor: '4',
@@ -23,8 +23,8 @@ describe('priceAnalysis', () => {
   it('실거래가 예상 = 평당가 평균 × 선정물건 평, 만원 단위는 셈한 뒤에', () => {
     const myPy = 66.99 / PY;
     const s = estStats([row({ perPy: 10_645_574 }), row({ perPy: 10_645_574 })], myPy)!;
-    expect(s.est).toBe(r4(10_645_574 * myPy));
-    expect(s.avgPy).toBe(10_650_000);
+    expect(s.est).toBe(Math.round(10_645_574 * myPy));   // 원 단위 그대로(2026-11-15)
+    expect(s.avgPy).toBe(10_645_574);
     expect(estStats([], myPy)).toBeNull();
   });
   it('전세 예상은 보증보험 한도를 넘지 않는다', () => {

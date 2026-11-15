@@ -84,7 +84,8 @@ const run = async () => {
     if (out.error) errorMsg.value = out.error;
     res.value = out; loadedMonths.value = months.value; fetchedAt.value = Date.now();
     sameRaw2y.value = [];
-    if (months.value < 24 && !(out.rows ?? []).some((r) => (r.kind === '매매' || r.kind === '직거래') && r.price > 0)) {
+    // 빌라 — 경매지번 매매가 자동 고르기: 고른 기간에 그 건물 매매가 없으면 2년까지(아파트는 사용자가 리스트에서 고른다)
+    if (!isAptKind && months.value < 24 && !(out.rows ?? []).some((r) => (r.kind === '매매' || r.kind === '직거래') && r.price > 0)) {
       void analyzeAddress({ address: props.auction.address, propertyType: props.kind, years: 2 }).then((o2) => { if (id === runId) sameRaw2y.value = o2.rows ?? []; }).catch(() => undefined);
     }
     // 층은 고른(저장한) 그대로 — 11-10 에 여기서 '전체'로 되돌리게 바꿔, 유사도에서 고른 '같은 층'이 새로고침하면 풀렸다(2026-11-11 사용자)
@@ -113,7 +114,7 @@ const lot = computed(() => res.value?.parts.lot ?? '');
 
 // ===== 선정물건 — 전용 · 건축년 · 층 · 공시가 =====
 const sameRaw = computed(() => res.value?.rows ?? []);
-/** 경매지번 매매가 — 그 건물 매매가 고른 기간(1년 등) 안에 없으면 2년까지 찾는다. 2년 넘게는 안 본다(2026-11-15 사용자) */
+/** 빌라 경매지번 매매가 — 그 건물 매매가 고른 기간(1년 등) 안에 없으면 2년까지 찾는다. 2년 넘게는 안 본다(2026-11-15 사용자) */
 const sameRaw2y = ref<typeof sameRaw.value>([]);
 const me = computed(() => {
   // 아파트는 물건 자료 전용(다른 탭 · 고정카드와 같은 84.39)이 먼저 — 실거래에서 고른 값(84.40)과 끝자리가 달라 직접범위 끝이 84.4 로 보였다(2026-11-11)
@@ -333,10 +334,13 @@ const sonApp = inject<boolean>('sonApp', false);
 /** 줄 열쇠 — 다시 불러와도 같은 줄이 같은 열쇠(순번 id 는 불러올 때마다 바뀐다) */
 const rowKey = (r: PriceRow) => [r.group, r.contractDate, r.jibun, r.price, r.floorNo, Math.round(r.areaM2 * 100)].join('|');
 const dropped = ref<string[]>(Array.isArray(sv?.drop) ? [...sv.drop] : []);
-/** 손품결론 '유사물건 매매가' — 다른 건물 매매 줄을 누르면 그 거래, 다시 누르면 뺀다(아파트 · 빌라, 2026-11-15 사용자).
+/** 손품결론 '유사물건 실거래가' — 다른 건물 매매 줄을 누르면 그 거래, 다시 누르면 뺀다(아파트 · 빌라, 2026-11-15 사용자).
  *  거르기를 바꿔 표에서 사라져도 고른 거래는 남긴다(사용자가 고른 값) */
 const simPick = ref<string>(sv?.simPick ?? '');
 const simPickable = (r: PriceRow) => webEmbed && !r.same && r.group === '매매';
+/** 손품결론 '경매지번 실거래가' — 같은 건물(경매지번) 매매 줄을 사용자가 직접 고른다. 자동으로 고르지 않는다(2026-11-15 사용자) */
+const casePick = ref<string>(sv?.casePick ?? '');
+const casePickable = (r: PriceRow) => webEmbed && isAptKind && !!r.same && r.group === '매매';   // 아파트만 — 빌라는 자동(2026-11-15 사용자 '일단 아파트만')
 /** 호 짝짓기 — 선정물건 등기부의 소유권이전 접수일(PDF 갑구)과 실거래 등기일자가 같고 같은 지번이면 선정물건의 호. 그 밖은 '모름' */
 const ymdOf = (s: string) => { const m = String(s ?? '').match(/(\d{2,4})[.\-/](\d{1,2})[.\-/](\d{1,2})/); if (!m) return ''; const y = m[1].length === 2 ? `20${m[1]}` : m[1]; return `${y}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`; };
 const myOwnDates = computed(() => new Set((props.auction?.registryRows ?? []).filter((x) => /소유권이전/.test(x.kind)).map((x) => ymdOf(x.date)).filter(Boolean)));
@@ -418,6 +422,8 @@ watch(() => (isAptKind ? [...new Set(listRows.value.filter((r) => !r.same && r.j
 const saleRows = computed(() => candidates.value.filter((r) => r.group === '매매' && passKeep(r)));
 const jeonseRows = computed(() => candidates.value.filter((r) => r.group === '전세' && passKeep(r)));
 const stats = computed(() => estStats(saleRows.value, myPy.value));
+/** 같은 건물 · 다른 건물 평균(① 매도가 예상과 같은 리스트를 둘로) */
+const splitAvg = computed(() => ({ c: estStats(saleRows.value.filter((r) => r.same), myPy.value), o: estStats(saleRows.value.filter((r) => !r.same), myPy.value) }));
 const jeonse = computed(() => jeonseEstimate(estStats(jeonseRows.value, myPy.value), curPub.value));
 const hug = computed(() => curPub.value * HUG_RATE);
 // 띠 · 표 맨 위 빨간 줄은 고른 거래(매매 · 전세 · 월세)를 따른다. 전세는 보증보험 한도까지, 월세는 평당 월세로 셈한다
@@ -448,6 +454,7 @@ if (sonPriceOut) {
       kind: kindF.value, est: v.est, n: v.n, avgPy: v.avgPy, myPy: myPy.value, ...medOf(rs), sameFloor: rangeCond.value.floor === 0, other: rs.some((r) => !r.same),
       elevFiltered: !!cond.value.elev, yearFiltered: cond.value.yMin > 1980 || cond.value.yMax < new Date().getFullYear(),
       rows: rs.map((r) => ({ same: !!r.same, name: r.name || r.jibun, dong: r.dong, floorNo: r.floorNo, price: r.price, areaM2: r.areaM2, perPy: r.perPy, umd: r.umdNm, jibun: r.jibun })),
+      ...(sonPriceOut.value?.picks ? { picks: sonPriceOut.value.picks } : {}),
     } : null;
   }, { immediate: true });
 }
@@ -476,6 +483,8 @@ const estTip = computed<TipRow[]>(() => [
 ]);
 const manW = (w: number) => `월 ${Math.round(w / 1e4).toLocaleString('ko-KR')}만`;
 const vfmt = (w: number) => (kindF.value === '월세' ? manW(w) : eok(w));
+/** ① 매도가 예상 — 아파트는 억이 아니라 원 단위 그대로(2026-11-15 사용자) */
+const vEst = (w: number) => (isAptKind && kindF.value !== '월세' ? `${Math.round(w).toLocaleString('ko-KR')}원` : vfmt(w));
 const vPy = (w: number) => (kindF.value === '월세' ? `${Math.round(w / 1e3) / 10}만/평` : man(w));
 const pct = (a: number, b: number) => (a > 0 && b > 0 ? `${Math.round((a / b) * 100)}%` : '-');
 const tolText = computed(() => (simMode.value === 'sim'
@@ -544,19 +553,14 @@ const widen = (w: 'r' | 's' | 'p') => {
 // ===== 저장 — 0.8초 뒤 물건 문서(marketPicks)에. 손품결론이 실거래가 예상을 읽는다 =====
 const saving = ref(false);
 const savedAt = ref(store.auctions.find((x) => x.id === props.auction.id)?.marketPicks?.savedAt ?? 0);
-/** 경매지번 매매가 — 아파트는 같은 동 · 같은 평형부터(같은 층이 있으면 그것, 없으면 가장 최근), 없으면 같은 건물 같은 평형 · 같은 층 → 가장 가까운 평형.
- *  동은 국토부가 준 동, 없으면 호실 목록에서 한 동으로 좁혀질 때만. 기간은 고른 기간, 매매가 없으면 2년(2026-11-15 사용자) */
-const caseSalePick = computed(() => {
+/** 빌라 경매지번 매매가 — 자동: 같은 건물 같은 평형 · 같은 층 → 가장 가까운 평형, 고른 기간에 없으면 2년 */
+const caseSaleAuto = computed(() => {
   const kinds: Array<CaseTradeRow['kind']> = ['매매', '직거래'];
-  const pick = (rows: CaseTradeRow[]) => {
-    if (isAptKind && myDong.value) {
-      const sameDong = rows.filter((r) => kinds.includes(r.kind) && r.price > 0 && Math.abs(r.areaM2 - me.value.areaM2) < 0.05 && unitOfRow(r).dong === myDong.value && !unitOfRow(r).est);
-      if (sameDong.length) return pickCaseTrade(sameDong, kinds, me.value.areaM2, me.value.floor);
-    }
-    return pickCaseTrade(rows, kinds, me.value.areaM2, me.value.floor);
-  };
-  return pick(sameRaw.value) ?? pick(sameRaw2y.value);
+  return pickCaseTrade(sameRaw.value, kinds, me.value.areaM2, me.value.floor) ?? pickCaseTrade(sameRaw2y.value, kinds, me.value.areaM2, me.value.floor);
 });
+/** 아파트 경매지번 실거래가 — 사용자가 고른 같은 건물 매매 줄(거르기를 바꿔 표에서 사라져도 고른 거래는 남긴다) */
+const casePickRow = computed(() => (casePick.value ? allRows.value.find((r) => rowKey(r) === casePick.value) ?? null : null));
+const savedCase = store.auctions.find((x) => x.id === props.auction.id)?.marketPicks?.caseSale ?? null;
 const savedSim = store.auctions.find((x) => x.id === props.auction.id)?.marketPicks?.simSale ?? null;
 const toPick = (r: CaseTradeRow | null): MarketPickRow | null => (r ? {
   kind: r.kind, contractDate: r.contractDate, amount: r.amount, price: r.price, areaM2: r.areaM2, floor: r.floor,
@@ -570,15 +574,20 @@ const body = computed((): Omit<MarketPicks, 'savedAt'> => {
     ...(dropped.value.length ? { drop: [...dropped.value] } : {}),
     ...(elevPick.value ? { elev: elevPick.value } : {}),
     ...(simPick.value ? { simPick: simPick.value } : {}),
+    ...(casePick.value ? { casePick: casePick.value } : {}),
     estSale: s?.est ?? 0, estJeonse: Math.round(j?.est ?? 0), estPerPy: s?.avgPy ?? 0, estCount: s?.n ?? 0,
   };
   return {
-    // 같은 건물 거래는 손품결론 「경매지번 매매가」 자리 — 같은 평형 · 같은 층 → 같은 평형 → 가까운 평형
-    caseSale: caseSalePick.value ? { ...toPick(caseSalePick.value)!, unitText: unitOfRow(caseSalePick.value).text } : null,
+    // 같은 건물 거래는 손품결론 「경매지번 실거래가」 자리 — 같은 평형 · 같은 층 → 같은 평형 → 가까운 평형
+    caseSale: !isAptKind ? (caseSaleAuto.value ? { ...toPick(caseSaleAuto.value)!, unitText: unitOfRow(caseSaleAuto.value).text } : null)
+      : casePickRow.value ? { ...toPick(casePickRow.value)!, unitText: unitOfRow(casePickRow.value).text } : (casePick.value ? savedCase : null),
     caseJeonse: toPick(pickCaseTrade(sameRaw.value, ['전세'], me.value.areaM2, me.value.floor)),
     caseManual: { sale: false, jeonse: false },
     simSale: simPick.value ? (toPick(allRows.value.find((r) => rowKey(r) === simPick.value) ?? null) ?? savedSim) : null, simJeonse: null,
     condSaleAvg: s?.est ?? 0, condSalePerPy: s?.avgPy ?? 0, condJeonseAvg: Math.round(j?.est ?? 0),
+    // 평균에 든 매매를 같은 건물(경매지번) · 다른 건물(유사물건)로 나눈 평균 — 손품결론 두 줄(아파트, 2026-11-15 사용자)
+    caseSaleAvg: splitAvg.value.c?.est ?? 0, caseSalePerPy: splitAvg.value.c?.avgPy ?? 0,
+    simSaleAvg: splitAvg.value.o?.est ?? 0, simSalePerPy: splitAvg.value.o?.avgPy ?? 0,
     pubPrice: curPub.value, hugJeonse: Math.round(hug.value), price: pv,
   };
 });
@@ -589,7 +598,7 @@ let lastJson = (() => { const mp = store.auctions.find((x) => x.id === props.auc
 let saveTimer = 0;
 // 사용자가 고른 값(기간 · 반경 · 거래 · 유사도 · 직접범위 · 값 거르기 · 공시가)만 — 이것이 바뀐 저장만 '최근 작성'에 남긴다.
 // 자료가 새로 들어와 셈만 달라진 자동 저장은 조용히(silent) 적는다
-const choicesOf = (v?: PriceView) => (v ? stable({ months: v.months, radius: v.radius, kind: v.kind, simMode: v.simMode, sim: v.sim, cond: v.cond, keep: v.keep, typedPub: v.typedPub, drop: v.drop ?? [], elev: v.elev ?? null, simPick: v.simPick ?? '' }) : '');
+const choicesOf = (v?: PriceView) => (v ? stable({ months: v.months, radius: v.radius, kind: v.kind, simMode: v.simMode, sim: v.sim, cond: v.cond, keep: v.keep, typedPub: v.typedPub, drop: v.drop ?? [], elev: v.elev ?? null, simPick: v.simPick ?? '', casePick: v.casePick ?? '' }) : '');
 let lastChoices: string | null = (() => { const v = store.auctions.find((x) => x.id === props.auction.id)?.marketPicks?.price; return v ? choicesOf(v) : null; })();
 /** manual — 저장 단추로 부르면 위치를 받는 중이어도 바로 적는다 */
 const saveNow = async (manual?: unknown) => {
@@ -626,6 +635,12 @@ const saveSoon = () => {
   saveTimer = window.setTimeout(() => { void saveNow(); }, 800);
 };
 watch(bodyKey, saveSoon);
+// 고른 값은 저장하기 전에도 손품결론에 바로 — 저장은 마지막에 저장하기로(2026-11-15 사용자)
+if (sonPriceOut) watch(bodyKey, () => {
+  if (!sonPriceOut.value || !res.value) return;
+  const b = body.value;
+  sonPriceOut.value = { ...sonPriceOut.value, picks: { caseSale: b.caseSale, simSale: b.simSale, condSaleAvg: b.condSaleAvg, condSalePerPy: b.condSalePerPy, caseSaleAvg: b.caseSaleAvg, caseSalePerPy: b.caseSalePerPy, simSaleAvg: b.simSaleAvg, simSalePerPy: b.simSalePerPy, price: b.price } };
+}, { immediate: true });
 watch(enriching, (v) => { if (!v) saveSoon(); });
 
 // ===== 지도 — 카카오맵(못 열면 브이월드) 위에 반경 원 · 선정물건 · 유사물건(지번마다 한 점) =====
@@ -972,6 +987,7 @@ const pickedRow = ref('');
 const pickRow = (r: PriceRow) => {
   const k = rowKey(r); const again = pickedRow.value === k;
   if (simPickable(r)) simPick.value = simPick.value === k ? '' : k;
+  if (casePickable(r)) casePick.value = casePick.value === k ? '' : k;
   pickedRow.value = again ? '' : k;
   if (r.same) { focus.value = ''; meOpen.value = !again; return; }
   meOpen.value = false; focus.value = again ? '' : r.jibun;
@@ -1045,7 +1061,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <div class="est">
         <!-- 웹 — 중간값 · 최저 · 최고는 뺐다. 거래가를 내 평수로 바꿔 만든 값이라 실제로 거래된 값이 아니다(2026-11-11 사용자) -->
         <div :class="['tiles', { four: !props.app }]">
-          <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? `① 매도가 예상(${kindF})` : `실거래가 예상(${kindF})` }}</InfoTip></span><span class="v pa-num">{{ view ? vfmt(view.est) : '-' }}</span><!-- 웹 — 0건이 돼도 아래 두 줄 자리를 그대로(칸 높이가 줄면 아래 필터 · 표가 통째로 올라갔다 내려왔다, 2026-11-12 사용자 '엘베 누르면 흔들려') --><span v-if="webEmbed || view?.capped" class="cap" :style="{ visibility: view?.capped ? 'visible' : 'hidden' }">보증보험 한도 적용</span><span v-if="webEmbed || view" class="s rad">{{ webEmbed ? (estFormula || '\u00a0') : `반경 ${radText(radius)} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` }}</span></div>
+          <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? `① 매도가 예상(${kindF})` : `실거래가 예상(${kindF})` }}</InfoTip></span><span :class="['v', 'pa-num', { won: isAptKind && kindF !== '월세' }]">{{ view ? vEst(view.est) : '-' }}</span><!-- 웹 — 0건이 돼도 아래 두 줄 자리를 그대로(칸 높이가 줄면 아래 필터 · 표가 통째로 올라갔다 내려왔다, 2026-11-12 사용자 '엘베 누르면 흔들려') --><span v-if="webEmbed || view?.capped" class="cap" :style="{ visibility: view?.capped ? 'visible' : 'hidden' }">보증보험 한도 적용</span><span v-if="webEmbed || view" class="s rad">{{ webEmbed ? (estFormula || '\u00a0') : `반경 ${radText(radius)} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` }}</span></div>
           <div class="tile"><span class="k">{{ kindF === '월세' ? '평균 평당 월세' : '평균 평당가' }}</span><span class="v pa-num">{{ view ? vPy(view.avgPy) : '-' }}</span></div>
           <!-- 선정물건 정보 — 유사 거래를 찾는 가운데 기준(실제 범위는 아래 「계산 조건」 줄) -->
           <div v-if="isAptKind" class="tile area"><span class="k">면적 <small class="k-sub">공급(전용)</small> / 연식</span><span class="v pa-num sm">{{ aptMyArea }}</span><span class="s">{{ me.year ? `${me.year}년식` : '-' }}</span></div>
@@ -1275,7 +1291,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             </tr>
             <tr v-for="r in listRows" :key="r.id" :class="{ on: webEmbed ? pickedRow === rowKey(r) : (r.same ? meOpen : (focus && focus === r.jibun)), off: isOff(r) }" @click="pickRow(r)">
               <td v-if="webEmbed" class="ck-td" @click.stop><input type="checkbox" :checked="isOff(r)" :aria-label="`${r.contractDate} ${r.name || r.jibun} 평균에서 빼기`" @change="toggleDrop(r)" /></td>
-              <td><span :class="['kind', r.group === '전세' ? 'j' : r.group === '월세' ? 'm' : '']">{{ r.group }}</span><span v-if="simPick && simPick === rowKey(r)" class="sim-pick" title="손품결론 '유사물건 매매가'로 들어갑니다 — 다시 누르면 뺍니다">유사</span></td>
+              <td><span :class="['kind', r.group === '전세' ? 'j' : r.group === '월세' ? 'm' : '']">{{ r.group }}</span><span v-if="simPick && simPick === rowKey(r)" class="sim-pick" title="손품결론 '유사물건 실거래가'로 들어갑니다 — 다시 누르면 뺍니다">유사</span><span v-if="casePick && casePick === rowKey(r)" class="sim-pick" title="손품결론 '경매지번 실거래가'로 들어갑니다 — 다시 누르면 뺍니다">선택</span></td>
               <td class="pa-num">{{ r.contractDate }}</td>
               <template v-if="r.group === '월세'">
                 <td class="r pa-num two">{{ n0(r.price) }}<small>월 {{ Math.round((r.monthly ?? 0) / 1e4) }}만</small></td>
@@ -1690,7 +1706,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .ck-th, .ck-td { width: 44px; text-align: center !important; }
 .ck-td input { width: 15px; height: 15px; accent-color: var(--blue); cursor: pointer; }
 tr.off td:not(.ck-td) { opacity: .42; text-decoration: line-through; }
-.sim-pick { display: inline-block; margin-left: 4px; padding: 1px 5px; border-radius: 4px; background: #2b6df3; color: #fff; font-size: 12px; font-weight: 700; vertical-align: middle; }   /* 손품결론 유사물건 매매가로 고른 줄(2026-11-15) */
+.sim-pick { display: inline-block; margin-left: 4px; padding: 1px 5px; border-radius: 4px; background: #2b6df3; color: #fff; font-size: 12px; font-weight: 700; vertical-align: middle; }   /* 손품결론 유사물건 실거래가로 고른 줄(2026-11-15) */
 .sdir { display: inline-block; margin-left: 3px; font-style: normal; font-size: 10px; color: #c3c9d4; cursor: pointer; }
 .sdir.on { color: var(--blue); }
 .fv { border: 0; background: none; color: #b3bac6; font-size: 11px; padding: 0 2px; margin-left: 2px; cursor: pointer; }
