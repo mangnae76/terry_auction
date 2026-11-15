@@ -678,7 +678,6 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               </span>
             </template>
           </div>
-          <p class="bpt-sub">본원 6계(4) · 4는 {{ calDong || '동선택의 동' }} 건수</p>
         </div>
       </div>
     </section>
@@ -925,10 +924,10 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-cal-day small { margin-left: 8px; font-size: 13px; color: #6b7280; }   /* 그날 기일목록 — '인천-본원 5계 · 8계 370건' */
 .bpt-cal-nav button { width: 24px; height: 24px; border: 1px solid #d5dbe5; border-radius: 6px; background: #fff; color: #374151; font: inherit; font-size: 14px; line-height: 1; cursor: pointer; padding: 0; }
 .bpt-cal-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid #e3e7ee; border-radius: 8px; overflow: hidden; }
-.bpt-cal-grid .hd { background: #f4f6fa; font-size: 12px; font-weight: 700; color: #374151; text-align: center; padding: 4px 0; border-bottom: 1px solid #e3e7ee; }
-.bpt-cal-grid .cell-wrap { border-right: 1px solid #eef1f6; border-bottom: 1px solid #eef1f6; min-height: 54px; display: flex; }
+.bpt-cal-grid .hd { background: #f4f6fa; font-size: 12px; font-weight: 700; color: #374151; text-align: center; padding: 6px 0; border-bottom: 1px solid #e3e7ee; }
+.bpt-cal-grid .cell-wrap { border-right: 1px solid #eef1f6; border-bottom: 1px solid #eef1f6; min-height: 68px; display: flex; }   /* 안내 줄을 걷고 칸을 넉넉히 */
 .bpt-cal-grid .cell-wrap:nth-child(5n) { border-right: 0; }
-.bpt-cal-grid .cell { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 4px 3px; border: 0; border-radius: 0; background: #fff; font: inherit; font-size: 12px; color: #374151; text-align: left; cursor: pointer; }
+.bpt-cal-grid .cell { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 7px 9px; border: 0; border-radius: 0; background: #fff; font: inherit; font-size: 12px; color: #374151; text-align: left; cursor: pointer; }
 .bpt-cal-grid .cell:hover { background: #f5f8ff; }
 .bpt-cal-grid .cell .dn { font-weight: 700; color: #111827; display: flex; gap: 4px; align-items: baseline; white-space: nowrap; }
 .bpt-cal-grid .cell .dn small { font-size: 12px; font-weight: 400; color: #c4392f; }
