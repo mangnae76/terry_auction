@@ -4849,7 +4849,7 @@ const sonConcLines = computed(() => {
   const csSame = !!cs && cs.areaM2 > 0 && myM2 > 0 && Math.abs(cs.areaM2 - myM2) < 0.05;
   const myFloor = Number(String(sumVal('sum.floorCurrent') || '').replace(/[^\d]/g, '')) || 0;
   const csFloor = Number(String(cs?.floor ?? '').replace(/[^\d-]/g, '')) || 0;
-  const caseLine = line('caseSale', apt ? '경매지번 실거래가' : '경매지번 매매가', perPyOf(cs?.price ?? 0, cs?.areaM2 ?? 0), cs?.price ?? 0, '실거래 평당가', apt ? '유사물건 리스트에서 경매지번 거래 선택' : '');
+  const caseLine = line('caseSale', apt ? '① 경매지번 실거래가' : '경매지번 매매가', perPyOf(cs?.price ?? 0, cs?.areaM2 ?? 0), cs?.price ?? 0, '실거래 평당가', apt ? '유사물건 리스트에서 경매지번 거래 선택' : '');
   if (cs && cs.price > 0) {
     caseLine.tag = csSame ? (myFloor && csFloor === myFloor ? '동일평형 · 동일층' : '동일평형') : '평형다름';   // '같은'이 아니라 '동일'(2026-11-15 사용자)
     // 어느 거래인지 — 날짜 · 층 · 동호(호실 목록으로 찾은 것, 여럿이면 '중 추정'). 같은 평형이면 실거래가 그대로, 다르면 평당가 × 우리 전용평
@@ -4861,6 +4861,9 @@ const sonConcLines = computed(() => {
     caseLine,
     // 아파트 — '경매지번 평균 실거래가'를 경매지번 실거래가 바로 아래(2026-11-15 사용자). 빌라는 예전 순서 · 이름
     ...(apt ? [
+      // ② 경매지번 실거래가 · 개별성 보정 — 시세분석 ② 칸(개별성 보정 뒤 가운데 값) 그대로(2026-11-15 사용자)
+      (() => { const v = cmpUnitClamp.value; const mid = v ? Math.round((v.lo + v.hi) / 2) : 0;
+        return { key: 'caseIndiv', label: '② 경매지번 실거래가 · 개별성 보정', unit: mid > 0 && myPy > 0 ? Math.round(mid / myPy) : 0, price: mid, how: '', tag: '', guide: '시세분석 ② 매도가 예상(개별성 보정)' }; })(),
       // 아파트 — 경매지번 실거래가 · 경매지번 평균 · 유사물건 실거래가 · 유사물건 평균 · 호가 둘(2026-11-15 사용자). 평균은 리스트 평균을 그대로(다시 곱하지 않는다)
       { ...line('caseAvg', '경매지번 평균 실거래가', mp?.caseSalePerPy ?? 0, mp?.caseSaleAvg ?? 0, '평균 평당가', '유사물건 리스트의 경매지번 거래 평균'), ...(mp?.caseSaleAvg ? { price: mp.caseSaleAvg } : {}) },
       line('simSale', '유사물건 실거래가', perPyOf(mp?.simSale?.price ?? 0, mp?.simSale?.areaM2 ?? 0), mp?.simSale?.price ?? 0, '실거래 평당가', '유사물건 리스트에서 다른 건물 거래 선택'),
@@ -10710,8 +10713,8 @@ const goBack = () => router.back();
             </div>
             <!-- 손품결론 — 운영자만. 호가매물 바로 아래(손품조사 ④ 호가분석). 예전 손품결론의 시세결론 + 평균 아래 급매가(2026-11-13 사용자) -->
             <div v-if="sonpumMode && isOperator" class="adp-mkt-block son-conc-block">
-              <div class="adp-mkt-block-head"><span class="t">손품결론</span><span class="adm-chip">운영</span></div>
-              <h4 class="son-conc-h">시세결론</h4>
+              <!-- '손품결론' 글은 빼고 그 자리에 '시세결론'(2026-11-15 사용자) -->
+              <div class="adp-mkt-block-head"><span class="t">시세결론</span><span class="adm-chip">운영</span></div>
               <table class="adp-table adp-mkt-table fit adp-dm-tbl adp-conc-table bold-price conc-vert">
                 <thead><tr><th class="adp-conc-corner">구분</th><th>조사가격</th><th>평당가</th></tr></thead>
                 <tbody>
