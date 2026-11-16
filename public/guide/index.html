@@ -1560,6 +1560,38 @@ GUIDE.release({
     if (ch) ch.title = '개인정보 설정';
   },
 });
+/* v1.7.0 — 2026.11.16 장별 HTML 영상 12편(원본 표 docs/guide-video-clips.md). 영상 목차를 웹 페이지안내 항목 순서로 다시 짠다(웹에만 있던 장을 더함, 영상 없는 장은 '예정') */
+GUIDE.release({
+  v: '1.7.0', date: '2026-11-16', base: '1.6.4', title: '장별 안내 영상 12편',
+  notes: [
+    '영상으로 보기 — 화면 공통 구성 · 로그인 후 대문 · 물건등록 · 물건목록 · 물건정보 · 권리분석 · 손품조사 · 수익분석 · 임장조사 · 임장경로 · 낙찰이후 · 자금관리 영상을 올렸습니다. 화면 공통 구성은 새 판(57초)으로 바꿨습니다',
+    '영상 목차를 웹으로 보기의 페이지 안내 순서에 맞췄습니다. 물건정보 · 권리분석, 임장조사 · 임장경로, 낙찰이후 · 자금관리를 장마다 나누고 시장분석 · 공지 · 게시판 · 마이페이지 · 콘텐츠 장을 더했습니다',
+  ],
+  patch(c) {
+    const old = c.video.chapters; const was = (id) => old.find((x) => x.id === id) || {};
+    const ch = (id, title, desc, aid, len, extra) => ({ id, title, desc, at: '', aid, ...(len ? { clip: `clip/${id}.html`, len } : {}), ...extra });
+    c.video.chapters = [
+      { ...was('start') },
+      ch('layout', '화면 공통 구성', '상단 메뉴 · 하위 탭 · 경로 읽는 법', 'help-layout', '0:57'),
+      ch('home', '로그인 후 대문', '다음 할 일 · 경매 일정 · 신규 콘텐츠', 'help-home', '0:46'),
+      ch('register', '물건등록', 'PDF 자동등록과 직접입력', 'help-register', '1:01'),
+      ch('list', '물건목록', '물건카드와 진행 단계 바꾸기', 'help-list', '0:55'),
+      ch('basic', '물건정보', '사건 정보 확인', 'help-item-basic', '1:02'),
+      ch('rights', '권리분석', '매각물건명세서로 떠안을 돈 확인', 'help-item-rights', '1:15'),
+      ch('survey', '손품조사', '수요 · 개별성 · 시세로 손품결론 내기', 'help-item-survey', '1:18', { key: true }),
+      ch('profit', '수익분석', 'A~D안 비교와 입찰가 확정', 'help-item-profit', '0:46'),
+      ch('field', '임장조사', '현장 사진 · 체크리스트 남기기', 'help-item-field', '0:43'),
+      ch('trip', '임장경로', '임장예정 물건 동선최적화', 'help-trip', '0:39'),
+      ch('postwin', '낙찰이후', '낙찰 이후 절차 정리', 'help-postwin', '0:50'),
+      ch('finance', '자금관리', '물건별 돈 흐름 · 엑셀 받기', 'help-finance', '0:47'),
+      ch('market', '시장분석', '실거래분석 · 시세예측 · 랭킹분석', 'help-market'),
+      ch('community', '공지 · 게시판', '공지사항 · 이벤트 · 업데이트와 게시판', 'help-community'),
+      ch('more', '마이페이지', '계정 · 이용권 · 설정', 'help-more'),
+      ch('etc', '콘텐츠 · 앱 · 매뉴얼', '전자책 · 리포트 · 매뉴얼 · 모바일앱', 'help-etc'),
+      { ...was('setup') },
+    ];
+  },
+});
 /* 다음 버전 예시 — 바뀐 곳만 patch 에서 고친다
 GUIDE.release({
   v: '1.1.0', date: '2026-12-01', base: '1.0.0', title: '앱 출시 반영',
