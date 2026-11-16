@@ -695,8 +695,8 @@ watch(dayDate, () => { fMine.value = false; fDong.value = dongFilter.value.trim(
 
 /* ===== 추천 · 어디로 갈까 — 추천 = 조회수로 본 입찰자 있을확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 허그가 올지 실수요자가 올지는 아무도 모른다, 2026-11-16 사용자).
  * 어디로 갈까 = 달력 숫자에서 그날 서울 · 경기 · 인천 법원을 물건 많은 순으로 한두 곳(한 법원에 오는 입찰자는 400~500명으로 비슷해 물건이 많을수록 건당 경쟁이 준다) ===== */
-const REC_P = 0.3; const REC_BIDS = 1;
-const recItems = computed(() => listItems.value.filter((it) => { const s = sellOf(it.key); return !!it.target && preds.value.has(it.key) && !!s && s.pSold < REC_P && s.expBids < REC_BIDS; })   // 신건은 예상 낙찰가가 없어 뺀다(확률만 있음).sort((a, b) => sellOf(a.key)!.pSold - sellOf(b.key)!.pSold));
+const REC_P = 0.3; const REC_BIDS = 1;   // 신건은 예상 낙찰가가 없어(확률만) 추천에서 뺀다
+const recItems = computed(() => listItems.value.filter((it) => { const s = sellOf(it.key); return !!it.target && preds.value.has(it.key) && !!s && s.pSold < REC_P && s.expBids < REC_BIDS; }).sort((a, b) => sellOf(a.key)!.pSold - sellOf(b.key)!.pSold));
 const recKeys = computed(() => new Set(recItems.value.map((it) => it.key)));
 const isRec = (key: string) => recKeys.value.has(key);
 /** 낙찰확률 q 로 이기는 우리 입찰가(입찰자가 있을 때) — 입찰가별 낙찰확률 표와 같은 셈 */
