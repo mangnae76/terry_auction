@@ -224,6 +224,8 @@ export const saveDayCsv = async (date: string, rows: DayListRow[]): Promise<void
 export type HitDoc = {
   key: string; tid: string; dong: string; addr: string; kind: string; area: number | null; appr: number; min: number; sold: number; bids: number; second: number;
   fails: number; next: string; state: string; asOf: string; ev: { d: string; l: string }[]; hd: string[]; hc: number[]; he: number[]; at: number;
+  /** 채권자 — '주택도시보증공사'(허그)면 허그가 보증금 채권으로 입찰할 가능성이 높다(2026-11-16). 없으면 '' */
+  creditor: string;
 };
 /** 그 동의 사건 전부 */
 export const loadHits = async (dong: string): Promise<HitDoc[]> => {
@@ -233,6 +235,6 @@ export const loadHits = async (dong: string): Promise<HitDoc[]> => {
     const n = (v: unknown) => (typeof v === 'number' ? v : 0); const arr = <T,>(v: unknown) => (Array.isArray(v) ? (v as T[]) : []);
     return { key: String(x.key ?? ''), tid: String(x.tid ?? d.id), dong: String(x.dong ?? ''), addr: String(x.addr ?? ''), kind: String(x.kind ?? ''), area: typeof x.area === 'number' ? x.area : null,
       appr: n(x.appr), min: n(x.min), sold: n(x.sold), bids: n(x.bids), second: n(x.second), fails: n(x.fails), next: String(x.next ?? ''), state: String(x.state ?? ''), asOf: String(x.asOf ?? ''),
-      ev: arr<{ d: string; l: string }>(x.ev), hd: arr<string>(x.hd), hc: arr<number>(x.hc), he: arr<number>(x.he), at: x.at?.toMillis?.() ?? 0 };
+      ev: arr<{ d: string; l: string }>(x.ev), hd: arr<string>(x.hd), hc: arr<number>(x.hc), he: arr<number>(x.he), at: x.at?.toMillis?.() ?? 0, creditor: String(x.creditor ?? '') };
   });
 };

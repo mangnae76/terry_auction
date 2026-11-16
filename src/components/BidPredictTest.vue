@@ -62,6 +62,7 @@ const unpick = (e: MouseEvent) => { const t = e.target as Element | null; if (pi
 onMounted(() => document.addEventListener('mousedown', unpick));
 onBeforeUnmount(() => document.removeEventListener('mousedown', unpick));
 /* 운영자 시험용 — 화면이 쓰는 자료를 그대로 꺼내 화면 밖에서 여러 방식을 견줘 본다(읽기만, 2026-11-15) */
+onMounted(() => { (window as unknown as Record<string, unknown>).__bptData = () => JSON.parse(JSON.stringify({ recs: recs.value, hitDocs: hitDocs.value, facts: extFacts.value, dbRows: dbRows.value })); });
 const agentAgo = computed(() => { const at = agent.value?.at?.toMillis?.(); return at ? Math.max(0, Math.round((nowMs.value - at) / 1000)) : 0; });
 /** 'web-agent 2026.11.14-2' → 'ver.26.11.14-2'(매각분석과 같게) */
 const verLabel = (v: string) => { const m = /(\d{4})\.(\d{2})\.(\d{2})(-\d+)?/.exec(v); return m ? `ver.${m[1].slice(2)}.${m[2]}.${m[3]}${m[4] || ''}` : v.replace(/^web-agent\s*/, ''); };
@@ -242,6 +243,21 @@ const won = (n: number) => Math.round(n).toLocaleString('ko-KR');
 const man = (n: number) => { const m = Math.round(n / 1e4); const e = Math.floor(m / 1e4); const r = m % 1e4; return e ? `${e}억${r ? ` ${r.toLocaleString('ko-KR')}만` : ''}` : `${r.toLocaleString('ko-KR')}만`; };
 /** 만 단위만 — '9,660만' · '10,607만'(억으로 끊지 않아 끝자리가 세로로 맞는다) */
 const manN = (n: number) => `${Math.round(n / 1e4).toLocaleString('ko-KR')}만`;
+/* ===== 채권자 · 허그(주택도시보증공사) — 검암동 500건 중 374건이 허그 채권(2026-11-16). 허그는 보증금 채권으로 입찰해 낙찰가가 사람 수와 상관없이 정해지는 편.
+ * 허그 예상 입찰가 = 그날 이전 같은 차수 허그 채권 매각의 낙찰가 ÷ 감정가 중앙값(10~90% 구간). 6월~11-16 시험: 2차 70~81%(중앙 72) · 3차 56~70%(63) · 4차 44~54%(52) ===== */
+const credOf = computed(() => new Map(hitDocs.value.map((h) => [h.key, h.creditor])));
+const isHug = (key: string) => /주택도시보증/.test(credOf.value.get(key) ?? '');
+/** 채권자 짧게 — '주택도시보증공사' → 허그, '서울보증보험(주)' → 서울보증보험 */
+const credShort = (key: string) => { const c = credOf.value.get(key) ?? ''; return !c ? '' : /주택도시보증/.test(c) ? '허그' : c.replace(/\(주\)|주식회사|㈜/g, '').trim().slice(0, 7); };
+type HugBand = { n: number; p10: number; p50: number; p90: number };
+const hugBands = computed<Map<number, HugBand>>(() => {
+  const by = new Map<number, number[]>();
+  roundsAt.value.forEach((r) => { if (r.result === 'sold' && r.sold > 0 && r.appr > 0 && r.date < dayDate.value && isHug(r.key)) (by.get(r.round) ?? by.set(r.round, []).get(r.round)!).push(r.sold / r.appr); });
+  const out = new Map<number, HugBand>();
+  by.forEach((xs, k) => { if (xs.length < 5) return; xs.sort((a, b) => a - b); const q = (p: number) => xs[Math.min(xs.length - 1, Math.floor(p * xs.length))]; out.set(k, { n: xs.length, p10: q(0.1), p50: q(0.5), p90: q(0.9) }); });
+  return out;
+});
+const hugOf = (it: Item): HugBand | null => (it.target && isHug(it.key) ? hugBands.value.get(it.target.round) ?? null : null);
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 /** 주소 복사 — 지도 · 로드뷰에서 입지 · 개별성을 볼 때 붙여 넣으려고(2026-11-14 사용자). 괄호 안 도로명 등은 뺀 지번 주소 */
 const copiedKey = ref('');
@@ -774,8 +790,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
           <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게(검암동 · 모든동 · 11-13 · 16 · 19 에서 잰 가장 넓은 값, 주소는 남는 폭) -->
-          <colgroup><col style="width: 108px" /><col style="width: 224px" /><col style="width: 52px" /><col style="width: 72px" /><col style="width: 52px" /><col style="width: 60px" /><col style="width: 40px" /><col style="width: 92px" /><col style="width: 60px" /><col style="width: 60px" /><col style="width: 90px" /><col style="width: 60px" /><col style="width: 90px" /><col style="width: 88px" /><col style="width: 88px" /></colgroup>
-          <thead><tr><th>사건번호</th><th class="l">주소</th><th>연식</th><th>전용</th><th>엘베</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
+          <colgroup><col style="width: 108px" /><col style="width: 224px" /><col style="width: 52px" /><col style="width: 72px" /><col style="width: 52px" /><col style="width: 60px" /><col style="width: 40px" /><col style="width: 92px" /><col style="width: 112px" /><col style="width: 60px" /><col style="width: 60px" /><col style="width: 90px" /><col style="width: 60px" /><col style="width: 90px" /><col style="width: 88px" /><col style="width: 88px" /></colgroup>
+          <thead><tr><th>사건번호</th><th class="l">주소</th><th>연식</th><th>전용</th><th>엘베</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th class="r">채권자<br>허그 예상가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
           <tbody>
             <tr v-for="it in shownItems" :key="it.key" :class="{ on: pick === it.key, off: !preds.has(it.key) }" @click="pick = pick === it.key ? '' : it.key">
               <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button></td>
@@ -787,6 +803,10 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td v-else class="r">{{ it.views.toLocaleString('ko-KR') }}<small :class="['bpt-at', { after: stale(it.viewAt) }]">{{ it.viewAt === dayDate ? '당일' : `${stale(it.viewAt) ? '~' : ''}${it.viewAt.slice(5).replace('-', '.')}` }}</small></td>
               <td>{{ it.target ? `${it.target.round + 1}차` : '—' }}</td>
               <td class="r"><span v-if="it.target" class="bpt-nb">{{ won(it.target.min) }}<small v-if="it.target.appr" class="bpt-at bpt-nb">{{ apprPct(it.target.min, it.target.appr) }}</small></span><template v-else>자료 없음</template></td>
+              <td v-if="hugOf(it)" class="r two"><span class="bpt-hug">허그채권</span><span class="bpt-nb">{{ manN(it.target!.appr * hugOf(it)!.p50) }}<small class="bpt-at bpt-nb">{{ Math.round(hugOf(it)!.p10 * 100) }}~{{ Math.round(hugOf(it)!.p90 * 100) }}% · 중앙 {{ Math.round(hugOf(it)!.p50 * 100) }}%</small></span></td>
+              <td v-else-if="isHug(it.key)" class="r two"><span class="bpt-hug">허그채권</span><small class="bpt-at">같은 차수 자료 부족</small></td>
+              <td v-else-if="credShort(it.key)" class="r"><small class="bpt-at bpt-cred">{{ credShort(it.key) }}</small></td>
+              <td v-else class="r">—</td>
               <td>{{ sellOf(it.key) ? pct(sellOf(it.key)!.pSold) : '—' }}</td>
               <td class="r">{{ sellOf(it.key) ? `${sellOf(it.key)!.expBids.toFixed(1)}명` : '—' }}</td>
               <td v-if="preds.get(it.key)" class="r strong"><span class="bpt-nb">{{ won((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small v-if="it.target?.appr" class="bpt-at bpt-nb">{{ apprPct((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median, it.target.appr) }}</small></span></td>
@@ -801,7 +821,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           </tbody>
         </table>
       </div>
-      <p v-if="useHits" class="bpt-sub">조회일 · 누적에 넣은 마지막 날 · 빨간 '~11.14'는 그날까지만 모은 것(매각 전날까지 못 모음), 조회수수집 다시 · 예상응찰 · 입찰자 있을 때 · 신건은 확률만 · 줄 누르면 자세히</p>
+      <p v-if="useHits" class="bpt-sub">채권자 · 허그(주택도시보증공사)가 채권자면 허그가 보증금 채권으로 입찰할 가능성이 높음, 허그 예상가는 그날 이전 같은 차수 허그 채권 매각의 낙찰가÷감정가 중앙값(10~90% 구간), 다른 채권자는 단기매도 경쟁 · 조회일 · 누적에 넣은 마지막 날 · 빨간 '~11.14'는 그날까지만 모은 것(매각 전날까지 못 모음), 조회수수집 다시 · 예상응찰 · 입찰자 있을 때 · 신건은 확률만 · 줄 누르면 자세히</p>
       <p v-else class="bpt-sub">예상 낙찰가 · 조회수 규칙 반영(없으면 비슷한 물건 인원 비율) · 줄 누르면 자세히</p>
     </section>
 
@@ -981,7 +1001,10 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl td { padding: 7px 10px; border-bottom: 1px solid #eef1f6; text-align: center; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .bpt-tbl tr:last-child td { border-bottom: 0; }
 .bpt-day .bpt-tbl th, .bpt-day .bpt-tbl td, .bpt-prob .bpt-tbl th, .bpt-prob .bpt-tbl td { padding-left: 5px; padding-right: 5px; text-align: center; }   /* 1440 화면 안에 들게 — 칸 폭 합 1,236 px, 화면 1280 */   /* 사건별 예측은 머리 · 내용 모두 가운데(2026-11-14 사용자) */
-.bpt-day .bpt-tbl td.act-sold { font-weight: 700; }   /* 실제 낙찰가는 굵게 */
+.bpt-day .bpt-tbl td.act-sold { font-weight: 700; }
+/* 채권자 칸 — 허그 칩(남색) + 예상가, 다른 채권자는 회색 작은 글 */
+.bpt-tbl td .bpt-hug { display: inline-block; padding: 1px 6px; border-radius: 4px; background: #213366; color: #fff; font-size: 12px; font-weight: 700; line-height: 16px; margin-bottom: 2px; }
+.bpt-tbl td .bpt-cred { font-size: 12px; color: #6b7280; }   /* 실제 낙찰가는 굵게 */
 /* 실제 낙찰가 — 흐린 빨강(채도 낮게), 두 표 모두(2026-11-15 사용자) */
 .bpt-tbl td.act-sold .bpt-nb { color: #e0475b; }   /* 숫자만 — 유찰 · 입찰 전 · '—'는 칠하지 않는다 */
 :root[data-theme="dark"] .bpt-tbl td.act-sold .bpt-nb { color: #ff7a8a; }

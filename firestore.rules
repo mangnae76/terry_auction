@@ -241,10 +241,11 @@ service cloud.firestore {
         && agentData().by in ['web', 'agent'];
     }
     // 사건별 날짜별 조회수(탱크옥션 차트) — 사건(tid)마다 한 문서. hd · hc · he = 날짜 · 조회 · 유효(2026-11-14)
+    // creditor = 채권자(허그가 채권자면 낙찰가가 다르다, 2026-11-16). 채우기는 updateMask 로 그 칸만
     match /saleData/dayList/hits/{tid} {
       allow read, delete: if isAdmin();
       allow create, update: if isAdmin()
-        && agentData().keys().hasOnly(['key', 'tid', 'dong', 'addr', 'kind', 'area', 'appr', 'min', 'sold', 'bids', 'second', 'fails', 'next', 'state', 'asOf', 'collect', 'total', 'ev', 'hd', 'hc', 'he', 'by', 'at'])
+        && agentData().keys().hasOnly(['key', 'tid', 'dong', 'addr', 'kind', 'area', 'appr', 'min', 'sold', 'bids', 'second', 'fails', 'next', 'state', 'asOf', 'collect', 'total', 'ev', 'hd', 'hc', 'he', 'creditor', 'by', 'at'])
         && agentData().dong is string && agentData().dong.size() <= 20
         && agentData().hd is list && agentData().hd.size() <= 800
         && agentData().hc is list && agentData().hc.size() <= 800
