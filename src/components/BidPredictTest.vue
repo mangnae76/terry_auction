@@ -60,7 +60,7 @@ let tick: ReturnType<typeof setInterval> | null = null;
 onMounted(() => { stopAgent = watchAgentStatus('', (st) => { agent.value = st; }, () => { agent.value = null; }); tick = setInterval(() => { nowMs.value = Date.now(); }, 1000); });
 onBeforeUnmount(() => { stopAgent?.(); if (tick) clearInterval(tick); });
 /** 고른 줄 풀기 — 표 줄 · 아래 자세히 상자 밖을 누르면 고른 색을 지운다(다시 누른 줄도 풀린다, 2026-11-15 사용자) */
-const unpick = (e: MouseEvent) => { const t = e.target as Element | null; if (pick.value && t && !t.closest?.('.bpt-day .bpt-tbl.fixed tbody tr, .bpt-detail')) pick.value = ''; };
+const unpick = (e: MouseEvent) => { const t = e.target as Element | null; if (pick.value && t && !t.closest?.('.bpt-day .bpt-tbl.fixed tbody tr, .bpt-detail')) pick.value = ''; if (regOpen.value && t && !t.closest?.('.bpt-cal-reg')) regOpen.value = false; };
 onMounted(() => document.addEventListener('mousedown', unpick));
 onBeforeUnmount(() => document.removeEventListener('mousedown', unpick));
 /* 운영자 시험용 — 화면이 쓰는 자료를 그대로 꺼내 화면 밖에서 여러 방식을 견줘 본다(읽기만, 2026-11-15) */
@@ -585,6 +585,20 @@ const calMonth = ref(todayIso().slice(0, 7));
 const calDocs = ref<Awaited<ReturnType<typeof loadDayListsRange>>>([]);
 /** 탱크옥션 달력 숫자(모든 법원 · 계 · 날짜 · 건수) — 마이가 달마다 저장. 칸마다 그날 물건이 가장 많은 법원을 보인다(2026-11-16) */
 const calRows = ref<CalRow[]>([]);
+/** 달력 지역 고르기 — 드롭다운(전체 + 지역 목록, 여러 개). 처음은 서울 · 경기 · 인천(갈 수 있는 곳). 이 브라우저에 남긴다(2026-11-16 사용자) */
+const REGION_KEY = 'ta.web.bpt.calRegions';
+const REGION_ORDER = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '창원', '전주', '청주', '춘천', '제주'];
+const regionOf = (court: string) => { const p = court.split('-')[0]; return p === '의정부' || p === '수원' ? '경기' : p; };
+const loadRegions = (): string[] => { try { const v = JSON.parse(localStorage.getItem(REGION_KEY) || 'null'); return Array.isArray(v) && v.every((x) => typeof x === 'string') ? v : ['서울', '경기', '인천']; } catch { return ['서울', '경기', '인천']; } };
+const calRegions = ref<string[]>(loadRegions());
+watch(calRegions, (v) => { try { localStorage.setItem(REGION_KEY, JSON.stringify(v)); } catch { /* 그만 */ } }, { deep: true });
+const allRegions = computed(() => { const got = new Set(calRows.value.map((r) => regionOf(r.court))); return [...REGION_ORDER.filter((r) => got.has(r)), ...[...got].filter((r) => !REGION_ORDER.includes(r)).sort()]; });
+const regAllOn = computed(() => allRegions.value.length > 0 && allRegions.value.every((r) => calRegions.value.includes(r)));
+const regToggleAll = () => { calRegions.value = regAllOn.value ? [] : [...allRegions.value]; };
+const regLabel = computed(() => (regAllOn.value || !calRegions.value.length ? '전체' : calRegions.value.length <= 3 ? calRegions.value.join(' · ') : `${calRegions.value.length}개 지역`));
+const regOpen = ref(false);
+/** 고른 지역의 달력 숫자만 — 아무것도 안 고르면 전체 */
+const calRowsSel = computed(() => (!calRegions.value.length || regAllOn.value ? calRows.value : calRows.value.filter((r) => calRegions.value.includes(regionOf(r.court)))));
 const loadCalRows = async () => { const m = calMonth.value; try { const got = await loadCalNums(m); if (m === calMonth.value) calRows.value = got; } catch { if (m === calMonth.value) calRows.value = []; } };
 const loadCal = async () => { const m = calMonth.value; try { const got = await loadDayListsRange(`${m}-01`, `${m}-31`); if (m === calMonth.value) calDocs.value = got; } catch { if (m === calMonth.value) calDocs.value = []; } };
 watch(calMonth, () => { void loadCal(); void loadCalRows(); }, { immediate: true });
@@ -597,7 +611,7 @@ const calWeeks = computed(() => {
   const byDay = new Map<string, typeof calDocs.value>(); calDocs.value.forEach((d) => byDay.set(d.date, [...(byDay.get(d.date) ?? []), d]));
   // 달력 숫자 — 날마다 법원별 합계 · 계별 건수, 그중 1등 법원
   const calByDay = new Map<string, Map<string, { n: number; depts: string[] }>>();
-  calRows.value.forEach((r) => { const m = calByDay.get(r.d) ?? new Map(); const g = m.get(r.court) ?? { n: 0, depts: [] }; g.n += r.n; g.depts.push(`${r.dept.replace(/^경매/, '')}(${r.n.toLocaleString('ko-KR')})`); m.set(r.court, g); calByDay.set(r.d, m); });
+  calRowsSel.value.forEach((r) => { const m = calByDay.get(r.d) ?? new Map(); const g = m.get(r.court) ?? { n: 0, depts: [] }; g.n += r.n; g.depts.push(`${r.dept.replace(/^경매/, '')}(${r.n.toLocaleString('ko-KR')})`); m.set(r.court, g); calByDay.set(r.d, m); });
   const topOf = (d: string) => { const m = calByDay.get(d); if (!m) return null; const [court, g] = [...m.entries()].sort((a, b) => b[1].n - a[1].n)[0]; return { court, n: g.n, depts: g.depts }; };
   // 그날 전국 합계 — 많은 날일수록 입찰자가 나뉘어 가기 좋은 날(2026-11-16 사용자: 날을 먼저, 법원은 그다음). 이달 상위 3일을 띄운다
   const allOf = (d: string) => { const m = calByDay.get(d); return m ? [...m.values()].reduce((s, g) => s + g.n, 0) : 0; };
@@ -719,10 +733,9 @@ const recCountByDay = computed(() => {
   }
   return out;
 });
-const METRO = /^(서울|인천|의정부|수원)-/;
 const goRows = computed(() => {
   const by = new Map<string, { n: number; depts: string[] }>();
-  calRows.value.filter((r) => r.d === dayDate.value && METRO.test(r.court)).forEach((r) => { const g = by.get(r.court) ?? { n: 0, depts: [] }; g.n += r.n; g.depts.push(`${r.dept.replace(/^경매/, '')}(${r.n.toLocaleString('ko-KR')})`); by.set(r.court, g); });
+  calRowsSel.value.filter((r) => r.d === dayDate.value).forEach((r) => { const g = by.get(r.court) ?? { n: 0, depts: [] }; g.n += r.n; g.depts.push(`${r.dept.replace(/^경매/, '')}(${r.n.toLocaleString('ko-KR')})`); by.set(r.court, g); });
   if (!by.size) dayDepts.value.forEach((d) => { const g = by.get(d.court) ?? { n: 0, depts: [] }; g.n += d.n; g.depts.push(`${d.dept.replace(/^경매/, '')}(${d.n.toLocaleString('ko-KR')})`); by.set(d.court, g); });   // 달력 숫자가 아직 없으면 받아 둔 기일 목록으로
   return [...by.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 2).map(([court, g]) => {
     const mine = dayDepts.value.filter((d) => d.court === court);
@@ -783,6 +796,11 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
         <div class="bpt-box bpt-cal">
           <h3 class="bpt-colh">기일별물건
             <span v-if="dayDate" class="bpt-cal-day">매각기일 <b>{{ Number(dayDate.slice(5, 7)) }}월 {{ Number(dayDate.slice(8)) }}일 ({{ WD[new Date(`${dayDate}T00:00:00`).getDay()] }})</b><small v-if="dbInfo">{{ dbInfo }}</small></span>
+            <span class="bpt-cal-reg"><button type="button" class="bpt-cal-regbtn" :aria-expanded="regOpen" @click="regOpen = !regOpen">법원 {{ regLabel }} ▾</button>
+              <div v-if="regOpen" class="bpt-cal-regmenu">
+                <label><input type="checkbox" :checked="regAllOn" @change="regToggleAll" /> 전체</label>
+                <label v-for="r in allRegions" :key="r"><input v-model="calRegions" type="checkbox" :value="r" /> {{ r }}</label>
+              </div></span>
             <span class="bpt-cal-nav"><button type="button" aria-label="이전 달" @click="calStep(-1)">‹</button><b>{{ Number(calMonth.slice(0, 4)) }}년 {{ Number(calMonth.slice(5)) }}월</b><button type="button" aria-label="다음 달" @click="calStep(1)">›</button></span>
           </h3>
           <div class="bpt-cal-grid" role="grid" :aria-label="`${calMonth} 기일별물건`">
@@ -790,7 +808,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <template v-for="(wk, wi) in calWeeks" :key="wi">
               <span v-for="(c, ci) in wk" :key="`${wi}-${ci}`" class="cell-wrap">
                 <button v-if="c" type="button" :class="['cell', { on: c.d === dayDate, today: c.today, has: c.lines.length || c.dongN || c.top, busy: c.busy }]" @click="dayDate = c.d">
-                  <span class="dn">{{ c.day }}<small v-if="c.all" :class="['all', { busy: c.busy }]">전국 {{ c.all.toLocaleString('ko-KR') }}</small></span>
+                  <span class="dn">{{ c.day }}<small v-if="c.all" :class="['all', { busy: c.busy }]">{{ regAllOn || !calRegions.length ? '전국' : '합계' }} {{ c.all.toLocaleString('ko-KR') }}</small></span>
                   <span v-if="c.top || c.total" class="ln top">{{ c.top ? c.top.court : c.court }} {{ (c.top ? c.top.n : c.total).toLocaleString('ko-KR') }}<b v-if="c.rec" class="recchip">추천 {{ c.rec }}</b></span>
                   <template v-if="c.lines.length"><span v-for="x in c.lines" :key="x.label" class="ln">{{ x.label }}<i v-if="calDong">({{ x.dong }})</i></span></template>
                   <template v-else-if="c.top"><span v-for="x in c.top.depts" :key="x" class="ln">{{ x }}</span></template>
@@ -843,7 +861,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 
 
     <section v-if="dayDate && goRows.length" class="bpt-card bpt-go">
-      <h3 class="bpt-ttl">{{ Number(dayDate.slice(5, 7)) }}월 {{ Number(dayDate.slice(8)) }}일 ({{ WD[new Date(`${dayDate}T00:00:00`).getDay()] }}) 어디로 갈까 <small>달력에서 고른 날 · 서울 · 경기 · 인천 법원 중 물건 많은 순 한두 곳</small></h3>
+      <h3 class="bpt-ttl">{{ Number(dayDate.slice(5, 7)) }}월 {{ Number(dayDate.slice(8)) }}일 ({{ WD[new Date(`${dayDate}T00:00:00`).getDay()] }}) 어디로 갈까 <small>달력에서 고른 날 · 고른 지역({{ regLabel }}) 법원 중 물건 많은 순 한두 곳</small></h3>
       <div class="bpt-tbl-wrap">
         <table class="bpt-tbl bpt-gotbl">
           <colgroup><col style="width: 64px" /><col style="width: 110px" /><col style="width: 150px" /><col style="width: 260px" /><col /></colgroup>
@@ -866,7 +884,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           </tbody>
         </table>
       </div>
-      <p class="bpt-sub">달력의 '전국 N' = 그날 전국 법원 물건 합계, 주황은 이달 많은 날 셋(물건이 많은 날일수록 입찰자가 나뉘어 가기 좋은 날 — 날을 먼저 고르고 법원은 그다음) · 건수는 탱크옥션 달력 숫자(마이가 탱크옥션을 열 때 저장) · 종류 · 사건은 그 법원 기일 목록 · 조회수를 받은 만큼만 · 한 법원에 오는 입찰자는 비슷해서 물건이 많은 날일수록 건당 경쟁이 줆 · 사건을 누르면 아래 사건별 예측 줄로</p>
+      <p class="bpt-sub">달력의 '전국 N' = 그날 법원 물건 합계(달력의 법원 드롭다운으로 지역을 고르면 '합계 N'), 주황은 이달 많은 날 셋(물건이 많은 날일수록 입찰자가 나뉘어 가기 좋은 날 — 날을 먼저 고르고 법원은 그다음) · 건수는 탱크옥션 달력 숫자(마이가 탱크옥션을 열 때 저장) · 종류 · 사건은 그 법원 기일 목록 · 조회수를 받은 만큼만 · 한 법원에 오는 입찰자는 비슷해서 물건이 많은 날일수록 건당 경쟁이 줆 · 사건을 누르면 아래 사건별 예측 줄로</p>
     </section>
 
     <section v-if="items.length" class="bpt-card bpt-day">
@@ -1071,7 +1089,13 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-kv { display: flex; gap: 8px; }
 .bpt-kv > .k { flex: none; width: 3.2em; color: #9ca3af; }   /* 조회수 · 기간 이름표 */
 .bpt-cal { flex: 1 1 370px; min-width: 370px; }   /* 기일 달력 — 기일 목록 · 조회수 수집 오른쪽 */
-.bpt-cal-nav { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #111827; }
+.bpt-cal-reg { margin-left: auto; position: relative; }
+.bpt-cal-regbtn { height: 26px; padding: 0 10px; border: 1px solid #d5dbe5; border-radius: 6px; background: #fff; color: #213366; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.bpt-cal-regmenu { position: absolute; right: 0; top: 30px; z-index: 20; min-width: 150px; padding: 6px 4px; background: #fff; border: 1px solid #d5dbe5; border-radius: 8px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12); display: flex; flex-direction: column; }
+.bpt-cal-regmenu label { display: flex; align-items: center; gap: 6px; padding: 5px 8px; font-size: 13px; color: #374151; cursor: pointer; border-radius: 6px; }
+.bpt-cal-regmenu label:hover { background: #f4f6fa; }
+.bpt-cal-regmenu label:first-child { font-weight: 700; border-bottom: 1px solid #eef1f6; border-radius: 6px 6px 0 0; margin-bottom: 2px; }
+.bpt-cal-nav { margin-left: 0; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #111827; }
 .bpt-cal-day { font-size: 13px; font-weight: 400; color: #374151; margin-left: 4px; }   /* 고른 매각기일 — 기일별물건 제목 오른쪽(날짜 칸 걷음, 달력에서 고른다) */
 .bpt-cal-day b { color: #2b6df3; font-weight: 700; }
 .bpt-cal-day small { margin-left: 8px; font-size: 13px; color: #6b7280; }   /* 그날 기일목록 — '인천-본원 5계 · 8계 370건' */
