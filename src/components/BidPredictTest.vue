@@ -696,7 +696,7 @@ watch(dayDate, () => { fMine.value = false; fDong.value = dongFilter.value.trim(
 /* ===== 추천 · 어디로 갈까 — 추천 = 조회수로 본 입찰자 있을확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 허그가 올지 실수요자가 올지는 아무도 모른다, 2026-11-16 사용자).
  * 어디로 갈까 = 달력 숫자에서 그날 서울 · 경기 · 인천 법원을 물건 많은 순으로 한두 곳(한 법원에 오는 입찰자는 400~500명으로 비슷해 물건이 많을수록 건당 경쟁이 준다) ===== */
 const REC_P = 0.3; const REC_BIDS = 1;
-const recItems = computed(() => listItems.value.filter((it) => { const s = sellOf(it.key); return !!it.target && !!s && s.pSold < REC_P && s.expBids < REC_BIDS; }).sort((a, b) => sellOf(a.key)!.pSold - sellOf(b.key)!.pSold));
+const recItems = computed(() => listItems.value.filter((it) => { const s = sellOf(it.key); return !!it.target && preds.value.has(it.key) && !!s && s.pSold < REC_P && s.expBids < REC_BIDS; })   // 신건은 예상 낙찰가가 없어 뺀다(확률만 있음).sort((a, b) => sellOf(a.key)!.pSold - sellOf(b.key)!.pSold));
 const recKeys = computed(() => new Set(recItems.value.map((it) => it.key)));
 const isRec = (key: string) => recKeys.value.has(key);
 /** 낙찰확률 q 로 이기는 우리 입찰가(입찰자가 있을 때) — 입찰가별 낙찰확률 표와 같은 셈 */
@@ -711,7 +711,7 @@ const goRows = computed(() => {
   return [...by.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 2).map(([court, g]) => {
     const mine = dayDepts.value.filter((d) => d.court === court);
     const kinds: Record<string, number> = {}; mine.forEach((d) => Object.entries(d.kinds).forEach(([k, n]) => { kinds[k] = (kinds[k] ?? 0) + n; }));
-    const kindStr = mine.length ? KIND5.filter((k) => kinds[k]).sort((a, b) => kinds[b] - kinds[a]).map((k) => `${k.replace('(주거)', '')} ${kinds[k].toLocaleString('ko-KR')}`).join(' · ') : '';
+    const kindStr = mine.length ? KIND5.filter((k) => kinds[k]).sort((a, b) => kinds[b] - kinds[a]).map((k) => `${k.replace('(주거)', '').replace('다세대주택', '다세대').replace('도시형생활주택', '도시형').replace('연립주택', '연립')} ${kinds[k].toLocaleString('ko-KR')}`).join(' · ') : '';
     const recs = mine.length ? recItems.value.map((it) => ({ key: it.key, place: placeOf(it.addr), round: it.target!.round + 1, pSold: sellOf(it.key)!.pSold, bids: sellOf(it.key)!.expBids, bid50: bidQ(it, 0.5) })) : [];
     return { court, n: g.n, depts: g.depts.join(' · '), kinds: kindStr, listed: mine.length > 0, recs };
   });
@@ -1121,6 +1121,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 /* 어디로 갈까 */
 .bpt-go .bpt-ttl small { font-size: 12px; font-weight: 400; color: #6b7280; margin-left: 8px; }
 .bpt-gotbl td { vertical-align: middle; }
+.bpt-gotbl td.l { white-space: normal; }   /* 종류 · 추천 칸은 칸 안에서 줄을 바꾼다(표가 옆으로 넘치지 않게) */
 .bpt-gotbl tbody tr.first td { background: #f3fbf6; }
 .bpt-rank { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; background: #eef3ff; color: #1d4ed8; font-size: 12px; font-weight: 700; }
 .bpt-rank.one { background: #e8f7ee; color: #15803d; }
