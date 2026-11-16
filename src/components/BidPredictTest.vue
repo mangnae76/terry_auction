@@ -437,7 +437,8 @@ const myQ = (p: Pred, prob: number, min: number) => {
 /** 입찰가별 낙찰확률 표 — 그날 보고 있는 동의 예측 있는 사건 */
 const PROBS = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8];   // 5% 단위 — 시험에서 확률이 실제와 맞았던 50 ~ 80% 만(85% 넘게는 튄 낙찰 몇 건이 좌우)
 /** 실제 낙찰가 칸은 끝난 기일만(다가오는 기일은 전부 '입찰 전') */
-const probPast = computed(() => !!dayDate.value && dayDate.value < todayIso());
+/** 실제 낙찰가 칸 — 지난 기일과 오늘(결과가 들어온 사건은 금액, 아니면 '입찰 전'). 다가오는 기일만 뺀다(2026-11-16 사용자: 당일 결과가 안 보였음) */
+const probPast = computed(() => !!dayDate.value && dayDate.value <= todayIso());
 const probRows = computed(() => shownItems.value.filter((it) => it.target && preds.value.has(it.key)).map((it) => {
   const p = preds.value.get(it.key)!; const d = p.after ?? p.before;
   // 입찰자가 있을 때 이길 확률(조건부) — 시험에서 말한 대로 맞은 쪽. 아무도 안 올 확률까지 섞으면 50% 가 실제 72% 로 흐려졌다
