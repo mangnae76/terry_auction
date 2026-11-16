@@ -9,6 +9,7 @@
 //   saleData/main/chunks/{i}         {i, data: 레코드 JSON 글자, v}
 //   saleData/dayList/days/{날짜_법원_계}  기일 목록(탱크옥션 기일별물건) — 마이가 조회수(views: {수집일: 값}), 웹 CSV 는 {날짜}_csv
 //   saleData/dayList/hits/{tid}          사건별 날짜별 조회수(탱크옥션 차트) — 마이가 hd · hc · he(날짜 · 조회 · 유효)와 목록 줄(결과 · 인원)
+//   saleData/dayList/cal/{YYYY-MM}       기일별물건 달력 숫자(모든 법원 · 계 · 날짜 · 건수) — 마이가 탱크옥션을 열 때 저장
 // 공용 자료는 관리자 누구나 쓰고 로그인한 모두가 읽는다. 명령 · 상태 · 대기열은 각자 집 PC 라 운영자 본인만(firestore.rules).
 // 예전에는 모은 자료도 users/{uid}/datasets · agent/coverage 에 계정마다 쌓였다 — migrateLegacyAgentData 가 한 번 옮긴다.
 import { collection, doc, getDoc, getDocFromServer, getDocs, onSnapshot, query, runTransaction, serverTimestamp, setDoc, where, type Unsubscribe } from 'firebase/firestore';
@@ -226,6 +227,13 @@ export type HitDoc = {
   fails: number; next: string; state: string; asOf: string; ev: { d: string; l: string }[]; hd: string[]; hc: number[]; he: number[]; at: number;
   /** 채권자 — '주택도시보증공사'(허그)면 허그가 보증금 채권으로 입찰할 가능성이 높다(2026-11-16). 없으면 '' */
   creditor: string;
+};
+/** 기일별물건 달력 숫자 — 모든 법원 · 계 · 날짜 · 건수, 달마다 문서 하나(마이가 탱크옥션을 열 때 저장). 어느 법원으로 갈지(2026-11-16) */
+export type CalRow = { d: string; court: string; dept: string; n: number };
+export const loadCal = async (month: string): Promise<CalRow[]> => {
+  const snap = await getDoc(doc(db(), 'saleData', 'dayList', 'cal', month));
+  const x = snap.data() as { rows?: CalRow[] } | undefined;
+  return Array.isArray(x?.rows) ? x!.rows.filter((r) => r && typeof r.d === 'string' && typeof r.court === 'string').map((r) => ({ d: r.d, court: r.court, dept: String(r.dept ?? ''), n: Number(r.n) || 0 })) : [];
 };
 /** 그 동의 사건 전부 */
 export const loadHits = async (dong: string): Promise<HitDoc[]> => {

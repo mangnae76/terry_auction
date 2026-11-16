@@ -13,7 +13,7 @@ import { getBuildingFacts } from '../services/buildingFacts';
 import type { BuildingFacts } from '../services/publicDataApi';
 import { buildingAgeOf } from '../utils/buildingAge';
 import { addressWithName, buildingNameOf } from '../utils/addressName';
-import { agentOnline, loadAgentDataset, loadDayLists, loadDayListsRange, loadHits, saveDayCsv, sendAgentCommand, sendAgentStop, watchAgentStatus, type AgentStatus, type DayListRow, type HitDoc } from '../services/agentRemote';
+import { agentOnline, loadAgentDataset, loadCal as loadCalNums, loadDayLists, loadDayListsRange, loadHits, saveDayCsv, sendAgentCommand, sendAgentStop, watchAgentStatus, type AgentStatus, type CalRow, type DayListRow, type HitDoc } from '../services/agentRemote';
 import { readSheetRows } from '../services/saleExcel';
 import { resolveRegionFromAddress } from '../services/regionResolver';
 import {
@@ -48,6 +48,8 @@ const colFrom = ref(colSaved?.from || todayIso());
 const colTo = ref(colSaved?.to || plusDays(todayIso(), 7));
 watch([colFrom, colTo], () => { try { localStorage.setItem(COL_KEY, JSON.stringify({ from: colFrom.value, to: colTo.value })); } catch { /* 그만 */ } });
 const colCourt = ref('인천-본원');
+/** 법원 드롭다운 — 탱크옥션 이용권 범위(서울 · 경기 · 인천). 전체 묶음은 기일 목록을 다 받지 않기로 해 아직 없음(2026-11-16 사용자) */
+const COURTS = ['인천-본원', '인천-부천', '서울-중앙', '서울-동부', '서울-서부', '서울-남부', '서울-북부', '의정부-본원', '의정부-고양', '의정부-남양주', '수원-본원', '수원-성남', '수원-안산', '수원-안양', '수원-평택', '수원-여주'];
 const agent = ref<AgentStatus | null>(null);
 const agentNote = ref('');
 const agentOn = computed(() => agentOnline(agent.value, nowMs.value));   // 1초 시계로 다시 본다 — 시계 없이 두면 마이가 꺼져 새 소식이 안 와도 녹색이 남았다(2026-11-15)
@@ -581,8 +583,11 @@ const bidDay = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? `${d.slice(2, 4)}
  * 탱크옥션 기일별물건처럼 모든 법원 · 계 건수는 나중에 마이가 그 달력을 받아 채운다(2026-11-15 사용자) ===== */
 const calMonth = ref(todayIso().slice(0, 7));
 const calDocs = ref<Awaited<ReturnType<typeof loadDayListsRange>>>([]);
+/** 탱크옥션 달력 숫자(모든 법원 · 계 · 날짜 · 건수) — 마이가 달마다 저장. 칸마다 그날 물건이 가장 많은 법원을 보인다(2026-11-16) */
+const calRows = ref<CalRow[]>([]);
+const loadCalRows = async () => { const m = calMonth.value; try { const got = await loadCalNums(m); if (m === calMonth.value) calRows.value = got; } catch { if (m === calMonth.value) calRows.value = []; } };
 const loadCal = async () => { const m = calMonth.value; try { const got = await loadDayListsRange(`${m}-01`, `${m}-31`); if (m === calMonth.value) calDocs.value = got; } catch { if (m === calMonth.value) calDocs.value = []; } };
-watch(calMonth, () => { void loadCal(); }, { immediate: true });
+watch(calMonth, () => { void loadCal(); void loadCalRows(); }, { immediate: true });
 watch(dayDate, (d) => { if (/^\d{4}-\d{2}/.test(d) && d.slice(0, 7) !== calMonth.value) calMonth.value = d.slice(0, 7); }, { immediate: true });   // 매각기일을 고르면 달력도 그 달로
 const calStep = (n: number) => { const [y, m] = calMonth.value.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); calMonth.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
 const calDong = computed(() => dongFilter.value.trim());
@@ -590,12 +595,19 @@ const calWeeks = computed(() => {
   const [y, m] = calMonth.value.split('-').map(Number); const last = new Date(y, m, 0).getDate(); const today = todayIso();
   const dongN = new Map<string, number>(); hitRounds.value.forEach((r) => dongN.set(r.date, (dongN.get(r.date) ?? 0) + 1));
   const byDay = new Map<string, typeof calDocs.value>(); calDocs.value.forEach((d) => byDay.set(d.date, [...(byDay.get(d.date) ?? []), d]));
+  // 달력 숫자 — 날마다 법원별 합계 · 계별 건수, 그중 1등 법원
+  const calByDay = new Map<string, Map<string, { n: number; depts: string[] }>>();
+  calRows.value.forEach((r) => { const m = calByDay.get(r.d) ?? new Map(); const g = m.get(r.court) ?? { n: 0, depts: [] }; g.n += r.n; g.depts.push(`${r.dept.replace(/^경매/, '')}(${r.n.toLocaleString('ko-KR')})`); m.set(r.court, g); calByDay.set(r.d, m); });
+  const topOf = (d: string) => { const m = calByDay.get(d); if (!m) return null; const [court, g] = [...m.entries()].sort((a, b) => b[1].n - a[1].n)[0]; return { court, n: g.n, depts: g.depts }; };
+  // 그날 전국 합계 — 많은 날일수록 입찰자가 나뉘어 가기 좋은 날(2026-11-16 사용자: 날을 먼저, 법원은 그다음). 이달 상위 3일을 띄운다
+  const allOf = (d: string) => { const m = calByDay.get(d); return m ? [...m.values()].reduce((s, g) => s + g.n, 0) : 0; };
+  const busyDays = new Set([...calByDay.keys()].map((d) => [d, allOf(d)] as const).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([d]) => d));
   const cellOf = (day: number) => {
     const d = `${calMonth.value}-${String(day).padStart(2, '0')}`; const docs = byDay.get(d) ?? []; const depts = docs.filter((x) => x.dept);
     const use = depts.length ? depts : docs;   // 계별 문서가 있으면 그것만(CSV 는 같은 사건을 또 담는다)
     const lines = use.map((x) => ({ label: x.dept ? `${x.court.replace(/^[^-]+-/, '')} ${x.dept.replace(/^경매/, '')}` : 'CSV', n: x.rows.length, dong: calDong.value ? x.rows.filter((r) => String(r.addr ?? '').includes(calDong.value)).length : 0 }));
     const courts = [...new Set(use.map((x) => x.court).filter(Boolean))];   // 날짜 옆 이름 — 한 법원이면 '인천-본원 375', 여럿이면 '총 375'
-    return { d, day, court: courts.length === 1 ? courts[0] : '총', total: use.reduce((s, x) => s + x.rows.length, 0), lines, dongN: dongN.get(d) ?? 0, today: d === today };
+    return { d, day, court: courts.length === 1 ? courts[0] : '총', total: use.reduce((s, x) => s + x.rows.length, 0), lines, dongN: dongN.get(d) ?? 0, today: d === today, top: topOf(d), all: allOf(d), busy: busyDays.has(d) };
   };
   const weeks: Array<Array<ReturnType<typeof cellOf> | null>> = []; let wk: Array<ReturnType<typeof cellOf> | null> = [];
   for (let day = 1; day <= last; day += 1) {
@@ -609,8 +621,23 @@ const calWeeks = computed(() => {
 });
 
 /** 사건별 예측 머리 표 — 그날 법원 전체(작은 회색) · 보고 있는 동(단추 숫자). 단추를 누르면 아래 표를 거른다 */
-const fDept = ref(''); const fStat = ref(''); const fKind = ref('');
-watch(dayDate, () => { fDept.value = ''; fStat.value = ''; fKind.value = ''; });
+const fDept = ref(''); const fStat = ref(''); const fKind = ref(''); const fRound = ref(''); const fCred = ref('');
+watch(dayDate, () => { fDept.value = ''; fStat.value = ''; fKind.value = ''; fRound.value = ''; fCred.value = ''; });
+/** 차수별 · 채권자별 거르기(2026-11-16 사용자) — 차수는 그날 최저가 비율로, 채권자는 허그 · 그 밖 */
+const roundOf = (it: Item) => (it.target ? (it.target.round === 0 ? '신건' : `${it.target.round + 1}차`) : '모름');
+const credOfIt = (it: Item) => (isHug(it.key) ? '허그' : credShort(it.key) ? '그 밖' : '모름');
+/** 표 정렬 — 머리글 누르기. 처음은 입찰자 있을확률 낮은 순(경쟁 적은 사건이 위로) */
+const sortKey = ref('pSold'); const sortDir = ref(1);
+const sortBy = (k: string) => { if (sortKey.value === k) sortDir.value = -sortDir.value; else { sortKey.value = k; sortDir.value = 1; } };
+const sortVal = (it: Item, k: string): number | null => {
+  const s = sellOf(it.key); const p = preds.value.get(it.key);
+  switch (k) {
+    case 'pSold': return s ? s.pSold : null; case 'bids': return s ? s.expBids : null; case 'min': return it.target?.min ?? null; case 'round': return it.target?.round ?? null;
+    case 'views': return it.viewAt ? it.views : null; case 'pred': return p ? (p.after ?? p.before).median : null; case 'sold': return it.result && it.result.sold > 0 ? it.result.sold : null;
+    case 'actBids': return it.result && it.result.sold > 0 ? it.result.bids : null; case 'year': return yearShow(it) ?? null; case 'area': return it.target?.area ?? null;
+    case 'cred': return isHug(it.key) ? 0 : credShort(it.key) ? 1 : null; default: return null;
+  }
+};
 const deptOf = (key: string) => dayDepts.value.find((d) => d.keys.includes(key))?.dept ?? '';
 const dbByKey = computed(() => new Map(dbRows.value.map((d) => [d.key, d])));
 /** 그날 현황 — 기일 목록에서 온 줄은 법원 쪽 셈(statOfRow)과 같은 기준(변경 · 취하도) */
@@ -628,8 +655,12 @@ const daySum = computed(() => {
   const base = listItems.value.filter((it) => (!fDept.value || deptOf(it.key) === fDept.value) && (!fMine.value || mineKeys.value.has(it.key)));
   const cnt = (f: (it: Item) => string, rows: Item[] = base) => { const o: Record<string, number> = {}; rows.forEach((it) => { const k = f(it); o[k] = (o[k] ?? 0) + 1; }); return o; };
   const mDept = cnt((it) => deptOf(it.key) || '계 모름');
-  const mStat = cnt(statOf, base.filter((it) => !fKind.value || kindOf(it) === fKind.value));
-  const mKind = cnt(kindOf, base.filter((it) => !fStat.value || statOf(it) === fStat.value));
+  const okR = (it: Item) => !fRound.value || roundOf(it) === fRound.value; const okC = (it: Item) => !fCred.value || credOfIt(it) === fCred.value;
+  const mStat = cnt(statOf, base.filter((it) => (!fKind.value || kindOf(it) === fKind.value) && okR(it) && okC(it)));
+  const mKind = cnt(kindOf, base.filter((it) => (!fStat.value || statOf(it) === fStat.value) && okR(it) && okC(it)));
+  const mRound = cnt(roundOf, base.filter((it) => (!fStat.value || statOf(it) === fStat.value) && (!fKind.value || kindOf(it) === fKind.value) && okC(it)));
+  const mCred = cnt(credOfIt, base.filter((it) => (!fStat.value || statOf(it) === fStat.value) && (!fKind.value || kindOf(it) === fKind.value) && okR(it)));
+  const ROUND_ORDER = ['신건', '2차', '3차', '4차', '5차', '6차', '7차', '모름']; const CRED_ORDER = ['허그', '그 밖', '모름'];
   const STAT_ORDER = ['유찰', '매각', '입찰 전'];
   const inDept = base.length;
   const statAll = base.filter((it) => !fKind.value || kindOf(it) === fKind.value).length; const kindAll = base.filter((it) => !fStat.value || statOf(it) === fStat.value).length;
@@ -640,13 +671,19 @@ const daySum = computed(() => {
     depts: dayDepts.value.map((d) => ({ k: d.dept, label: `${(d.court || '').replace('-', ' ')} ${d.dept}`.trim(), mine: mDept[d.dept] ?? 0, all: d.n })),
     stats: [...new Set([...STAT_ORDER.filter((s) => mStat[s] || stats[s]), ...Object.keys(stats)])].map((k) => ({ k, mine: mStat[k] ?? 0, all: stats[k] ?? 0 })),
     kinds: KIND5.map((k) => ({ k, mine: mKind[k] ?? 0, all: kinds[k] ?? 0 })),   // 탱크옥션 기일별물건과 같은 다섯 종류만
+    rounds: ROUND_ORDER.filter((k) => mRound[k]).map((k) => ({ k, mine: mRound[k] })), creds: CRED_ORDER.filter((k) => mCred[k]).map((k) => ({ k, mine: mCred[k] })),
     dong: dongFilter.value.trim() || '전체', mineN: items.value.length,
   };
 });
 const nMine = computed(() => items.value.filter((it) => mineKeys.value.has(it.key)).length);
 /** 단추로 거른 줄 */
-const shownItems = computed(() => listItems.value.filter((it) => (!fMine.value || mineKeys.value.has(it.key)) && (!fDept.value || deptOf(it.key) === fDept.value) && (!fStat.value || statOf(it) === fStat.value) && (!fKind.value || kindOf(it) === fKind.value)));
-const FR = { dept: fDept, stat: fStat, kind: fKind } as const;
+const shownItems = computed(() => {
+  const rows = listItems.value.filter((it) => (!fMine.value || mineKeys.value.has(it.key)) && (!fDept.value || deptOf(it.key) === fDept.value) && (!fStat.value || statOf(it) === fStat.value) && (!fKind.value || kindOf(it) === fKind.value) && (!fRound.value || roundOf(it) === fRound.value) && (!fCred.value || credOfIt(it) === fCred.value));
+  const k = sortKey.value; if (!k) return rows;
+  if (k === 'key') return [...rows].sort((a, b) => sortDir.value * a.key.localeCompare(b.key));
+  return [...rows].map((it, i) => ({ it, i, v: sortVal(it, k) })).sort((a, b) => (a.v == null ? 1 : 0) - (b.v == null ? 1 : 0) || (a.v != null && b.v != null && a.v !== b.v ? sortDir.value * (a.v - b.v) : a.i - b.i)).map((x) => x.it);   // 값 없는 줄은 맨 아래, 같으면 원래 순서
+});
+const FR = { dept: fDept, stat: fStat, kind: fKind, round: fRound, cred: fCred } as const;
 // 엘베 — 표에 보이는 줄이 바뀌면 그 지번만 더 받는다(shownItems 다음에 둬야 한다)
 watch(() => shownItems.value.map((it) => it.key).join(','), () => { void fillElevs(); }, { immediate: true });
 const pickF = (w: keyof typeof FR, v: string) => { FR[w].value = FR[w].value === v ? '' : v; };
@@ -656,6 +693,29 @@ const mineKeys = computed(() => new Set(auctions.auctions.map((a) => caseKey(a.c
 const fMine = ref(false);
 watch(dayDate, () => { fMine.value = false; fDong.value = dongFilter.value.trim(); });
 
+/* ===== 추천 · 어디로 갈까 — 추천 = 조회수로 본 입찰자 있을확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 허그가 올지 실수요자가 올지는 아무도 모른다, 2026-11-16 사용자).
+ * 어디로 갈까 = 달력 숫자에서 그날 서울 · 경기 · 인천 법원을 물건 많은 순으로 한두 곳(한 법원에 오는 입찰자는 400~500명으로 비슷해 물건이 많을수록 건당 경쟁이 준다) ===== */
+const REC_P = 0.3; const REC_BIDS = 1;
+const recItems = computed(() => listItems.value.filter((it) => { const s = sellOf(it.key); return !!it.target && !!s && s.pSold < REC_P && s.expBids < REC_BIDS; }).sort((a, b) => sellOf(a.key)!.pSold - sellOf(b.key)!.pSold));
+const recKeys = computed(() => new Set(recItems.value.map((it) => it.key)));
+const isRec = (key: string) => recKeys.value.has(key);
+/** 낙찰확률 q 로 이기는 우리 입찰가(입찰자가 있을 때) — 입찰가별 낙찰확률 표와 같은 셈 */
+const bidQ = (it: Item, q: number) => { const p = preds.value.get(it.key); if (!p || !it.target) return null; return Math.max(it.target.min, (p.after ?? p.before).q(q)); };
+/** 건물 · 호만 — '검암동 647-3 부경캐슬 5층502호' → '부경캐슬 5층502호' */
+const placeOf = (addr: string) => { const t = tblAddr(addr).split(/\s+/); return (t.length > 2 ? t.slice(2) : t).join(' '); };
+const METRO = /^(서울|인천|의정부|수원)-/;
+const goRows = computed(() => {
+  const by = new Map<string, { n: number; depts: string[] }>();
+  calRows.value.filter((r) => r.d === dayDate.value && METRO.test(r.court)).forEach((r) => { const g = by.get(r.court) ?? { n: 0, depts: [] }; g.n += r.n; g.depts.push(`${r.dept.replace(/^경매/, '')}(${r.n.toLocaleString('ko-KR')})`); by.set(r.court, g); });
+  if (!by.size) dayDepts.value.forEach((d) => { const g = by.get(d.court) ?? { n: 0, depts: [] }; g.n += d.n; g.depts.push(`${d.dept.replace(/^경매/, '')}(${d.n.toLocaleString('ko-KR')})`); by.set(d.court, g); });   // 달력 숫자가 아직 없으면 받아 둔 기일 목록으로
+  return [...by.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 2).map(([court, g]) => {
+    const mine = dayDepts.value.filter((d) => d.court === court);
+    const kinds: Record<string, number> = {}; mine.forEach((d) => Object.entries(d.kinds).forEach(([k, n]) => { kinds[k] = (kinds[k] ?? 0) + n; }));
+    const kindStr = mine.length ? KIND5.filter((k) => kinds[k]).sort((a, b) => kinds[b] - kinds[a]).map((k) => `${k.replace('(주거)', '')} ${kinds[k].toLocaleString('ko-KR')}`).join(' · ') : '';
+    const recs = mine.length ? recItems.value.map((it) => ({ key: it.key, place: placeOf(it.addr), round: it.target!.round + 1, pSold: sellOf(it.key)!.pSold, bids: sellOf(it.key)!.expBids, bid50: bidQ(it, 0.5) })) : [];
+    return { court, n: g.n, depts: g.depts.join(' · '), kinds: kindStr, listed: mine.length > 0, recs };
+  });
+});
 /** 표의 입찰자 있을확률 · 예상응찰 */
 const sellOf = (key: string) => { const s = sellMap.value.get(key); if (s) return s; const p = preds.value.get(key); return p && p.p0 != null ? { pSold: 1 - p.p0, expBids: p.expBids ?? 0 } : null; };
 /** 누적이 매각 전날까지 안 닿았으면 — 빨간 '~11.14' */
@@ -676,7 +736,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <span :class="['bpt-conn', agentOn ? 'on' : 'off']"><i aria-hidden="true" />{{ agentOn ? 'MyAgent · ' : 'MyAgent' }}<template v-if="agentOn"><span class="ago">{{ agentAgo }}</span>초 전</template></span>
             <span v-if="agentOn && agent?.version" class="bpt-ver">{{ verLabel(agent.version) }}</span>
           </h3>
-          <div class="bpt-pair"><label class="bpt-date">법원<input v-model="colCourt" type="text" class="court" /></label><label class="bpt-date">동선택<input v-model="dongFilter" type="text" class="court" placeholder="검암동" /></label></div>
+          <div class="bpt-pair"><label class="bpt-date">법원<select v-model="colCourt" class="court" aria-label="법원"><option v-for="c in COURTS" :key="c" :value="c">{{ c }}</option></select></label><label class="bpt-date">동선택<input v-model="dongFilter" type="text" class="court" placeholder="검암동" /></label></div>
           <div class="bpt-date">기간<div class="bpt-range"><input v-model="colFrom" type="date" aria-label="시작일" /><span>~</span><input v-model="colTo" type="date" aria-label="끝일" /></div></div>
           <div class="bpt-btns">
             <button type="button" class="bpt-btn line" :disabled="!agentOn || !!agent?.busy" @click="sendCmd('open')">브라우저열기</button>
@@ -713,10 +773,13 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <span v-for="w in ['월', '화', '수', '목', '금']" :key="w" class="hd">{{ w }}</span>
             <template v-for="(wk, wi) in calWeeks" :key="wi">
               <span v-for="(c, ci) in wk" :key="`${wi}-${ci}`" class="cell-wrap">
-                <button v-if="c" type="button" :class="['cell', { on: c.d === dayDate, today: c.today, has: c.lines.length || c.dongN }]" @click="dayDate = c.d">
-                  <span class="dn">{{ c.day }}<small v-if="c.total">{{ c.court }} {{ c.total.toLocaleString('ko-KR') }}</small></span>
-                  <span v-for="x in c.lines" :key="x.label" class="ln">{{ x.label }}<i v-if="calDong">({{ x.dong }})</i></span>
+                <button v-if="c" type="button" :class="['cell', { on: c.d === dayDate, today: c.today, has: c.lines.length || c.dongN || c.top, busy: c.busy }]" @click="dayDate = c.d">
+                  <span class="dn">{{ c.day }}<small v-if="c.all" :class="['all', { busy: c.busy }]">전국 {{ c.all.toLocaleString('ko-KR') }}</small></span>
+                  <span v-if="c.top" class="ln top">{{ c.top.court }} {{ c.top.n.toLocaleString('ko-KR') }}</span><span v-else-if="c.total" class="ln top">{{ c.court }} {{ c.total.toLocaleString('ko-KR') }}</span>
+                  <template v-if="c.lines.length"><span v-for="x in c.lines" :key="x.label" class="ln">{{ x.label }}<i v-if="calDong">({{ x.dong }})</i></span></template>
+                  <template v-else-if="c.top"><span v-for="x in c.top.depts" :key="x" class="ln">{{ x }}</span></template>
                   <span v-if="!c.lines.length && c.dongN" class="ln dg">{{ calDong || '동' }} {{ c.dongN }}</span>
+                  <span v-if="c.d === dayDate && recItems.length" class="ln rec">추천 {{ recItems.length }}</span>
                 </button>
               </span>
             </template>
@@ -764,6 +827,33 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
     </section>
 
 
+    <section v-if="dayDate && goRows.length" class="bpt-card bpt-go">
+      <h3 class="bpt-ttl">{{ Number(dayDate.slice(5, 7)) }}월 {{ Number(dayDate.slice(8)) }}일 ({{ WD[new Date(`${dayDate}T00:00:00`).getDay()] }}) 어디로 갈까 <small>달력에서 고른 날 · 서울 · 경기 · 인천 법원 중 물건 많은 순 한두 곳</small></h3>
+      <div class="bpt-tbl-wrap">
+        <table class="bpt-tbl bpt-gotbl">
+          <colgroup><col style="width: 64px" /><col style="width: 110px" /><col style="width: 150px" /><col style="width: 260px" /><col /></colgroup>
+          <thead><tr><th>순위</th><th class="l">법원</th><th class="r">건수</th><th class="l">종류</th><th class="l">추천 사건 <small class="bpt-at">사건번호 · 건물 · 차수 · 입찰자 있을확률 · 예상응찰 · 우리 입찰가(50%) · 채권자</small></th></tr></thead>
+          <tbody>
+            <tr v-for="(g, i) in goRows" :key="g.court" :class="{ first: i === 0 }">
+              <td><span :class="['bpt-rank', { one: i === 0 }]">{{ i + 1 }}순위</span></td>
+              <td class="l strong">{{ g.court }}</td>
+              <td class="r"><span class="bpt-nb">{{ g.n.toLocaleString('ko-KR') }}<small class="bpt-at bpt-nb">{{ g.depts }}</small></span></td>
+              <td class="l"><template v-if="g.kinds">{{ g.kinds }}</template><small v-else class="bpt-at">기일목록수집 뒤</small></td>
+              <td class="l">
+                <div v-if="g.recs.length" class="bpt-recs">
+                  <template v-for="r in g.recs" :key="r.key">
+                    <span class="bpt-rec">추천</span><button type="button" class="bpt-link" @click="pick = r.key">{{ caseLabel(r.key) }}</button><span class="pl">{{ r.place }}</span><span>{{ r.round }}차</span><span><b>{{ pct(r.pSold) }}</b> · {{ r.bids.toFixed(1) }}명</span><span class="nb">{{ r.bid50 != null ? won(r.bid50) : '—' }}</span><span><span v-if="isHug(r.key)" class="bpt-hug">허그</span></span>
+                  </template>
+                </div>
+                <small v-else class="bpt-at">{{ g.listed ? '추천 없음 · 조회수 받은 사건 중 입찰자 있을확률 30% 아래 · 예상응찰 1명 아래가 없음' : '조회수수집 뒤' }}</small>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="bpt-sub">달력의 '전국 N' = 그날 전국 법원 물건 합계, 주황은 이달 많은 날 셋(물건이 많은 날일수록 입찰자가 나뉘어 가기 좋은 날 — 날을 먼저 고르고 법원은 그다음) · 건수는 탱크옥션 달력 숫자(마이가 탱크옥션을 열 때 저장) · 종류 · 사건은 그 법원 기일 목록 · 조회수를 받은 만큼만 · 한 법원에 오는 입찰자는 비슷해서 물건이 많은 날일수록 건당 경쟁이 줆 · 사건을 누르면 아래 사건별 예측 줄로</p>
+    </section>
+
     <section v-if="items.length" class="bpt-card bpt-day">
       <div class="bpt-dayhead">
       <h3 class="bpt-h3">사건별 예측 <small v-if="useHits">{{ roundModel ? `그날 이전 ${roundModel.n.toLocaleString('ko-KR')}회차(매각 ${roundModel.nSold.toLocaleString('ko-KR')})로 배움` : '배울 회차 모자람' }}{{ leadDays ? ` · 조회수 매각 ${leadDays + 1}일 전 기준` : '' }}</small></h3>
@@ -785,16 +875,24 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <tr><th>종류별 물건수</th><td class="chips">
             <button type="button" :class="['bpt-fchip', { on: !fKind }]" @click="fKind = ''">전체<b>{{ daySum.kindAll }}</b><small v-if="daySum.total">/ {{ daySum.scopeN.toLocaleString('ko-KR') }}</small></button>
             <button v-for="k in daySum.kinds" :key="k.k" type="button" :class="['bpt-fchip', { on: fKind === k.k }]" :disabled="!k.mine" @click="pickF('kind', k.k)">{{ k.k }}<b>{{ k.mine }}</b><small v-if="daySum.total">/ {{ k.all.toLocaleString('ko-KR') }}</small></button></td></tr>
+          <tr><th>차수별 물건수</th><td class="chips">
+            <button type="button" :class="['bpt-fchip', { on: !fRound }]" @click="fRound = ''">전체<b>{{ daySum.rounds.reduce((s, r) => s + r.mine, 0) }}</b></button>
+            <button v-for="r in daySum.rounds" :key="r.k" type="button" :class="['bpt-fchip', { on: fRound === r.k }]" @click="pickF('round', r.k)">{{ r.k }}<b>{{ r.mine }}</b></button></td></tr>
+          <tr><th>채권자별 물건수</th><td class="chips">
+            <button type="button" :class="['bpt-fchip', { on: !fCred }]" @click="fCred = ''">전체<b>{{ daySum.creds.reduce((s, r) => s + r.mine, 0) }}</b></button>
+            <button v-for="r in daySum.creds" :key="r.k" type="button" :class="['bpt-fchip', { on: fCred === r.k }]" @click="pickF('cred', r.k)">{{ r.k }}<b>{{ r.mine }}</b></button>
+            <small class="bpt-fnote">허그 = 주택도시보증공사 채권 · 그 밖 = 다른 채권자(단기매도 경쟁)</small></td></tr>
         </tbody>
       </table>
       <p class="bpt-sub">예측 · {{ daySum.dong }}만(다른 동은 목록만, 구현 예정) · / 뒤 숫자 · 그날 법원 전체(고른 계)</p>
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
           <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게(검암동 · 모든동 · 11-13 · 16 · 19 에서 잰 가장 넓은 값, 주소는 남는 폭) -->
-          <colgroup><col style="width: 108px" /><col style="width: 224px" /><col style="width: 52px" /><col style="width: 72px" /><col style="width: 52px" /><col style="width: 60px" /><col style="width: 40px" /><col style="width: 92px" /><col style="width: 112px" /><col style="width: 60px" /><col style="width: 60px" /><col style="width: 90px" /><col style="width: 60px" /><col style="width: 90px" /><col style="width: 88px" /><col style="width: 88px" /></colgroup>
-          <thead><tr><th>사건번호</th><th class="l">주소</th><th>연식</th><th>전용</th><th>엘베</th><th class="r">조회수<br>조회일</th><th>차수</th><th class="r">최저가</th><th class="r">채권자<br>허그 예상가</th><th>입찰자<br>있을확률</th><th class="r">예상응찰</th><th class="r">예상 낙찰가</th><th class="r">실제응찰</th><th class="r">실제 낙찰가</th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
+          <colgroup><col style="width: 48px" /><col style="width: 108px" /><col style="width: 224px" /><col style="width: 52px" /><col style="width: 72px" /><col style="width: 52px" /><col style="width: 60px" /><col style="width: 40px" /><col style="width: 92px" /><col style="width: 112px" /><col style="width: 60px" /><col style="width: 60px" /><col style="width: 90px" /><col style="width: 90px" /><col style="width: 90px" /><col style="width: 90px" /><col style="width: 60px" /><col style="width: 90px" /><col style="width: 88px" /><col style="width: 88px" /></colgroup>
+          <thead><tr><th>추천</th><th class="sort" @click="sortBy('key')">사건번호<i :class="['ar', { on: sortKey === 'key' }]">{{ sortKey === 'key' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="l">주소</th><th class="sort" @click="sortBy('year')">연식<i :class="['ar', { on: sortKey === 'year' }]">{{ sortKey === 'year' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('area')">전용<i :class="['ar', { on: sortKey === 'area' }]">{{ sortKey === 'area' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th>엘베</th><th class="r sort" @click="sortBy('views')">조회수<br>조회일<i :class="['ar', { on: sortKey === 'views' }]">{{ sortKey === 'views' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('round')">차수<i :class="['ar', { on: sortKey === 'round' }]">{{ sortKey === 'round' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('min')">최저가<i :class="['ar', { on: sortKey === 'min' }]">{{ sortKey === 'min' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('cred')">채권자<br>허그 예상가<i :class="['ar', { on: sortKey === 'cred' }]">{{ sortKey === 'cred' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('pSold')">입찰자<br>있을확률<i :class="['ar', { on: sortKey === 'pSold' }]">{{ sortKey === 'pSold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('bids')">예상응찰<i :class="['ar', { on: sortKey === 'bids' }]">{{ sortKey === 'bids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('pred')">예상 낙찰가<i :class="['ar', { on: sortKey === 'pred' }]">{{ sortKey === 'pred' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r">우리 입찰가<br>낙찰확률 50%</th><th class="r">60%</th><th class="r">70%</th><th class="r sort" @click="sortBy('actBids')">실제응찰<i :class="['ar', { on: sortKey === 'actBids' }]">{{ sortKey === 'actBids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('sold')">실제 낙찰가<i :class="['ar', { on: sortKey === 'sold' }]">{{ sortKey === 'sold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
           <tbody>
-            <tr v-for="it in shownItems" :key="it.key" :class="{ on: pick === it.key, off: !preds.has(it.key) }" @click="pick = pick === it.key ? '' : it.key">
+            <tr v-for="it in shownItems" :key="it.key" :class="{ on: pick === it.key, off: !preds.has(it.key), rec: isRec(it.key) }" @click="pick = pick === it.key ? '' : it.key">
+              <td><span v-if="isRec(it.key)" class="bpt-rec">추천</span></td>
               <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button></td>
               <td class="l addr" :data-tip="it.addr || undefined" data-tip-trunc><button v-if="it.addr" type="button" :class="['bpt-copy', { done: copiedKey === it.key }]" :data-tip="copiedKey === it.key ? '복사됨' : '주소복사'" :aria-label="`${caseLabel(it.key)} 주소 복사`" @click.stop="copyAddr(it)"><svg v-if="copiedKey !== it.key" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg><svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg></button>{{ it.addr ? tblAddr(it.addr) : '—' }}</td>
               <td>{{ yearShow(it) ? `${yearShow(it)}` : '—' }}<small v-if="yearShow(it)" class="bpt-at">{{ buildingAgeOf(yearShow(it)!) }}년차</small></td>
@@ -812,6 +910,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td class="r">{{ sellOf(it.key) ? `${sellOf(it.key)!.expBids.toFixed(1)}명` : '—' }}</td>
               <td v-if="preds.get(it.key)" class="r strong"><span class="bpt-nb">{{ won((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small v-if="it.target?.appr" class="bpt-at bpt-nb">{{ apprPct((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median, it.target.appr) }}</small></span></td>
               <td v-else>—</td>
+              <td v-for="q in [0.5, 0.6, 0.7]" :key="q" class="r">{{ bidQ(it, q) != null ? won(bidQ(it, q)!) : '—' }}</td>
               <td class="r">{{ it.result ? (it.result.sold > 0 ? (it.result.bids ? `${it.result.bids}명` : '모름') : '유찰') : '입찰 전' }}</td>
               <td class="r act-sold"><span v-if="it.result && it.result.sold > 0" class="bpt-nb">{{ won(it.result.sold) }}<small v-if="it.target?.appr" class="bpt-at bpt-nb">{{ apprPct(it.result.sold, it.target.appr) }}</small></span><template v-else>—</template></td>
               <td v-if="it.result && it.result.sold > 0 && preds.get(it.key)" class="r"><span class="bpt-nb">{{ signWon(it.result.sold - (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small class="bpt-at bpt-nb">{{ sgn(it.result.sold / (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median - 1) }}</small></span></td>
@@ -822,7 +921,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           </tbody>
         </table>
       </div>
-      <p v-if="useHits" class="bpt-sub">채권자 · 허그(주택도시보증공사)가 채권자면 허그가 보증금 채권으로 입찰할 가능성이 높음, 허그 예상가는 그날 이전 같은 차수 허그 채권 매각의 낙찰가÷감정가 중앙값(10~90% 구간), 다른 채권자는 단기매도 경쟁 · 조회일 · 누적에 넣은 마지막 날 · 빨간 '~11.14'는 그날까지만 모은 것(매각 전날까지 못 모음), 조회수수집 다시 · 예상응찰 · 입찰자 있을 때 · 신건은 확률만 · 줄 누르면 자세히</p>
+      <p v-if="useHits" class="bpt-sub">추천 · 입찰자 있을확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 사람이 안 들어오면 최저가로 낙찰) · 머리글 ▲▼ 로 정렬, 처음은 입찰자 있을확률 낮은 순 · 우리 입찰가 · 누가 들어왔을 때 그 확률로 이기는 값 · 채권자 · 허그(주택도시보증공사)가 채권자면 허그가 보증금 채권으로 입찰할 가능성이 높음, 허그 예상가는 그날 이전 같은 차수 허그 채권 매각의 낙찰가÷감정가 중앙값(10~90% 구간), 다른 채권자는 단기매도 경쟁 · 조회일 · 누적에 넣은 마지막 날 · 빨간 '~11.14'는 그날까지만 모은 것(매각 전날까지 못 모음), 조회수수집 다시 · 예상응찰 · 입찰자 있을 때 · 신건은 확률만 · 줄 누르면 자세히</p>
       <p v-else class="bpt-sub">예상 낙찰가 · 조회수 규칙 반영(없으면 비슷한 물건 인원 비율) · 줄 누르면 자세히</p>
     </section>
 
@@ -1003,6 +1102,31 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl tr:last-child td { border-bottom: 0; }
 .bpt-day .bpt-tbl th, .bpt-day .bpt-tbl td, .bpt-prob .bpt-tbl th, .bpt-prob .bpt-tbl td { padding-left: 5px; padding-right: 5px; text-align: center; }   /* 1440 화면 안에 들게 — 칸 폭 합 1,236 px, 화면 1280 */   /* 사건별 예측은 머리 · 내용 모두 가운데(2026-11-14 사용자) */
 .bpt-day .bpt-tbl td.act-sold { font-weight: 700; }
+/* 추천 줄 · 칩 — 조회수로 본 경쟁 적은 사건(2026-11-16) */
+.bpt-tbl td .bpt-rec, .bpt-recs .bpt-rec { display: inline-flex; align-items: center; justify-content: center; height: 20px; padding: 0 6px; border-radius: 4px; background: #e8f7ee; color: #15803d; font-size: 12px; font-weight: 700; }
+.bpt-day .bpt-tbl tbody tr.rec td { background: #f3fbf6; }
+.bpt-day .bpt-tbl tbody tr.rec.on td { background: #fff1f3; }
+/* 정렬 머리글 */
+.bpt-tbl th.sort { cursor: pointer; user-select: none; }
+.bpt-tbl th.sort:hover { background: #e9edf5; }
+.bpt-tbl th .ar { font-style: normal; margin-left: 3px; font-size: 12px; color: #9ca3af; }
+.bpt-tbl th .ar.on { color: #2b6df3; }
+.bpt-fnote { font-size: 12px; color: #6b7280; align-self: center; }
+/* 달력 — 전국 합계 · 많은 날 */
+.bpt-cal-grid .cell .dn small.all { color: #6b7280; }
+.bpt-cal-grid .cell .dn small.all.busy { color: #c2410c; font-weight: 700; }
+.bpt-cal-grid .cell.busy { border-color: #f4700a; box-shadow: inset 0 0 0 1px #f4700a; }
+.bpt-cal-grid .cell .ln.top { font-weight: 700; color: #213366; }
+.bpt-cal-grid .cell .ln.rec { color: #15803d; font-weight: 700; }
+/* 어디로 갈까 */
+.bpt-go .bpt-ttl small { font-size: 12px; font-weight: 400; color: #6b7280; margin-left: 8px; }
+.bpt-gotbl td { vertical-align: middle; }
+.bpt-gotbl tbody tr.first td { background: #f3fbf6; }
+.bpt-rank { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; background: #eef3ff; color: #1d4ed8; font-size: 12px; font-weight: 700; }
+.bpt-rank.one { background: #e8f7ee; color: #15803d; }
+.bpt-recs { display: grid; grid-template-columns: 46px 112px minmax(120px, 1fr) 34px 84px 96px 40px; gap: 3px 8px; align-items: center; font-size: 12.5px; }
+.bpt-recs .pl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bpt-recs .nb { text-align: right; font-variant-numeric: tabular-nums; }
 /* 채권자 칸 — 허그 칩(남색) + 예상가, 다른 채권자는 회색 작은 글 */
 .bpt-tbl td .bpt-hug { display: inline-block; padding: 1px 6px; border-radius: 4px; background: #213366; color: #fff; font-size: 12px; font-weight: 700; line-height: 16px; margin-bottom: 2px; }
 .bpt-tbl td .bpt-cred { font-size: 12px; color: #6b7280; }   /* 실제 낙찰가는 굵게 */
@@ -1081,6 +1205,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-on.on { color: #15803d; }
 
 .bpt-date input.court { width: 120px; }
+.bpt-date select.court { height: 32px; width: 124px; border: 1px solid #d5dbe5; border-radius: 8px; padding: 0 6px; font: inherit; font-size: 13px; background: #fff; color: #213366; font-weight: 600; }
 .bpt-range { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 .bpt-range input { height: 32px; border: 1px solid #d5dbe5; border-radius: 8px; padding: 0 8px; font: inherit; }
 .bpt-btns { display: flex; gap: 8px; }

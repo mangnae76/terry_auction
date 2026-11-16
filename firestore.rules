@@ -253,6 +253,15 @@ service cloud.firestore {
         && agentData().ev is list && agentData().ev.size() <= 60
         && agentData().by == 'agent';
     }
+    // 기일별물건 달력 숫자 — 달마다 한 문서(모든 법원 · 계 · 날짜 · 건수). 어느 법원으로 갈지 고르는 데(2026-11-16)
+    match /saleData/dayList/cal/{month} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin()
+        && agentData().keys().hasOnly(['month', 'rows', 'by', 'at'])
+        && agentData().month is string && agentData().month.size() == 7
+        && agentData().rows is list && agentData().rows.size() <= 2000
+        && agentData().by == 'agent';
+    }
     match /saleData/agentQueue {
       allow get: if isAdmin();
       allow create, update: if isAdmin()
