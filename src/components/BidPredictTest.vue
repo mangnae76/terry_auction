@@ -15,6 +15,7 @@ import { buildingAgeOf } from '../utils/buildingAge';
 import { addressWithName, buildingNameOf } from '../utils/addressName';
 import { agentOnline, loadAgentDataset, loadDayLists, loadDayListsRange, loadHits, saveDayCsv, sendAgentCommand, sendAgentStop, watchAgentStatus, type AgentStatus, type DayListRow, type HitDoc } from '../services/agentRemote';
 import { readSheetRows } from '../services/saleExcel';
+import { resolveRegionFromAddress } from '../services/regionResolver';
 import {
   BAND_NAMES, bandOf, caseKey, caseLabel, lotOf as lotParts, csvRows, dongOf, fitPriceModel, fitRoundModel, fitViewModel, parseViewLines, predictRound, priceDist, readDayRows, roundOfRatio, roundsOf, similarBands, soldOf, viewBands,
   type BidTarget, type DayRow, type Round, type ViewPair,
@@ -72,6 +73,26 @@ const sendCmd = async (name: 'open' | 'daylist' | 'hits') => {
     agentNote.value = name === 'open' ? '브라우저 열기를 보냈습니다. 크롬에서 탱크옥션 로그인을 확인해 주세요.' : name === 'hits' ? `${dongFilter.value.trim()} 조회수 수집을 보냈습니다. 끝나면 다시 읽습니다.` : '기일 목록 수집을 보냈습니다. 끝나면 매각기일을 골라 다시 읽습니다.';
   } catch { agentNote.value = '명령을 보내지 못했습니다. 다시 해 주세요.'; }
 };
+/* 도로명 주소(탱크옥션 사건 일부 — 검암동 500건 중 83건)는 지번 주소로 바꿔 쓴다. 건물명 · 엘베 · 대장 · 동 거르기가 모두 동 · 지번으로 묶이기 때문(2026-11-16).
+ * 카카오 주소 변환(이 브라우저에 저장), 못 바꾸면 그대로. 원래 주소는 복사용으로 남긴다 */
+const rawAddr = new Map<string, string>();
+const jibunMemo = new Map<string, string>();
+const toJibun = async (a: string): Promise<string> => {
+  if (!a || lotParts(a).dong) return a;
+  const hit = jibunMemo.get(a); if (hit !== undefined) return hit;
+  const road = a.replace(/\s*\(.*$/, '').split(',')[0].trim();
+  const unit = (a.split(',')[1] ?? '').replace(/\s*\(.*$/, '').trim();
+  const name = a.match(/\([^,()]*,\s*([^()]+)\)/)?.[1]?.trim() ?? '';
+  let out = a;
+  try { const r = await resolveRegionFromAddress(road); if (r?.dong && r.jibun) out = [r.sido, r.sigungu, r.dong, r.jibun, name, unit].filter(Boolean).join(' '); } catch { /* 그대로 */ }
+  jibunMemo.set(a, out); if (out !== a) rawAddr.set(out, a);
+  return out;
+};
+const withJibun = async <T extends { addr: string }>(xs: T[]): Promise<T[]> => {
+  const out = [...xs];
+  for (let i = 0; i < out.length; i += 6) await Promise.all(out.slice(i, i + 6).map(async (x, j) => { const a = await toJibun(x.addr); if (a !== x.addr) out[i + j] = { ...x, addr: a }; }));
+  return out;
+};
 /** 그 매각기일의 DB 목록 읽기 */
 const loadDb = async () => {
   if (!dayDate.value) { dbRows.value = []; dbInfo.value = ''; dayDepts.value = []; return; }
@@ -88,7 +109,7 @@ const loadDb = async () => {
     };
     docs.filter((d) => d.by === 'agent').forEach((d) => d.rows.forEach((r) => put(r, false)));
     docs.filter((d) => d.by !== 'agent').forEach((d) => d.rows.forEach((r) => put(r, true)));
-    dbRows.value = [...m.values()];
+    dbRows.value = await withJibun([...m.values()]);
     dayDepts.value = docs.filter((d) => d.by === 'agent').map((d) => {
       const kinds: Record<string, number> = {}; const stats: Record<string, number> = {};
       d.rows.forEach((r) => { const k = r.kind || '기타'; kinds[k] = (kinds[k] ?? 0) + 1; const s = statOfRow(r); stats[s] = (stats[s] ?? 0) + 1; });
@@ -119,7 +140,7 @@ const loadHitDocs = async () => {
   const dong = dongFilter.value.trim();
   if (!/(동|가|읍|면|리)$/.test(dong)) { hitDocs.value = []; hitInfo.value = ''; hitRange.value = ''; return; }
   // 기간 = 조회수가 있는 날만(차트 끝의 다음 기일 날짜는 뺀다)
-  try { hitDocs.value = await loadHits(dong); const ds = hitDocs.value.flatMap((h) => h.hd.filter((_, i) => (h.hc[i] ?? 0) > 0)).map((d) => d.replace(/\D/g, '')).filter((d) => d.length === 8 && d <= todayIso().replace(/\D/g, '')).sort(); const dot = (d: string) => `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6)}`;
+  try { hitDocs.value = await withJibun(await loadHits(dong)); const ds = hitDocs.value.flatMap((h) => h.hd.filter((_, i) => (h.hc[i] ?? 0) > 0)).map((d) => d.replace(/\D/g, '')).filter((d) => d.length === 8 && d <= todayIso().replace(/\D/g, '')).sort(); const dot = (d: string) => `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6)}`;
     hitInfo.value = hitDocs.value.length ? `${dong} 주택 사건 ${hitDocs.value.length.toLocaleString('ko-KR')}건 · 날짜별 조회수` : `${dong} 사건 조회수가 아직 없습니다`;
     hitRange.value = ds.length ? `${dot(ds[0])} ~ ${dot(ds[ds.length - 1])}` : ''; }
   catch { hitInfo.value = '사건 차트를 읽지 못했습니다'; hitRange.value = ''; }
@@ -232,7 +253,7 @@ const shortAddr = (a: string) => { const m = a.match(/[가-힣0-9]+(?:동|가|�
 const nameByLot = computed(() => { const m = new Map<string, string>(); [...hitDocs.value.map((h) => h.addr), ...recs.value.map((r) => r.addr)].forEach((a) => { const n = buildingNameOf(a); if (!n) return; const l = lotParts(a); const k = `${l.dong} ${l.jibun}`; if (!m.has(k)) m.set(k, n); }); return m; });
 const tblAddr = (a: string) => { const l = lotParts(a); const k = `${l.dong} ${l.jibun}`; return shortAddr(addressWithName(a, extFacts.value[k]?.name || nameByLot.value.get(k))); };
 const copyAddr = async (it: { key: string; addr: string }) => {
-  const text = it.addr.replace(/\s*\(.*$/, '').replace(/\s*외\s*\d+필지\s*$/, '').trim();
+  const text = (rawAddr.get(it.addr) ?? it.addr).replace(/\s*\(.*$/, '').replace(/\s*외\s*\d+필지\s*$/, '').trim();
   try { await navigator.clipboard.writeText(text); }
   catch { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 그만 */ } ta.remove(); }
   copiedKey.value = it.key; if (copyTimer) clearTimeout(copyTimer); copyTimer = setTimeout(() => { copiedKey.value = ''; }, 1500);
