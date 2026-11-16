@@ -254,12 +254,30 @@ const credShort = (key: string) => { const c = credOf.value.get(key) ?? ''; retu
 type HugBand = { n: number; p10: number; p50: number; p90: number };
 const hugBands = computed<Map<number, HugBand>>(() => {
   const by = new Map<number, number[]>();
-  roundsAt.value.forEach((r) => { if (r.result === 'sold' && r.sold > 0 && r.appr > 0 && r.date < dayDate.value && isHug(r.key)) (by.get(r.round) ?? by.set(r.round, []).get(r.round)!).push(r.sold / r.appr); });
+  roundsAt.value.forEach((r) => { if (r.result === 'sold' && r.sold > 0 && r.appr > 0 && r.date < dayDate.value && isHug(r.key)) { const g = Math.min(r.round, 3); (by.get(g) ?? by.set(g, []).get(g)!).push(r.sold / r.appr); } });   // 3차 이상은 한 묶음(건수가 적다)
   const out = new Map<number, HugBand>();
-  by.forEach((xs, k) => { if (xs.length < 5) return; xs.sort((a, b) => a - b); const q = (p: number) => xs[Math.min(xs.length - 1, Math.floor(p * xs.length))]; out.set(k, { n: xs.length, p10: q(0.1), p50: q(0.5), p90: q(0.9) }); });
+  by.forEach((xs, k) => { if (xs.length < 5) return; xs.sort((a, b) => a - b); const q = (p: number) => xs[Math.min(xs.length - 1, Math.floor(p * xs.length))]; out.set(k, { n: xs.length, p10: q(0.1), p50: medianOf(xs), p90: q(0.9) }); });
   return out;
 });
-const hugOf = (it: Item): HugBand | null => (it.target && isHug(it.key) ? hugBands.value.get(it.target.round) ?? null : null);
+const hugOf = (it: Item): HugBand | null => (it.target && isHug(it.key) ? hugBandFor(it.key, it.target.round, it.target.appr, dayDate.value) : null);
+const medianOf = (xs: number[]) => { const n = xs.length; return n % 2 ? xs[(n - 1) / 2] : (xs[n / 2 - 1] + xs[n / 2]) / 2; };
+/** 허그 띠 — 같은 차수 중 감정가 ±25% 인 과거 허그 매각(5건 이상)이 있으면 그것으로, 없으면 차수 전체 띠 */
+const hugBandFor = (key: string, round: number, appr: number, before: string): HugBand | null => {
+  if (!isHug(key)) return null;
+  const g = Math.min(round, 3);
+  const xs = roundsAt.value.filter((r) => r.result === 'sold' && r.sold > 0 && r.appr > 0 && r.date < before && Math.min(r.round, 3) === g && isHug(r.key) && r.appr / appr >= 0.75 && r.appr / appr <= 1.33).map((r) => r.sold / r.appr).sort((a, b) => a - b);
+  if (xs.length < 5) return hugBands.value.get(g) ?? null;
+  const q = (p: number) => xs[Math.min(xs.length - 1, Math.floor(p * xs.length))];
+  return { n: xs.length, p10: q(0.1), p50: medianOf(xs), p90: q(0.9) };
+};
+/** 예상 낙찰가 — 채권자가 허그면 가운데를 허그 띠 중앙값(감정가 × p50)으로 옮기고 범위도 같이 민다.
+ *  6월~11-16 검암동 매각 124건 시험: 평균 오차 7.6% → 7.0%(2026-11-16). 1등 · 2등 차이가 중앙 3.7% 라 그 아래로는 못 간다 */
+type Dist = ReturnType<typeof priceDist>;
+const hugShift = (key: string, t: { round: number; appr: number; min: number }, d: Dist, before: string): Dist => {
+  const b = hugBandFor(key, t.round, t.appr, before); if (!b) return d;
+  const c = Math.max(t.min, Math.round((t.appr * b.p50) / 10_000) * 10_000); const k = c - d.median;
+  return { ...d, median: c, lo: Math.max(t.min, d.lo + k), hi: d.hi + k };
+};
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 /** 주소 복사 — 지도 · 로드뷰에서 입지 · 개별성을 볼 때 붙여 넣으려고(2026-11-14 사용자). 괄호 안 도로명 등은 뺀 지번 주소 */
 const copiedKey = ref('');
@@ -407,7 +425,8 @@ const preds = computed(() => {
       if (!it.target || it.target.round < 1) continue;   // 신건은 입찰자 있을확률만(배수 식은 1회 유찰부터)
       const tg = { ...it.target, addr: it.addr }; const m = fitPriceModel(recs.value, tg, extReady.value ? pxPrice : undefined); if (!m) continue;
       const sim = similarBands(recs.value, it.target); const s = sellMap.value.get(it.key);
-      out.set(it.key, { before: priceDist(m, tg, sim.pi), after: s ? priceDist(m, tg, s.pi) : null, piBefore: sim.pi, piAfter: s?.pi ?? null, p0: s ? 1 - s.pSold : null, simN: sim.n, loose: sim.loose, vmN: rm?.n ?? 0, expBids: s?.expBids ?? null });
+      const hs = (d: Dist) => hugShift(it.key, it.target!, d, dayDate.value);
+      out.set(it.key, { before: hs(priceDist(m, tg, sim.pi)), after: s ? hs(priceDist(m, tg, s.pi)) : null, piBefore: sim.pi, piAfter: s?.pi ?? null, p0: s ? 1 - s.pSold : null, simN: sim.n, loose: sim.loose, vmN: rm?.n ?? 0, expBids: s?.expBids ?? null });
     }
     return out;
   }
@@ -564,8 +583,9 @@ const runGrade = async () => {
         for (const x of [a, total]) { x.nb += 1; x.band[0] += bandOf(Math.round(eb0)) === bandOf(r.bids) ? 1 : 0; x.band[1] += bandOf(Math.round(p.expBids)) === bandOf(r.bids) ? 1 : 0; x.band[2] += bandOf(Math.round(p2.expBids)) === bandOf(r.bids) ? 1 : 0; }
         if (r.round < 1) continue;
         const pm = fitPriceModel(recs.value, tg); if (!pm) continue;
-        const d0 = priceDist(pm, tg, sim.pi); const d1 = priceDist(pm, tg, p.pi);
-        const tgx = { ...tg, addr: r.addr }; const pm2 = useX ? fitPriceModel(recs.value, tgx, pxPrice) : null; const d2 = pm2 ? priceDist(pm2, tgx, p2.pi) : d1;
+        const hs = (x: Dist) => hugShift(r.key, tg, x, d);   // 채점도 허그 옮김까지 넣어서(화면 예상 낙찰가와 같은 값)
+        const d0 = hs(priceDist(pm, tg, sim.pi)); const d1 = hs(priceDist(pm, tg, p.pi));
+        const tgx = { ...tg, addr: r.addr }; const pm2 = useX ? fitPriceModel(recs.value, tgx, pxPrice) : null; const d2 = pm2 ? hs(priceDist(pm2, tgx, p2.pi)) : d1;
         for (const x of [a, total]) {
           x.np += 1; x.err[0] += Math.abs(r.sold / d0.median - 1); x.err[1] += Math.abs(r.sold / d1.median - 1); x.err[2] += Math.abs(r.sold / d2.median - 1);
           x.inR[0] += r.sold >= d0.lo && r.sold <= d0.hi ? 1 : 0; x.inR[1] += r.sold >= d1.lo && r.sold <= d1.hi ? 1 : 0; x.inR[2] += r.sold >= d2.lo && r.sold <= d2.hi ? 1 : 0;
