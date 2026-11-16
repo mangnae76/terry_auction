@@ -607,7 +607,7 @@ const calWeeks = computed(() => {
     const use = depts.length ? depts : docs;   // 계별 문서가 있으면 그것만(CSV 는 같은 사건을 또 담는다)
     const lines = use.map((x) => ({ label: x.dept ? `${x.court.replace(/^[^-]+-/, '')} ${x.dept.replace(/^경매/, '')}` : 'CSV', n: x.rows.length, dong: calDong.value ? x.rows.filter((r) => String(r.addr ?? '').includes(calDong.value)).length : 0 }));
     const courts = [...new Set(use.map((x) => x.court).filter(Boolean))];   // 날짜 옆 이름 — 한 법원이면 '인천-본원 375', 여럿이면 '총 375'
-    return { d, day, court: courts.length === 1 ? courts[0] : '총', total: use.reduce((s, x) => s + x.rows.length, 0), lines, dongN: dongN.get(d) ?? 0, today: d === today, top: topOf(d), all: allOf(d), busy: busyDays.has(d) };
+    return { d, day, court: courts.length === 1 ? courts[0] : '총', total: use.reduce((s, x) => s + x.rows.length, 0), lines, dongN: dongN.get(d) ?? 0, today: d === today, top: topOf(d), all: allOf(d), busy: busyDays.has(d), rec: recCountByDay.value.get(d) ?? 0 };
   };
   const weeks: Array<Array<ReturnType<typeof cellOf> | null>> = []; let wk: Array<ReturnType<typeof cellOf> | null> = [];
   for (let day = 1; day <= last; day += 1) {
@@ -703,6 +703,21 @@ const isRec = (key: string) => recKeys.value.has(key);
 const bidQ = (it: Item, q: number) => { const p = preds.value.get(it.key); if (!p || !it.target) return null; return Math.max(it.target.min, (p.after ?? p.before).q(q)); };
 /** 건물 · 호만 — '검암동 647-3 부경캐슬 5층502호' → '부경캐슬 5층502호' */
 const placeOf = (addr: string) => { const t = tblAddr(addr).split(/\s+/); return (t.length > 2 ? t.slice(2) : t).join(' '); };
+/** 달력 칸의 '추천 N' — 날마다 늘 보인다(2026-11-16 사용자). 그날 이전 자료로 회차 모델을 맞춰 표와 같은 기준으로 센다(유효조회수 모델의 입찰자 있을확률 30% 아래 · 조회수 모델의 예상응찰 1명 아래 · 신건 제외). 고른 날은 표의 추천 수 그대로 */
+const recCountByDay = computed(() => {
+  const out = new Map<string, number>();
+  if (!useHits.value) return out;
+  const m = calMonth.value; const days = [...new Set(roundsAtE.value.filter((r) => r.date.startsWith(m) && r.round >= 1).map((r) => r.date))];
+  for (const d of days) {
+    if (d === dayDate.value) { out.set(d, recItems.value.length); continue; }
+    const mE = fitRoundModel(roundsAtE.value, d); const mH = fitRoundModel(roundsAt.value, d); if (!mE || !mH) continue;
+    const hs = new Map(roundsAt.value.filter((r) => r.date === d).map((r) => [r.key, r]));
+    let n = 0;
+    roundsAtE.value.filter((r) => r.date === d && r.round >= 1).forEach((r) => { const h = hs.get(r.key); if (h && predictRound(mE, r).pSold < REC_P && predictRound(mH, h).expBids < REC_BIDS) n += 1; });
+    out.set(d, n);
+  }
+  return out;
+});
 const METRO = /^(서울|인천|의정부|수원)-/;
 const goRows = computed(() => {
   const by = new Map<string, { n: number; depts: string[] }>();
@@ -775,11 +790,10 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <span v-for="(c, ci) in wk" :key="`${wi}-${ci}`" class="cell-wrap">
                 <button v-if="c" type="button" :class="['cell', { on: c.d === dayDate, today: c.today, has: c.lines.length || c.dongN || c.top, busy: c.busy }]" @click="dayDate = c.d">
                   <span class="dn">{{ c.day }}<small v-if="c.all" :class="['all', { busy: c.busy }]">전국 {{ c.all.toLocaleString('ko-KR') }}</small></span>
-                  <span v-if="c.top" class="ln top">{{ c.top.court }} {{ c.top.n.toLocaleString('ko-KR') }}</span><span v-else-if="c.total" class="ln top">{{ c.court }} {{ c.total.toLocaleString('ko-KR') }}</span>
+                  <span v-if="c.top || c.total" class="ln top">{{ c.top ? c.top.court : c.court }} {{ (c.top ? c.top.n : c.total).toLocaleString('ko-KR') }}<b v-if="c.rec" class="recchip">추천 {{ c.rec }}</b></span>
                   <template v-if="c.lines.length"><span v-for="x in c.lines" :key="x.label" class="ln">{{ x.label }}<i v-if="calDong">({{ x.dong }})</i></span></template>
                   <template v-else-if="c.top"><span v-for="x in c.top.depts" :key="x" class="ln">{{ x }}</span></template>
                   <span v-if="!c.lines.length && c.dongN" class="ln dg">{{ calDong || '동' }} {{ c.dongN }}</span>
-                  <span v-if="c.d === dayDate && recItems.length" class="ln rec">추천 {{ recItems.length }}</span>
                 </button>
               </span>
             </template>
@@ -1117,7 +1131,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-cal-grid .cell .dn small.all.busy { color: #c2410c; font-weight: 700; }
 .bpt-cal-grid .cell.busy { border-color: #f4700a; box-shadow: inset 0 0 0 1px #f4700a; }
 .bpt-cal-grid .cell .ln.top { font-weight: 700; color: #213366; }
-.bpt-cal-grid .cell .ln.rec { color: #15803d; font-weight: 700; }
+.bpt-cal-grid .cell .ln .recchip { display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 4px; background: #e8f7ee; color: #15803d; font-size: 12px; font-weight: 700; line-height: 17px; vertical-align: 1px; }
 /* 어디로 갈까 */
 .bpt-go .bpt-ttl small { font-size: 12px; font-weight: 400; color: #6b7280; margin-left: 8px; }
 .bpt-gotbl td { vertical-align: middle; }
