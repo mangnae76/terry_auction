@@ -846,14 +846,14 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="bpt-tbl-wrap">
         <table class="bpt-tbl bpt-gotbl">
           <colgroup><col style="width: 64px" /><col style="width: 110px" /><col style="width: 150px" /><col style="width: 260px" /><col /></colgroup>
-          <thead><tr><th>순위</th><th class="l">법원</th><th class="r">건수</th><th class="l">종류</th><th class="l">추천 사건 <small class="bpt-at">사건번호 · 건물 · 차수 · 입찰자 있을확률 · 예상응찰 · 우리 입찰가(50%) · 채권자</small></th></tr></thead>
+          <thead><tr><th>순위</th><th>법원</th><th>건수</th><th>종류</th><th class="rechd"><div class="bpt-recs hd"><span>추천</span><span>사건번호</span><span>건물</span><span>차수</span><span>입찰자 있을확률 · 예상응찰</span><span>우리 입찰가 50%</span><span>채권자</span></div></th></tr></thead>
           <tbody>
             <tr v-for="(g, i) in goRows" :key="g.court" :class="{ first: i === 0 }">
               <td><span :class="['bpt-rank', { one: i === 0 }]">{{ i + 1 }}순위</span></td>
-              <td class="l strong">{{ g.court }}</td>
-              <td class="r"><span class="bpt-nb">{{ g.n.toLocaleString('ko-KR') }}<small class="bpt-at bpt-nb">{{ g.depts }}</small></span></td>
-              <td class="l"><template v-if="g.kinds">{{ g.kinds }}</template><small v-else class="bpt-at">기일목록수집 뒤</small></td>
-              <td class="l">
+              <td class="strong">{{ g.court }}</td>
+              <td><span class="bpt-nb">{{ g.n.toLocaleString('ko-KR') }}<small class="bpt-at bpt-nb">{{ g.depts }}</small></span></td>
+              <td class="kinds"><template v-if="g.kinds">{{ g.kinds }}</template><small v-else class="bpt-at">기일목록수집 뒤</small></td>
+              <td class="recs">
                 <div v-if="g.recs.length" class="bpt-recs">
                   <template v-for="r in g.recs" :key="r.key">
                     <span class="bpt-rec">추천</span><button type="button" class="bpt-link" @click="pick = r.key">{{ caseLabel(r.key) }}</button><span class="pl">{{ r.place }}</span><span>{{ r.round }}차</span><span><b>{{ pct(r.pSold) }}</b> · {{ r.bids.toFixed(1) }}명</span><span class="nb">{{ r.bid50 != null ? won(r.bid50) : '—' }}</span><span><span v-if="isHug(r.key)" class="bpt-hug">허그</span></span>
@@ -1134,14 +1134,16 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-cal-grid .cell .ln .recchip { display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 4px; background: #e8f7ee; color: #15803d; font-size: 12px; font-weight: 700; line-height: 17px; vertical-align: 1px; }
 /* 어디로 갈까 */
 .bpt-go .bpt-ttl small { font-size: 12px; font-weight: 400; color: #6b7280; margin-left: 8px; }
-.bpt-gotbl td { vertical-align: middle; }
-.bpt-gotbl td.l { white-space: normal; }   /* 종류 · 추천 칸은 칸 안에서 줄을 바꾼다(표가 옆으로 넘치지 않게) */
+.bpt-gotbl th, .bpt-gotbl td { text-align: center; vertical-align: middle; }   /* 말머리와 내용 중앙 맞춤(2026-11-16 사용자) */
+.bpt-gotbl td.kinds, .bpt-gotbl td.recs { white-space: normal; }   /* 종류 · 추천 칸은 칸 안에서 줄을 바꾼다(표가 옆으로 넘치지 않게) */
+.bpt-gotbl th.rechd { padding-left: 10px; padding-right: 10px; }
+.bpt-recs.hd span { text-align: center; white-space: nowrap; font-weight: 700; color: #374151; }
 .bpt-gotbl tbody tr.first td { background: #f3fbf6; }
 .bpt-rank { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; background: #eef3ff; color: #1d4ed8; font-size: 12px; font-weight: 700; }
 .bpt-rank.one { background: #e8f7ee; color: #15803d; }
-.bpt-recs { display: grid; grid-template-columns: 46px 112px minmax(120px, 1fr) 34px 84px 96px 40px; gap: 3px 8px; align-items: center; font-size: 12.5px; }
-.bpt-recs .pl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bpt-recs .nb { text-align: right; font-variant-numeric: tabular-nums; }
+.bpt-recs { display: grid; grid-template-columns: 46px 112px minmax(140px, 1fr) 36px 150px 104px 44px; gap: 3px 8px; align-items: center; justify-items: center; font-size: 12.5px; }   /* 말머리(hd)와 줄이 같은 칸 폭 — 세로로 맞는다 */
+.bpt-recs .pl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.bpt-recs .nb { font-variant-numeric: tabular-nums; }
 /* 채권자 칸 — 허그 칩(남색) + 예상가, 다른 채권자는 회색 작은 글 */
 .bpt-tbl td .bpt-hug { display: inline-block; padding: 1px 6px; border-radius: 4px; background: #213366; color: #fff; font-size: 12px; font-weight: 700; line-height: 16px; margin-bottom: 2px; }
 .bpt-tbl td .bpt-cred { font-size: 12px; color: #6b7280; }   /* 실제 낙찰가는 굵게 */
