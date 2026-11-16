@@ -681,7 +681,8 @@ const shownItems = computed(() => {
   const rows = listItems.value.filter((it) => (!fMine.value || mineKeys.value.has(it.key)) && (!fDept.value || deptOf(it.key) === fDept.value) && (!fStat.value || statOf(it) === fStat.value) && (!fKind.value || kindOf(it) === fKind.value) && (!fRound.value || roundOf(it) === fRound.value) && (!fCred.value || credOfIt(it) === fCred.value));
   const k = sortKey.value; if (!k) return rows;
   if (k === 'key') return [...rows].sort((a, b) => sortDir.value * a.key.localeCompare(b.key));
-  return [...rows].map((it, i) => ({ it, i, v: sortVal(it, k) })).sort((a, b) => (a.v == null ? 1 : 0) - (b.v == null ? 1 : 0) || (a.v != null && b.v != null && a.v !== b.v ? sortDir.value * (a.v - b.v) : a.i - b.i)).map((x) => x.it);   // 값 없는 줄은 맨 아래, 같으면 원래 순서
+  const off = (it: Item) => (preds.value.has(it.key) ? 0 : 1);   // 예측 없는 줄(신건 · 자료 없음)은 어떤 정렬이든 맨 아래
+  return [...rows].map((it, i) => ({ it, i, v: sortVal(it, k), o: off(it) })).sort((a, b) => a.o - b.o || (a.v == null ? 1 : 0) - (b.v == null ? 1 : 0) || (a.v != null && b.v != null && a.v !== b.v ? sortDir.value * (a.v - b.v) : a.i - b.i)).map((x) => x.it);   // 값 없는 줄은 맨 아래, 같으면 원래 순서
 });
 const FR = { dept: fDept, stat: fStat, kind: fKind, round: fRound, cred: fCred } as const;
 // 엘베 — 표에 보이는 줄이 바뀌면 그 지번만 더 받는다(shownItems 다음에 둬야 한다)
@@ -915,8 +916,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td v-else class="r">{{ it.views.toLocaleString('ko-KR') }}<small :class="['bpt-at', { after: stale(it.viewAt) }]">{{ it.viewAt === dayDate ? '당일' : `${stale(it.viewAt) ? '~' : ''}${it.viewAt.slice(5).replace('-', '.')}` }}</small></td>
               <td>{{ it.target ? `${it.target.round + 1}차` : '—' }}</td>
               <td class="r"><span v-if="it.target" class="bpt-nb">{{ won(it.target.min) }}<small v-if="it.target.appr" class="bpt-at bpt-nb">{{ apprPct(it.target.min, it.target.appr) }}</small></span><template v-else>자료 없음</template></td>
-              <td v-if="hugOf(it)" class="r two" :data-tip="`허그 예상가 · 그날 이전 같은 차수 허그 채권 매각 ${hugOf(it)!.n}건의 낙찰가÷감정가 중앙 ${Math.round(hugOf(it)!.p50 * 100)}% (10~90% 구간 ${Math.round(hugOf(it)!.p10 * 100)}~${Math.round(hugOf(it)!.p90 * 100)}%)`"><span class="bpt-hug">허그채권</span><span class="bpt-nb">{{ manN(it.target!.appr * hugOf(it)!.p50) }}<small class="bpt-at bpt-nb">{{ Math.round(hugOf(it)!.p10 * 100) }}~{{ Math.round(hugOf(it)!.p90 * 100) }}%</small></span></td>
-              <td v-else-if="isHug(it.key)" class="r two"><span class="bpt-hug">허그채권</span><small class="bpt-at">자료 부족</small></td>
+              <td v-if="hugOf(it)" class="r two" :data-tip="`허그 예상가 · 그날 이전 같은 차수 허그 채권 매각 ${hugOf(it)!.n}건의 낙찰가÷감정가 중앙 ${Math.round(hugOf(it)!.p50 * 100)}% (10~90% 구간 ${Math.round(hugOf(it)!.p10 * 100)}~${Math.round(hugOf(it)!.p90 * 100)}%)`"><span class="bpt-hug">허그채권</span><br><span class="bpt-nb">{{ manN(it.target!.appr * hugOf(it)!.p50) }}<small class="bpt-at bpt-nb">{{ Math.round(hugOf(it)!.p10 * 100) }}~{{ Math.round(hugOf(it)!.p90 * 100) }}%</small></span></td>
+              <td v-else-if="isHug(it.key)" class="r two"><span class="bpt-hug">허그채권</span><br><small class="bpt-at">{{ it.target && it.target.round === 0 ? '신건' : '자료 부족' }}</small></td>
               <td v-else-if="credShort(it.key)" class="r"><small class="bpt-at bpt-cred">{{ credShort(it.key) }}</small></td>
               <td v-else class="r">—</td>
               <td>{{ sellOf(it.key) ? pct(sellOf(it.key)!.pSold) : '—' }}</td>
