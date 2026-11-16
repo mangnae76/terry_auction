@@ -1126,7 +1126,6 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 /* 달력 — 전국 합계 · 많은 날 */
 .bpt-cal-grid .cell .dn small.all { color: #6b7280; }
 .bpt-cal-grid .cell .dn small.all.busy { color: #c2410c; font-weight: 700; }
-.bpt-cal-grid .cell.busy { border-color: #f4700a; box-shadow: inset 0 0 0 1px #f4700a; }
 .bpt-cal-grid .cell .ln.top { font-weight: 700; color: #213366; }
 .bpt-cal-grid .cell .ln .recchip { display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 4px; background: #e8f7ee; color: #15803d; font-size: 12px; font-weight: 700; line-height: 17px; vertical-align: 1px; }
 /* 어디로 갈까 */
