@@ -623,7 +623,7 @@ const calWeeks = computed(() => {
 /** 사건별 예측 머리 표 — 그날 법원 전체(작은 회색) · 보고 있는 동(단추 숫자). 단추를 누르면 아래 표를 거른다 */
 const fDept = ref(''); const fStat = ref(''); const fKind = ref(''); const fRound = ref(''); const fCred = ref('');
 watch(dayDate, () => { fDept.value = ''; fStat.value = ''; fKind.value = ''; fRound.value = ''; fCred.value = ''; });
-/** 차수별 · 채권자별 거르기(2026-11-16 사용자) — 차수는 그날 최저가 비율로, 채권자는 허그 · 그 밖 */
+/** 채권자별 거르기(2026-11-16 사용자) — 허그 · 그 밖. 차수별 줄은 뺐다(차수 정렬로 충분, 2026-11-16 사용자) — fRound 는 코드만 남김 */
 const roundOf = (it: Item) => (it.target ? (it.target.round === 0 ? '신건' : `${it.target.round + 1}차`) : '모름');
 const credOfIt = (it: Item) => (isHug(it.key) ? '허그' : credShort(it.key) ? '그 밖' : '모름');
 /** 표 정렬 — 머리글 누르기. 처음은 입찰자 있을확률 낮은 순(경쟁 적은 사건이 위로) */
@@ -890,9 +890,6 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <tr><th>종류별 물건수</th><td class="chips">
             <button type="button" :class="['bpt-fchip', { on: !fKind }]" @click="fKind = ''">전체<b>{{ daySum.kindAll }}</b><small v-if="daySum.total">/ {{ daySum.scopeN.toLocaleString('ko-KR') }}</small></button>
             <button v-for="k in daySum.kinds" :key="k.k" type="button" :class="['bpt-fchip', { on: fKind === k.k }]" :disabled="!k.mine" @click="pickF('kind', k.k)">{{ k.k }}<b>{{ k.mine }}</b><small v-if="daySum.total">/ {{ k.all.toLocaleString('ko-KR') }}</small></button></td></tr>
-          <tr><th>차수별 물건수</th><td class="chips">
-            <button type="button" :class="['bpt-fchip', { on: !fRound }]" @click="fRound = ''">전체<b>{{ daySum.rounds.reduce((s, r) => s + r.mine, 0) }}</b></button>
-            <button v-for="r in daySum.rounds" :key="r.k" type="button" :class="['bpt-fchip', { on: fRound === r.k }]" @click="pickF('round', r.k)">{{ r.k }}<b>{{ r.mine }}</b></button></td></tr>
           <tr><th>채권자별 물건수</th><td class="chips">
             <button type="button" :class="['bpt-fchip', { on: !fCred }]" @click="fCred = ''">전체<b>{{ daySum.creds.reduce((s, r) => s + r.mine, 0) }}</b></button>
             <button v-for="r in daySum.creds" :key="r.k" type="button" :class="['bpt-fchip', { on: fCred === r.k }]" @click="pickF('cred', r.k)">{{ r.k }}<b>{{ r.mine }}</b></button>
