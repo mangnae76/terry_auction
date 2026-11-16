@@ -1639,7 +1639,7 @@ const IS_ADMIN = (() => { try { return localStorage.getItem('ta.web.admin') === 
 const SECS = () => C().sections.filter((s) => !s.admin || IS_ADMIN);
 const isNew = (x) => !!(x && x.since && x.since === S.rel.v);
 const NEW = (x) => (isNew(x) ? '<span class="tag new">NEW</span>' : '');
-const tagOf = (t) => (t === 'plus' ? '<span class="tag plus">PRO</span>' : t === 'soon' ? '<span class="tag soon">준비 중</span>' : t === 'key' ? '<span class="tag key">핵심</span>' : '');
+const tagOf = (t) => (t === 'plus' ? '<span class="tag plus">PRO</span>' : t === 'soon' ? '<span class="tag soon">준비중</span>' : t === 'key' ? '<span class="tag key">핵심</span>' : '');
 const subId = (sec, x) => x.aid || `${sec.id}-${x.id}`;
 const sameOrigin = () => { try { return location.origin === APP_ORIGIN; } catch (e) { return false; } };
 
@@ -1834,7 +1834,7 @@ function renderVideo() {
       <aside class="vv-toc" aria-labelledby="tocTitle"><div class="vv-toc-h"><h3 id="tocTitle">${I('layers')}영상 목차</h3><small>${v.chapters.length}개 장</small></div>
         <ol>${v.chapters.map((c, i) => {
           const sec = toSec(c.at); const clip = !ready && !!c.clip; const can = (ready && sec >= 0) || clip;
-          const inner = `<span class="toc-no">${String(i + 1).padStart(2, '0')}</span><span class="toc-txt"><b>${esc(c.title)}${c.key ? tagOf('key') : ''}</b><small>${esc(c.desc)}</small></span><span class="toc-at${can ? '' : ' tbd'}">${clip ? esc(c.len || '영상') : can ? esc(c.at) : '예정'}</span>`;
+          const inner = `<span class="toc-no">${String(i + 1).padStart(2, '0')}</span><span class="toc-txt"><b>${esc(c.title)}${c.key ? tagOf('key') : ''}${can ? '' : tagOf('soon')}</b><small>${esc(c.desc)}</small></span><span class="toc-at">${clip ? esc(c.len || '영상') : can ? esc(c.at) : ''}</span>`;
           return `<li class="${c.key ? 'key' : ''}${S.chapter === c.id ? ' on' : ''}" data-ch="${esc(c.id)}">${can ? `<button type="button" class="toc-item" data-seek="${esc(c.id)}" aria-label="${esc(c.title)} ${clip ? '영상 보기' : `장면으로 건너뛰기 (${esc(c.at)})`}">${inner}</button>` : `<div class="toc-item">${inner}</div>`}<a class="toc-web" href="#${esc(c.aid)}" title="웹으로 보기에서 열기" aria-label="${esc(c.title)} — 웹으로 보기에서 열기">${I('doc')}</a></li>`;
         }).join('')}</ol></aside>
     </div></div>`;
