@@ -1166,6 +1166,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-itemline .dt { color: var(--text-2, var(--muted)); } .sx-itemline .dt em { font-style: normal; font-weight: 800; color: var(--blue); }
 .sx-topband .sx-pickanchor { flex: 0 0 auto; position: relative; }
 .sx-topband.one { flex-wrap: nowrap; }   /* 물건으로 — 한 줄에. 넘치면 주소만 줄임표 */
+body.sale-predict #sonShell .sx-mode { display: none; }   /* 낙찰가예측 탭에선 물건으로 · 지역으로 토글 없음 */
 .sx-plab.off { opacity: .5; }
 .sx-pseg button.sx-lock { opacity: .4; cursor: not-allowed; }   /* 지역으로 — 유사도 잠금 */
 .sx-offtx { font-size: 12.5px; font-weight: 400; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -8756,6 +8757,7 @@ span.cal-day.has { cursor: help; }
     if (S.route === 'item') { paintSonSale(); return; }   /* 경매사례 단추 · 칸이 부르는 다시 그리기 — 물건상세 손품조사 › 경매사례 탭이면 그 자리에 */
     renderSonHead();
     syncCrumb();
+    document.body.classList.toggle('sale-predict', S.marketTab === 'sale' && S.saleTab === 'predict');   /* 낙찰가예측 탭 — 위 '물건으로 · 지역으로' 토글 감춤(단위가 법원 · 계 · 기일이라 뜻 없음, 2026-11-18 사용자) */
     const box = $('marketContent');
     const key = S.marketTab;
     const label = (SUBTABS[S.route].find((t) => t[0] === key) || [])[2] || '';
