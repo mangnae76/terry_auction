@@ -8152,7 +8152,7 @@ const goBack = () => router.back();
                   <div class="bx-row"><span class="bx-k">보증금</span><span class="bx-d">최저가의</span><span class="bx-p"><b class="bx-f pct ro">10.00</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(bidDeposit) }}</b></span></div>
                   <div class="bx-row hi bid"><span class="bx-k"><label :for="`bida-bid-${si}`">입찰가</label></span><span class="bx-d">감정가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`bidPct-${si}`, scBidPct(sc))" inputmode="decimal" aria-label="입찰가 비중" @blur="pctDone()" @input="pctType(`bidPct-${si}`, $event); scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput :id="`bida-bid-${si}`" v-model="sc.bid.myBidValue" class="bx-f amt big" live-group /><small v-if="scBelowMin(sc)" class="adp-bid-low" title="최저가 미만은 무효 입찰입니다">최저가미만</small></span></div>
                   <!-- 최저가 아래로는 못 내린다 — 바닥에 닿거나(슬라이더) 칸에 최저가 미만을 적으면 빨갛게, 아래 글로 알린다 -->
-                  <div v-if="apprValue > 0" :class="['bx-slide', { low: bidFloorHit === si || scBelowMin(sc) }]">
+                  <div v-if="apprValue > 0" :class="['bx-slide', 'bid', { low: bidFloorHit === si || scBelowMin(sc) }]">
                     <input type="range" :min="bidSlideMin" max="110" step="0.1" :value="Math.min(110, Math.max(bidSlideMin, scBidPct(sc)))" :aria-label="`${sc.label} 감정가 대비 입찰가`" @input="scSlideBid(sc, si, $event.target as HTMLInputElement)" />
                     <div v-if="scBelowMin(sc)" class="lab warn"><span>최저가미만 — 무효 입찰입니다</span></div>
                     <div v-else-if="bidFloorHit === si" class="lab warn"><span>최저가 미만으로는 내릴 수 없습니다</span></div>
@@ -15207,14 +15207,15 @@ select.adp-pub-input option { text-align: center; }
 .bida .bx-f.ro.neg { color: #d64545; }
 .bx-row.hi { margin: 0 -12px; padding: 0 12px; border-bottom: 1px solid transparent; border-radius: 8px; }
 .bx-row.hi .bx-k { font-weight: 800; color: #1f2a44; }
-.bx-row.hi.bid { background: #f5f8ff; }
+.bx-row.hi.bid { background: #fff6f4; }   /* 입찰가 줄도 예상 매도가 줄과 같은 빨강 꼴(2026-11-17 사용자) */
+.bx-row.hi.bid .bx-k { color: #9a3412; }
 .bx-row.hi.sale { background: #fff6f4; }
 .bx-row.hi.sale .bx-k { color: #9a3412; }
 .bida :deep(.bx-f.amt.big) { height: 34px; font-size: 16px; font-weight: 800; color: #1f2a44; }
-.bx-row.hi.sale :deep(.bx-f.amt.big) { color: #9a3412; }
+.bx-row.hi.sale :deep(.bx-f.amt.big), .bx-row.hi.bid :deep(.bx-f.amt.big) { color: #9a3412; }
 .bx-slide { box-sizing: border-box; height: 88px; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 0; border-bottom: 1px solid #f0f2f7; }   /* 줄 두 칸(44 × 2) — 아래 줄들이 한 칸 격자에 그대로 놓인다 */
 .bx-slide input[type='range'] { width: 100%; margin: 0; accent-color: #2b6df3; cursor: pointer; }
-.bx-slide.sale input[type='range'] { accent-color: #c2410c; }
+.bx-slide.sale input[type='range'], .bx-slide.bid input[type='range'] { accent-color: #c2410c; }
 .bx-slide.low input[type='range'] { accent-color: #d64545; }   /* 최저가 바닥 · 최저가 미만 */
 .bx-slide .lab.warn { justify-content: center; color: #d64545; font-weight: 600; }
 .bx-slide .lab { display: flex; justify-content: space-between; margin-top: 0; font-size: 12px; color: #6b7280; }
