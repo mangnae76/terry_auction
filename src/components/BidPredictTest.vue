@@ -450,21 +450,6 @@ const probRows = computed(() => shownItems.value.filter((it) => it.target && pre
   // 입찰자가 있을 때 이길 확률(조건부) — 시험에서 말한 대로 맞은 쪽. 아무도 안 올 확률까지 섞으면 50% 가 실제 72% 로 흐려졌다
   return { key: it.key, addr: it.addr, min: it.target!.min, pSold: p.p0 != null ? 1 - p.p0 : null, bids: PROBS.map((q) => Math.max(it.target!.min, d.q(q))), sold: it.result?.sold ?? 0, failed: !!it.failed };
 }));
-/* 곡선 — 최저가 ~ 최저가 1.8배 */
-const curve = computed(() => {
-  const it = sel.value; const p = selP.value; if (!it?.target || !p) return null;
-  const x0 = it.target.min; const x1 = it.target.min * 1.8;
-  const sx = (w: number) => 50 + ((w - x0) / (x1 - x0)) * 570; const sy = (v: number) => 250 - v * 230;
-  const ws = Array.from({ length: 37 }, (_, i) => x0 + ((x1 - x0) * i) / 36);
-  const line = (d: ReturnType<typeof priceDist>) => ws.map((w, i) => `${i ? 'L' : 'M'}${sx(w).toFixed(1)} ${sy(d.win(w)).toFixed(1)}`).join(' ');
-  const mw = myWin(p);
-  const ticks = Array.from({ length: 5 }, (_, i) => x0 + ((x1 - x0) * i) / 4).map((w) => ({ x: sx(w), label: man(w) }));
-  const pts = ws.filter((_, i) => i % 3 === 0).map((w) => ({ x: sx(w), y: sy(mw(w)), tip: `${man(w)} 원 → 낙찰확률 ${pct(mw(w))}` }));
-  const act = it.result && it.result.sold > 0 ? { x: sx(it.result.sold), y: sy(mw(it.result.sold)), label: `실제 ${man(it.result.sold)} · ${pct(mw(it.result.sold))}` } : null;
-  const second = it.result && it.result.second > 0 ? { x: sx(it.result.second), label: `2위 ${man(it.result.second)}` } : null;
-  const myLine = ws.map((w, i) => `${i ? 'L' : 'M'}${sx(w).toFixed(1)} ${sy(mw(w)).toFixed(1)}`).join(' ');
-  return { before: line(p.before), after: p.after ? myLine : '', ticks, pts, act, second, sy };
-});
 
 /* 조회수 규칙 그림 — 가로 조회수(로그), 세로 인원 */
 const rule = computed(() => {
@@ -918,6 +903,17 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
         </tbody>
       </table>
       <p class="bpt-sub">예측 · {{ daySum.dong }}만(다른 동은 목록만, 구현 예정) · / 뒤 숫자 · 그날 법원 전체(고른 계)</p>
+      <!-- 사건 상세 — 필터 아래 · 표 위(2026-11-17 사용자: 줄을 누르면 내비게이터처럼 위에서 바로 보이게). 응찰 인원 확률 막대 · 입찰가별 낙찰확률 그래프는 뺌(위 칸 · 아래 표와 겹침) -->
+      <div v-if="sel && selP && sel.target" class="bpt-detail">
+        <h3 class="bpt-h3">{{ caseLabel(sel.key) }} <small>{{ sel.addr }}</small> <button type="button" class="bpt-x" aria-label="상세 닫기" @click="pick = ''">✕</button></h3>
+      <div class="bpt-flow">
+          <div class="bpt-tile"><span>전일까지 누적 조회수</span><b>{{ sel.views.toLocaleString('ko-KR') }}회</b><small>{{ useHits ? `${sel.viewAt.slice(5).replace('-', '.')}까지 · 그날 이전 ${selP.vmN.toLocaleString('ko-KR')}회차로 배움` : selP.vmN ? `조회수 규칙 ${selP.vmN}건으로 배움` : '조회수 규칙 없음(6건 이상 필요)' }}</small></div>
+          <div class="bpt-tile"><span>예상 응찰 인원</span><b>{{ selP.expBids != null ? `약 ${Math.round(selP.expBids)}명` : BAND_NAMES[selP.piBefore.indexOf(Math.max(...selP.piBefore))] + ' 가장 흔함' }}</b><small>{{ selP.p0 != null ? `${useHits ? '매각된다고 칠 때 · ' : ''}유찰 확률 ${pct(selP.p0)}` : `비슷한 물건 ${selP.simN}건${selP.loose ? '(조건 넓힘)' : ''}` }}</small></div>
+          <div class="bpt-tile key wide"><span>예상 낙찰가 · 이길 확률별(입찰자가 있을 때)</span>
+            <div class="bpt-qs"><div v-for="q in [0.5, 0.6, 0.7, 0.8]" :key="q" :class="['bpt-q', { on: q === 0.7 }]"><span class="p">{{ pct(q) }}{{ q === 0.7 ? ' 추천' : '' }}</span><b class="w">{{ won(qOf(sel, q)) }}</b><span class="a">감정가 {{ apprPct(qOf(sel, q), sel.target.appr) }}</span></div></div>
+            <small>{{ selP.p0 != null ? `아무도 안 올 확률 ${pct(selP.p0)} · 그러면 최저가로도 낙찰` : '' }}{{ sel.result && sel.result.sold > 0 ? `${selP.p0 != null ? ' · ' : ''}실제 ${won(sel.result.sold)}${hugWon(sel.key) ? '(허그)' : ''} — ${winAt(sel) == null ? '' : winAt(sel)! <= 0.7 ? '70% 추천가로 이김' : winAt(sel)! <= 0.8 ? '70% 추천가로는 짐, 80% 입찰가면 이김' : '80% 입찰가로도 짐'}` : '' }}</small></div>
+        </div>
+      </div>
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
           <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게. 칸마다 가장 넓은 내용(검암동 · 11-13 · 17 · 20 에서 잼) + 같은 여백 15px(정렬 머리는 화살표 자리 14px 더), 주소는 남는 폭(2026-11-17 사용자: 간격 균일) -->
@@ -948,50 +944,6 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       </div>
       <p v-if="useHits" class="bpt-sub">경쟁↓ · 응찰확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 사람이 안 들어오면 최저가로 낙찰) · 머리글 ▲▼ 로 정렬, 처음은 응찰확률 낮은 순 · 허그 · 실제 낙찰자가 허그(주택도시보증공사)면 실제 낙찰가 % 앞에 칩 · 조회일 · 누적에 넣은 마지막 날 · 빨간 '~11.14'는 그날까지만 모은 것(매각 전날까지 못 모음), 조회수수집 다시 · 예상응찰 · 입찰자 있을 때 · 신건은 확률만 · 예상 낙찰가 50% · 입찰자가 있을 때 절반 확률로 이기는 값(분포 가운데), 70 · 80%는 줄을 눌러 상세 · 입찰가별 낙찰확률 표에서 · 차이 · 실제 낙찰가 − 예상 낙찰가 50% · 줄 누르면 자세히</p>
       <p v-else class="bpt-sub">예상 낙찰가 50% · 조회수 규칙 반영(없으면 비슷한 물건 인원 비율) · 줄 누르면 자세히</p>
-    </section>
-
-    <!-- 사건 상세는 사건별 예측 표 바로 아래 — 입찰가별 낙찰확률 표가 길어 그 아래 두면 눌러도 안 보였다(2026-11-17 사용자) -->
-    <section v-if="sel && selP && sel.target" class="bpt-card bpt-detail">
-      <h3 class="bpt-h3">{{ caseLabel(sel.key) }} <small>{{ sel.addr }}</small></h3>
-      <div class="bpt-flow">
-        <div class="bpt-tile"><span>전일까지 누적 조회수</span><b>{{ sel.views.toLocaleString('ko-KR') }}회</b><small>{{ useHits ? `${sel.viewAt.slice(5).replace('-', '.')}까지 · 그날 이전 ${selP.vmN.toLocaleString('ko-KR')}회차로 배움` : selP.vmN ? `조회수 규칙 ${selP.vmN}건으로 배움` : '조회수 규칙 없음(6건 이상 필요)' }}</small></div>
-        <div class="bpt-tile"><span>예상 응찰 인원</span><b>{{ selP.expBids != null ? `약 ${Math.round(selP.expBids)}명` : BAND_NAMES[selP.piBefore.indexOf(Math.max(...selP.piBefore))] + ' 가장 흔함' }}</b><small>{{ selP.p0 != null ? `${useHits ? '매각된다고 칠 때 · ' : ''}유찰 확률 ${pct(selP.p0)}` : `비슷한 물건 ${selP.simN}건${selP.loose ? '(조건 넓힘)' : ''}` }}</small></div>
-        <div class="bpt-tile key wide"><span>예상 낙찰가 · 이길 확률별(입찰자가 있을 때)</span>
-          <div class="bpt-qs"><div v-for="q in [0.5, 0.6, 0.7, 0.8]" :key="q" :class="['bpt-q', { on: q === 0.7 }]"><span class="p">{{ pct(q) }}{{ q === 0.7 ? ' 추천' : '' }}</span><b class="w">{{ won(qOf(sel, q)) }}</b><span class="a">감정가 {{ apprPct(qOf(sel, q), sel.target.appr) }}</span></div></div>
-          <small>{{ selP.p0 != null ? `아무도 안 올 확률 ${pct(selP.p0)} · 그러면 최저가로도 낙찰` : '' }}{{ sel.result && sel.result.sold > 0 ? `${selP.p0 != null ? ' · ' : ''}실제 ${won(sel.result.sold)}${hugWon(sel.key) ? '(허그)' : ''} — ${winAt(sel) == null ? '' : winAt(sel)! <= 0.7 ? '70% 추천가로 이김' : winAt(sel)! <= 0.8 ? '70% 추천가로는 짐, 80% 입찰가면 이김' : '80% 입찰가로도 짐'}` : '' }}</small></div>
-      </div>
-      <div class="bpt-two">
-        <div class="bpt-box">
-          <h3>응찰 인원 확률</h3>
-          <p class="bpt-legend"><span><i class="sw a" />비슷한 물건 비율</span><span v-if="selP.piAfter"><i class="sw b" />조회수 반영</span></p>
-          <div v-for="(nm, k) in BAND_NAMES" :key="nm" class="bpt-bar">
-            <span class="nm">{{ nm }}</span>
-            <span class="tr">
-              <span class="f a" :style="{ width: `${selP.piBefore[k] * 100}%` }" :title="`비슷한 물건 ${pct(selP.piBefore[k])}`" />
-              <span v-if="selP.piAfter" class="f b" :style="{ width: `${selP.piAfter[k] * 100}%` }" :title="`조회수 반영 ${pct(selP.piAfter[k])}`" />
-            </span>
-            <span class="v">{{ pct(selP.piBefore[k]) }}<template v-if="selP.piAfter"> → <b>{{ pct(selP.piAfter[k]) }}</b></template></span>
-            <span class="w">{{ man(selP.before.bandWon[k]) }}</span>
-          </div>
-          <p class="bpt-sub">오른쪽 금액 · 그 인원일 때 예상 낙찰가</p>
-        </div>
-        <div v-if="curve" class="bpt-box">
-          <h3>입찰가별 낙찰확률</h3>
-          <p class="bpt-legend"><span><i class="ln a" />비슷한 물건 비율</span><span v-if="curve.after"><i class="ln b" />조회수 반영</span><span v-if="curve.act"><i class="dt" />실제 낙찰가</span></p>
-          <svg viewBox="0 0 640 290" class="bpt-svg" role="img" aria-label="입찰가별 낙찰확률 곡선">
-            <g v-for="v in [0, 0.25, 0.5, 0.75, 1]" :key="v"><line x1="50" x2="620" :y1="curve.sy(v)" :y2="curve.sy(v)" class="grid" /><text x="42" :y="curve.sy(v) + 4" class="ax" text-anchor="end">{{ pct(v) }}</text></g>
-            <text v-for="(t, i) in curve.ticks" :key="t.x" :x="t.x" y="272" class="ax" :text-anchor="i === 0 ? 'start' : i === curve.ticks.length - 1 ? 'end' : 'middle'">{{ t.label }}</text>
-            <line v-if="curve.second" :x1="curve.second.x" :x2="curve.second.x" y1="20" y2="250" class="mk2" />
-            <line v-if="curve.act" :x1="curve.act.x" :x2="curve.act.x" y1="20" y2="250" class="mk" />
-            <text v-if="curve.act" :x="curve.act.x + 6" y="14" class="lb">{{ curve.act.label }}</text>
-            <path :d="curve.before" :class="['cv', curve.after ? 'a' : 'b']" />
-            <path v-if="curve.after" :d="curve.after" class="cv b" />
-            <g v-for="p in curve.pts" :key="p.x"><circle :cx="p.x" :cy="p.y" r="9" class="hit"><title>{{ p.tip }}</title></circle><circle :cx="p.x" :cy="p.y" r="3" class="dot"><title>{{ p.tip }}</title></circle></g>
-            <circle v-if="curve.act" :cx="curve.act.x" :cy="curve.act.y" r="5" class="act"><title>{{ curve.act.label }}</title></circle>
-          </svg>
-          <p v-if="curve.second" class="bpt-sub">회색 점선 · 2위 금액</p>
-        </div>
-      </div>
     </section>
 
     <!-- 입찰가별 낙찰확률 — 예상 낙찰가 한 숫자는 평균 7% 안팎 틀린다(6월~11-12 시험, 인원을 알아도 6%). 대신 낙찰확률은 말한 대로 맞았다
@@ -1222,6 +1174,10 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tile b { font-size: 19px; font-variant-numeric: tabular-nums; }
 .bpt-tile.key b { color: #1f5fe0; }
 .bpt-tile small { font-size: 12px; color: #4b5563; }
+.bpt-detail { border: 1px solid #e3e7ee; border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; background: #fbfcfe; }   /* 카드 안 상자 — 제목 15 · 800, 아이콘 없음 */
+.bpt-detail .bpt-h3 { display: flex; align-items: center; gap: 8px; }
+.bpt-detail .bpt-h3 small { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bpt-x { border: 1px solid #d5dbe5; background: #fff; border-radius: 6px; width: 24px; height: 24px; font-size: 12px; color: #4b5563; cursor: pointer; padding: 0; }
 .bpt-flow:has(.bpt-tile.wide) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr); }   /* 예상 낙찰가 카드가 둘 몫 */
 .bpt-qs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 2px; }
 .bpt-q { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border-radius: 8px; min-width: 0; }
