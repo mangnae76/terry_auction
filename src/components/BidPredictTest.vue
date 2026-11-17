@@ -1092,6 +1092,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-scroll { max-height: 420px; }
 .bpt-scroll thead th { position: sticky; top: 0; z-index: 1; }
 .bpt-tbl tbody tr.on td { background: #f5f8ff; }
+.bpt-tbl tbody tr.on td:first-child { box-shadow: inset 3px 0 0 #2b6df3; }   /* 고른 줄 왼쪽 파란 막대 — 매매수요 · 매각분석 표와 같게(2026-11-17 사용자) */
 .bpt-tbl tbody tr.off td { color: #9ca3af; }
 .bpt-link { border: 0; background: none; padding: 0; font: inherit; color: #1f5fe0; cursor: pointer; }
 .bpt-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
