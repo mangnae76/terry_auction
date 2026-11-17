@@ -912,10 +912,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <tr><th>종류별 물건수</th><td class="chips">
             <button type="button" :class="['bpt-fchip', { on: !fKind }]" @click="fKind = ''">전체<b>{{ daySum.kindAll }}</b><small v-if="daySum.total">/ {{ daySum.scopeN.toLocaleString('ko-KR') }}</small></button>
             <button v-for="k in daySum.kinds" :key="k.k" type="button" :class="['bpt-fchip', { on: fKind === k.k }]" :disabled="!k.mine" @click="pickF('kind', k.k)">{{ k.k }}<b>{{ k.mine }}</b><small v-if="daySum.total">/ {{ k.all.toLocaleString('ko-KR') }}</small></button></td></tr>
-          <tr><th>채권자별 물건수</th><td class="chips">
-            <button type="button" :class="['bpt-fchip', { on: !fCred }]" @click="fCred = ''">전체<b>{{ daySum.creds.reduce((s, r) => s + r.mine, 0) }}</b></button>
-            <button v-for="r in daySum.creds" :key="r.k" type="button" :class="['bpt-fchip', { on: fCred === r.k }]" @click="pickF('cred', r.k)">{{ r.k }}<b>{{ r.mine }}</b></button>
-            <small class="bpt-fnote">허그 = 주택도시보증공사 채권 · 그 밖 = 다른 채권자(단기매도 경쟁)</small></td></tr>
+          <!-- 채권자별 물건수 줄은 뺐다(2026-11-17 사용자 — 허그는 경쟁 대상이 아니라 거를 까닭이 없다). fCred 는 코드만 남김 -->
         </tbody>
       </table>
       <p class="bpt-sub">예측 · {{ daySum.dong }}만(다른 동은 목록만, 구현 예정) · / 뒤 숫자 · 그날 법원 전체(고른 계)</p>
