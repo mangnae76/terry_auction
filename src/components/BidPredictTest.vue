@@ -784,45 +784,6 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       </div>
     </section>
 
-    <section class="bpt-card bpt-tight">
-      <div class="bpt-grade-head">
-        <h3 class="bpt-h3">채점 <small>기간 안 모든 회차 · 그날 이전 자료로만</small></h3>
-        <div class="bpt-range"><input v-model="gradeFrom" type="date" aria-label="채점 시작일" /><span>~</span><input v-model="gradeTo" type="date" aria-label="채점 끝일" /></div>
-        <button type="button" class="bpt-btn line" :disabled="extBusy || !hitRounds.length || !recs.length" @click="loadExt">{{ extBusy ? '받는중' : '엘베자료' }}</button>
-        <button type="button" class="bpt-btn" :disabled="grading || !hitRounds.length" @click="runGrade">{{ grading ? '채점하는중' : '채점하기' }}</button>
-      </div>
-      <p v-if="extMsg" class="bpt-sub">엘베 · 세대수 · {{ extMsg }}{{ extReady ? ' · 채점하기를 누르면 + 엘베 칸이 같이 나옵니다' : '' }}</p>
-      <p v-if="gradeMsg" class="bpt-sub">{{ gradeMsg }}</p>
-      <p v-else-if="!hitRounds.length" class="bpt-sub">사건 차트 없음 · 동선택에 동을 적고 조회수수집 먼저</p>
-      <template v-if="grade">
-        <div class="bpt-grade">
-          <div class="bpt-tile"><span>맞힌 회차</span><b>{{ grade.total.n.toLocaleString('ko-KR') }}회차</b><small>매각 {{ grade.total.sold.toLocaleString('ko-KR') }} · 유찰 {{ (grade.total.n - grade.total.sold).toLocaleString('ko-KR') }}{{ grade.skipped ? ` · 배울 자료 모자라 뺌 ${grade.skipped}` : '' }}</small></div>
-          <div class="bpt-tile key"><span>매각 · 유찰 맞힘</span><b>{{ rate(grade.total.sell[1], grade.total.n) }}</b><small>조회수 없이 {{ rate(grade.total.sell[0], grade.total.n) }}<template v-if="grade.total.ext"> · + 엘베 <b>{{ rate(grade.total.sell[2], grade.total.n) }}</b></template></small></div>
-          <div class="bpt-tile key"><span>인원 구간 맞힘(매각된 것)</span><b>{{ rate(grade.total.band[1], grade.total.nb) }}</b><small>조회수 없이 {{ rate(grade.total.band[0], grade.total.nb) }}<template v-if="grade.total.ext"> · + 엘베 <b>{{ rate(grade.total.band[2], grade.total.nb) }}</b></template></small></div>
-          <div class="bpt-tile key"><span>낙찰가 평균 차이</span><b>{{ errPct(grade.total.err[1], grade.total.np) }}</b><small>조회수 없이 {{ errPct(grade.total.err[0], grade.total.np) }}<template v-if="grade.total.ext"> · + 엘베 <b>{{ errPct(grade.total.err[2], grade.total.np) }}</b></template> · {{ grade.total.np }}건</small></div>
-          <div class="bpt-tile key"><span>예상범위 안</span><b>{{ rate(grade.total.inR[1], grade.total.np) }}</b><small>조회수 없이 {{ rate(grade.total.inR[0], grade.total.np) }}<template v-if="grade.total.ext"> · + 엘베 <b>{{ rate(grade.total.inR[2], grade.total.np) }}</b></template> · 50%가 정상</small></div>
-        </div>
-        <div class="table-wrap bpt-tbl-wrap bpt-scroll">
-          <table class="bpt-tbl bpt-gradetbl">
-            <thead><tr><th>매각기일</th><th class="r">회차</th><th class="r">매각</th><th class="r">매각 · 유찰 맞힘</th><th class="r">인원 구간 맞힘</th><th class="r">낙찰가 평균 차이</th><th class="r">예상범위 안</th></tr></thead>
-            <tbody>
-              <tr v-for="g in grade.days" :key="g.date" :class="{ on: g.date === dayDate }" @click="goDay(g.date)">
-                <td><button type="button" class="bpt-link" @click.stop="goDay(g.date)">{{ g.date }}</button></td>
-                <td class="r">{{ g.n }}</td>
-                <td class="r">{{ g.sold }}</td>
-                <td class="r">{{ rate(g.sell[1], g.n) }}<small class="bpt-at">없이 {{ rate(g.sell[0], g.n) }}</small></td>
-                <td class="r">{{ rate(g.band[1], g.nb) }}<small class="bpt-at">없이 {{ rate(g.band[0], g.nb) }}</small></td>
-                <td class="r">{{ errPct(g.err[1], g.np) }}<small class="bpt-at">없이 {{ errPct(g.err[0], g.np) }}</small></td>
-                <td class="r">{{ g.np ? `${g.inR[1]} / ${g.np}` : '—' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="bpt-sub">{{ grade.from }} ~ {{ grade.to }} · 기일 {{ grade.days.length }}개 · 줄 누르면 그날 사건별 예측 · 실제응찰을 알아도 낙찰가 차이 약 7%(1등 금액은 사람마다 다름)</p>
-      </template>
-    </section>
-
-
     <section v-if="dayDate && goRows.length" class="bpt-card bpt-go bpt-tight">
       <h3 class="bpt-ttl">{{ Number(dayDate.slice(5, 7)) }}월 {{ Number(dayDate.slice(8)) }}일 ({{ WD[new Date(`${dayDate}T00:00:00`).getDay()] }}) 어디로 갈까 <small>달력에서 고른 날 · 고른 지역({{ regLabel }}) 법원 중 물건 많은 순 한두 곳</small></h3>
       <div class="bpt-tbl-wrap">
@@ -937,6 +898,45 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       </div>
       <p v-else class="bpt-sub">이 날 목록 없음 · 기일목록수집 또는 CSV 파일 넣기</p>
       <p class="bpt-sub">조회수 · 가장 늦게 모은 값(아래 모은 날) · 매각 뒤 값은 예측에 안 씀 · CSV엔 조회수 없음</p>
+    </section>
+
+    <!-- 채점은 맨 아래 — 평소 볼 건 아니고 모델이 계속 맞는지 볼 때만(2026-11-17 사용자) -->
+    <section class="bpt-card bpt-tight">
+      <div class="bpt-grade-head">
+        <h3 class="bpt-h3">채점 <small>기간 안 모든 회차 · 그날 이전 자료로만</small></h3>
+        <div class="bpt-range"><input v-model="gradeFrom" type="date" aria-label="채점 시작일" /><span>~</span><input v-model="gradeTo" type="date" aria-label="채점 끝일" /></div>
+        <button type="button" class="bpt-btn line" :disabled="extBusy || !hitRounds.length || !recs.length" @click="loadExt">{{ extBusy ? '받는중' : '엘베자료' }}</button>
+        <button type="button" class="bpt-btn" :disabled="grading || !hitRounds.length" @click="runGrade">{{ grading ? '채점하는중' : '채점하기' }}</button>
+      </div>
+      <p v-if="extMsg" class="bpt-sub">엘베 · 세대수 · {{ extMsg }}{{ extReady ? ' · 채점하기를 누르면 + 엘베 칸이 같이 나옵니다' : '' }}</p>
+      <p v-if="gradeMsg" class="bpt-sub">{{ gradeMsg }}</p>
+      <p v-else-if="!hitRounds.length" class="bpt-sub">사건 차트 없음 · 동선택에 동을 적고 조회수수집 먼저</p>
+      <template v-if="grade">
+        <div class="bpt-grade">
+          <div class="bpt-tile"><span>맞힌 회차</span><b>{{ grade.total.n.toLocaleString('ko-KR') }}회차</b><small>매각 {{ grade.total.sold.toLocaleString('ko-KR') }} · 유찰 {{ (grade.total.n - grade.total.sold).toLocaleString('ko-KR') }}{{ grade.skipped ? ` · 배울 자료 모자라 뺌 ${grade.skipped}` : '' }}</small></div>
+          <div class="bpt-tile key"><span>매각 · 유찰 맞힘</span><b>{{ rate(grade.total.sell[1], grade.total.n) }}</b><small>조회수 없이 {{ rate(grade.total.sell[0], grade.total.n) }}<template v-if="grade.total.ext"> · + 엘베 <b>{{ rate(grade.total.sell[2], grade.total.n) }}</b></template></small></div>
+          <div class="bpt-tile key"><span>인원 구간 맞힘(매각된 것)</span><b>{{ rate(grade.total.band[1], grade.total.nb) }}</b><small>조회수 없이 {{ rate(grade.total.band[0], grade.total.nb) }}<template v-if="grade.total.ext"> · + 엘베 <b>{{ rate(grade.total.band[2], grade.total.nb) }}</b></template></small></div>
+          <div class="bpt-tile key"><span>낙찰가 평균 차이</span><b>{{ errPct(grade.total.err[1], grade.total.np) }}</b><small>조회수 없이 {{ errPct(grade.total.err[0], grade.total.np) }}<template v-if="grade.total.ext"> · + 엘베 <b>{{ errPct(grade.total.err[2], grade.total.np) }}</b></template> · {{ grade.total.np }}건</small></div>
+          <div class="bpt-tile key"><span>예상범위 안</span><b>{{ rate(grade.total.inR[1], grade.total.np) }}</b><small>조회수 없이 {{ rate(grade.total.inR[0], grade.total.np) }}<template v-if="grade.total.ext"> · + 엘베 <b>{{ rate(grade.total.inR[2], grade.total.np) }}</b></template> · 50%가 정상</small></div>
+        </div>
+        <div class="table-wrap bpt-tbl-wrap bpt-scroll">
+          <table class="bpt-tbl bpt-gradetbl">
+            <thead><tr><th>매각기일</th><th class="r">회차</th><th class="r">매각</th><th class="r">매각 · 유찰 맞힘</th><th class="r">인원 구간 맞힘</th><th class="r">낙찰가 평균 차이</th><th class="r">예상범위 안</th></tr></thead>
+            <tbody>
+              <tr v-for="g in grade.days" :key="g.date" :class="{ on: g.date === dayDate }" @click="goDay(g.date)">
+                <td><button type="button" class="bpt-link" @click.stop="goDay(g.date)">{{ g.date }}</button></td>
+                <td class="r">{{ g.n }}</td>
+                <td class="r">{{ g.sold }}</td>
+                <td class="r">{{ rate(g.sell[1], g.n) }}<small class="bpt-at">없이 {{ rate(g.sell[0], g.n) }}</small></td>
+                <td class="r">{{ rate(g.band[1], g.nb) }}<small class="bpt-at">없이 {{ rate(g.band[0], g.nb) }}</small></td>
+                <td class="r">{{ errPct(g.err[1], g.np) }}<small class="bpt-at">없이 {{ errPct(g.err[0], g.np) }}</small></td>
+                <td class="r">{{ g.np ? `${g.inR[1]} / ${g.np}` : '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="bpt-sub">{{ grade.from }} ~ {{ grade.to }} · 기일 {{ grade.days.length }}개 · 줄 누르면 그날 사건별 예측 · 실제응찰을 알아도 낙찰가 차이 약 7%(1등 금액은 사람마다 다름)</p>
+      </template>
     </section>
   </div>
 </template>
