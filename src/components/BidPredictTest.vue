@@ -7,7 +7,7 @@
  */
 import InfoTip from './InfoTip.vue';
 import type { TipRow } from '../services/tipRows';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { getBuildingFacts } from '../services/buildingFacts';
 import type { BuildingFacts } from '../services/publicDataApi';
@@ -30,6 +30,8 @@ const dayName = ref('');
 const dayDate = ref('');
 const viewsText = ref('');
 const pick = ref('');
+/** 줄을 누르면 상세 카드가 보이게 굴린다 — 위 고정 머리(웹 브랜드 띠 · 탭 · 고정카드 약 170px) 아래로(2026-11-17 사용자) */
+watch(pick, async (k) => { if (!k) return; await nextTick(); const el = document.querySelector('.bpt-detail'); if (!el) return; window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 190, behavior: 'smooth' }); });
 const fileMsg = ref('');
 /** 표에 올릴 동(주소에 이 글이 있는 줄만, 비우면 전부) */
 const dongFilter = ref((() => { try { return (JSON.parse(localStorage.getItem(STORE_KEY) || 'null') as { dong?: string } | null)?.dong ?? '검암동'; } catch { return '검암동'; } })());
@@ -950,29 +952,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <p v-else class="bpt-sub">우리 입찰가 50% · 조회수 규칙 반영(없으면 비슷한 물건 인원 비율) · 줄 누르면 자세히</p>
     </section>
 
-    <!-- 입찰가별 낙찰확률 — 예상 낙찰가 한 숫자는 평균 7% 안팎 틀린다(6월~11-12 시험, 인원을 알아도 6%). 대신 낙찰확률은 말한 대로 맞았다
-         (50% → 실제 47%, 60% → 58%, 70% → 67%, 80% → 79%, 124건). 그래서 확률마다 입찰가를 보여 주고 고르게 한다(2026-11-15 사용자 '가장 근접한 답') -->
-    <section v-if="probRows.length" class="bpt-card bpt-prob">
-      <h3 class="bpt-h3">입찰가별 낙찰확률 <small>{{ daySum.dong }} · {{ bidDay(dayDate) }} · 입찰자가 있을 때 그 확률로 이기는 입찰가</small></h3>
-      <div class="table-wrap bpt-tbl-wrap">
-        <table class="bpt-tbl fixed">
-          <colgroup><col style="width: 108px" /><col /><col style="width: 92px" /><col style="width: 68px" /><col v-for="p in PROBS" :key="p" style="width: 88px" /><col v-if="probPast" style="width: 96px" /></colgroup>
-          <thead><tr><th>사건번호</th><th class="l">주소</th><th>최저가</th><th>응찰<br>확률</th><th v-for="p in PROBS" :key="p" class="r">낙찰확률<br>{{ Math.round(p * 100) }}%</th><th v-if="probPast" class="r">실제 낙찰가</th></tr></thead>
-          <tbody>
-            <tr v-for="r in probRows" :key="r.key">
-              <td>{{ caseLabel(r.key) }}</td>
-              <td class="l addr" :data-tip="r.addr || undefined" data-tip-trunc><button v-if="r.addr" type="button" :class="['bpt-copy', { done: copiedKey === r.key }]" :data-tip="copiedKey === r.key ? '복사됨' : '주소복사'" :aria-label="`${caseLabel(r.key)} 주소 복사`" @click.stop="copyAddr(r)"><svg v-if="copiedKey !== r.key" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg><svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg></button><span v-if="r.addr" class="a2"><span class="ln">{{ addrLines(r.addr)[0] }}</span><span v-if="addrLines(r.addr)[1]" class="ln">{{ addrLines(r.addr)[1] }}</span></span><template v-else>—</template></td>
-              <td><span class="bpt-nb">{{ won(r.min) }}</span></td>
-              <td>{{ r.pSold != null ? pct(r.pSold) : '—' }}</td>
-              <td v-for="(b, i) in r.bids" :key="i" :class="['r', { win: r.sold > 0 && b > r.sold, lose: r.sold > 0 && b <= r.sold }]"><span class="bpt-nb">{{ won(b) }}</span></td>
-              <td v-if="probPast" class="r act-sold"><span v-if="r.sold > 0" class="bpt-nb"><span v-if="hugWon(r.key)" class="bpt-hug sm" :data-tip="HUG_WON_TIP">허그</span>{{ won(r.sold) }}</span><template v-else>{{ r.failed ? '유찰' : '입찰 전' }}</template></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="bpt-sub">낙찰확률 · 누가 들어왔을 때 이길 확률(유찰이면 최저가로도 낙찰) · 지난 기일은 초록 = 그 값이면 낙찰, 회색 = 패찰 · 6월~11-12 시험에서 말한 확률대로 이김(50 → 47%, 60 → 58%, 70 → 67%, 80 → 79%) · 이길 때 1등보다 평균 7~11% 더 씀</p>
-    </section>
-
+    <!-- 사건 상세는 사건별 예측 표 바로 아래 — 입찰가별 낙찰확률 표가 길어 그 아래 두면 눌러도 안 보였다(2026-11-17 사용자) -->
     <section v-if="sel && selP && sel.target" class="bpt-card bpt-detail">
       <h3 class="bpt-h3">{{ caseLabel(sel.key) }} <small>{{ sel.addr }}</small></h3>
       <div class="bpt-flow">
@@ -1014,6 +994,29 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <p v-if="curve.second" class="bpt-sub">회색 점선 · 2위 금액</p>
         </div>
       </div>
+    </section>
+
+    <!-- 입찰가별 낙찰확률 — 예상 낙찰가 한 숫자는 평균 7% 안팎 틀린다(6월~11-12 시험, 인원을 알아도 6%). 대신 낙찰확률은 말한 대로 맞았다
+         (50% → 실제 47%, 60% → 58%, 70% → 67%, 80% → 79%, 124건). 그래서 확률마다 입찰가를 보여 주고 고르게 한다(2026-11-15 사용자 '가장 근접한 답') -->
+    <section v-if="probRows.length" class="bpt-card bpt-prob">
+      <h3 class="bpt-h3">입찰가별 낙찰확률 <small>{{ daySum.dong }} · {{ bidDay(dayDate) }} · 입찰자가 있을 때 그 확률로 이기는 입찰가</small></h3>
+      <div class="table-wrap bpt-tbl-wrap">
+        <table class="bpt-tbl fixed">
+          <colgroup><col style="width: 108px" /><col /><col style="width: 92px" /><col style="width: 68px" /><col v-for="p in PROBS" :key="p" style="width: 88px" /><col v-if="probPast" style="width: 96px" /></colgroup>
+          <thead><tr><th>사건번호</th><th class="l">주소</th><th>최저가</th><th>응찰<br>확률</th><th v-for="p in PROBS" :key="p" class="r">낙찰확률<br>{{ Math.round(p * 100) }}%</th><th v-if="probPast" class="r">실제 낙찰가</th></tr></thead>
+          <tbody>
+            <tr v-for="r in probRows" :key="r.key">
+              <td>{{ caseLabel(r.key) }}</td>
+              <td class="l addr" :data-tip="r.addr || undefined" data-tip-trunc><button v-if="r.addr" type="button" :class="['bpt-copy', { done: copiedKey === r.key }]" :data-tip="copiedKey === r.key ? '복사됨' : '주소복사'" :aria-label="`${caseLabel(r.key)} 주소 복사`" @click.stop="copyAddr(r)"><svg v-if="copiedKey !== r.key" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg><svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg></button><span v-if="r.addr" class="a2"><span class="ln">{{ addrLines(r.addr)[0] }}</span><span v-if="addrLines(r.addr)[1]" class="ln">{{ addrLines(r.addr)[1] }}</span></span><template v-else>—</template></td>
+              <td><span class="bpt-nb">{{ won(r.min) }}</span></td>
+              <td>{{ r.pSold != null ? pct(r.pSold) : '—' }}</td>
+              <td v-for="(b, i) in r.bids" :key="i" :class="['r', { win: r.sold > 0 && b > r.sold, lose: r.sold > 0 && b <= r.sold }]"><span class="bpt-nb">{{ won(b) }}</span></td>
+              <td v-if="probPast" class="r act-sold"><span v-if="r.sold > 0" class="bpt-nb"><span v-if="hugWon(r.key)" class="bpt-hug sm" :data-tip="HUG_WON_TIP">허그</span>{{ won(r.sold) }}</span><template v-else>{{ r.failed ? '유찰' : '입찰 전' }}</template></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="bpt-sub">낙찰확률 · 누가 들어왔을 때 이길 확률(유찰이면 최저가로도 낙찰) · 지난 기일은 초록 = 그 값이면 낙찰, 회색 = 패찰 · 6월~11-12 시험에서 말한 확률대로 이김(50 → 47%, 60 → 58%, 70 → 67%, 80 → 79%) · 이길 때 1등보다 평균 7~11% 더 씀</p>
     </section>
 
     <section v-if="score.rows.length" class="bpt-card">
