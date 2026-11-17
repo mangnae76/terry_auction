@@ -30,8 +30,7 @@ const dayName = ref('');
 const dayDate = ref('');
 const viewsText = ref('');
 const pick = ref('');
-/** 줄을 누르면 상세 카드가 보이게 굴린다 — 위 고정 머리(웹 브랜드 띠 · 탭 · 고정카드 약 170px) 아래로(2026-11-17 사용자) */
-watch(pick, async (k) => { if (!k) return; await nextTick(); const el = document.querySelector('.bpt-detail'); if (!el) return; window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 190, behavior: 'smooth' }); });
+/* 줄을 눌러도 화면을 굴리지 않는다 — 상세가 표 위에 있어 굴리면 위로 튀었다(2026-11-17 사용자) */
 const fileMsg = ref('');
 /** 표에 올릴 동(주소에 이 글이 있는 줄만, 비우면 전부) */
 const dongFilter = ref((() => { try { return (JSON.parse(localStorage.getItem(STORE_KEY) || 'null') as { dong?: string } | null)?.dong ?? '검암동'; } catch { return '검암동'; } })());
