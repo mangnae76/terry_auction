@@ -737,6 +737,8 @@ watch(dayDate, () => { fMine.value = false; fDong.value = dongFilter.value.trim(
 
 /* ===== 추천 · 어디로 갈까 — 추천 = 조회수로 본 입찰자 있을확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 허그가 올지 실수요자가 올지는 아무도 모른다, 2026-11-16 사용자).
  * 어디로 갈까 = 달력 숫자에서 그날 서울 · 경기 · 인천 법원을 물건 많은 순으로 한두 곳(한 법원에 오는 입찰자는 400~500명으로 비슷해 물건이 많을수록 건당 경쟁이 준다) ===== */
+/** '경쟁↓' 칩 툴팁(2026-11-17 사용자 — '추천'은 비싸게 들어가라는 뜻으로 읽혀 바꿈) */
+const REC_TIP = '입찰자 있을확률 30% 아래 · 예상응찰 1명 아래 · 입찰자가 적어 최저가 근처로 받을 가능성이 높습니다';
 const REC_P = 0.3; const REC_BIDS = 1;   // 신건은 예상 낙찰가가 없어(확률만) 추천에서 뺀다
 const recItems = computed(() => listItems.value.filter((it) => { const s = sellOf(it.key); return !!it.target && preds.value.has(it.key) && !!s && s.pSold < REC_P && s.expBids < REC_BIDS; }).sort((a, b) => sellOf(a.key)!.pSold - sellOf(b.key)!.pSold));
 const recKeys = computed(() => new Set(recItems.value.map((it) => it.key)));
@@ -836,7 +838,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <span v-for="(c, ci) in wk" :key="`${wi}-${ci}`" class="cell-wrap">
                 <button v-if="c" type="button" :class="['cell', { on: c.d === dayDate, today: c.today, has: c.lines.length || c.dongN || c.top, busy: c.busy }]" @click="dayDate = c.d">
                   <span class="dn">{{ c.day }}<small v-if="c.all" :class="['all', { busy: c.busy }]">{{ regAllOn || !calRegions.length ? '전국' : '합계' }} {{ c.all.toLocaleString('ko-KR') }}</small></span>
-                  <span v-if="c.top || c.total" class="ln top">{{ c.top ? c.top.court : c.court }} {{ (c.top ? c.top.n : c.total).toLocaleString('ko-KR') }}<b v-if="c.rec" class="recchip">추천 {{ c.rec }}</b></span>
+                  <span v-if="c.top || c.total" class="ln top">{{ c.top ? c.top.court : c.court }} {{ (c.top ? c.top.n : c.total).toLocaleString('ko-KR') }}<b v-if="c.rec" class="recchip">경쟁↓ {{ c.rec }}</b></span>
                   <template v-if="c.lines.length"><span v-for="x in c.lines" :key="x.label" class="ln">{{ x.label }}<i v-if="calDong">({{ x.dong }})</i></span></template>
                   <template v-else-if="c.top"><span v-for="x in c.top.depts" :key="x" class="ln">{{ x }}</span></template>
                   <span v-if="!c.lines.length && c.dongN" class="ln dg">{{ calDong || '동' }} {{ c.dongN }}</span>
@@ -892,7 +894,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="bpt-tbl-wrap">
         <table class="bpt-tbl bpt-gotbl">
           <colgroup><col style="width: 64px" /><col style="width: 110px" /><col style="width: 150px" /><col style="width: 260px" /><col /></colgroup>
-          <thead><tr><th>순위</th><th>법원</th><th>건수</th><th>종류</th><th class="rechd"><div class="bpt-recs hd"><span>추천</span><span>사건번호</span><span>건물</span><span>차수</span><span>입찰자 있을확률 · 예상응찰</span><span>우리 입찰가 50%</span><span>채권자</span></div></th></tr></thead>
+          <thead><tr><th>순위</th><th>법원</th><th>건수</th><th>종류</th><th class="rechd"><div class="bpt-recs hd"><span>경쟁↓</span><span>사건번호</span><span>건물</span><span>차수</span><span>입찰자 있을확률 · 예상응찰</span><span>우리 입찰가 50%</span><span>채권자</span></div></th></tr></thead>
           <tbody>
             <tr v-for="(g, i) in goRows" :key="g.court" :class="{ first: i === 0 }">
               <td><span :class="['bpt-rank', { one: i === 0 }]">{{ i + 1 }}순위</span></td>
@@ -902,10 +904,10 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td class="recs">
                 <div v-if="g.recs.length" class="bpt-recs">
                   <template v-for="r in g.recs" :key="r.key">
-                    <span class="bpt-rec">추천</span><button type="button" class="bpt-link" @click="pick = r.key">{{ caseLabel(r.key) }}</button><span class="pl">{{ r.place }}</span><span>{{ r.round }}차</span><span><b>{{ pct(r.pSold) }}</b> · {{ r.bids.toFixed(1) }}명</span><span class="nb">{{ r.bid50 != null ? won(r.bid50) : '—' }}</span><span><span v-if="isHug(r.key)" class="bpt-hug">허그</span></span>
+                    <span class="bpt-rec" :data-tip="REC_TIP">경쟁↓</span><button type="button" class="bpt-link" @click="pick = r.key">{{ caseLabel(r.key) }}</button><span class="pl">{{ r.place }}</span><span>{{ r.round }}차</span><span><b>{{ pct(r.pSold) }}</b> · {{ r.bids.toFixed(1) }}명</span><span class="nb">{{ r.bid50 != null ? won(r.bid50) : '—' }}</span><span><span v-if="isHug(r.key)" class="bpt-hug">허그</span></span>
                   </template>
                 </div>
-                <small v-else class="bpt-at">{{ g.listed ? '추천 없음 · 조회수 받은 사건 중 입찰자 있을확률 30% 아래 · 예상응찰 1명 아래가 없음' : '조회수수집 뒤' }}</small>
+                <small v-else class="bpt-at">{{ g.listed ? '경쟁↓ 없음 · 조회수 받은 사건 중 입찰자 있을확률 30% 아래 · 예상응찰 1명 아래가 없음' : '조회수수집 뒤' }}</small>
               </td>
             </tr>
           </tbody>
@@ -949,7 +951,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <thead><tr><th class="sort" @click="sortBy('key')">사건번호<i :class="['ar', { on: sortKey === 'key' }]">{{ sortKey === 'key' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="hd-addr">주소</th><th class="sort" @click="sortBy('year')">연식<i :class="['ar', { on: sortKey === 'year' }]">{{ sortKey === 'year' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('area')">전용<i :class="['ar', { on: sortKey === 'area' }]">{{ sortKey === 'area' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th>엘베</th><th class="r sort" @click="sortBy('views')">조회수<br>조회일<i :class="['ar', { on: sortKey === 'views' }]">{{ sortKey === 'views' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('round')">차수<i :class="['ar', { on: sortKey === 'round' }]">{{ sortKey === 'round' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('min')">최저가<i :class="['ar', { on: sortKey === 'min' }]">{{ sortKey === 'min' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('pSold')">입찰자<br>있을확률<i :class="['ar', { on: sortKey === 'pSold' }]">{{ sortKey === 'pSold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('bids')">예상<br>응찰<i :class="['ar', { on: sortKey === 'bids' }]">{{ sortKey === 'bids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('pred')">예상<br>낙찰가<i :class="['ar', { on: sortKey === 'pred' }]">{{ sortKey === 'pred' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('actBids')">실제<br>응찰<i :class="['ar', { on: sortKey === 'actBids' }]">{{ sortKey === 'actBids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('sold')">실제<br>낙찰가<i :class="['ar', { on: sortKey === 'sold' }]">{{ sortKey === 'sold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
           <tbody>
             <tr v-for="it in shownItems" :key="it.key" :class="{ on: pick === it.key, off: !preds.has(it.key), rec: isRec(it.key) }" @click="pick = pick === it.key ? '' : it.key">
-              <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button><span v-if="isRec(it.key)" class="bpt-rec under">추천</span></td>
+              <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button><span v-if="isRec(it.key)" class="bpt-rec under" :data-tip="REC_TIP">경쟁↓</span></td>
               <td class="l addr" :data-tip="it.addr || undefined" data-tip-trunc><button v-if="it.addr" type="button" :class="['bpt-copy', { done: copiedKey === it.key }]" :data-tip="copiedKey === it.key ? '복사됨' : '주소복사'" :aria-label="`${caseLabel(it.key)} 주소 복사`" @click.stop="copyAddr(it)"><svg v-if="copiedKey !== it.key" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg><svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg></button><span v-if="it.addr" class="a2"><span class="ln">{{ addrLines(it.addr)[0] }}</span><span v-if="addrLines(it.addr)[1]" class="ln">{{ addrLines(it.addr)[1] }}</span></span><template v-else>—</template></td>
               <td>{{ yearShow(it) ? `${yearShow(it)}` : '—' }}<small v-if="yearShow(it)" class="bpt-at">{{ buildingAgeOf(yearShow(it)!) }}년차</small></td>
               <td><template v-if="it.target?.area">{{ /아파트/.test(kindOf(it)) ? '—' : `${it.target.area.toFixed(2)}㎡` }}<small class="bpt-at">{{ /아파트/.test(kindOf(it)) ? `(${it.target.area.toFixed(2)})` : `${(it.target.area / 3.305785).toFixed(2)}평` }}</small></template><template v-else>—</template></td>
@@ -972,7 +974,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           </tbody>
         </table>
       </div>
-      <p v-if="useHits" class="bpt-sub">추천 · 입찰자 있을확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 사람이 안 들어오면 최저가로 낙찰) · 머리글 ▲▼ 로 정렬, 처음은 입찰자 있을확률 낮은 순 · 허그 · 채권자가 허그(주택도시보증공사)면 예상 낙찰가 % 앞에 칩, 예상 낙찰가는 그날 이전 같은 차수 허그 채권 매각의 낙찰가÷감정가 중앙값 · 조회일 · 누적에 넣은 마지막 날 · 빨간 '~11.14'는 그날까지만 모은 것(매각 전날까지 못 모음), 조회수수집 다시 · 예상응찰 · 입찰자 있을 때 · 신건은 확률만 · 줄 누르면 자세히</p>
+      <p v-if="useHits" class="bpt-sub">경쟁↓ · 입찰자 있을확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 사람이 안 들어오면 최저가로 낙찰) · 머리글 ▲▼ 로 정렬, 처음은 입찰자 있을확률 낮은 순 · 허그 · 채권자가 허그(주택도시보증공사)면 예상 낙찰가 % 앞에 칩, 예상 낙찰가는 그날 이전 같은 차수 허그 채권 매각의 낙찰가÷감정가 중앙값 · 조회일 · 누적에 넣은 마지막 날 · 빨간 '~11.14'는 그날까지만 모은 것(매각 전날까지 못 모음), 조회수수집 다시 · 예상응찰 · 입찰자 있을 때 · 신건은 확률만 · 줄 누르면 자세히</p>
       <p v-else class="bpt-sub">예상 낙찰가 · 조회수 규칙 반영(없으면 비슷한 물건 인원 비율) · 줄 누르면 자세히</p>
     </section>
 
@@ -1160,7 +1162,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-day .bpt-tbl th, .bpt-day .bpt-tbl td, .bpt-prob .bpt-tbl th, .bpt-prob .bpt-tbl td { padding-left: 5px; padding-right: 5px; text-align: center; }   /* 1440 화면 안에 들게 — 칸 폭 합 1,236 px, 화면 1280 */   /* 사건별 예측은 머리 · 내용 모두 가운데(2026-11-14 사용자) */
 .bpt-day .bpt-tbl td.act-sold { font-weight: 700; }
 /* 추천 줄 · 칩 — 조회수로 본 경쟁 적은 사건(2026-11-16) */
-.bpt-tbl td .bpt-rec, .bpt-recs .bpt-rec { display: inline-flex; align-items: center; justify-content: center; height: 20px; padding: 0 6px; border-radius: 4px; background: #e8f7ee; color: #15803d; font-size: 12px; font-weight: 700; }
+.bpt-tbl td .bpt-rec, .bpt-recs .bpt-rec { display: inline-flex; align-items: center; justify-content: center; height: 20px; padding: 0 6px; border-radius: 4px; background: #e8f7ee; color: #15803d; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .bpt-tbl td .bpt-rec.under { display: block; width: max-content; margin: 2px auto 0; height: 18px; line-height: 18px; }   /* 사건번호 아래 한 줄 — 칸을 따로 두지 않는다(표가 옆으로 넘치지 않게) */
 .bpt-day .bpt-tbl tbody tr.rec td { background: #f3fbf6; }
 .bpt-day .bpt-tbl tbody tr.rec.on td { background: #fff1f3; }
@@ -1186,7 +1188,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-gotbl tbody tr.first td { background: #f3fbf6; }
 .bpt-rank { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; background: #eef3ff; color: #1d4ed8; font-size: 12px; font-weight: 700; }
 .bpt-rank.one { background: #e8f7ee; color: #15803d; }
-.bpt-recs { display: grid; grid-template-columns: 46px 112px minmax(140px, 1fr) 36px 150px 104px 44px; gap: 3px 8px; align-items: center; justify-items: center; font-size: 12.5px; }   /* 말머리(hd)와 줄이 같은 칸 폭 — 세로로 맞는다 */
+.bpt-recs { display: grid; grid-template-columns: 52px 112px minmax(140px, 1fr) 36px 150px 104px 44px; gap: 3px 8px; align-items: center; justify-items: center; font-size: 12.5px; }   /* 말머리(hd)와 줄이 같은 칸 폭 — 세로로 맞는다 */
 .bpt-recs .pl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .bpt-recs .nb { font-variant-numeric: tabular-nums; }
 /* 허그 칩(남색) — 예상 낙찰가 % 앞에 작게(채권자 칸은 뺐다, 2026-11-17 사용자) */
