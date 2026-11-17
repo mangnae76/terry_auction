@@ -653,7 +653,8 @@ const daySum = computed(() => {
 const nMine = computed(() => items.value.filter((it) => mineKeys.value.has(it.key)).length);
 /** 단추로 거른 줄 */
 const shownItems = computed(() => {
-  const rows = listItems.value.filter((it) => (!fMine.value || mineKeys.value.has(it.key)) && (!fDept.value || deptOf(it.key) === fDept.value) && (!fStat.value || statOf(it) === fStat.value) && (!fKind.value || kindOf(it) === fKind.value) && (!fRound.value || roundOf(it) === fRound.value) && (!fCred.value || credOfIt(it) === fCred.value));
+  // 선정물건만보기는 다른 거르기(계 · 현황 · 종류 · 차수)를 덮는다 — 리베라(도시형)가 '다세대' 칩에 걸려 안 보이는데 숫자만 2로 찍혔다(2026-11-17 사용자)
+  const rows = listItems.value.filter((it) => (fMine.value ? mineKeys.value.has(it.key) : (!fDept.value || deptOf(it.key) === fDept.value) && (!fStat.value || statOf(it) === fStat.value) && (!fKind.value || kindOf(it) === fKind.value) && (!fRound.value || roundOf(it) === fRound.value) && (!fCred.value || credOfIt(it) === fCred.value)));
   const k = sortKey.value; if (!k) return rows;
   if (k === 'key') return [...rows].sort((a, b) => sortDir.value * a.key.localeCompare(b.key));
   const off = (it: Item) => (preds.value.has(it.key) ? 0 : 1);   // 예측 없는 줄(신건 · 자료 없음)은 어떤 정렬이든 맨 아래
