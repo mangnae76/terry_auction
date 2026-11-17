@@ -539,6 +539,9 @@ button { cursor: pointer; }
    (지역분석 자리값(고르는 줄 46px)을 그대로 받아 머리 카드와 탭 줄 사이로 아래 내용이 비쳐 보였다) */
 .app-market[data-s="sonq"] .adm-tabs-top { top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px)) !important; margin-top: 8px !important; clip-path: inset(-8px -100vmax 0 -100vmax) !important; }
    /* 경로는 탭 줄 오른쪽으로 갔다 — 빈 줄을 남기지 않는다 */
+/* 물건목록 › 손품조사 네모 탭 줄(매매수요 · 시세분석 · 매각분석) — 물건 머리 카드 바로 아래 붙박이(2026-11-17 사용자: 권리분석 뒤 화면의 네모 탭은 틀 고정). 띠는 지역분석 탭 줄과 같은 꼴 */
+.app-market[data-s="son"].item-son { --boxtab-h: 40px; }
+.app-market[data-s="son"].item-son .adm-tabs-top { position: sticky !important; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px)) !important; z-index: 21; margin-top: 0 !important; padding-top: 6px; background: var(--bg); box-shadow: 0 0 0 100vmax var(--bg); clip-path: inset(0 -100vmax 0 -100vmax); }
 /* 입지/개별성 — 제목 · ① · ② 를 상자 하나로 묶는다(손품조사의 단락 상자 그대로) */
 /* 물건분석 줄 맞춤 — 흰 카드는 머리 카드와 같은 시작 · 끝선(바깥 여백 0), 카드 안 제목 · 내용은 머리 카드 안 회색 칸과 같은 안쪽 선(25px) */
 /* 시장분석 › 물건분석(sonq)도 같은 카드 규칙 — 빠져 있어 가격분석 아래 흰 상자 안쪽 여백이 0이었다(2026-11-03) */
@@ -1105,7 +1108,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-manage { display: grid; gap: 12px; }   /* 위 수집 줄 상자와 사이 가르는 선 없이(2026-11-06) */
 /* 본문 — 왼쪽 검색조건 · 오른쪽 결과 */
 .sx-main { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 12px; align-items: start; }
-.sx-filters { padding: 16px; display: grid; gap: 14px; position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px) + 12px); }   /* 위 붙박이 고정카드 아래에 붙는다 */
+.sx-filters { padding: 16px; display: grid; gap: 14px; position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px) + var(--boxtab-h, 0px) + 12px); }   /* 위 붙박이 고정카드 아래에 붙는다 */
 .sx-f { display: grid; gap: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
 .sx-f select, .sx-pair input { width: 100%; min-width: 0; height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 500; }
 .sx-f select.ph { color: var(--faint); }
@@ -1197,9 +1200,9 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 /* 분석결과 — 감정가를 적으면 예상 입찰가 두 칸이 바로 바뀐다 */
 .sx-hero { padding: 16px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }   /* 감정가 · 평균 · 중앙값 세 칸(평당가 칸 뺌 2026-11-17) */
 /* 매각분석 위 '○○동 · 연립다세대' 상자(감정가 · 예상 입찰가)는 내비게이터 — 내려도 위에 붙어 있다(사건 고정카드 바로 아래, 2026-11-12 사용자 '틀 고정') */
-.sx-results > .sx-hero { position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px) + 8px); z-index: 19; box-shadow: 0 6px 16px rgba(17, 24, 39, .08); }
+.sx-results > .sx-hero { position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px) + var(--boxtab-h, 0px) + 8px); z-index: 19; box-shadow: 0 6px 16px rgba(17, 24, 39, .08); }
 /* 시세분석 내비게이터도 같은 자리에 붙는다(SonpumPricePage .pa.stick .est) — 선정물건 손품조사는 매각분석 머리와 같은 높이, 시장분석 시세예측은 검색 띠 아래(2026-11-13 사용자) */
-.app-market[data-s="son"] { --pa-stick-top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px)); }   /* 틈 없이 — 머리 상자가 위 안쪽 여백으로 대신 띄운다 */
+.app-market[data-s="son"] { --pa-stick-top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px) + var(--boxtab-h, 0px)); }   /* 틈 없이 — 머리 상자가 위 안쪽 여백으로 대신 띄운다 */
 .app-market[data-s="sonq"] { --pa-stick-top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 60px); }
 .sx-results > .sx-hero { box-shadow: 0 -9px 0 0 var(--bg), 0 6px 16px rgba(17, 24, 39, .08) !important; }   /* 고정카드와 사이 8px 틈 — 아래 글이 비치지 않게 바탕색으로 덮는다(2026-11-15) */
 .sx-results > .sx-card:not(.sx-hero) { position: relative; z-index: 0; }   /* 지도 도구 · 핀이 붙박이 상자 위로 올라오지 않게 */
@@ -1729,6 +1732,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 분석 결과 — 탭 셋 · 카드들(상자 없이 왼쪽 칸에 카드가 쌓인다) */
 .rt-res { display: grid; gap: 12px; min-width: 0; }
 .cm-tabs { --boxtab-on: var(--surface); position: relative; height: 34px; margin: 0 0 12px; box-sizing: border-box; }
+/* 시장분석 › 매각분석 탭 줄(매각사례 · 낙찰가예측) — 물건 머리 카드(#sonShell) 바로 아래 붙박이(2026-11-17 사용자) */
+.market-content { --boxtab-h: 40px; }
+.market-content > .cm-tabs.sale-tabs { position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px)); z-index: 21; padding-top: 6px; height: 40px; background: var(--bg); box-shadow: 0 0 0 100vmax var(--bg); clip-path: inset(0 -100vmax 0 -100vmax); }
 .cm-tabs::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 0; width: 100vw; height: 1px; background: var(--boxtab-line); z-index: 3; pointer-events: none; }   /* 밑선은 화면 끝에서 끝까지 — 낙찰이후 장 탭과 같게 */   /* 커뮤니티 박스형 탭 — 고른 탭 바탕은 페이지 바탕과 같게 */
 .rr-tabs { --boxtab-on: var(--surface); position: relative; height: 34px; box-sizing: border-box; }   /* 손품조사 수요분석 · 시세분석 탭 줄과 같은 높이 34 */
 /* 탭 밑선 — 오른쪽 서류 올리기 상자 끝까지(왼쪽 칸 + 사이 12 + 오른쪽 칸 380) */
@@ -4624,7 +4630,8 @@ html, body { overflow-x: clip; }
 .app-page[data-k="postwin"] .pw-webhead .ih-top { min-height: 28px; }
 .app-page[data-k="postwin"] .pw-webhead .ih-line { min-height: 26px; align-items: center; }
 .app-page[data-k="postwin"] .pw-webhead .ih-prop { min-height: 56px; box-sizing: border-box; }
-.app-page[data-k="postwin"] .pw-chaptabs { position: relative; height: 34px; box-sizing: border-box; margin: 0 !important; border-bottom: 0 !important; overflow: visible !important; }
+/* 낙찰이후 장 탭(진행절차 · 명도분석 · …) — 위 사건 머리 띠(.pw-webhead, 높이는 --pw-head-h 로 잰다) 바로 아래 붙박이(2026-11-17 사용자) */
+.app-page[data-k="postwin"] .pw-chaptabs { position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--pw-head-h, 54px)); z-index: 21; height: 34px; box-sizing: border-box; margin: 0 !important; border-bottom: 0 !important; overflow: visible !important; background: var(--bg); box-shadow: 0 0 0 100vmax var(--bg); clip-path: inset(-6px -100vmax 0 -100vmax); }
 .app-page[data-k="postwin"] .pw-chaptabs::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 0; width: 100vw; height: 1px; background: var(--boxtab-line); z-index: 3; pointer-events: none; }
 .app-page[data-k="postwin"] .pw-crumbrow { position: relative; z-index: 4; height: 0; margin: 0 !important; padding: 0 !important; }
 .app-page[data-k="postwin"] .pw-crumbrow [data-crumb-slot] { position: absolute; right: -2px; top: 15px; }   /* 탭 줄(10px 아래) 안에서 손품조사 경로와 같은 높이 · 끝 */
@@ -4814,7 +4821,7 @@ span.cal-day.has { cursor: help; }
   /* 고정은 머리띠 · 하위 탭까지만 */
   .toolbar-shell, body.has-subtabs .toolbar-shell { position: relative; top: auto; }
   .app-page[data-k="postwin"] .pw-webhead, .app-page[data-k="finance"] .fin-shell .fin-toolbar, .mk-scaffold .mk-bar,
-  .app-market:is([data-k="dong"], [data-k="case"]) :is(.adm-bar, .adm-tabs-top) { position: relative !important; top: auto !important; }
+  .app-market:is([data-k="dong"], [data-k="case"]) :is(.adm-bar, .adm-tabs-top), .app-market[data-s="son"].item-son .adm-tabs-top, .market-content > .cm-tabs.sale-tabs, .app-page[data-k="postwin"] .pw-chaptabs { position: relative !important; top: auto !important; }
   /* 하위 탭 — 경로는 감추고 탭은 가로로 밀어 본다(맨 앞 위치 이름도 뺀다 — 머리 메뉴가 접혀 있어 탭 자리가 먼저) */
   .subtabs > .wrap { gap: 0; }
   .sub-crumb, .subtabs > .wrap > .sub-crumb-left { display: none !important; }
@@ -10652,10 +10659,11 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     /* 물건상세 위 고정 상자(사건 요약) 높이 — 그 아래에 붙는 것(예상수익분석 제목 · A~D 칩)이 이 값만큼 더 내려 선다 */
     /* 보이는 것을 고른다 — 시장분석 물건분석의 머리 카드(#sonShell)도 같은 틀(.item-shell)이라, 숨은 물건상세 것을 먼저 집으면 높이가 안 맞았다 */
     const shell = [...document.querySelectorAll('.item-shell')].find((x) => x.offsetParent);
-    setRootVar('--item-shell-h', `${shell ? shell.offsetHeight : 0}px`);   /* 안 보이면 0 — 앞 화면 높이가 남으면 물건분석 탭 줄이 그만큼 아래 붙어 그 틈으로 지도 · 상자가 비쳤다 */
+    setRootVar('--item-shell-h', `${shell ? shell.offsetHeight : 0}px`);
+    const pwHead = document.querySelector('.pw-webhead'); if (pwHead && pwHead.offsetParent) setRootVar('--pw-head-h', `${pwHead.offsetHeight}px`);   /* 낙찰이후 장 탭이 그 아래 붙는다 */   /* 안 보이면 0 — 앞 화면 높이가 남으면 물건분석 탭 줄이 그만큼 아래 붙어 그 틈으로 지도 · 상자가 비쳤다 */
   };
   syncStickTop();
-  try { new ResizeObserver(syncStickTop).observe(document.querySelector('.gnb')); } catch (e) { window.addEventListener('resize', syncStickTop); }
+  try { const ro = new ResizeObserver(syncStickTop); ro.observe(document.querySelector('.gnb')); ro.observe(document.body); } catch (e) { window.addEventListener('resize', syncStickTop); }   /* body 도 — 물건 머리 카드 · 낙찰이후 머리 띠가 나중에 그려지거나 높이가 바뀌어도 잰다 */
   /* 스크롤 — 화면을 한 번 그릴 때 한 번만(스크롤 신호는 그보다 훨씬 자주 온다) */
   let scrollTick = 0;
   window.addEventListener('scroll', () => { if (scrollTick) return; scrollTick = requestAnimationFrame(() => { scrollTick = 0; syncStickTop(); markStuck(); }); }, { passive: true });
