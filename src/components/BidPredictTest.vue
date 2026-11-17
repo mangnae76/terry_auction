@@ -951,8 +951,12 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-box { border: 1px solid #e3e7ee; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 260px; }
 .bpt-box.grow { flex: 1 1 420px; }
 .bpt-pair { display: flex; flex-wrap: wrap; gap: 8px 14px; }   /* 법원 · 동선택 한 줄 */
+/* 수집 상자 — 법원 · 동선택 칸이 기간 줄 오른쪽 끝까지 고르게(2026-11-17 사용자): 이름표 · 칸 · 이름표 · 칸 격자, 두 칸 같은 폭 */
+.bpt-colbox .bpt-pair { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
+.bpt-colbox .bpt-pair .bpt-date { display: contents; }
+.bpt-colbox .bpt-pair .court { width: 100%; min-width: 0; }
 /* 수집 상자 — 폭은 법원 · 동선택 줄이 정한다. 기간 · 단추 · 진행줄 · 안내 · 파일 칸은 그 오른쪽 끝(검암동 칸 끝)까지만 늘고 글은 그 안에서 줄내림 */
-.bpt-colbox { flex: none; width: max-content; }
+.bpt-colbox { flex: none; width: 394px; }   /* 폭 고정 — 법원 · 동선택 칸이 늘어나는 격자라 max-content 로는 폭을 못 정한다 */
 .bpt-colbox > :not(.bpt-pair):not(.bpt-colh) { contain: inline-size; }
 .bpt-colbox .bpt-range { flex: 1 1 auto; min-width: 0; }
 .bpt-colbox .bpt-range input { flex: 1 1 0; min-width: 0; }
@@ -1093,7 +1097,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tile small { font-size: 12px; color: #4b5563; }
 .bpt-detail { border: 1px solid #e3e7ee; border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; background: #fbfcfe; }   /* 카드 안 상자 — 제목 15 · 800, 아이콘 없음 */
 .bpt-detail .bpt-h3 { display: flex; align-items: center; gap: 8px; }
-.bpt-detail .bpt-h3 small { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bpt-detail .bpt-h3 small { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: #111827; }   /* 주소는 검정으로 또렷하게(2026-11-17 사용자) */
 .bpt-x { border: 1px solid #d5dbe5; background: #fff; border-radius: 6px; width: 24px; height: 24px; font-size: 12px; color: #4b5563; cursor: pointer; padding: 0; }
 .bpt-flow:has(.bpt-tile.wide) { grid-template-columns: 170px 170px minmax(0, 1fr); }   /* 왼쪽 두 칸 170 · 나머지는 입찰가별 낙찰확률 일곱 칸(2026-11-17 사용자) */
 .bpt-qs { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 2px; }
