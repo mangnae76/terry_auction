@@ -7,7 +7,7 @@
  */
 import InfoTip from './InfoTip.vue';
 import type { TipRow } from '../services/tipRows';
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { getBuildingFacts } from '../services/buildingFacts';
 import type { BuildingFacts } from '../services/publicDataApi';
@@ -420,16 +420,6 @@ const preds = computed(() => {
 
 const sel = computed(() => items.value.find((it) => it.key === pick.value && preds.value.has(it.key)) ?? items.value.find((it) => preds.value.has(it.key)) ?? null);
 const selP = computed(() => (sel.value ? preds.value.get(sel.value.key) ?? null : null));
-
-/** 맞혀보기 — 팔린 사건만, 조회수 반영 전 · 후 */
-const score = computed(() => {
-  const rows = items.value.filter((it) => it.result && it.result.sold > 0 && preds.value.has(it.key));
-  const e = (f: (p: Pred) => ReturnType<typeof priceDist> | null) => {
-    const xs = rows.map((it) => { const d = f(preds.value.get(it.key)!); return d ? { d: it.result!.sold / d.median - 1, inR: it.result!.sold >= d.lo && it.result!.sold <= d.hi } : null; }).filter((x): x is { d: number; inR: boolean } => !!x);
-    return xs.length ? { n: xs.length, mae: xs.reduce((s, x) => s + Math.abs(x.d), 0) / xs.length, inR: xs.filter((x) => x.inR).length } : null;
-  };
-  return { rows, before: e((p) => p.before), after: e((p) => p.after) };
-});
 
 /** 내 낙찰확률 — 아무도 안 올 확률 + (누가 올 확률 × 그 사람들보다 높게 쓸 확률). 예전엔 '누가 온다'고만 쳐서
  *  응찰확률이 2%인 물건도 최저가에서 0%로 그렸다(2026-11-14 사용자 — 파인힐타운이면 최저가를 쓰면 된다) */
@@ -928,33 +918,6 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <p v-else class="bpt-sub">낙찰확률 50% · 조회수 규칙 반영(없으면 비슷한 물건 인원 비율) · 줄 누르면 자세히</p>
     </section>
 
-    <section v-if="score.rows.length" class="bpt-card">
-      <h3 class="bpt-h3">맞혀보기 <small>결과가 있는 매각 {{ score.rows.length }}건 · {{ useHits ? '그날 이전 회차로만 배운 규칙(그날 결과는 안 봄)' : '그날 이전 자료와 자기 사건을 뺀 조회수 규칙만 사용' }}</small></h3>
-      <div class="bpt-score">
-        <div v-if="score.before" class="bpt-tile"><span>조회수 반영 전</span><b>평균 차이 {{ (score.before.mae * 100).toFixed(1) }}%</b><small>예상범위 안 {{ score.before.inR }} / {{ score.before.n }}</small></div>
-        <div v-if="score.after" class="bpt-tile key"><span>조회수 반영 후</span><b>평균 차이 {{ (score.after.mae * 100).toFixed(1) }}%</b><small>예상범위 안 {{ score.after.inR }} / {{ score.after.n }}</small></div>
-        <div v-else class="bpt-tile"><span>조회수 반영 후</span><b>—</b><small>결과 있는 사건 조회수가 6건 이상이면 나옵니다</small></div>
-      </div>
-      <div v-if="rule" class="bpt-two">
-        <div class="bpt-box">
-          <h3>조회수와 응찰 인원</h3>
-          <svg viewBox="0 0 390 200" class="bpt-svg" role="img" aria-label="조회수와 응찰 인원 점 그림">
-            <line x1="40" x2="370" y1="170" y2="170" class="grid" />
-            <text x="40" y="190" class="ax">0</text><text x="370" y="190" class="ax" text-anchor="end">조회 {{ rule.vMax.toLocaleString('ko-KR') }}</text>
-            <text x="34" y="24" class="ax" text-anchor="end">{{ rule.bMax }}명</text><text x="34" y="174" class="ax" text-anchor="end">0</text>
-            <path v-if="rule.line" :d="rule.line" class="cv b" />
-            <circle v-for="(d, i) in rule.dots" :key="i" :cx="d.x" :cy="d.y" r="5" class="act"><title>{{ d.tip }}</title></circle>
-          </svg>
-        </div>
-        <div class="bpt-box">
-          <h3>배운 규칙</h3>
-          <p v-if="rule.vm" class="bpt-rule">조회수가 2배가 되면 응찰 인원이 약 {{ rule.twice!.toFixed(2) }}배</p>
-          <p v-else class="bpt-rule">아직 배우지 못했습니다(결과 있는 사건 6건 이상 필요)</p>
-          <p class="bpt-sub">점 하나 · 사건 하나(유찰은 0명) · 가로 조회수 · 세로 실제응찰</p>
-        </div>
-      </div>
-    </section>
-
     <section v-if="dayDate" class="bpt-card">
       <h3 class="bpt-h3">DB에 들어 있는 목록 <small>{{ dayDate }} · {{ dongFilter.trim() || '전체' }} {{ dbList.length.toLocaleString('ko-KR') }}건 / 이 날 전체 {{ dbRows.length.toLocaleString('ko-KR') }}건</small></h3>
       <div v-if="dbList.length" class="table-wrap bpt-tbl-wrap bpt-scroll">
@@ -1121,8 +1084,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl tbody tr.on td { background: #f5f8ff; }
 .bpt-tbl tbody tr.off td { color: #9ca3af; }
 .bpt-link { border: 0; background: none; padding: 0; font: inherit; color: #1f5fe0; cursor: pointer; }
-.bpt-flow, .bpt-score { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.bpt-score { grid-template-columns: repeat(2, minmax(0, 260px)); }
+.bpt-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .bpt-tile { border: 1px solid #e3e7ee; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; }
 .bpt-tile.key { background: #f5f8ff; border-color: #dbe5fa; }
 .bpt-tile span { font-size: 12px; color: #4b5563; }
@@ -1227,6 +1189,5 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-fchip b.all { color: #111827; min-width: 3ch; }
 .bpt-fchip.big { height: 32px; font-size: 14px; }
 .bpt-fchip:disabled { opacity: .5; cursor: default; }
-.bpt-rule { margin: 0; font-size: 15px; font-weight: 700; color: #111827; }
 @media (max-width: 900px) { .bpt-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bpt-two { grid-template-columns: minmax(0, 1fr); } }
 </style>
