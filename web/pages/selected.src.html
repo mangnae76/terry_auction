@@ -1166,7 +1166,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-itemline .dt { color: var(--text-2, var(--muted)); } .sx-itemline .dt em { font-style: normal; font-weight: 800; color: var(--blue); }
 .sx-topband .sx-pickanchor { flex: 0 0 auto; position: relative; }
 .sx-topband.one { flex-wrap: nowrap; }   /* 물건으로 — 한 줄에. 넘치면 주소만 줄임표 */
-body.sale-predict #sonShell .sx-mode { display: none; }   /* 낙찰가예측 탭에선 물건으로 · 지역으로 토글 없음 */
+body.sale-predict #sonShell :is(.sx-mode, .sx-vsep) { display: none; }   /* 낙찰가예측 탭에선 물건으로 · 지역으로 토글과 그 옆 세로 가름선 없음 */
 .sx-plab.off { opacity: .5; }
 .sx-pseg button.sx-lock { opacity: .4; cursor: not-allowed; }   /* 지역으로 — 유사도 잠금 */
 .sx-offtx { font-size: 12.5px; font-weight: 400; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
