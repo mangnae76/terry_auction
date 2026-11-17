@@ -172,11 +172,9 @@ const saleSnapAt = computed(() => { const t = saleSnap.value?.at; if (!t) return
 const saleBids = computed(() => {
   const s0 = saleSnap.value; if (!s0) return [];
   const amt = (rate: number | null) => (s0.my > 0 && rate != null ? `${Math.round(s0.my * rate).toLocaleString('ko-KR')}원` : '-');
-  const pyV = s0.py && s0.myPy > 0 ? Math.round(s0.py * s0.myPy) : 0;
   return [
     { k: '예상 입찰가 · 평균 매각가율', v: amt(s0.avg), note: s0.avg != null ? `감정가 × ${salePct(s0.avg)}` : '' },
-    { k: '예상 입찰가 · 중앙값 매각가율', v: amt(s0.med), note: s0.med != null ? `감정가 × ${salePct(s0.med)}` : '' },
-    { k: '예상 입찰가 · 평균 매각평당가', v: pyV ? `${pyV.toLocaleString('ko-KR')}원` : '-', note: s0.py ? `평당 ${saleWon(s0.py)} × ${s0.myPy.toFixed(1)}평` : '매각평당가를 낼 매각사례가 없습니다' },
+    { k: '예상 입찰가 · 중앙값 매각가율', v: amt(s0.med), note: s0.med != null ? `감정가 × ${salePct(s0.med)}` : '' },   /* 평균 매각평당가 줄은 뺌 — 웹 매각분석과 같이(2026-11-17 사용자) */
   ];
 });
 const saleMetrics = computed<Array<[string, string, boolean?]>>(() => {
