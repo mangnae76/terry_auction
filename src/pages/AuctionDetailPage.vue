@@ -6771,10 +6771,8 @@ watch(() => cmpUnitClamp.value, (v) => {
 });
 const cmpUnitEst = computed(() => {
   const v = cmpUnitClamp.value; if (!v) return '-';
-  // ② 아파트 — 억이 아니라 원 단위 그대로(2026-11-15 사용자)
-  if (isApartment.value) { const w = (n: number) => Math.round(n).toLocaleString('ko-KR'); return Math.round(v.lo) === Math.round(v.hi) ? `${w(v.lo)}원` : `${w(v.lo)} ~ ${w(v.hi)}원`; }
-  const a = v.lo / 1e8; const z = v.hi / 1e8;
-  return Math.abs(a - z) < 0.005 ? `${eokNum(a)}억` : `${eokNum(a)}~${eokNum(z)}억`;
+  // 원 단위 그대로 — 아파트는 2026-11-15, 빌라도 2026-11-17 사용자
+  const w = (n: number) => Math.round(n).toLocaleString('ko-KR'); return Math.round(v.lo) === Math.round(v.hi) ? `${w(v.lo)}원` : `${w(v.lo)} ~ ${w(v.hi)}원`;
 });
 /** 예상가 아래 계산식 한 줄 — '8.10억 × (1 − 5%) = 7.70억'(어디서 나온 숫자인지 바로 보이게, 2026-11-11 사용자) */
 const cmpUnitFormula = computed(() => {
@@ -6784,9 +6782,7 @@ const cmpUnitFormula = computed(() => {
   return `${cmpEok(b)} × (1 ${p})${repairMan() > 0 ? ` + 수리 ${repairMan().toLocaleString('ko-KR')}만` : ''} = ${rawTx}`;
 });
 const unitAdjText = computed(() => (repairMan() > 0 ? `${pctText(totalAdj.value)} · 수리 ${repairText(repairMan())}` : pctText(totalAdj.value)));
-// 억 — 소수는 있을 때만(7.50 → 7.5억, 8.00 → 8억, 7.23억 그대로, 2026-11-11 사용자)
-const eokNum = (v: number) => String(Number(v.toFixed(2)));
-const cmpEok = (w: number) => (w > 0 ? `${eokNum(w / 1e8)}억` : '-');
+const cmpEok = (w: number) => (w > 0 ? `${Math.round(w).toLocaleString('ko-KR')}원` : '-');   // 원까지 다(1.42억 아님, 2026-11-17 사용자)
 const cmpPy = (w: number) => (w > 0 ? `${Math.round(w / 1e4).toLocaleString('ko-KR')}만/평` : '-');
 const cmpFsGo = (r: CmpRow) => { cmpToggle(cmpKeyOf(r)); if (cmpPick.value && r.point) cmpMv?.focus(r.point, 16); };
 onBeforeUnmount(() => { cmpMv?.destroy(); cmpMv = null; cmpMvP = null; });
