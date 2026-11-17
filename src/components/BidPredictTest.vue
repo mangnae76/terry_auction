@@ -409,7 +409,7 @@ const dongOpts = computed(() => {
 const pairs = computed<ViewPair[]>(() => items.value.filter((it) => it.result && it.views >= 0 && it.result.bids >= 0 && (it.failed || it.result.bids > 0)).map((it) => ({ key: it.key, views: it.views, bids: it.result!.bids })));
 
 type Pred = { before: ReturnType<typeof priceDist>; after: ReturnType<typeof priceDist> | null; piBefore: number[]; piAfter: number[] | null; p0: number | null; simN: number; loose: boolean; vmN: number; expBids: number | null };
-/** 차트 모드 — 입찰자 있을확률 · 예상응찰(신건도) */
+/** 차트 모드 — 응찰확률 · 예상응찰(신건도) */
 const sellMap = computed(() => {
   const m = new Map<string, { pSold: number; pi: number[]; expBids: number }>(); const rm = roundModel.value;
   const rmE = roundModelE.value; const eOf = new Map(roundsAtE.value.filter((r) => r.date === dayDate.value).map((r) => [r.key, r]));
@@ -422,7 +422,7 @@ const preds = computed(() => {
   if (useHits.value) {
     const rm = roundModel.value;
     for (const it of items.value) {
-      if (!it.target || it.target.round < 1) continue;   // 신건은 입찰자 있을확률만(배수 식은 1회 유찰부터)
+      if (!it.target || it.target.round < 1) continue;   // 신건은 응찰확률만(배수 식은 1회 유찰부터)
       const tg = { ...it.target, addr: it.addr }; const m = fitPriceModel(recs.value, tg, extReady.value ? pxPrice : undefined); if (!m) continue;
       const sim = similarBands(recs.value, it.target); const s = sellMap.value.get(it.key);
       const hs = (d: Dist) => hugShift(it.key, it.target!, d, dayDate.value);
@@ -455,7 +455,7 @@ const score = computed(() => {
 });
 
 /** 내 낙찰확률 — 아무도 안 올 확률 + (누가 올 확률 × 그 사람들보다 높게 쓸 확률). 예전엔 '누가 온다'고만 쳐서
- *  입찰자 있을확률이 2%인 물건도 최저가에서 0%로 그렸다(2026-11-14 사용자 — 파인힐타운이면 최저가를 쓰면 된다) */
+ *  응찰확률이 2%인 물건도 최저가에서 0%로 그렸다(2026-11-14 사용자 — 파인힐타운이면 최저가를 쓰면 된다) */
 const myWin = (p: Pred) => { const d = p.after ?? p.before; const p0 = p.p0 ?? 0; return (w: number) => p0 + (1 - p0) * d.win(w); };
 const myQ = (p: Pred, prob: number, min: number) => {
   const f = myWin(p); if (f(min) >= prob) return min;
@@ -532,7 +532,7 @@ const loadExt = async () => {
 };
 /** 아파트 사건 주소 — 세대수는 아파트만(빌라는 한 동 몇 세대라 뜻이 없다, 2026-11-15 사용자). 종별을 모르는 매각 자료 줄은 빌라로 본다 */
 const aptAddrs = computed(() => new Set(hitDocs.value.filter((h) => /아파트/.test(h.kind)).map((h) => h.addr)));
-/** 덧붙일 값 — [엘베, 세대수(ln, 아파트만 · 빌라 0), 대장 못 찾음]. 낙찰가 · 응찰 인원에만 쓴다(입찰자 있을확률은 빼는 게 낫다) */
+/** 덧붙일 값 — [엘베, 세대수(ln, 아파트만 · 빌라 0), 대장 못 찾음]. 낙찰가 · 응찰 인원에만 쓴다(응찰확률은 빼는 게 낫다) */
 const extVec = (addr: string, area: number | null, min: number, d: string): number[] => {
   const key = `${addr}|${area}|${min}|${d}`; const hit = extMemo.get(key); if (hit) return hit;
   const l = lotParts(addr); const f = extFacts.value[`${l.dong} ${l.jibun}`];
@@ -667,7 +667,7 @@ watch(dayDate, () => { fDept.value = ''; fStat.value = ''; fKind.value = ''; fRo
 /** 채권자별 거르기(2026-11-16 사용자) — 허그 · 그 밖. 차수별 줄은 뺐다(차수 정렬로 충분, 2026-11-16 사용자) — fRound 는 코드만 남김 */
 const roundOf = (it: Item) => (it.target ? (it.target.round === 0 ? '신건' : `${it.target.round + 1}차`) : '모름');
 const credOfIt = (it: Item) => (isHug(it.key) ? '허그' : credShort(it.key) ? '그 밖' : '모름');
-/** 표 정렬 — 머리글 누르기. 처음은 입찰자 있을확률 낮은 순(경쟁 적은 사건이 위로) */
+/** 표 정렬 — 머리글 누르기. 처음은 응찰확률 낮은 순(경쟁 적은 사건이 위로) */
 const sortKey = ref('pSold'); const sortDir = ref(1);
 const sortBy = (k: string) => { if (sortKey.value === k) sortDir.value = -sortDir.value; else { sortKey.value = k; sortDir.value = 1; } };
 const sortVal = (it: Item, k: string): number | null => {
@@ -735,10 +735,10 @@ const mineKeys = computed(() => new Set(auctions.auctions.map((a) => caseKey(a.c
 const fMine = ref(false);
 watch(dayDate, () => { fMine.value = false; fDong.value = dongFilter.value.trim(); });
 
-/* ===== 추천 · 어디로 갈까 — 추천 = 조회수로 본 입찰자 있을확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 허그가 올지 실수요자가 올지는 아무도 모른다, 2026-11-16 사용자).
+/* ===== 추천 · 어디로 갈까 — 추천 = 조회수로 본 응찰확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 허그가 올지 실수요자가 올지는 아무도 모른다, 2026-11-16 사용자).
  * 어디로 갈까 = 달력 숫자에서 그날 서울 · 경기 · 인천 법원을 물건 많은 순으로 한두 곳(한 법원에 오는 입찰자는 400~500명으로 비슷해 물건이 많을수록 건당 경쟁이 준다) ===== */
 /** '경쟁↓' 칩 툴팁(2026-11-17 사용자 — '추천'은 비싸게 들어가라는 뜻으로 읽혀 바꿈) */
-const REC_TIP = '입찰자 있을확률 30% 아래 · 예상응찰 1명 아래 · 입찰자가 적어 최저가 근처로 받을 가능성이 높습니다';
+const REC_TIP = '응찰확률 30% 아래 · 예상응찰 1명 아래 · 입찰자가 적어 최저가 근처로 받을 가능성이 높습니다';
 const REC_P = 0.3; const REC_BIDS = 1;   // 신건은 예상 낙찰가가 없어(확률만) 추천에서 뺀다
 const recItems = computed(() => listItems.value.filter((it) => { const s = sellOf(it.key); return !!it.target && preds.value.has(it.key) && !!s && s.pSold < REC_P && s.expBids < REC_BIDS; }).sort((a, b) => sellOf(a.key)!.pSold - sellOf(b.key)!.pSold));
 const recKeys = computed(() => new Set(recItems.value.map((it) => it.key)));
@@ -747,7 +747,7 @@ const isRec = (key: string) => recKeys.value.has(key);
 const bidQ = (it: Item, q: number) => { const p = preds.value.get(it.key); if (!p || !it.target) return null; return Math.max(it.target.min, (p.after ?? p.before).q(q)); };
 /** 건물 · 호만 — '검암동 647-3 부경캐슬 5층502호' → '부경캐슬 5층502호' */
 const placeOf = (addr: string) => { const t = tblAddr(addr).split(/\s+/); return (t.length > 2 ? t.slice(2) : t).join(' '); };
-/** 달력 칸의 '추천 N' — 날마다 늘 보인다(2026-11-16 사용자). 그날 이전 자료로 회차 모델을 맞춰 표와 같은 기준으로 센다(유효조회수 모델의 입찰자 있을확률 30% 아래 · 조회수 모델의 예상응찰 1명 아래 · 신건 제외). 고른 날은 표의 추천 수 그대로 */
+/** 달력 칸의 '추천 N' — 날마다 늘 보인다(2026-11-16 사용자). 그날 이전 자료로 회차 모델을 맞춰 표와 같은 기준으로 센다(유효조회수 모델의 응찰확률 30% 아래 · 조회수 모델의 예상응찰 1명 아래 · 신건 제외). 고른 날은 표의 추천 수 그대로 */
 const recCountByDay = computed(() => {
   const out = new Map<string, number>();
   if (!useHits.value) return out;
@@ -774,7 +774,7 @@ const goRows = computed(() => {
     return { court, n: g.n, depts: g.depts.join(' · '), kinds: kindStr, listed: mine.length > 0, recs };
   });
 });
-/** 표의 입찰자 있을확률 · 예상응찰 */
+/** 표의 응찰확률 · 예상응찰 */
 const sellOf = (key: string) => { const s = sellMap.value.get(key); if (s) return s; const p = preds.value.get(key); return p && p.p0 != null ? { pSold: 1 - p.p0, expBids: p.expBids ?? 0 } : null; };
 /** 누적이 매각 전날까지 안 닿았으면 — 빨간 '~11.14' */
 const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.value, -1);
@@ -894,7 +894,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="bpt-tbl-wrap">
         <table class="bpt-tbl bpt-gotbl">
           <colgroup><col style="width: 64px" /><col style="width: 110px" /><col style="width: 150px" /><col style="width: 260px" /><col /></colgroup>
-          <thead><tr><th>순위</th><th>법원</th><th>건수</th><th>종류</th><th class="rechd"><div class="bpt-recs hd"><span>경쟁↓</span><span>사건번호</span><span>건물</span><span>차수</span><span>입찰자 있을확률 · 예상응찰</span><span>우리 입찰가 50%</span><span>채권자</span></div></th></tr></thead>
+          <thead><tr><th>순위</th><th>법원</th><th>건수</th><th>종류</th><th class="rechd"><div class="bpt-recs hd"><span>경쟁↓</span><span>사건번호</span><span>건물</span><span>차수</span><span>응찰확률 · 예상응찰</span><span>우리 입찰가 50%</span><span>채권자</span></div></th></tr></thead>
           <tbody>
             <tr v-for="(g, i) in goRows" :key="g.court" :class="{ first: i === 0 }">
               <td><span :class="['bpt-rank', { one: i === 0 }]">{{ i + 1 }}순위</span></td>
@@ -907,7 +907,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
                     <span class="bpt-rec" :data-tip="REC_TIP">경쟁↓</span><button type="button" class="bpt-link" @click="pick = r.key">{{ caseLabel(r.key) }}</button><span class="pl">{{ r.place }}</span><span>{{ r.round }}차</span><span><b>{{ pct(r.pSold) }}</b> · {{ r.bids.toFixed(1) }}명</span><span class="nb">{{ r.bid50 != null ? won(r.bid50) : '—' }}</span><span><span v-if="isHug(r.key)" class="bpt-hug">허그</span></span>
                   </template>
                 </div>
-                <small v-else class="bpt-at">{{ g.listed ? '경쟁↓ 없음 · 조회수 받은 사건 중 입찰자 있을확률 30% 아래 · 예상응찰 1명 아래가 없음' : '조회수수집 뒤' }}</small>
+                <small v-else class="bpt-at">{{ g.listed ? '경쟁↓ 없음 · 조회수 받은 사건 중 응찰확률 30% 아래 · 예상응찰 1명 아래가 없음' : '조회수수집 뒤' }}</small>
               </td>
             </tr>
           </tbody>
@@ -947,8 +947,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
           <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게. 칸마다 가장 넓은 내용(검암동 · 11-13 · 17 · 20 에서 잼) + 같은 여백 15px(정렬 머리는 화살표 자리 14px 더), 주소는 남는 폭(2026-11-17 사용자: 간격 균일) -->
-          <colgroup><col style="width: 112px" /><col style="width: 231px" /><col style="width: 53px" /><col style="width: 69px" /><col style="width: 52px" /><col style="width: 61px" /><col style="width: 47px" /><col style="width: 88px" /><col style="width: 69px" /><col style="width: 46px" /><col style="width: 94px" /><col style="width: 55px" /><col style="width: 93px" /><col style="width: 88px" /><col style="width: 78px" /></colgroup>
-          <thead><tr><th class="sort" @click="sortBy('key')">사건번호<i :class="['ar', { on: sortKey === 'key' }]">{{ sortKey === 'key' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="hd-addr">주소</th><th class="sort" @click="sortBy('year')">연식<i :class="['ar', { on: sortKey === 'year' }]">{{ sortKey === 'year' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('area')">전용<i :class="['ar', { on: sortKey === 'area' }]">{{ sortKey === 'area' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th>엘베</th><th class="r sort" @click="sortBy('views')">조회수<br>조회일<i :class="['ar', { on: sortKey === 'views' }]">{{ sortKey === 'views' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('round')">차수<i :class="['ar', { on: sortKey === 'round' }]">{{ sortKey === 'round' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('min')">최저가<i :class="['ar', { on: sortKey === 'min' }]">{{ sortKey === 'min' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('pSold')">입찰자<br>있을확률<i :class="['ar', { on: sortKey === 'pSold' }]">{{ sortKey === 'pSold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('bids')">예상<br>응찰<i :class="['ar', { on: sortKey === 'bids' }]">{{ sortKey === 'bids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('pred')">예상<br>낙찰가<i :class="['ar', { on: sortKey === 'pred' }]">{{ sortKey === 'pred' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('actBids')">실제<br>응찰<i :class="['ar', { on: sortKey === 'actBids' }]">{{ sortKey === 'actBids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('sold')">실제<br>낙찰가<i :class="['ar', { on: sortKey === 'sold' }]">{{ sortKey === 'sold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
+          <colgroup><col style="width: 112px" /><col style="width: 226px" /><col style="width: 53px" /><col style="width: 69px" /><col style="width: 52px" /><col style="width: 61px" /><col style="width: 47px" /><col style="width: 88px" /><col style="width: 74px" /><col style="width: 46px" /><col style="width: 94px" /><col style="width: 55px" /><col style="width: 93px" /><col style="width: 88px" /><col style="width: 78px" /></colgroup>
+          <thead><tr><th class="sort" @click="sortBy('key')">사건번호<i :class="['ar', { on: sortKey === 'key' }]">{{ sortKey === 'key' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="hd-addr">주소</th><th class="sort" @click="sortBy('year')">연식<i :class="['ar', { on: sortKey === 'year' }]">{{ sortKey === 'year' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('area')">전용<i :class="['ar', { on: sortKey === 'area' }]">{{ sortKey === 'area' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th>엘베</th><th class="r sort" @click="sortBy('views')">조회수<br>조회일<i :class="['ar', { on: sortKey === 'views' }]">{{ sortKey === 'views' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('round')">차수<i :class="['ar', { on: sortKey === 'round' }]">{{ sortKey === 'round' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('min')">최저가<i :class="['ar', { on: sortKey === 'min' }]">{{ sortKey === 'min' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('pSold')">응찰확률<i :class="['ar', { on: sortKey === 'pSold' }]">{{ sortKey === 'pSold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('bids')">예상<br>응찰<i :class="['ar', { on: sortKey === 'bids' }]">{{ sortKey === 'bids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('pred')">예상<br>낙찰가<i :class="['ar', { on: sortKey === 'pred' }]">{{ sortKey === 'pred' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('actBids')">실제<br>응찰<i :class="['ar', { on: sortKey === 'actBids' }]">{{ sortKey === 'actBids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('sold')">실제<br>낙찰가<i :class="['ar', { on: sortKey === 'sold' }]">{{ sortKey === 'sold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
           <tbody>
             <tr v-for="it in shownItems" :key="it.key" :class="{ on: pick === it.key, off: !preds.has(it.key), rec: isRec(it.key) }" @click="pick = pick === it.key ? '' : it.key">
               <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button><span v-if="isRec(it.key)" class="bpt-rec under" :data-tip="REC_TIP">경쟁↓</span></td>
@@ -974,7 +974,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           </tbody>
         </table>
       </div>
-      <p v-if="useHits" class="bpt-sub">경쟁↓ · 입찰자 있을확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 사람이 안 들어오면 최저가로 낙찰) · 머리글 ▲▼ 로 정렬, 처음은 입찰자 있을확률 낮은 순 · 허그 · 채권자가 허그(주택도시보증공사)면 예상 낙찰가 % 앞에 칩, 예상 낙찰가는 그날 이전 같은 차수 허그 채권 매각의 낙찰가÷감정가 중앙값 · 조회일 · 누적에 넣은 마지막 날 · 빨간 '~11.14'는 그날까지만 모은 것(매각 전날까지 못 모음), 조회수수집 다시 · 예상응찰 · 입찰자 있을 때 · 신건은 확률만 · 줄 누르면 자세히</p>
+      <p v-if="useHits" class="bpt-sub">경쟁↓ · 응찰확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 사람이 안 들어오면 최저가로 낙찰) · 머리글 ▲▼ 로 정렬, 처음은 응찰확률 낮은 순 · 허그 · 채권자가 허그(주택도시보증공사)면 예상 낙찰가 % 앞에 칩, 예상 낙찰가는 그날 이전 같은 차수 허그 채권 매각의 낙찰가÷감정가 중앙값 · 조회일 · 누적에 넣은 마지막 날 · 빨간 '~11.14'는 그날까지만 모은 것(매각 전날까지 못 모음), 조회수수집 다시 · 예상응찰 · 입찰자 있을 때 · 신건은 확률만 · 줄 누르면 자세히</p>
       <p v-else class="bpt-sub">예상 낙찰가 · 조회수 규칙 반영(없으면 비슷한 물건 인원 비율) · 줄 누르면 자세히</p>
     </section>
 
@@ -985,7 +985,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
           <colgroup><col style="width: 108px" /><col /><col style="width: 92px" /><col style="width: 68px" /><col v-for="p in PROBS" :key="p" style="width: 88px" /><col v-if="probPast" style="width: 96px" /></colgroup>
-          <thead><tr><th>사건번호</th><th class="l">주소</th><th>최저가</th><th>입찰자<br>있을확률</th><th v-for="p in PROBS" :key="p" class="r">낙찰확률<br>{{ Math.round(p * 100) }}%</th><th v-if="probPast" class="r">실제 낙찰가</th></tr></thead>
+          <thead><tr><th>사건번호</th><th class="l">주소</th><th>최저가</th><th>응찰확률</th><th v-for="p in PROBS" :key="p" class="r">낙찰확률<br>{{ Math.round(p * 100) }}%</th><th v-if="probPast" class="r">실제 낙찰가</th></tr></thead>
           <tbody>
             <tr v-for="r in probRows" :key="r.key">
               <td>{{ caseLabel(r.key) }}</td>
@@ -1193,7 +1193,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-recs .nb { font-variant-numeric: tabular-nums; }
 /* 허그 칩(남색) — 예상 낙찰가 % 앞에 작게(채권자 칸은 뺐다, 2026-11-17 사용자) */
 .bpt-tbl td .bpt-hug { display: inline-block; padding: 1px 6px; border-radius: 4px; background: #213366; color: #fff; font-size: 12px; font-weight: 700; line-height: 16px; margin-bottom: 2px; }
-.bpt-tbl td .bpt-hug.sm { padding: 0 4px; margin: 0 4px 0 0; line-height: 15px; vertical-align: 1px; }   /* 실제 낙찰가는 굵게 */
+.bpt-tbl td .bpt-hug.sm { padding: 0 3px; margin: 0 3px 0 0; border-radius: 3px; font-weight: 400; line-height: 14px; vertical-align: 1px; }   /* 굵기 없이 작게 — 글자는 웹 하한 12px(2026-11-17 사용자) */   /* 실제 낙찰가는 굵게 */
 /* 실제 낙찰가 — 흐린 빨강(채도 낮게), 두 표 모두(2026-11-15 사용자) */
 .bpt-tbl td.act-sold .bpt-nb { color: #e0475b; }   /* 숫자만 — 유찰 · 입찰 전 · '—'는 칠하지 않는다 */
 :root[data-theme="dark"] .bpt-tbl td.act-sold .bpt-nb { color: #ff7a8a; }
