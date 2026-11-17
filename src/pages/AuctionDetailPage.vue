@@ -8174,6 +8174,24 @@ const goBack = () => router.back();
                   <div class="bx-row last"><span class="bx-k"><i class="bx-no">09</i>광고비</span><span class="bx-d">원천징수 3.3% 포함</span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.advertisingCost" class="bx-f amt" live-group /></span></div>
                   <div class="bx-row sum"><span class="bx-k">필요경비합계</span><span class="bx-d">01 ~ 09</span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTotalCosts(sc)) }}</b></span></div>
                 </section>
+                <!-- 돈이 나가는 순서는 왼쪽 단 맨 아래(비용 아래, 2026-11-17 사용자) -->
+                <section class="bida-card bida-cash">
+                  <h3 class="bida-h">돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
+                  <div class="bidc-steps">
+                    <div v-for="step in scCashOut(sc).steps" :key="step.no" class="bidc-step">
+                      <span class="no">{{ step.no }} · {{ step.when }}</span>
+                      <b>{{ cashMoney(step.amount) }}</b>
+                      <span class="what">{{ step.what }}</span>
+                      <span v-for="row in step.rows" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
+                      <span v-if="step.note" class="bidc-stepnote">{{ step.note }}</span>
+                    </div>
+                  </div>
+                  <div class="bidc-cashsum"><span>필요한 내 돈 합계</span><b>{{ cashMoney(scCashOut(sc).total) }}</b></div>
+                  <div v-if="scCashOut(sc).later.length" class="bidc-later boxed">
+                    <span class="lab">그 다음에 나가는 돈</span>
+                    <span v-for="row in scCashOut(sc).later" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
+                  </div>
+                </section>
               </div>
               <!-- 오른쪽 — 수익 · 돈이 나가는 순서 · 개인소득세율 · 계산 공식. 왼쪽과 함께 스크롤 -->
                 <div class="bida-right">
@@ -8193,23 +8211,6 @@ const goBack = () => router.back();
                     <div class="bx-row net"><span class="bx-k">세후 순이익</span><span class="bx-d"><span :class="['rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span></span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro" :class="{ neg: scAfterTaxProfit(sc) < 0 }">{{ formatMoney(scAfterTaxProfit(sc)) }}</b></span></div>
                     <!-- 목표 순이익을 적으면 입찰가를 거꾸로 푼다 -->
                     <div class="bx-row goal"><span class="bx-k"><label :for="`bida-goal-${si}`">목표 순이익</label></span><span class="bx-d">적으면 입찰가 역계산</span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput :id="`bida-goal-${si}`" :model-value="Math.round(scAfterTaxProfit(sc))" class="bx-f amt" live-group @update:model-value="scSetAfterTaxProfit(sc, $event)" /></span></div>
-                  </section>
-                  <section class="bida-card bida-cash">
-                    <h3 class="bida-h">돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
-                    <div class="bidc-steps">
-                      <div v-for="step in scCashOut(sc).steps" :key="step.no" class="bidc-step">
-                        <span class="no">{{ step.no }} · {{ step.when }}</span>
-                        <b>{{ cashMoney(step.amount) }}</b>
-                        <span class="what">{{ step.what }}</span>
-                        <span v-for="row in step.rows" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
-                        <span v-if="step.note" class="bidc-stepnote">{{ step.note }}</span>
-                      </div>
-                    </div>
-                    <div class="bidc-cashsum"><span>필요한 내 돈 합계</span><b>{{ cashMoney(scCashOut(sc).total) }}</b></div>
-                    <div v-if="scCashOut(sc).later.length" class="bidc-later boxed">
-                      <span class="lab">그 다음에 나가는 돈</span>
-                      <span v-for="row in scCashOut(sc).later" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
-                    </div>
                   </section>
                 <!-- 개인소득세율 — 따로 있던 칸을 상자로 감싸 예상수익분석 안으로. 고른 안의 사업소득금액이 걸리는 구간을 짚어 준다 -->
                 <section class="bida-card bida-taxr">
