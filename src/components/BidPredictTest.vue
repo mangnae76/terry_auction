@@ -827,7 +827,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       </div>
     </section>
 
-    <section class="bpt-card">
+    <section class="bpt-card bpt-tight">
       <div class="bpt-grade-head">
         <h3 class="bpt-h3">채점 <small>기간 안 모든 회차 · 그날 이전 자료로만</small></h3>
         <div class="bpt-range"><input v-model="gradeFrom" type="date" aria-label="채점 시작일" /><span>~</span><input v-model="gradeTo" type="date" aria-label="채점 끝일" /></div>
@@ -846,7 +846,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           <div class="bpt-tile key"><span>예상범위 안</span><b>{{ rate(grade.total.inR[1], grade.total.np) }}</b><small>조회수 없이 {{ rate(grade.total.inR[0], grade.total.np) }}<template v-if="grade.total.ext"> · + 엘베 <b>{{ rate(grade.total.inR[2], grade.total.np) }}</b></template> · 50%가 정상</small></div>
         </div>
         <div class="table-wrap bpt-tbl-wrap bpt-scroll">
-          <table class="bpt-tbl">
+          <table class="bpt-tbl bpt-gradetbl">
             <thead><tr><th>매각기일</th><th class="r">회차</th><th class="r">매각</th><th class="r">매각 · 유찰 맞힘</th><th class="r">인원 구간 맞힘</th><th class="r">낙찰가 평균 차이</th><th class="r">예상범위 안</th></tr></thead>
             <tbody>
               <tr v-for="g in grade.days" :key="g.date" :class="{ on: g.date === dayDate }" @click="goDay(g.date)">
@@ -866,7 +866,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
     </section>
 
 
-    <section v-if="dayDate && goRows.length" class="bpt-card bpt-go">
+    <section v-if="dayDate && goRows.length" class="bpt-card bpt-go bpt-tight">
       <h3 class="bpt-ttl">{{ Number(dayDate.slice(5, 7)) }}월 {{ Number(dayDate.slice(8)) }}일 ({{ WD[new Date(`${dayDate}T00:00:00`).getDay()] }}) 어디로 갈까 <small>달력에서 고른 날 · 고른 지역({{ regLabel }}) 법원 중 물건 많은 순 한두 곳</small></h3>
       <div class="bpt-tbl-wrap">
         <table class="bpt-tbl bpt-gotbl">
@@ -1160,6 +1160,12 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-gotbl th.rechd { padding-left: 10px; padding-right: 10px; }
 .bpt-recs.hd span { text-align: center; white-space: nowrap; font-weight: 700; color: #374151; }
 .bpt-gotbl tbody tr.first td { background: #f3fbf6; }
+/* 채점 · 어디로 갈까 — 세로 여백 줄임(2026-11-17 사용자): 상자 안 간격 8, 칸 위아래 4, 두 줄 칸 줄간 1.25, 추천 줄 사이 1 */
+.bpt-card.bpt-tight { gap: 8px; }
+.bpt-tight .bpt-tbl th { padding-top: 6px; padding-bottom: 6px; }
+.bpt-tight .bpt-tbl td { padding-top: 4px; padding-bottom: 4px; line-height: 1.25; }
+.bpt-tight .bpt-grade .bpt-tile { padding: 7px 12px; gap: 1px; }
+.bpt-tight .bpt-recs { gap: 1px 8px; }
 .bpt-rank { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; background: #eef3ff; color: #1d4ed8; font-size: 12px; font-weight: 700; }
 .bpt-rank.one { background: #e8f7ee; color: #15803d; }
 .bpt-recs { display: grid; grid-template-columns: 52px 112px minmax(140px, 1fr) 36px 150px 104px 44px; gap: 3px 8px; align-items: center; justify-items: center; font-size: 12.5px; }   /* 말머리(hd)와 줄이 같은 칸 폭 — 세로로 맞는다 */
