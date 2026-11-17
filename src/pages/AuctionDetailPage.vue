@@ -8146,7 +8146,7 @@ const goBack = () => router.back();
             <div class="bida-grid">
               <div class="bida-col">
                 <section class="bida-card">
-                  <h3 class="bida-h">입찰정보</h3>
+                  <h3 class="bida-h">입찰정보 <span class="bida-plan">{{ si === confirmedIdx ? '확정안' : sc.label }}</span></h3>   <!-- 보고 있는 안 이름(A안 … · 확정이면 확정안) 파랑(2026-11-17 사용자) -->
                   <!-- 입찰가 + 슬라이더가 맨 위 — 수익 상자의 예상 매도가처럼 만지는 값이 먼저(2026-11-17 사용자) -->
                   <div class="bx-row hi bid"><span class="bx-k"><label :for="`bida-bid-${si}`">입찰가</label></span><span class="bx-d">감정가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`bidPct-${si}`, scBidPct(sc))" inputmode="decimal" aria-label="입찰가 비중" @blur="pctDone()" @input="pctType(`bidPct-${si}`, $event); scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput :id="`bida-bid-${si}`" v-model="sc.bid.myBidValue" class="bx-f amt big" live-group /><small v-if="scBelowMin(sc)" class="adp-bid-low" title="최저가 미만은 무효 입찰입니다">최저가미만</small></span></div>
                   <!-- 최저가 아래로는 못 내린다 — 바닥에 닿거나(슬라이더) 칸에 최저가 미만을 적으면 빨갛게, 아래 글로 알린다 -->
@@ -15158,6 +15158,7 @@ select.adp-pub-input option { text-align: center; }
 .bida-kpi .lab, .bida-kpi .sub { font-size: 14px; color: #4b5563; }
 .bida-kpi strong { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #111827; white-space: nowrap; }
 .bida-kpi strong small { margin-left: 4px; font-size: 15px; font-weight: 700; }
+.bida-h .bida-plan { margin-left: 6px; color: #2b6df3; font-weight: 800; }   /* 입찰정보 제목 옆 안 이름 */
 .bida-kpi.k-bid { background: #f5f8ff; border-color: #dbe5fa; }    /* 내비게이터 세 칸 — 살짝 다른 색(입찰가 파랑 · 매도가 초록 · 실투자금 주황, 2026-11-13 사용자) */
 .bida-kpi.k-sale { background: #f4fbf7; border-color: #d4ecdd; }
 .bida-kpi.k-cash { background: #fffaf3; border-color: #f2e3cb; }
