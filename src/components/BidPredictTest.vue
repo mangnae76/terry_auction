@@ -444,23 +444,6 @@ const winAt = (it: Item) => { const p = preds.value.get(it.key); return p && it.
 const PROBS = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8];   // 5% 단위 — 시험에서 확률이 실제와 맞았던 50 ~ 80% 만(85% 넘게는 튄 낙찰 몇 건이 좌우)
 /** 실제 낙찰가 칸은 끝난 기일만(다가오는 기일은 전부 '입찰 전') */
 /** 실제 낙찰가 칸 — 지난 기일과 오늘(결과가 들어온 사건은 금액, 아니면 '입찰 전'). 다가오는 기일만 뺀다(2026-11-16 사용자: 당일 결과가 안 보였음) */
-const probPast = computed(() => !!dayDate.value && dayDate.value <= todayIso());
-const probRows = computed(() => shownItems.value.filter((it) => it.target && preds.value.has(it.key)).map((it) => {
-  const p = preds.value.get(it.key)!; const d = p.after ?? p.before;
-  // 입찰자가 있을 때 이길 확률(조건부) — 시험에서 말한 대로 맞은 쪽. 아무도 안 올 확률까지 섞으면 50% 가 실제 72% 로 흐려졌다
-  return { key: it.key, addr: it.addr, min: it.target!.min, pSold: p.p0 != null ? 1 - p.p0 : null, bids: PROBS.map((q) => Math.max(it.target!.min, d.q(q))), sold: it.result?.sold ?? 0, failed: !!it.failed };
-}));
-
-/* 조회수 규칙 그림 — 가로 조회수(로그), 세로 인원 */
-const rule = computed(() => {
-  const ps = pairs.value; if (useHits.value || ps.length < 2) return null;
-  const vm = fitViewModel(ps);
-  const vMax = Math.max(...ps.map((p) => p.views), 10); const bMax = Math.max(...ps.map((p) => p.bids), 5);
-  const sx = (v: number) => 40 + (Math.log(1 + v) / Math.log(1 + vMax)) * 330; const sy = (b: number) => 170 - (b / bMax) * 150;
-  const dots = ps.map((p) => ({ x: sx(p.views), y: sy(p.bids), tip: `${caseLabel(p.key)} · 조회 ${p.views.toLocaleString('ko-KR')} · ${p.bids ? `${p.bids}명` : '유찰'}` }));
-  const line = vm ? Array.from({ length: 30 }, (_, i) => { const v = Math.expm1((Math.log(1 + vMax) * i) / 29); return `${i ? 'L' : 'M'}${sx(v).toFixed(1)} ${sy(Math.min(bMax, Math.max(0, Math.exp(vm.a + vm.c * Math.log(1 + v)) - 1))).toFixed(1)}`; }).join(' ') : '';
-  return { dots, line, vm, vMax, bMax, sx, sy, twice: vm ? 2 ** vm.c : null };
-});
 
 /** DB 에 들어 있는 이 날 목록(동선택) — 사건번호 · 주소 · 조회수 */
 const dbList = computed(() => {
@@ -909,8 +892,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="bpt-flow">
           <div class="bpt-tile"><span>전일까지 누적 조회수</span><b>{{ sel.views.toLocaleString('ko-KR') }}회</b><small>{{ useHits ? `${sel.viewAt.slice(5).replace('-', '.')}까지 · 그날 이전 ${selP.vmN.toLocaleString('ko-KR')}회차로 배움` : selP.vmN ? `조회수 규칙 ${selP.vmN}건으로 배움` : '조회수 규칙 없음(6건 이상 필요)' }}</small></div>
           <div class="bpt-tile"><span>예상 응찰 인원</span><b>{{ selP.expBids != null ? `약 ${Math.round(selP.expBids)}명` : BAND_NAMES[selP.piBefore.indexOf(Math.max(...selP.piBefore))] + ' 가장 흔함' }}</b><small>{{ selP.p0 != null ? `${useHits ? '매각된다고 칠 때 · ' : ''}유찰 확률 ${pct(selP.p0)}` : `비슷한 물건 ${selP.simN}건${selP.loose ? '(조건 넓힘)' : ''}` }}</small></div>
-          <div class="bpt-tile key wide"><span>낙찰확률별 입찰가(입찰자가 있을 때)</span>
-            <div class="bpt-qs"><div v-for="q in [0.5, 0.6, 0.7, 0.8]" :key="q" :class="['bpt-q', { on: q === 0.7 }]"><span class="p">낙찰확률 {{ pct(q) }}{{ q === 0.7 ? ' 추천' : '' }}</span><b class="w">{{ won(qOf(sel, q)) }}</b><span class="a">감정가 {{ apprPct(qOf(sel, q), sel.target.appr) }}</span></div></div>
+          <div class="bpt-tile key wide"><span>입찰가별 낙찰확률(입찰자가 있을 때)</span>
+            <div class="bpt-qs"><div v-for="q in PROBS" :key="q" :class="['bpt-q', { on: q === 0.7 }]"><span class="p">낙찰확률 {{ pct(q) }}{{ q === 0.7 ? ' 추천' : '' }}</span><b class="w">{{ won(qOf(sel, q)) }}</b><span class="a">감정가 {{ apprPct(qOf(sel, q), sel.target.appr) }}</span></div></div>
             <small>{{ selP.p0 != null ? `아무도 안 올 확률 ${pct(selP.p0)} · 그러면 최저가로도 낙찰` : '' }}{{ sel.result && sel.result.sold > 0 ? `${selP.p0 != null ? ' · ' : ''}실제 ${won(sel.result.sold)}${hugWon(sel.key) ? '(허그)' : ''} — ${winAt(sel) == null ? '' : winAt(sel)! <= 0.7 ? '70% 추천가로 이김' : winAt(sel)! <= 0.8 ? '70% 추천가로는 짐, 80% 입찰가면 이김' : '80% 입찰가로도 짐'}` : '' }}</small></div>
         </div>
       </div>
@@ -944,29 +927,6 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       </div>
       <p v-if="useHits" class="bpt-sub">경쟁↓ · 응찰확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 사람이 안 들어오면 최저가로 낙찰) · 머리글 ▲▼ 로 정렬, 처음은 응찰확률 낮은 순 · 허그 · 실제 낙찰자가 허그(주택도시보증공사)면 실제 낙찰가 % 앞에 칩 · 조회일 · 누적에 넣은 마지막 날 · 빨간 '~11.14'는 그날까지만 모은 것(매각 전날까지 못 모음), 조회수수집 다시 · 예상응찰 · 입찰자 있을 때 · 신건은 확률만 · 낙찰확률 50% · 입찰자가 있을 때 절반 확률로 이기는 입찰가(아래 입찰가별 낙찰확률 표와 같은 값), 70 · 80%는 줄을 눌러 상세 · 아래 표에서 · 차이 · 실제 낙찰가 − 낙찰확률 50% 입찰가 · 줄 누르면 자세히</p>
       <p v-else class="bpt-sub">낙찰확률 50% · 조회수 규칙 반영(없으면 비슷한 물건 인원 비율) · 줄 누르면 자세히</p>
-    </section>
-
-    <!-- 입찰가별 낙찰확률 — 예상 낙찰가 한 숫자는 평균 7% 안팎 틀린다(6월~11-12 시험, 인원을 알아도 6%). 대신 낙찰확률은 말한 대로 맞았다
-         (50% → 실제 47%, 60% → 58%, 70% → 67%, 80% → 79%, 124건). 그래서 확률마다 입찰가를 보여 주고 고르게 한다(2026-11-15 사용자 '가장 근접한 답') -->
-    <section v-if="probRows.length" class="bpt-card bpt-prob">
-      <h3 class="bpt-h3">입찰가별 낙찰확률 <small>{{ daySum.dong }} · {{ bidDay(dayDate) }} · 입찰자가 있을 때 그 확률로 이기는 입찰가</small></h3>
-      <div class="table-wrap bpt-tbl-wrap">
-        <table class="bpt-tbl fixed">
-          <colgroup><col style="width: 108px" /><col /><col style="width: 92px" /><col style="width: 68px" /><col v-for="p in PROBS" :key="p" style="width: 88px" /><col v-if="probPast" style="width: 96px" /></colgroup>
-          <thead><tr><th>사건번호</th><th class="l">주소</th><th>최저가</th><th>응찰<br>확률</th><th v-for="p in PROBS" :key="p" class="r">낙찰확률<br>{{ Math.round(p * 100) }}%</th><th v-if="probPast" class="r">실제 낙찰가</th></tr></thead>
-          <tbody>
-            <tr v-for="r in probRows" :key="r.key">
-              <td>{{ caseLabel(r.key) }}</td>
-              <td class="l addr" :data-tip="r.addr || undefined" data-tip-trunc><button v-if="r.addr" type="button" :class="['bpt-copy', { done: copiedKey === r.key }]" :data-tip="copiedKey === r.key ? '복사됨' : '주소복사'" :aria-label="`${caseLabel(r.key)} 주소 복사`" @click.stop="copyAddr(r)"><svg v-if="copiedKey !== r.key" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg><svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg></button><span v-if="r.addr" class="a2"><span class="ln">{{ addrLines(r.addr)[0] }}</span><span v-if="addrLines(r.addr)[1]" class="ln">{{ addrLines(r.addr)[1] }}</span></span><template v-else>—</template></td>
-              <td><span class="bpt-nb">{{ won(r.min) }}</span></td>
-              <td>{{ r.pSold != null ? pct(r.pSold) : '—' }}</td>
-              <td v-for="(b, i) in r.bids" :key="i" :class="['r', { win: r.sold > 0 && b > r.sold, lose: r.sold > 0 && b <= r.sold }]"><span class="bpt-nb">{{ won(b) }}</span></td>
-              <td v-if="probPast" class="r act-sold"><span v-if="r.sold > 0" class="bpt-nb"><span v-if="hugWon(r.key)" class="bpt-hug sm" :data-tip="HUG_WON_TIP">허그</span>{{ won(r.sold) }}</span><template v-else>{{ r.failed ? '유찰' : '입찰 전' }}</template></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="bpt-sub">낙찰확률 · 누가 들어왔을 때 이길 확률(유찰이면 최저가로도 낙찰) · 지난 기일은 초록 = 그 값이면 낙찰, 회색 = 패찰 · 6월~11-12 시험에서 말한 확률대로 이김(50 → 47%, 60 → 58%, 70 → 67%, 80 → 79%) · 이길 때 1등보다 평균 7~11% 더 씀</p>
     </section>
 
     <section v-if="score.rows.length" class="bpt-card">
@@ -1085,7 +1045,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl th { background: #f4f6fa; font-weight: 700; color: #374151; padding: 8px 10px; white-space: nowrap; border-bottom: 1px solid #e3e7ee; }
 .bpt-tbl td { padding: 7px 10px; border-bottom: 1px solid #eef1f6; text-align: center; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .bpt-tbl tr:last-child td { border-bottom: 0; }
-.bpt-day .bpt-tbl th, .bpt-day .bpt-tbl td, .bpt-prob .bpt-tbl th, .bpt-prob .bpt-tbl td { padding-left: 5px; padding-right: 5px; text-align: center; }   /* 1440 화면 안에 들게 — 칸 폭 합 1,236 px, 화면 1280 */   /* 사건별 예측은 머리 · 내용 모두 가운데(2026-11-14 사용자) */
+.bpt-day .bpt-tbl th, .bpt-day .bpt-tbl td { padding-left: 5px; padding-right: 5px; text-align: center; }   /* 1440 화면 안에 들게 — 칸 폭 합 1,236 px, 화면 1280 */   /* 사건별 예측은 머리 · 내용 모두 가운데(2026-11-14 사용자) */
 .bpt-day .bpt-tbl td.act-sold { font-weight: 700; }
 /* 추천 줄 · 칩 — 조회수로 본 경쟁 적은 사건(2026-11-16) */
 .bpt-tbl td .bpt-rec, .bpt-recs .bpt-rec { display: inline-flex; align-items: center; justify-content: center; height: 20px; padding: 0 6px; border-radius: 4px; background: #e8f7ee; color: #15803d; font-size: 12px; font-weight: 700; white-space: nowrap; }
@@ -1130,9 +1090,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl td.act-sold .bpt-nb { color: #e0475b; }   /* 숫자만 — 유찰 · 입찰 전 · '—'는 칠하지 않는다 */
 :root[data-theme="dark"] .bpt-tbl td.act-sold .bpt-nb { color: #ff7a8a; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bpt-tbl td.act-sold .bpt-nb { color: #ff7a8a; } }
-.bpt-day .bpt-tbl td.addr, .bpt-prob .bpt-tbl td.addr, .bpt-prob .bpt-tbl th.l { text-align: left; }
+.bpt-day .bpt-tbl td.addr { text-align: left; }
 .bpt-day .bpt-tbl th.hd-addr { text-align: center; }   /* 주소 머리는 가운데 — 칸 폭을 내용 폭에 맞춰 내용 덩어리와 가운데가 맞는다(2026-11-17 사용자) */
-.bpt-prob .bpt-tbl th.r, .bpt-prob .bpt-tbl td.r { text-align: right; }   /* 확률 칸 금액은 끝자리 맞춤 */   /* 주소는 머리 · 내용 모두 왼쪽 줄 맞춤 */
 .bpt-tbl.fixed { table-layout: fixed; }
 .bpt-tbl.fixed td { overflow: hidden; text-overflow: ellipsis; }
 .bpt-tbl.fixed td.addr { max-width: none; }
@@ -1155,9 +1114,6 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl .l { text-align: left; }
 .bpt-tbl .r { text-align: right; }
 .bpt-tbl td.addr { max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
-.bpt-prob .bpt-tbl td.win { color: #15803d; }   /* 지난 기일 — 이 값이면 낙찰(굵기 없이 — 끝자리가 회색 칸과 맞게) */
-.bpt-prob .bpt-tbl td.lose { color: #9ca3af; }   /* 지난 기일 — 이 값이면 짐 */
-.bpt-prob .bpt-tbl th, .bpt-prob .bpt-tbl td { vertical-align: middle; }   /* 차익 칸이 두 줄이어도 나머지는 줄 가운데 */
 .bpt-tbl td.strong { font-weight: 800; color: #1f5fe0; }
 .bpt-tbl tbody tr { cursor: pointer; }
 .bpt-tbl tbody tr.ro { cursor: default; }
@@ -1178,14 +1134,14 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-detail .bpt-h3 { display: flex; align-items: center; gap: 8px; }
 .bpt-detail .bpt-h3 small { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bpt-x { border: 1px solid #d5dbe5; background: #fff; border-radius: 6px; width: 24px; height: 24px; font-size: 12px; color: #4b5563; cursor: pointer; padding: 0; }
-.bpt-flow:has(.bpt-tile.wide) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr); }   /* 예상 낙찰가 카드가 둘 몫 */
-.bpt-qs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 2px; }
-.bpt-q { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border-radius: 8px; min-width: 0; }
-.bpt-q .p { font-size: 12px; color: #4b5563; font-weight: 700; }
-.bpt-tile.key .bpt-q .w { font-size: 16px; font-weight: 400; color: #1f2937; font-variant-numeric: tabular-nums; }   /* .bpt-tile.key b 의 파랑을 이긴다 — 추천(70%)만 파랑 · 굵게 */
+.bpt-flow:has(.bpt-tile.wide) { grid-template-columns: 170px 170px minmax(0, 1fr); }   /* 왼쪽 두 칸 170 · 나머지는 입찰가별 낙찰확률 일곱 칸(2026-11-17 사용자) */
+.bpt-qs { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 2px; }
+.bpt-q { display: flex; flex-direction: column; gap: 2px; padding: 6px 6px; border-radius: 8px; min-width: 0; }
+.bpt-q .p { font-size: 12px; color: #4b5563; font-weight: 700; white-space: nowrap; }   /* '낙찰확률 70% 추천'이 두 줄로 꺾이지 않게 */
+.bpt-tile.key .bpt-q .w { font-size: 15px; font-weight: 400; color: #1f2937; font-variant-numeric: tabular-nums; }   /* .bpt-tile.key b 의 파랑을 이긴다 — 추천(70%)만 파랑 · 굵게 */
 .bpt-q .a { font-size: 12px; color: #6b7280; }
 .bpt-q.on { background: #fff; border: 1px solid #dbe5fa; }
-.bpt-tile.key .bpt-q.on .w { font-size: 19px; font-weight: 800; color: #1f5fe0; }
+.bpt-tile.key .bpt-q.on .w { font-size: 17px; font-weight: 800; color: #1f5fe0; }
 .bpt-q.on .p { color: #1f5fe0; }
 .bpt-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 12px; }
 .bpt-legend { display: flex; gap: 14px; margin: 0; font-size: 12px; color: #374151; }
