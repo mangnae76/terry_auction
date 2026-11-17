@@ -10208,7 +10208,7 @@ const goBack = () => router.back();
               <div class="cmp-est-h"><h3><span class="cmp-no">②</span>{{ cmpN }} 입지비교<span class="cmp-scope-chip">{{ [sonApp ? '' : supRegion?.sigungu, supRegion?.dong].filter(Boolean).join(' ') || surveyAreaLabel }}<template v-if="cmpPick && cmpPicked"> · {{ cmpPicked.name || cmpPicked.jibun }}</template></span><span class="cmp-q">{{ isApartment ? '내가 선정한 아파트 단지는 몇 등일까?' : '내가 선정한 빌라는 주변 유사 빌라 중 몇 등일까?' }}</span></h3>
                 <span class="cmp-est-desc"><svg class="cmp-flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg><span class="cmp-desc-hi">필터 기준 검색</span></span>
               </div>
-              <div class="cmp-est">
+              <div :class="['cmp-est', { bare: !isApartment }]">
                 <!-- 내비게이터(위 여섯 칸) — 빌라는 뺐다: 동 전체로 계산해 리스트와 숫자가 달랐다(2026-11-12 사용자). 아파트는 그대로 -->
                 <div v-if="isApartment" class="cmp-tiles">
                   <!-- 단지를 고르기 전엔 동 전체(평균 · 최저 · 최고 · 평당가 · 단지 수 · 건수), 고르면 그 단지(평균 · 최저 · 최고 · 평당가 · 면적 · 건수). 칸 자리는 그대로 — 흔들리지 않게 -->
@@ -13237,6 +13237,9 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
 .cmp-desc-hi { color: #2563eb; }   /* 필터 설명 중 기간 · 평형 · 매매/전세 — 파란 글(2026-11-11 사용자) */
 .cmp-est-desc { margin-left: auto; padding-right: 14px; font-size: 12px; color: #6b7280; text-align: right; }   /* 오른쪽 — 아래 마지막 칸(거래건수) 오른쪽 선에 맞춘다(2026-11-11) */
 .cmp-est { background: #f7f8fb; border-radius: 10px; padding: 14px; }
+.cmp-est.bare { background: none; padding: 0; }   /* 빌라 — 칸 줄이 없어 회색 바탕은 빈 띠였다. 바탕 · 여백을 빼고 근거 줄만(2026-11-17 사용자) */
+.cmp-est.bare .cmp-basis { margin-top: 0; }
+.cmp-est.bare + .cmp-gap { height: 12px; }   /* 근거 줄 위(제목 아래 12) · 아래(지도 위)를 같은 12로 */
 .cmp-tiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }   /* 중간값 빼고 여섯 칸(2026-11-12 사용자) */
 @media (max-width: 1000px) { .cmp-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .cmp-tile { background: #fff; border-radius: 10px; padding: 13px 8px; text-align: center; display: grid; gap: 5px; box-shadow: 0 1px 2px rgba(17, 24, 39, .04); min-width: 0; }
