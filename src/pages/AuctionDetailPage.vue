@@ -8173,25 +8173,26 @@ const goBack = () => router.back();
                   <div class="bx-row last"><span class="bx-k"><i class="bx-no">09</i>광고비</span><span class="bx-d">원천징수 3.3% 포함</span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.advertisingCost" class="bx-f amt" live-group /></span></div>
                   <div class="bx-row sum"><span class="bx-k">필요경비합계</span><span class="bx-d">01 ~ 09</span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTotalCosts(sc)) }}</b></span></div>
                 </section>
-                <section class="bida-card">
-                  <h3 class="bida-h">수익</h3>
-                  <div class="bx-row hi sale"><span class="bx-k"><label :for="`bida-sale-${si}`">예상 매도가</label></span><span class="bx-d">감정가 대비</span><span class="bx-p"><b class="bx-f pct ro">{{ apprValue > 0 ? scSalePct(sc).toFixed(2) : '-' }}</b><i>%</i></span><span class="bx-a"><FormattedNumberInput :id="`bida-sale-${si}`" v-model="sc.sale.expectedSaleValue" class="bx-f amt big" live-group /></span></div>
-                  <div v-if="apprValue > 0" class="bx-slide sale">
-                    <input type="range" min="60" max="150" step="0.1" :value="Math.min(150, Math.max(60, scSalePct(sc)))" :aria-label="`${sc.label} 감정가 대비 예상 매도가`" @input="scSetSaleByApprPct(sc, ($event.target as HTMLInputElement).value)" />
-                    <div class="lab"><span>60%</span><span>감정가 100%</span><span>150%</span></div>
-                  </div>
-                  <div class="bx-row"><span class="bx-k"><label :for="`bida-alt-${si}`">입금가</label></span><span class="bx-d">계산에 안 들어가는 메모</span><span class="bx-p"></span><span class="bx-a"><input :id="`bida-alt-${si}`" :value="scSaleAlt(sc)" class="bx-f amt" @input="scTypeSaleAlt(sc, $event)" /></span></div>
-                  <div class="bx-row"><span class="bx-k">총투자금</span><span class="bx-d">입찰가 + 비용</span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTotalInvest(sc)) }}</b></span></div>
-                  <div class="bx-row"><span class="bx-k">사업소득금액</span><span class="bx-d">매도가 − 입찰가 − 비용</span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro" :class="{ neg: scGain(sc) < 0 }">{{ formatMoney(scGain(sc)) }}</b></span></div>
-                  <div class="bx-row wide"><span class="bx-k">사업소득세</span><span class="bx-d">세율 − 누진공제</span><span class="bx-p"><input class="bx-f pct rate" :value="scTaxRate(sc)" inputmode="decimal" aria-label="사업소득세율" @input="limitPct($event); scSetTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i><em class="bx-minus">−</em><input class="bx-f ded" :value="Math.round(scTaxDeduct(sc) / 10000)" inputmode="decimal" aria-label="누진공제(만원)" @input="scSetTaxDeduct(sc, ($event.target as HTMLInputElement).value)" /><i>만</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTransferTax(sc)) }}</b></span></div>
-                  <div class="bx-row last"><span class="bx-k">지방세</span><span class="bx-d">소득세 대비</span><span class="bx-p"><input class="bx-f pct" :value="String(scLocalTaxRate(sc))" inputmode="decimal" aria-label="지방세율" @input="limitPct($event); scSetLocalTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scLocalTax(sc)) }}</b></span></div>
-                  <div class="bx-row net"><span class="bx-k">세후 순이익</span><span class="bx-d"><span :class="['rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span></span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro" :class="{ neg: scAfterTaxProfit(sc) < 0 }">{{ formatMoney(scAfterTaxProfit(sc)) }}</b></span></div>
-                  <!-- 목표 순이익을 적으면 입찰가를 거꾸로 푼다 -->
-                  <div class="bx-row goal"><span class="bx-k"><label :for="`bida-goal-${si}`">목표 순이익</label></span><span class="bx-d">적으면 입찰가 역계산</span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput :id="`bida-goal-${si}`" :model-value="Math.round(scAfterTaxProfit(sc))" class="bx-f amt" live-group @update:model-value="scSetAfterTaxProfit(sc, $event)" /></span></div>
-                </section>
               </div>
-              <!-- 오른쪽 — 돈이 나가는 순서 · 개인소득세율 · 계산 공식. 왼쪽과 함께 스크롤 -->
+              <!-- 오른쪽 — 수익 · 돈이 나가는 순서 · 개인소득세율 · 계산 공식. 왼쪽과 함께 스크롤 -->
                 <div class="bida-right">
+                  <!-- 수익 상자는 오른쪽 맨 위 — 입찰정보 오른쪽 · 돈이 나가는 순서 위(2026-11-17 사용자) -->
+                  <section class="bida-card">
+                    <h3 class="bida-h">수익</h3>
+                    <div class="bx-row hi sale"><span class="bx-k"><label :for="`bida-sale-${si}`">예상 매도가</label></span><span class="bx-d">감정가 대비</span><span class="bx-p"><b class="bx-f pct ro">{{ apprValue > 0 ? scSalePct(sc).toFixed(2) : '-' }}</b><i>%</i></span><span class="bx-a"><FormattedNumberInput :id="`bida-sale-${si}`" v-model="sc.sale.expectedSaleValue" class="bx-f amt big" live-group /></span></div>
+                    <div v-if="apprValue > 0" class="bx-slide sale">
+                      <input type="range" min="60" max="150" step="0.1" :value="Math.min(150, Math.max(60, scSalePct(sc)))" :aria-label="`${sc.label} 감정가 대비 예상 매도가`" @input="scSetSaleByApprPct(sc, ($event.target as HTMLInputElement).value)" />
+                      <div class="lab"><span>60%</span><span>감정가 100%</span><span>150%</span></div>
+                    </div>
+                    <div class="bx-row"><span class="bx-k"><label :for="`bida-alt-${si}`">입금가</label></span><span class="bx-d">계산에 안 들어가는 메모</span><span class="bx-p"></span><span class="bx-a"><input :id="`bida-alt-${si}`" :value="scSaleAlt(sc)" class="bx-f amt" @input="scTypeSaleAlt(sc, $event)" /></span></div>
+                    <div class="bx-row"><span class="bx-k">총투자금</span><span class="bx-d">입찰가 + 비용</span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTotalInvest(sc)) }}</b></span></div>
+                    <div class="bx-row"><span class="bx-k">사업소득금액</span><span class="bx-d">매도가 − 입찰가 − 비용</span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro" :class="{ neg: scGain(sc) < 0 }">{{ formatMoney(scGain(sc)) }}</b></span></div>
+                    <div class="bx-row wide"><span class="bx-k">사업소득세</span><span class="bx-d">세율 − 누진공제</span><span class="bx-p"><input class="bx-f pct rate" :value="scTaxRate(sc)" inputmode="decimal" aria-label="사업소득세율" @input="limitPct($event); scSetTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i><em class="bx-minus">−</em><input class="bx-f ded" :value="Math.round(scTaxDeduct(sc) / 10000)" inputmode="decimal" aria-label="누진공제(만원)" @input="scSetTaxDeduct(sc, ($event.target as HTMLInputElement).value)" /><i>만</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTransferTax(sc)) }}</b></span></div>
+                    <div class="bx-row last"><span class="bx-k">지방세</span><span class="bx-d">소득세 대비</span><span class="bx-p"><input class="bx-f pct" :value="String(scLocalTaxRate(sc))" inputmode="decimal" aria-label="지방세율" @input="limitPct($event); scSetLocalTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scLocalTax(sc)) }}</b></span></div>
+                    <div class="bx-row net"><span class="bx-k">세후 순이익</span><span class="bx-d"><span :class="['rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span></span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro" :class="{ neg: scAfterTaxProfit(sc) < 0 }">{{ formatMoney(scAfterTaxProfit(sc)) }}</b></span></div>
+                    <!-- 목표 순이익을 적으면 입찰가를 거꾸로 푼다 -->
+                    <div class="bx-row goal"><span class="bx-k"><label :for="`bida-goal-${si}`">목표 순이익</label></span><span class="bx-d">적으면 입찰가 역계산</span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput :id="`bida-goal-${si}`" :model-value="Math.round(scAfterTaxProfit(sc))" class="bx-f amt" live-group @update:model-value="scSetAfterTaxProfit(sc, $event)" /></span></div>
+                  </section>
                   <section class="bida-card bida-cash">
                     <h3 class="bida-h">돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
                     <div class="bidc-steps">
