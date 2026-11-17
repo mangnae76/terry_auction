@@ -1195,7 +1195,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-wait { padding: 40px 24px; display: grid; gap: 8px; justify-items: center; text-align: center; color: var(--muted); font-size: 14px; }
 .sx-wait > b { color: var(--text); font-size: 16px; }
 /* 분석결과 — 감정가를 적으면 예상 입찰가 두 칸이 바로 바뀐다 */
-.sx-hero { padding: 16px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.sx-hero { padding: 16px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }   /* 감정가 · 평균 · 중앙값 세 칸(평당가 칸 뺌 2026-11-17) */
 /* 매각분석 위 '○○동 · 연립다세대' 상자(감정가 · 예상 입찰가)는 내비게이터 — 내려도 위에 붙어 있다(사건 고정카드 바로 아래, 2026-11-12 사용자 '틀 고정') */
 .sx-results > .sx-hero { position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px) + 8px); z-index: 19; box-shadow: 0 6px 16px rgba(17, 24, 39, .08); }
 /* 시세분석 내비게이터도 같은 자리에 붙는다(SonpumPricePage .pa.stick .est) — 선정물건 손품조사는 매각분석 머리와 같은 높이, 시장분석 시세예측은 검색 띠 아래(2026-11-13 사용자) */
@@ -1306,7 +1306,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-acts .undo-ic .run { fill: none; stroke: #d97706; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 62.83; transform: rotate(-90deg); transform-origin: 12px 12px; animation: sxUndoRun 5s linear forwards; }
 @keyframes sxUndoRun { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 62.83; } }
 .sx-acts .sx-save { flex: 1; min-width: 0; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.2; padding: 0 10px; border: 0; background: #1f3a72; color: #fff; font-weight: 700; transition: background .15s, border-color .15s; }
-/* 매각분석 표 경매물건 줄 평당가 — 실제가 아니라 평균 매각평당가라 빨강(시세분석 '매매 예상'과 같은 뜻, 2026-11-12 사용자) */
+/* 매각분석 표 경매물건 줄 예상값(매각가 · 매각가율 · 응찰) — 실제가 아니라 사례 평균이라 빨강(시세분석 '매매 예상'과 같은 뜻, 2026-11-12 사용자) */
 .sx-tbl tr.me td.sx-est, tr.me td.sx-est { color: #e03e3e; }
 /* 매각분석 필터 부품 자리 — 지도 아래(예전 회색 조건 띠 자리), 안내 글은 그 아래 오른쪽 */
 .sx-filt { margin-top: 12px; display: grid; gap: 6px; }
@@ -7695,7 +7695,6 @@ span.cal-day.has { cursor: help; }
       n: rows.length, rates, sold: sxMean(sold), soldMed: sxMed(sold), appr: sxMean(both.map((r) => Number(r['감정가']))),
       avg: sxMean(rates), med: sxMed(rates), lo: rates.length ? Math.min(...rates) : null, hi: rates.length ? Math.max(...rates) : null,
       all: both.length ? sum('매각가') / sum('감정가') : null, bids: sxMean(bids),
-      py: sxMean(rows.map((r) => sxPerPy(r)).filter((v) => v > 0)),   /* 평균 매각평당가 — 시세분석 평균 평당가와 같은 셈 */
     };
     SX.statsOf = rows0; SX.statsDrop = sxDropVer;
     return SX.stats;
@@ -7722,14 +7721,6 @@ span.cal-day.has { cursor: help; }
     /* 금액은 일의 자리까지 빨갛게 — 왼쪽 경매물건 감정가 칸과 같은 크기 · 같은 줄(2026-11-06) */
     return `<span class="sx-vrow"><span class="v num" id="sxBid${k}">${ok ? `${Math.round(my * rate).toLocaleString('ko-KR')}원` : '-'}</span>${ok ? `<button type="button" class="sx-copy" data-act="sx-bid-copy" data-v="${Math.round(my * rate)}" aria-label="예상 입찰가 복사"${tip('일의 자리까지 복사')}>${I.copy}</button>` : ''}</span>`
       + `<span class="r" id="sxBid${k}r">${rate != null ? `감정가 × ${sxPct(rate)}` : ''}${!ok && rate != null ? ' · 감정가를 입력하세요' : ''}</span>`;
-  }
-  /* 넷째 칸 — 시세분석 매도가 예상과 같은 셈: 평균 매각평당가 × 경매물건 전용 평(고정카드의 전용면적) */
-  function sxPyBidHtml(py) {
-    const me = sxMe(); const m2 = me ? Number(me.bldg) : 0; const myPy = m2 > 0 ? m2 / 3.305785 : 0;
-    const ok = py > 0 && myPy > 0; const v = ok ? Math.round(py * myPy) : 0;
-    const note = !py ? '매각평당가를 낼 매각사례가 없습니다' : !me ? '물건카드로 경매물건을 고르세요' : !(myPy > 0) ? '경매물건 전용면적이 없습니다' : `평당 ${agWon(py)} × ${myPy.toFixed(1)}평`;
-    return `<span class="sx-vrow"><span class="v num">${ok ? `${v.toLocaleString('ko-KR')}원` : '-'}</span>${ok ? `<button type="button" class="sx-copy" data-act="sx-bid-copy" data-v="${v}" aria-label="예상 입찰가 복사"${tip('일의 자리까지 복사')}>${I.copy}</button>` : ''}</span>`
-      + `<span class="r">${esc(note)}</span>`;
   }
   function sxPaintBids() {
     const rows = sxRows(); if (!rows) return;
@@ -7840,7 +7831,7 @@ span.cal-day.has { cursor: help; }
     return sp ? `<td class="num area">${sxT2(sp).toFixed(2)}㎡<small>(${sxT2(m2).toFixed(2)})</small></td>` : `<td class="num area">-<small>(${sxT2(m2).toFixed(2)})</small></td>`;   /* 공급 모르면 '-' */
   };
   /* 검색리스트 맨 위 '내 물건' — 사건 고정카드의 물건(매각 전이라 매각가 · 매각가율 · 응찰은 비움) */
-  /* st — 위 매각사례 통계. 경매물건 줄의 매각가 · 평당가 · 매각가율 · 응찰은 실제가 아니라 사례 평균으로 낸 예상값을 빨강으로(표에서 비교해 보게, 2026-11-12 사용자) */
+  /* st — 위 매각사례 통계. 경매물건 줄의 매각가 · 매각가율 · 응찰은 실제가 아니라 사례 평균으로 낸 예상값을 빨강으로(표에서 비교해 보게, 2026-11-12 사용자) */
   function sxMeRowHtml(it, st) {
     if (it.__ref) return sxRowHtml(it.__ref).replace(/<tr class="[^"]*"/, '<tr class="me"');   /* 같은 지번 · 고른 지번 표시는 빼고 기준물건 빨간 줄만 */   /* 지역으로에서 고른 기준 매각물건 — 맨 윗줄 */
     const a = detailOf(it); const m2 = Number(it.bldg);
@@ -7854,7 +7845,7 @@ span.cal-day.has { cursor: help; }
         const est = (v, t, html, c = 'r num') => (v > 0 ? `<td class="${c} sx-est" data-tip="${t}" data-tip-pos="top">${html}</td>` : '<td>-</td>');   /* 매각가율은 아래 줄처럼 가운데(2026-11-17 사용자 — 경매물건 줄만 오른쪽으로 치우쳤다) */
         const rate = st && st.avg; const apr = Number(it.apr);
         return est(rate > 0 && apr > 0 ? Math.round(apr * rate) : 0, '예상 — 감정가 × 사례 평균 매각가율', agWon(Math.round(apr * (rate || 0))))
-          + est(st && st.py, '예상 — 사례 평균 매각평당가', agWon(st && st.py))
+          + '<td>-</td>'
           + est(rate, '예상 — 사례 평균 매각가율', `${((rate || 0) * 100).toFixed(1)}%`, 'num');
       })()}<td class="num">${esc(it.round || '-')}</td>${st && st.bids > 0 ? `<td class="num sx-est" data-tip="예상 — 사례 평균 응찰자수" data-tip-pos="top">${Math.round(st.bids)}명</td>` : '<td>-</td>'}`
       + `${sxAreaCell(m2, it.addr, /아파트/.test(String(a.propertyType || it.type || it.kind || '')))}${sxElevCell(it.addr)}<td class="num">${built}</td><td class="num">${age}</td><td class="num">-</td><td class="num">${fl}</td><td class="l" data-tip="${esc(full)}" data-tip-pos="right"><div class="sx-addr"><span class="addr">${addr || '-'}</span><span class="chips"><span class="same">경매지번</span></span></div></td></tr>`;
@@ -8131,7 +8122,7 @@ span.cal-day.has { cursor: help; }
       const view = rows.slice().sort((a, b) => { const x = sxVal(a, SX.sort); const y = sxVal(b, SX.sort); const c = typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'ko'); return SX.desc ? -c : c; });
       const snap = {
         v: 1, head, kind: q.kind || '', my: sxParseWon(SX.my) || 0, myPy: m2 > 0 ? m2 / 3.305785 : 0,   /* 평은 자르지 않는다 — 넷째 칸 금액이 웹과 원 단위까지 같게 */
-        n: st.n, appr: nz(st.appr), sold: nz(st.sold), soldMed: nz(st.soldMed), bids: nz(st.bids), lo: nz(st.lo), all: nz(st.all), avg: nz(st.avg), med: nz(st.med), hi: nz(st.hi), py: nz(st.py),
+        n: st.n, appr: nz(st.appr), sold: nz(st.sold), soldMed: nz(st.soldMed), bids: nz(st.bids), lo: nz(st.lo), all: nz(st.all), avg: nz(st.avg), med: nz(st.med), hi: nz(st.hi), py: null,   /* 평균 매각평당가는 2026-11-17 뺌 */
         rows: view.slice(0, 60).map((r) => ({ caseNo: String(r['사건번호'] || ''), date: String(r['매각일'] || ''), addr: sxShortAddr(String(r['소재지'] || '')), full: String(r['소재지'] || ''),
           appr: Number(r['감정가']) || 0, sold: Number(r['매각가']) || 0, rate: Number(r['매각가율']) || 0, bids: Number(r['응찰자수']) || 0, m2: Number(r['전용면적']) || 0,
           built: agBuiltYear(r) || 0, floor: r['층'] != null && r['층'] !== '' ? String(r['층']) : '', dist: nz(sxDistM(r['소재지'])) })),
@@ -8165,8 +8156,7 @@ span.cal-day.has { cursor: help; }
     const hero = `<section class="sx-card sx-hero" aria-label="분석결과"><div class="sx-where"><h2>${esc(where)} · ${esc(q.kind || '전체')}${S.route === 'market' && saleMode === 'region' && sxRef ? '<button type="button" class="sx-refx" data-act="sx-ref-clear">기준 해제 ×</button>' : ''}</h2><span>${esc([radTx, conds].filter(Boolean).join(' · '))}</span></div>`
       + `<div class="sx-my"><label for="sxMy">${me && me.__ref ? '기준물건 감정가' : !me && S.route === 'market' && saleMode === 'region' ? '감정가' : '경매물건 감정가'}</label><input id="sxMy" class="num" inputmode="numeric" autocomplete="off" placeholder="예: 235,000,000 또는 2억3500만" value="${esc(SX.my || '')}"><small>${me && me.__ref ? '표 · 지도에서 고른 기준물건의 감정가입니다' : me ? '사건 고정카드에서 자동으로 입력합니다' : '직접 넣거나, 표 · 지도에서 기준물건을 고르면 들어갑니다'}</small></div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 평균 매각가율</span>${sxBidHtml('A', st.avg)}</div>`
-      + `<div class="sx-bid"><span class="k">예상 입찰가 · 중앙값 매각가율</span>${sxBidHtml('B', st.med)}</div>`
-      + `<div class="sx-bid"><span class="k">예상 입찰가 · 평균 매각평당가</span>${sxPyBidHtml(st.py)}</div></section>`;
+      + `<div class="sx-bid"><span class="k">예상 입찰가 · 중앙값 매각가율</span>${sxBidHtml('B', st.med)}</div></section>`;   /* 평균 매각평당가 칸은 뺌 — 사례 건물 수준 따라 흔들려 지표로 안 씀(2026-11-17 사용자) */
     /* 0건 — 조회는 됐는데 아무것도 안 나오면 눌리지 않은 것처럼 보였다(2026-11-08). 왜 0건인지 적고, 조건을 바꿀 수 있게 지도 칸(검색 띠 · 아래 줄)은 그대로 */
     if (!st.n) {
       const re = SALE_KIND_RE[q.kind]; const place = [q.sgg, q.dong].filter(Boolean).join(' ') || q.sido;
