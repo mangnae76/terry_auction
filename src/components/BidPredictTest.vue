@@ -799,7 +799,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td class="recs">
                 <div v-if="g.recs.length" class="bpt-recs">
                   <template v-for="r in g.recs" :key="r.key">
-                    <span class="bpt-rec" :data-tip="REC_TIP">경쟁↓</span><button type="button" class="bpt-link" @click="pick = r.key">{{ caseLabel(r.key) }}</button><span class="pl">{{ r.place }}</span><span>{{ r.round }}차</span><span><b>{{ pct(r.pSold) }}</b> · {{ r.bids.toFixed(1) }}명</span><span class="nb">{{ r.bid50 != null ? won(r.bid50) : '—' }}</span><span><span v-if="isHug(r.key)" class="bpt-hug sm" data-tip="채권자 허그(주택도시보증공사)">허그</span></span>
+                    <span class="bpt-rec" :data-tip="REC_TIP">경쟁↓</span><button type="button" class="bpt-link" @click="pick = r.key">{{ caseLabel(r.key) }}</button><span class="pl">{{ r.place }}</span><span>{{ r.round }}차</span><span class="pb"><b>{{ pct(r.pSold) }}</b><i>·</i><em>{{ r.bids.toFixed(1) }}명</em></span><span class="nb">{{ r.bid50 != null ? won(r.bid50) : '—' }}</span><span><span v-if="isHug(r.key)" class="bpt-hug sm" data-tip="채권자 허그(주택도시보증공사)">허그</span></span>
                   </template>
                 </div>
                 <small v-else class="bpt-at">{{ g.listed ? '경쟁↓ 없음 · 조회수 받은 사건 중 응찰확률 30% 아래 · 예상응찰 1명 아래가 없음' : '조회수수집 뒤' }}</small>
@@ -1032,7 +1032,12 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-cal-grid .cell .ln.top { font-weight: 700; color: #213366; }
 .bpt-cal-grid .cell .ln .recchip { display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 4px; background: #e8f7ee; color: #15803d; font-size: 12px; font-weight: 700; line-height: 17px; vertical-align: 1px; }
 /* 어디로 갈까 */
+.bpt-go .bpt-ttl { margin: 0; font-size: 15px; font-weight: 800; color: #111827; }   /* h3 기본 여백(위아래 16px)을 걷어 다른 상자 제목과 같은 간격(2026-11-17 사용자) */
 .bpt-go .bpt-ttl small { font-size: 12px; font-weight: 400; color: #6b7280; margin-left: 8px; }
+.bpt-recs .pb { display: grid; grid-template-columns: 36px 16px 44px; align-items: baseline; font-variant-numeric: tabular-nums; }   /* 응찰확률 · 예상응찰 — % 끝자리 · 명 끝자리 세로로 맞춤 */
+.bpt-recs .pb b { text-align: right; }
+.bpt-recs .pb i { text-align: center; font-style: normal; color: #9ca3af; }
+.bpt-recs .pb em { text-align: right; font-style: normal; }
 .bpt-gotbl th, .bpt-gotbl td { text-align: center; vertical-align: middle; }   /* 말머리와 내용 중앙 맞춤(2026-11-16 사용자) */
 .bpt-gotbl td.kinds, .bpt-gotbl td.recs { white-space: normal; }   /* 종류 · 추천 칸은 칸 안에서 줄을 바꾼다(표가 옆으로 넘치지 않게) */
 .bpt-gotbl th.rechd { padding-left: 10px; padding-right: 10px; }
