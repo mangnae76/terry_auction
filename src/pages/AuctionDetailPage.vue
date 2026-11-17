@@ -179,8 +179,8 @@ const saleBids = computed(() => {
 });
 const saleMetrics = computed<Array<[string, string, boolean?]>>(() => {
   const s0 = saleSnap.value; if (!s0) return [];
-  return [['매각건수', `${s0.n.toLocaleString('ko-KR')}건`], ['평균 응찰자수', s0.bids != null ? `${s0.bids.toFixed(1)}명` : '-'], ['평균 감정가', saleWon(s0.appr)], ['평균 매각가', saleWon(s0.sold)],
-    ['중앙값 매각가', saleWon(s0.soldMed)], ['전체 매각가율', salePct(s0.all)], ['평균 매각가율', salePct(s0.avg), true], ['중앙값 매각가율', salePct(s0.med), true], ['최저 매각가율', salePct(s0.lo)], ['최고 매각가율', salePct(s0.hi)]];
+  return [['매각건수', `${s0.n.toLocaleString('ko-KR')}건`], ['평균 응찰자수', s0.bids != null ? `${s0.bids.toFixed(1)}명` : '-'], ['평균 감정가', saleWon(s0.appr)],   /* 평균 · 중앙값 매각가 금액 칸은 뺌 — 웹 매각분석과 같이(2026-11-17) */
+    ['전체 매각가율', salePct(s0.all)], ['평균 매각가율', salePct(s0.avg), true], ['중앙값 매각가율', salePct(s0.med), true], ['최저 매각가율', salePct(s0.lo)], ['최고 매각가율', salePct(s0.hi)]];
 });
 /** 앱 손품조사 하위 탭 — 매매수요 · 시세분석 · 매각분석(운영자만). 고른 탭은 이 기기에 남긴다(권리분석 탭과 같은 방식) */
 type SonSub = 'demand' | 'price' | 'sale';
