@@ -433,11 +433,11 @@ const score = computed(() => {
 /** 내 낙찰확률 — 아무도 안 올 확률 + (누가 올 확률 × 그 사람들보다 높게 쓸 확률). 예전엔 '누가 온다'고만 쳐서
  *  응찰확률이 2%인 물건도 최저가에서 0%로 그렸다(2026-11-14 사용자 — 파인힐타운이면 최저가를 쓰면 된다) */
 const myWin = (p: Pred) => { const d = p.after ?? p.before; const p0 = p.p0 ?? 0; return (w: number) => p0 + (1 - p0) * d.win(w); };
-const myQ = (p: Pred, prob: number, min: number) => {
-  const f = myWin(p); if (f(min) >= prob) return min;
-  let lo = min, hi = min * 2.5; for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (f(mid) < prob) lo = mid; else hi = mid; }
-  return Math.round(hi / 10_000) * 10_000;
-};
+/** 우리 입찰가 — 입찰자가 있을 때 그 확률로 이기는 값(조건부, 시험에서 말한 대로 맞은 쪽). 50% = 예상 낙찰가 가운데(2026-11-17 사용자 — 한 숫자 대신 확률별 입찰가를 주 결과로) */
+const Q_TIP = '입찰자가 있을 때 그 확률로 이기는 우리 입찰가 · 50%가 예상 낙찰가 가운데';
+const qOf = (it: Item, q: number) => { const p = preds.value.get(it.key)!; const d = p.after ?? p.before; return Math.max(it.target!.min, d.q(q)); };
+/** 매각된 사건 — 실제 낙찰가로 썼으면 이겼을 확률(조건부). 이 값보다 높게 써야 받는다 */
+const winAt = (it: Item) => { const p = preds.value.get(it.key); return p && it.result && it.result.sold > 0 ? (p.after ?? p.before).win(it.result.sold + 1) : null; };
 /** 입찰가별 낙찰확률 표 — 그날 보고 있는 동의 예측 있는 사건 */
 const PROBS = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8];   // 5% 단위 — 시험에서 확률이 실제와 맞았던 50 ~ 80% 만(85% 넘게는 튄 낙찰 몇 건이 좌우)
 /** 실제 낙찰가 칸은 끝난 기일만(다가오는 기일은 전부 '입찰 전') */
@@ -922,8 +922,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
           <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게. 칸마다 가장 넓은 내용(검암동 · 11-13 · 17 · 20 에서 잼) + 같은 여백 15px(정렬 머리는 화살표 자리 14px 더), 주소는 남는 폭(2026-11-17 사용자: 간격 균일) -->
-          <colgroup><col style="width: 112px" /><col style="width: 246px" /><col style="width: 53px" /><col style="width: 69px" /><col style="width: 52px" /><col style="width: 61px" /><col style="width: 47px" /><col style="width: 88px" /><col style="width: 54px" /><col style="width: 46px" /><col style="width: 94px" /><col style="width: 55px" /><col style="width: 93px" /><col style="width: 88px" /><col style="width: 78px" /></colgroup>
-          <thead><tr><th class="sort" @click="sortBy('key')">사건번호<i :class="['ar', { on: sortKey === 'key' }]">{{ sortKey === 'key' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="hd-addr">주소</th><th class="sort" @click="sortBy('year')">연식<i :class="['ar', { on: sortKey === 'year' }]">{{ sortKey === 'year' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('area')">전용<i :class="['ar', { on: sortKey === 'area' }]">{{ sortKey === 'area' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th>엘베</th><th class="r sort" @click="sortBy('views')">조회수<br>조회일<i :class="['ar', { on: sortKey === 'views' }]">{{ sortKey === 'views' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('round')">차수<i :class="['ar', { on: sortKey === 'round' }]">{{ sortKey === 'round' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('min')">최저가<i :class="['ar', { on: sortKey === 'min' }]">{{ sortKey === 'min' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('pSold')">응찰<br>확률<i :class="['ar', { on: sortKey === 'pSold' }]">{{ sortKey === 'pSold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('bids')">예상<br>응찰<i :class="['ar', { on: sortKey === 'bids' }]">{{ sortKey === 'bids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('pred')">예상<br>낙찰가<i :class="['ar', { on: sortKey === 'pred' }]">{{ sortKey === 'pred' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('actBids')">실제<br>응찰<i :class="['ar', { on: sortKey === 'actBids' }]">{{ sortKey === 'actBids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('sold')">실제<br>낙찰가<i :class="['ar', { on: sortKey === 'sold' }]">{{ sortKey === 'sold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
+          <colgroup><col style="width: 112px" /><col style="width: 226px" /><col style="width: 53px" /><col style="width: 69px" /><col style="width: 52px" /><col style="width: 61px" /><col style="width: 47px" /><col style="width: 88px" /><col style="width: 54px" /><col style="width: 46px" /><col style="width: 94px" /><col style="width: 55px" /><col style="width: 93px" /><col style="width: 108px" /><col style="width: 78px" /></colgroup>
+          <thead><tr><th class="sort" @click="sortBy('key')">사건번호<i :class="['ar', { on: sortKey === 'key' }]">{{ sortKey === 'key' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="hd-addr">주소</th><th class="sort" @click="sortBy('year')">연식<i :class="['ar', { on: sortKey === 'year' }]">{{ sortKey === 'year' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('area')">전용<i :class="['ar', { on: sortKey === 'area' }]">{{ sortKey === 'area' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th>엘베</th><th class="r sort" @click="sortBy('views')">조회수<br>조회일<i :class="['ar', { on: sortKey === 'views' }]">{{ sortKey === 'views' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('round')">차수<i :class="['ar', { on: sortKey === 'round' }]">{{ sortKey === 'round' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('min')">최저가<i :class="['ar', { on: sortKey === 'min' }]">{{ sortKey === 'min' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('pSold')">응찰<br>확률<i :class="['ar', { on: sortKey === 'pSold' }]">{{ sortKey === 'pSold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('bids')">예상<br>응찰<i :class="['ar', { on: sortKey === 'bids' }]">{{ sortKey === 'bids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" :data-tip="Q_TIP" @click="sortBy('pred')">우리 입찰가<br>50%<i :class="['ar', { on: sortKey === 'pred' }]">{{ sortKey === 'pred' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('actBids')">실제<br>응찰<i :class="['ar', { on: sortKey === 'actBids' }]">{{ sortKey === 'actBids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('sold')">실제<br>낙찰가<i :class="['ar', { on: sortKey === 'sold' }]">{{ sortKey === 'sold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r" data-tip="실제 낙찰가 − 50% 입찰가 · 이김 = 실제가 그 아래(50% 입찰가로 받았다) · 짐 = 그 위. 50% 입찰가가 맞다면 이김이 절반쯤">차이<br>이김 · 짐</th><th class="r" :data-tip="Q_TIP">입찰가<br>70% · 80%</th></tr></thead>
           <tbody>
             <tr v-for="it in shownItems" :key="it.key" :class="{ on: pick === it.key, off: !preds.has(it.key), rec: isRec(it.key) }" @click="pick = pick === it.key ? '' : it.key">
               <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button><span v-if="isRec(it.key)" class="bpt-rec under" :data-tip="REC_TIP">경쟁↓</span></td>
@@ -941,16 +941,16 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td v-else>—</td>
               <td class="r">{{ it.result ? (it.result.sold > 0 ? (it.result.bids ? `${it.result.bids}명` : '모름') : '유찰') : '입찰 전' }}</td>
               <td class="r act-sold"><span v-if="it.result && it.result.sold > 0" class="bpt-nb">{{ won(it.result.sold) }}<small v-if="it.target?.appr" class="bpt-at bpt-nb"><span v-if="hugWon(it.key)" class="bpt-hug sm" :data-tip="HUG_WON_TIP">허그</span>{{ apprPct(it.result.sold, it.target.appr) }}</small></span><template v-else>—</template></td>
-              <td v-if="it.result && it.result.sold > 0 && preds.get(it.key)" class="r"><span class="bpt-nb">{{ signWon(it.result.sold - (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small class="bpt-at bpt-nb">{{ sgn(it.result.sold / (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median - 1) }}</small></span></td>
+              <td v-if="it.result && it.result.sold > 0 && preds.get(it.key)" class="r"><span class="bpt-nb"><span :class="['bpt-win', { lose: it.result.sold > qOf(it, 0.5) }]">{{ it.result.sold > qOf(it, 0.5) ? '짐' : '이김' }}</span>{{ signWon(it.result.sold - (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small class="bpt-at bpt-nb">{{ sgn(it.result.sold / (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median - 1) }}</small></span></td>
               <td v-else class="r">—</td>
-              <td v-if="preds.get(it.key)" class="r two"><span class="bpt-nb rng">{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).lo) }} ~<small>{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).hi) }}<i class="ghost" aria-hidden="true"> ~</i></small></span></td>
+              <td v-if="preds.get(it.key)" class="r two"><span class="bpt-nb">{{ won(qOf(it, 0.7)) }}<small>{{ won(qOf(it, 0.8)) }}</small></span></td>
               <td v-else>—</td>
             </tr>
           </tbody>
         </table>
       </div>
-      <p v-if="useHits" class="bpt-sub">경쟁↓ · 응찰확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 사람이 안 들어오면 최저가로 낙찰) · 머리글 ▲▼ 로 정렬, 처음은 응찰확률 낮은 순 · 허그 · 실제 낙찰자가 허그(주택도시보증공사)면 실제 낙찰가 % 앞에 칩 · 조회일 · 누적에 넣은 마지막 날 · 빨간 '~11.14'는 그날까지만 모은 것(매각 전날까지 못 모음), 조회수수집 다시 · 예상응찰 · 입찰자 있을 때 · 신건은 확률만 · 줄 누르면 자세히</p>
-      <p v-else class="bpt-sub">예상 낙찰가 · 조회수 규칙 반영(없으면 비슷한 물건 인원 비율) · 줄 누르면 자세히</p>
+      <p v-if="useHits" class="bpt-sub">경쟁↓ · 응찰확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 사람이 안 들어오면 최저가로 낙찰) · 머리글 ▲▼ 로 정렬, 처음은 응찰확률 낮은 순 · 허그 · 실제 낙찰자가 허그(주택도시보증공사)면 실제 낙찰가 % 앞에 칩 · 조회일 · 누적에 넣은 마지막 날 · 빨간 '~11.14'는 그날까지만 모은 것(매각 전날까지 못 모음), 조회수수집 다시 · 예상응찰 · 입찰자 있을 때 · 신건은 확률만 · 우리 입찰가 50 · 70 · 80% · 입찰자가 있을 때 그 확률로 이기는 값(50%가 예상 낙찰가 가운데) · 차이 · 실제 낙찰가 − 50% 입찰가, 이김 = 50% 입찰가로 받았다 · 줄 누르면 자세히</p>
+      <p v-else class="bpt-sub">우리 입찰가 50% · 조회수 규칙 반영(없으면 비슷한 물건 인원 비율) · 줄 누르면 자세히</p>
     </section>
 
     <!-- 입찰가별 낙찰확률 — 예상 낙찰가 한 숫자는 평균 7% 안팎 틀린다(6월~11-12 시험, 인원을 알아도 6%). 대신 낙찰확률은 말한 대로 맞았다
@@ -981,8 +981,9 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="bpt-flow">
         <div class="bpt-tile"><span>전일까지 누적 조회수</span><b>{{ sel.views.toLocaleString('ko-KR') }}회</b><small>{{ useHits ? `${sel.viewAt.slice(5).replace('-', '.')}까지 · 그날 이전 ${selP.vmN.toLocaleString('ko-KR')}회차로 배움` : selP.vmN ? `조회수 규칙 ${selP.vmN}건으로 배움` : '조회수 규칙 없음(6건 이상 필요)' }}</small></div>
         <div class="bpt-tile"><span>예상 응찰 인원</span><b>{{ selP.expBids != null ? `약 ${Math.round(selP.expBids)}명` : BAND_NAMES[selP.piBefore.indexOf(Math.max(...selP.piBefore))] + ' 가장 흔함' }}</b><small>{{ selP.p0 != null ? `${useHits ? '매각된다고 칠 때 · ' : ''}유찰 확률 ${pct(selP.p0)}` : `비슷한 물건 ${selP.simN}건${selP.loose ? '(조건 넓힘)' : ''}` }}</small></div>
-        <div class="bpt-tile key"><span>예상 낙찰가(가운데)</span><b>{{ won((selP.after ?? selP.before).median) }}</b><small>예상범위 {{ won((selP.after ?? selP.before).lo) }} ~ {{ won((selP.after ?? selP.before).hi) }}</small></div>
-        <div class="bpt-tile"><span>낙찰확률 60%로 쓰려면</span><b>{{ won(myQ(selP, 0.6, sel.target.min)) }}</b><small>50% {{ won(myQ(selP, 0.5, sel.target.min)) }} · 70% {{ won(myQ(selP, 0.7, sel.target.min)) }}{{ selP.p0 != null && selP.p0 >= 0.5 ? ' · 아무도 안 올 확률이 커 최저가 근처' : '' }}</small></div>
+        <div class="bpt-tile key wide"><span>우리 입찰가 · 이길 확률별(입찰자가 있을 때)</span>
+          <div class="bpt-qs"><div v-for="q in [0.5, 0.6, 0.7, 0.8]" :key="q" :class="['bpt-q', { on: q === 0.7 }]"><span class="p">{{ pct(q) }}{{ q === 0.7 ? ' 추천' : '' }}</span><b class="w">{{ won(qOf(sel, q)) }}</b><span class="a">감정가 {{ apprPct(qOf(sel, q), sel.target.appr) }}</span></div></div>
+          <small>{{ selP.p0 != null ? `아무도 안 올 확률 ${pct(selP.p0)} · 그러면 최저가로도 낙찰` : '' }}{{ sel.result && sel.result.sold > 0 ? `${selP.p0 != null ? ' · ' : ''}실제 ${won(sel.result.sold)}${hugWon(sel.key) ? '(허그)' : ''} — ${winAt(sel) == null ? '' : winAt(sel)! >= 0.995 ? '80% 입찰가로도 이겼다' : `${pct(winAt(sel)!)}로 썼어야 이김`}` : '' }}</small></div>
       </div>
       <div class="bpt-two">
         <div class="bpt-box">
@@ -1217,6 +1218,17 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tile b { font-size: 19px; font-variant-numeric: tabular-nums; }
 .bpt-tile.key b { color: #1f5fe0; }
 .bpt-tile small { font-size: 12px; color: #4b5563; }
+.bpt-flow:has(.bpt-tile.wide) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr); }   /* 우리 입찰가 카드가 둘 몫 */
+.bpt-qs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 2px; }
+.bpt-q { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border-radius: 8px; min-width: 0; }
+.bpt-q .p { font-size: 12px; color: #4b5563; font-weight: 700; }
+.bpt-tile.key .bpt-q .w { font-size: 16px; font-weight: 400; color: #1f2937; font-variant-numeric: tabular-nums; }   /* .bpt-tile.key b 의 파랑을 이긴다 — 추천(70%)만 파랑 · 굵게 */
+.bpt-q .a { font-size: 12px; color: #6b7280; }
+.bpt-q.on { background: #fff; border: 1px solid #dbe5fa; }
+.bpt-tile.key .bpt-q.on .w { font-size: 19px; font-weight: 800; color: #1f5fe0; }
+.bpt-q.on .p { color: #1f5fe0; }
+.bpt-tbl td .bpt-win { display: inline-block; padding: 0 4px; margin: 0 3px 0 0; border-radius: 3px; background: #e8f7ee; color: #15803d; font-size: 12px; line-height: 15px; font-weight: 700; vertical-align: 1px; }   /* 차이 칸 — 50% 입찰가로 받았으면 이김 */
+.bpt-tbl td .bpt-win.lose { background: #f3f4f6; color: #6b7280; }
 .bpt-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 12px; }
 .bpt-legend { display: flex; gap: 14px; margin: 0; font-size: 12px; color: #374151; }
 .bpt-legend span { display: inline-flex; align-items: center; gap: 5px; }
