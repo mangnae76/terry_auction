@@ -227,6 +227,8 @@ export type HitDoc = {
   fails: number; next: string; state: string; asOf: string; ev: { d: string; l: string }[]; hd: string[]; hc: number[]; he: number[]; at: number;
   /** 채권자 — '주택도시보증공사'(허그)면 허그가 보증금 채권으로 입찰할 가능성이 높다(2026-11-16). 없으면 '' */
   creditor: string;
+  /** 낙찰자 — 탱크 표기 그대로 가림 글자(김○○, 주○○○○○○○ = 주택도시보증공사). 매각 전이거나 못 읽으면 ''(2026-11-17) */
+  winner: string;
 };
 /** 기일별물건 달력 숫자 — 모든 법원 · 계 · 날짜 · 건수, 달마다 문서 하나(마이가 탱크옥션을 열 때 저장). 어느 법원으로 갈지(2026-11-16) */
 export type CalRow = { d: string; court: string; dept: string; n: number };
@@ -243,6 +245,6 @@ export const loadHits = async (dong: string): Promise<HitDoc[]> => {
     const n = (v: unknown) => (typeof v === 'number' ? v : 0); const arr = <T,>(v: unknown) => (Array.isArray(v) ? (v as T[]) : []);
     return { key: String(x.key ?? ''), tid: String(x.tid ?? d.id), dong: String(x.dong ?? ''), addr: String(x.addr ?? ''), kind: String(x.kind ?? ''), area: typeof x.area === 'number' ? x.area : null,
       appr: n(x.appr), min: n(x.min), sold: n(x.sold), bids: n(x.bids), second: n(x.second), fails: n(x.fails), next: String(x.next ?? ''), state: String(x.state ?? ''), asOf: String(x.asOf ?? ''),
-      ev: arr<{ d: string; l: string }>(x.ev), hd: arr<string>(x.hd), hc: arr<number>(x.hc), he: arr<number>(x.he), at: x.at?.toMillis?.() ?? 0, creditor: String(x.creditor ?? '') };
+      ev: arr<{ d: string; l: string }>(x.ev), hd: arr<string>(x.hd), hc: arr<number>(x.hc), he: arr<number>(x.he), at: x.at?.toMillis?.() ?? 0, creditor: String(x.creditor ?? ''), winner: String(x.winner ?? '') };
   });
 };

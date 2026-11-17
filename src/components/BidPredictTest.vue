@@ -249,6 +249,10 @@ const manN = (n: number) => `${Math.round(n / 1e4).toLocaleString('ko-KR')}만`;
  * 허그 예상 입찰가 = 그날 이전 같은 차수 허그 채권 매각의 낙찰가 ÷ 감정가 중앙값(10~90% 구간). 6월~11-16 시험: 2차 70~81%(중앙 72) · 3차 56~70%(63) · 4차 44~54%(52) ===== */
 const credOf = computed(() => new Map(hitDocs.value.map((h) => [h.key, h.creditor])));
 const isHug = (key: string) => /주택도시보증/.test(credOf.value.get(key) ?? '');
+/** 허그가 직접 낙찰 — 탱크는 낙찰자를 가림 글자로 준다. '주○○○○○○○'(여덟 자)이고 채권자가 허그면 주택도시보증공사로 본다(2026-11-17 사용자 — 칩은 실제 낙찰가에만) */
+const winOf = computed(() => new Map(hitDocs.value.map((h) => [h.key, h.winner])));
+const hugWon = (key: string) => { const w = winOf.value.get(key) ?? ''; return /주택도시보증/.test(w) || (/^주○{7}$/.test(w) && isHug(key)); };
+const HUG_WON_TIP = '허그 낙찰 · 낙찰자 주○○○○○○○(주택도시보증공사) — 채권자인 허그가 보증금 채권으로 직접 받았습니다';
 /** 채권자 짧게 — '주택도시보증공사' → 허그, '서울보증보험(주)' → 서울보증보험 */
 const credShort = (key: string) => { const c = credOf.value.get(key) ?? ''; return !c ? '' : /주택도시보증/.test(c) ? '허그' : c.replace(/\(주\)|주식회사|㈜/g, '').trim().slice(0, 7); };
 type HugBand = { n: number; p10: number; p50: number; p90: number };
@@ -259,7 +263,6 @@ const hugBands = computed<Map<number, HugBand>>(() => {
   by.forEach((xs, k) => { if (xs.length < 5) return; xs.sort((a, b) => a - b); const q = (p: number) => xs[Math.min(xs.length - 1, Math.floor(p * xs.length))]; out.set(k, { n: xs.length, p10: q(0.1), p50: medianOf(xs), p90: q(0.9) }); });
   return out;
 });
-const hugOf = (it: Item): HugBand | null => (it.target && isHug(it.key) ? hugBandFor(it.key, it.target.round, it.target.appr, dayDate.value) : null);
 const medianOf = (xs: number[]) => { const n = xs.length; return n % 2 ? xs[(n - 1) / 2] : (xs[n / 2 - 1] + xs[n / 2]) / 2; };
 /** 허그 띠 — 같은 차수 중 감정가 ±25% 인 과거 허그 매각(5건 이상)이 있으면 그것으로, 없으면 차수 전체 띠 */
 const hugBandFor = (key: string, round: number, appr: number, before: string): HugBand | null => {
@@ -904,7 +907,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td class="recs">
                 <div v-if="g.recs.length" class="bpt-recs">
                   <template v-for="r in g.recs" :key="r.key">
-                    <span class="bpt-rec" :data-tip="REC_TIP">경쟁↓</span><button type="button" class="bpt-link" @click="pick = r.key">{{ caseLabel(r.key) }}</button><span class="pl">{{ r.place }}</span><span>{{ r.round }}차</span><span><b>{{ pct(r.pSold) }}</b> · {{ r.bids.toFixed(1) }}명</span><span class="nb">{{ r.bid50 != null ? won(r.bid50) : '—' }}</span><span><span v-if="isHug(r.key)" class="bpt-hug">허그</span></span>
+                    <span class="bpt-rec" :data-tip="REC_TIP">경쟁↓</span><button type="button" class="bpt-link" @click="pick = r.key">{{ caseLabel(r.key) }}</button><span class="pl">{{ r.place }}</span><span>{{ r.round }}차</span><span><b>{{ pct(r.pSold) }}</b> · {{ r.bids.toFixed(1) }}명</span><span class="nb">{{ r.bid50 != null ? won(r.bid50) : '—' }}</span><span><span v-if="isHug(r.key)" class="bpt-hug sm" data-tip="채권자 허그(주택도시보증공사)">허그</span></span>
                   </template>
                 </div>
                 <small v-else class="bpt-at">{{ g.listed ? '경쟁↓ 없음 · 조회수 받은 사건 중 응찰확률 30% 아래 · 예상응찰 1명 아래가 없음' : '조회수수집 뒤' }}</small>
@@ -947,8 +950,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
           <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게. 칸마다 가장 넓은 내용(검암동 · 11-13 · 17 · 20 에서 잼) + 같은 여백 15px(정렬 머리는 화살표 자리 14px 더), 주소는 남는 폭(2026-11-17 사용자: 간격 균일) -->
-          <colgroup><col style="width: 112px" /><col style="width: 226px" /><col style="width: 53px" /><col style="width: 69px" /><col style="width: 52px" /><col style="width: 61px" /><col style="width: 47px" /><col style="width: 88px" /><col style="width: 74px" /><col style="width: 46px" /><col style="width: 94px" /><col style="width: 55px" /><col style="width: 93px" /><col style="width: 88px" /><col style="width: 78px" /></colgroup>
-          <thead><tr><th class="sort" @click="sortBy('key')">사건번호<i :class="['ar', { on: sortKey === 'key' }]">{{ sortKey === 'key' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="hd-addr">주소</th><th class="sort" @click="sortBy('year')">연식<i :class="['ar', { on: sortKey === 'year' }]">{{ sortKey === 'year' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('area')">전용<i :class="['ar', { on: sortKey === 'area' }]">{{ sortKey === 'area' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th>엘베</th><th class="r sort" @click="sortBy('views')">조회수<br>조회일<i :class="['ar', { on: sortKey === 'views' }]">{{ sortKey === 'views' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('round')">차수<i :class="['ar', { on: sortKey === 'round' }]">{{ sortKey === 'round' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('min')">최저가<i :class="['ar', { on: sortKey === 'min' }]">{{ sortKey === 'min' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('pSold')">응찰확률<i :class="['ar', { on: sortKey === 'pSold' }]">{{ sortKey === 'pSold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('bids')">예상<br>응찰<i :class="['ar', { on: sortKey === 'bids' }]">{{ sortKey === 'bids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('pred')">예상<br>낙찰가<i :class="['ar', { on: sortKey === 'pred' }]">{{ sortKey === 'pred' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('actBids')">실제<br>응찰<i :class="['ar', { on: sortKey === 'actBids' }]">{{ sortKey === 'actBids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('sold')">실제<br>낙찰가<i :class="['ar', { on: sortKey === 'sold' }]">{{ sortKey === 'sold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
+          <colgroup><col style="width: 112px" /><col style="width: 246px" /><col style="width: 53px" /><col style="width: 69px" /><col style="width: 52px" /><col style="width: 61px" /><col style="width: 47px" /><col style="width: 88px" /><col style="width: 54px" /><col style="width: 46px" /><col style="width: 94px" /><col style="width: 55px" /><col style="width: 93px" /><col style="width: 88px" /><col style="width: 78px" /></colgroup>
+          <thead><tr><th class="sort" @click="sortBy('key')">사건번호<i :class="['ar', { on: sortKey === 'key' }]">{{ sortKey === 'key' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="hd-addr">주소</th><th class="sort" @click="sortBy('year')">연식<i :class="['ar', { on: sortKey === 'year' }]">{{ sortKey === 'year' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('area')">전용<i :class="['ar', { on: sortKey === 'area' }]">{{ sortKey === 'area' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th>엘베</th><th class="r sort" @click="sortBy('views')">조회수<br>조회일<i :class="['ar', { on: sortKey === 'views' }]">{{ sortKey === 'views' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('round')">차수<i :class="['ar', { on: sortKey === 'round' }]">{{ sortKey === 'round' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('min')">최저가<i :class="['ar', { on: sortKey === 'min' }]">{{ sortKey === 'min' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="sort" @click="sortBy('pSold')">응찰<br>확률<i :class="['ar', { on: sortKey === 'pSold' }]">{{ sortKey === 'pSold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('bids')">예상<br>응찰<i :class="['ar', { on: sortKey === 'bids' }]">{{ sortKey === 'bids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('pred')">예상<br>낙찰가<i :class="['ar', { on: sortKey === 'pred' }]">{{ sortKey === 'pred' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('actBids')">실제<br>응찰<i :class="['ar', { on: sortKey === 'actBids' }]">{{ sortKey === 'actBids' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r sort" @click="sortBy('sold')">실제<br>낙찰가<i :class="['ar', { on: sortKey === 'sold' }]">{{ sortKey === 'sold' ? (sortDir > 0 ? '▲' : '▼') : '↕' }}</i></th><th class="r">차이</th><th class="r">예상범위</th></tr></thead>
           <tbody>
             <tr v-for="it in shownItems" :key="it.key" :class="{ on: pick === it.key, off: !preds.has(it.key), rec: isRec(it.key) }" @click="pick = pick === it.key ? '' : it.key">
               <td><button type="button" class="bpt-link" @click.stop="pick = it.key">{{ caseLabel(it.key) }}</button><span v-if="isRec(it.key)" class="bpt-rec under" :data-tip="REC_TIP">경쟁↓</span></td>
@@ -962,10 +965,10 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td class="r"><span v-if="it.target" class="bpt-nb">{{ won(it.target.min) }}<small v-if="it.target.appr" class="bpt-at bpt-nb">{{ apprPct(it.target.min, it.target.appr) }}</small></span><template v-else>자료 없음</template></td>
               <td>{{ sellOf(it.key) ? pct(sellOf(it.key)!.pSold) : '—' }}</td>
               <td class="r">{{ sellOf(it.key) ? `${sellOf(it.key)!.expBids.toFixed(1)}명` : '—' }}</td>
-              <td v-if="preds.get(it.key)" class="r strong"><span class="bpt-nb">{{ won((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small v-if="it.target?.appr" class="bpt-at bpt-nb"><span v-if="isHug(it.key)" class="bpt-hug sm" :data-tip="hugOf(it) ? `허그 채권 · 그날 이전 같은 차수 허그 채권 매각 ${hugOf(it)!.n}건의 낙찰가÷감정가 중앙 ${Math.round(hugOf(it)!.p50 * 100)}%(10~90% 구간 ${Math.round(hugOf(it)!.p10 * 100)}~${Math.round(hugOf(it)!.p90 * 100)}%)로 계산합니다` : '허그 채권 · 같은 차수 허그 매각 자료가 모자라 일반 방식으로 계산합니다'">허그</span>{{ apprPct((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median, it.target.appr) }}</small></span></td>
+              <td v-if="preds.get(it.key)" class="r strong"><span class="bpt-nb">{{ won((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small v-if="it.target?.appr" class="bpt-at bpt-nb">{{ apprPct((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median, it.target.appr) }}</small></span></td>
               <td v-else>—</td>
               <td class="r">{{ it.result ? (it.result.sold > 0 ? (it.result.bids ? `${it.result.bids}명` : '모름') : '유찰') : '입찰 전' }}</td>
-              <td class="r act-sold"><span v-if="it.result && it.result.sold > 0" class="bpt-nb">{{ won(it.result.sold) }}<small v-if="it.target?.appr" class="bpt-at bpt-nb">{{ apprPct(it.result.sold, it.target.appr) }}</small></span><template v-else>—</template></td>
+              <td class="r act-sold"><span v-if="it.result && it.result.sold > 0" class="bpt-nb">{{ won(it.result.sold) }}<small v-if="it.target?.appr" class="bpt-at bpt-nb"><span v-if="hugWon(it.key)" class="bpt-hug sm" :data-tip="HUG_WON_TIP">허그</span>{{ apprPct(it.result.sold, it.target.appr) }}</small></span><template v-else>—</template></td>
               <td v-if="it.result && it.result.sold > 0 && preds.get(it.key)" class="r"><span class="bpt-nb">{{ signWon(it.result.sold - (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small class="bpt-at bpt-nb">{{ sgn(it.result.sold / (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median - 1) }}</small></span></td>
               <td v-else class="r">—</td>
               <td v-if="preds.get(it.key)" class="r two"><span class="bpt-nb rng">{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).lo) }} ~<small>{{ manN((preds.get(it.key)!.after ?? preds.get(it.key)!.before).hi) }}<i class="ghost" aria-hidden="true"> ~</i></small></span></td>
@@ -974,7 +977,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
           </tbody>
         </table>
       </div>
-      <p v-if="useHits" class="bpt-sub">경쟁↓ · 응찰확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 사람이 안 들어오면 최저가로 낙찰) · 머리글 ▲▼ 로 정렬, 처음은 응찰확률 낮은 순 · 허그 · 채권자가 허그(주택도시보증공사)면 예상 낙찰가 % 앞에 칩, 예상 낙찰가는 그날 이전 같은 차수 허그 채권 매각의 낙찰가÷감정가 중앙값 · 조회일 · 누적에 넣은 마지막 날 · 빨간 '~11.14'는 그날까지만 모은 것(매각 전날까지 못 모음), 조회수수집 다시 · 예상응찰 · 입찰자 있을 때 · 신건은 확률만 · 줄 누르면 자세히</p>
+      <p v-if="useHits" class="bpt-sub">경쟁↓ · 응찰확률 30% 아래 · 예상응찰 1명 아래(채권자는 가리지 않음 — 사람이 안 들어오면 최저가로 낙찰) · 머리글 ▲▼ 로 정렬, 처음은 응찰확률 낮은 순 · 허그 · 실제 낙찰자가 허그(주택도시보증공사)면 실제 낙찰가 % 앞에 칩 · 채권자가 허그면 예상 낙찰가는 그날 이전 같은 차수 허그 채권 매각의 낙찰가÷감정가 중앙값 · 조회일 · 누적에 넣은 마지막 날 · 빨간 '~11.14'는 그날까지만 모은 것(매각 전날까지 못 모음), 조회수수집 다시 · 예상응찰 · 입찰자 있을 때 · 신건은 확률만 · 줄 누르면 자세히</p>
       <p v-else class="bpt-sub">예상 낙찰가 · 조회수 규칙 반영(없으면 비슷한 물건 인원 비율) · 줄 누르면 자세히</p>
     </section>
 
@@ -985,7 +988,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
           <colgroup><col style="width: 108px" /><col /><col style="width: 92px" /><col style="width: 68px" /><col v-for="p in PROBS" :key="p" style="width: 88px" /><col v-if="probPast" style="width: 96px" /></colgroup>
-          <thead><tr><th>사건번호</th><th class="l">주소</th><th>최저가</th><th>응찰확률</th><th v-for="p in PROBS" :key="p" class="r">낙찰확률<br>{{ Math.round(p * 100) }}%</th><th v-if="probPast" class="r">실제 낙찰가</th></tr></thead>
+          <thead><tr><th>사건번호</th><th class="l">주소</th><th>최저가</th><th>응찰<br>확률</th><th v-for="p in PROBS" :key="p" class="r">낙찰확률<br>{{ Math.round(p * 100) }}%</th><th v-if="probPast" class="r">실제 낙찰가</th></tr></thead>
           <tbody>
             <tr v-for="r in probRows" :key="r.key">
               <td>{{ caseLabel(r.key) }}</td>
@@ -993,7 +996,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td><span class="bpt-nb">{{ won(r.min) }}</span></td>
               <td>{{ r.pSold != null ? pct(r.pSold) : '—' }}</td>
               <td v-for="(b, i) in r.bids" :key="i" :class="['r', { win: r.sold > 0 && b > r.sold, lose: r.sold > 0 && b <= r.sold }]"><span class="bpt-nb">{{ won(b) }}</span></td>
-              <td v-if="probPast" class="r act-sold"><span v-if="r.sold > 0" class="bpt-nb">{{ won(r.sold) }}</span><template v-else>{{ r.failed ? '유찰' : '입찰 전' }}</template></td>
+              <td v-if="probPast" class="r act-sold"><span v-if="r.sold > 0" class="bpt-nb"><span v-if="hugWon(r.key)" class="bpt-hug sm" :data-tip="HUG_WON_TIP">허그</span>{{ won(r.sold) }}</span><template v-else>{{ r.failed ? '유찰' : '입찰 전' }}</template></td>
             </tr>
           </tbody>
         </table>
