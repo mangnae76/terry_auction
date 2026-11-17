@@ -10903,12 +10903,8 @@ const goBack = () => router.back();
                   @click="surveyReportOpen = !surveyReportOpen"
                 >
                   <span v-if="surveyForm.surveyReport.length === 0" class="adp-multi-placeholder">선택</span>
-                  <span
-                    v-for="opt in surveyForm.surveyReport"
-                    :key="opt"
-                    class="adp-multi-chip"
-                    @click.stop="removeSurveyReportChip(opt)"
-                  >{{ opt }} <em>×</em></span>
+                  <!-- 고른 것은 알약이 아니라 다른 줄처럼 쉼표로 이은 글 한 줄(2026-11-17 사용자). 빼기는 목록에서 다시 누르면 된다 -->
+                  <span v-else class="adp-multi-text">{{ surveyForm.surveyReport.join(', ') }}</span>
                   <span class="adp-multi-caret">▾</span>
                 </button>
                 <div v-if="surveyReportOpen" class="adp-multi-panel" @click.stop>
@@ -14321,6 +14317,7 @@ input.cmp-rk.in.typed { background: #fff8e6; border-color: #d97706; color: #b453
   font-size: 11.5px; font-weight: 700; color: #374151;
 }
 .adp-multi-chip em { font-style: normal; color: #9ca3af; font-size: 12px; }
+.adp-multi-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: #111827; }   /* 입찰자 현황조사 — 고른 것 글 한 줄(다른 줄의 '단전 X, 단수 X' 꼴) */
 /* 현황조사 비고 — 고른 말 아래에서 남은 폭을 다 쓴다 */
 .adp-survey-note { flex: 1 1 auto; min-width: 0; display: flex; }
 .adp-survey-note .adp-fs-input { width: 100%; }
