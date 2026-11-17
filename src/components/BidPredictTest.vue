@@ -854,7 +854,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               </div>
             </div>
             <div class="bpt-qsl">
-              <div class="bar"><span class="k">낙찰확률</span><input v-model.number="qPct" type="range" min="50" max="80" step="1" aria-label="낙찰확률" /><span class="bub" :style="{ left: `${(qPct - 50) / 30 * 100}%` }">{{ qPct }}%</span></div>
+              <div class="bar"><span class="k"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="1" fill="currentColor" /></svg>낙찰확률</span><input v-model.number="qPct" type="range" min="50" max="80" step="1" aria-label="낙찰확률" /><span class="bub" :style="{ left: `${(qPct - 50) / 30 * 100}%` }">{{ qPct }}%</span></div>
               <div class="tk"><span v-for="t in [50, 55, 60, 65, 70, 75, 80]" :key="t" :class="{ b: t % 10 === 0 }" :style="{ left: `${(t - 50) / 30 * 100}%` }"><i />{{ t }}%</span></div>
             </div>
             <div class="bpt-qout">
@@ -1138,7 +1138,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tile.key .bpt-q.on .w, .bpt-tile.key .bpt-q.on .w small { color: #1f5fe0; }
 .bpt-qsl { position: relative; margin: 6px 82px 0; padding-bottom: 22px; }
 .bpt-qsl .bar { position: relative; display: flex; align-items: center; }
-.bpt-qsl .bar .k { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); line-height: 1; font-size: 12px; font-weight: 700; color: #4b5563; white-space: nowrap; }   /* 막대와 가로 일직선 */
+.bpt-qsl .bar .k { position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; gap: 4px; line-height: 1; font-size: 12px; font-weight: 700; color: #4b5563; white-space: nowrap; }
+.bpt-qsl .bar .k svg { color: #2b6df3; }   /* 과녁 아이콘 */   /* 막대와 가로 일직선 */
 .bpt-qsl .bar input[type='range'] { display: block; width: calc(100% + 16px); margin: 0 -8px; height: 16px; accent-color: #2b6df3; cursor: pointer; }   /* 손잡이 가운데가 0 · 100% 자리에 오게 손잡이 폭만큼 늘림 */
 .bpt-qsl .bar .bub { position: absolute; top: 27px; transform: translateX(-50%); z-index: 2; font-size: 11px; font-weight: 800; color: #fff; background: #1f5fe0; border-radius: 6px; padding: 0 7px; line-height: 20px; white-space: nowrap; pointer-events: none; font-variant-numeric: tabular-nums; }   /* 막대 아래 눈금 줄 — 50 · 60 · 70 · 80에 오면 눈금 글자를 덮는다 */
 .bpt-qsl .bar .bub::after { content: ""; position: absolute; left: 50%; top: -3px; width: 7px; height: 7px; background: #1f5fe0; transform: translateX(-50%) rotate(45deg); border-radius: 1px; }
