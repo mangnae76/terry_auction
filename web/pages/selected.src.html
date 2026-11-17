@@ -8177,7 +8177,7 @@ span.cal-day.has { cursor: help; }
       ['최저 매각가율', sxPct(st.lo)], ['전체 매각가율', sxPct(st.all)], ['평균 매각가율', sxPct(st.avg), 1], ['중앙값 매각가율', sxPct(st.med), 1], ['최고 매각가율', sxPct(st.hi)]]
       .map(([k, v, key]) => `<div class="m${key ? ' key' : ''}"><span class="k">${k}</span><span class="v num">${v}</span></div>`).join('');
     const dist = st.rates.length
-      ? `<section class="sx-card sx-dist" aria-label="매각가율 분포"><div class="sx-dist-h"><h3 class="sx-sec">매각가율 분포 · ${st.rates.length.toLocaleString('ko-KR')}건</h3><div class="sx-legend"><span>평균</span><span class="med">중앙값</span><span class="over">100% 이상</span></div></div>${sxChart(st)}</section>`
+      ? `<section class="sx-card sx-dist" aria-label="유사물건 매각가율 분포"><div class="sx-dist-h"><h3 class="sx-sec">유사물건 매각가율 분포 · ${st.rates.length.toLocaleString('ko-KR')}건</h3><div class="sx-legend"><span>평균</span><span class="med">중앙값</span><span class="over">100% 이상</span></div></div>${sxChart(st)}</section>`
       : '';
     sxSnapSave(me, q, st, rows, [where, q.kind || '전체', radTx, conds].filter(Boolean).join(' · '));
     return `<div class="sx-results" id="sxResults">${hero}<section class="sx-card sx-metrics-card" aria-label="유사물건 매각지표"><h3 class="sx-sec">유사물건 매각지표 · ${st.n.toLocaleString('ko-KR')}건</h3><div class="sx-metrics">${metrics}</div></section>${dist}${sxMapCardHtml()}<section class="sx-card sx-list" aria-label="인근 유사 매각사례">${sxListHtml(rows)}</section></div>`;
