@@ -32,6 +32,8 @@ const viewsText = ref('');
 const pick = ref('');
 /** 상세 상자 낙찰확률 슬라이더(50~80, 1%) — 칸은 50 · 60 · 70(추천) · 80 넷, 사건을 바꾸면 70으로(2026-11-18 사용자 시안 A) */
 const qPct = ref(70);
+/** DB에 들어 있는 목록 — 평소엔 접어 둔다(2026-11-18 사용자) */
+const dbOpen = ref(false);
 watch(pick, () => { qPct.value = 70; });
 const Q_CELLS = [0.5, 0.6, 0.7, 0.8];
 /* 줄을 눌러도 화면을 굴리지 않는다 — 상세가 표 위에 있어 굴리면 위로 튀었다(2026-11-17 사용자) */
@@ -899,7 +901,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
     </section>
 
     <section v-if="dayDate" class="bpt-card">
-      <h3 class="bpt-h3">DB에 들어 있는 목록 <small>{{ dayDate }} · {{ dongFilter.trim() || '전체' }} {{ dbList.length.toLocaleString('ko-KR') }}건 / 이 날 전체 {{ dbRows.length.toLocaleString('ko-KR') }}건</small></h3>
+      <h3 class="bpt-h3">DB에 들어 있는 목록 <small>{{ dayDate }} · {{ dongFilter.trim() || '전체' }} {{ dbList.length.toLocaleString('ko-KR') }}건 / 이 날 전체 {{ dbRows.length.toLocaleString('ko-KR') }}건</small> <button type="button" class="bpt-fold" :aria-expanded="dbOpen" @click="dbOpen = !dbOpen">{{ dbOpen ? '접기' : '펼치기' }}</button></h3>
+      <template v-if="dbOpen">
       <div v-if="dbList.length" class="table-wrap bpt-tbl-wrap bpt-scroll">
         <table class="bpt-tbl">
           <thead><tr><th>사건번호</th><th class="l">주소</th><th class="r">조회수</th><th>종류</th><th>진행상태</th><th>넣은 곳</th></tr></thead>
@@ -917,6 +920,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       </div>
       <p v-else class="bpt-sub">이 날 목록 없음 · 기일목록수집 또는 CSV 파일 넣기</p>
       <p class="bpt-sub">조회수 · 가장 늦게 모은 값(아래 모은 날) · 매각 뒤 값은 예측에 안 씀 · CSV엔 조회수 없음</p>
+      </template>
     </section>
 
     <!-- 채점은 맨 아래 — 평소 볼 건 아니고 모델이 계속 맞는지 볼 때만(2026-11-17 사용자) -->
@@ -1124,6 +1128,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-detail { border: 1px solid #e3e7ee; border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; background: #fbfcfe; }   /* 카드 안 상자 — 제목 15 · 800, 아이콘 없음 */
 .bpt-detail .bpt-h3 { display: flex; align-items: center; gap: 8px; }
 .bpt-detail .bpt-h3 small { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: #111827; }   /* 주소는 검정으로 또렷하게(2026-11-17 사용자) */
+.bpt-fold { margin-left: auto; height: 24px; padding: 0 10px; border: 1px solid #d5dbe5; border-radius: 6px; background: #fff; font: inherit; font-size: 12px; font-weight: 700; color: #4b5563; cursor: pointer; }   /* 제목 줄 오른쪽 끝 접기 · 펼치기 */
+.bpt-h3:has(.bpt-fold) { display: flex; align-items: center; gap: 8px; }
 .bpt-x { border: 1px solid #d5dbe5; background: #fff; border-radius: 6px; width: 24px; height: 24px; font-size: 12px; color: #4b5563; cursor: pointer; padding: 0; }
 .bpt-flow:has(.bpt-tile.wide) { grid-template-columns: 170px 170px minmax(0, 1fr); }   /* 왼쪽 두 칸 170 · 나머지는 입찰가별 낙찰확률 일곱 칸(2026-11-17 사용자) */
 /* 입찰가별 낙찰확률 — 온도계꼴(2026-11-18 사용자 시안 A). 칸 폭 164(반 82), 칸 가운데 = 눈금 자리 */
