@@ -476,10 +476,11 @@ const capRatio = computed(() => {
 const qOf = (it: Item, q: number) => {
   const p = preds.value.get(it.key)!; const d = p.after ?? p.before; const t = it.target!;
   const c = capRatio.value.get(Math.min(t.round, 3)); const cap = c ? Math.round((t.appr * c) / 1e4) * 1e4 + 1e4 : Infinity;
-  return Math.max(t.min, Math.min(d.q(q), cap));
+  const tk = takeoverOf(it.key)?.amt ?? 0;   // 인수 보증금만큼 낮춘다
+  return Math.max(t.min, Math.min(d.q(q), cap) - tk);
 };
 /** 매각된 사건 — 실제 낙찰가로 썼으면 이겼을 확률(조건부). 이 값보다 높게 써야 받는다 */
-const winAt = (it: Item) => { const p = preds.value.get(it.key); return p && it.result && it.result.sold > 0 ? (p.after ?? p.before).win(realOf(it) + 1) : null; };   // 실질가 기준
+const winAt = (it: Item) => { const p = preds.value.get(it.key); return p && it.result && it.result.sold > 0 ? (p.after ?? p.before).win(realOf(it) + 1 + (takeoverOf(it.key)?.amt ?? 0)) : null; };   // 실질가 기준 · 인수 보증금만큼 올려 본다
 /** 입찰가별 낙찰확률 표 — 그날 보고 있는 동의 예측 있는 사건 */
 /** 실제 낙찰가 칸은 끝난 기일만(다가오는 기일은 전부 '입찰 전') */
 /** 실제 낙찰가 칸 — 지난 기일과 오늘(결과가 들어온 사건은 금액, 아니면 '입찰 전'). 다가오는 기일만 뺀다(2026-11-16 사용자: 당일 결과가 안 보였음) */
@@ -718,6 +719,19 @@ const pickF = (w: keyof typeof FR, v: string) => { FR[w].value = FR[w].value ===
 /** 내 관심 물건 = 물건카드(선정물건)에 올린 사건 — 사건번호로 맞춘다 */
 const auctions = useAuctionStore();
 const mineKeys = computed(() => new Set(auctions.auctions.map((a) => caseKey(a.caseNumber)).filter(Boolean)));
+/* ===== 대항력 임차인 인수 보증금 — 선정물건만, 내부 권리분석 값으로(2026-11-19 사용자 1번). 낙찰자가 떠안을 보증금만큼 남들도 낮춰 쓰므로 입찰가에서 뺀다.
+ * 빼는 경우는 하나 — 대항력O · 확약서(남는 보증금 포기) · 인수조건변경 없음 · 배당요구 안 함. 배당요구한 임차인은 배당이 모자랄 때만 남는 돈을 인수 — 값이 입찰가에 따라 달라 빼지 않고 알림만 ===== */
+const takeoverOf = (key: string): { amt: number; note: string } | null => {
+  const a = auctions.auctions.find((x) => caseKey(x.caseNumber) === key); if (!a) return null;
+  if (a.oppositionStatus !== '대항력O') return { amt: 0, note: '대항력 임차인 없음(권리분석)' };
+  const rows = a.tenantInfoRows ?? []; const notes = `${a.tenantOtherNotes ?? ''} ${rows.map((r) => `${r.opposition} ${r.analysis} ${r.other}`).join(' ')}`;
+  if (/확약서|인수조건변경/.test(notes)) return { amt: 0, note: '대항력O · 확약서(남는 보증금 포기) — 인수 보증금 없음' };
+  const won0 = (v: string) => Number(String(v ?? '').replace(/[^\d]/g, '')) || 0;
+  const noClaim = rows.filter((r) => !String(r.distribution ?? '').trim()); const asked = rows.length - noClaim.length;
+  const amt = noClaim.reduce((s0, r) => s0 + won0(r.deposit), 0);
+  if (amt > 0) return { amt, note: `대항력O · 배당요구 안 한 보증금 ${won(amt)} 인수 — 그만큼 낮춰 계산` };
+  return { amt: 0, note: asked ? '대항력O · 배당요구함 — 배당이 모자라면 남는 보증금 인수(입찰가마다 달라 계산 안 함)' : '대항력O · 보증금을 읽지 못함 — 권리분석 확인' };
+};
 const fMine = ref(false);
 watch(dayDate, () => { fMine.value = false; fDong.value = dongFilter.value.trim(); });
 
@@ -730,7 +744,7 @@ const recItems = computed(() => listItems.value.filter((it) => { const s = sellO
 const recKeys = computed(() => new Set(recItems.value.map((it) => it.key)));
 const isRec = (key: string) => recKeys.value.has(key);
 /** 낙찰확률 q 로 이기는 예상 낙찰가(입찰자가 있을 때) — 입찰가별 낙찰확률 표와 같은 셈 */
-const bidQ = (it: Item, q: number) => { const p = preds.value.get(it.key); if (!p || !it.target) return null; return Math.max(it.target.min, (p.after ?? p.before).q(q)); };
+const bidQ = (it: Item, q: number) => { const p = preds.value.get(it.key); if (!p || !it.target) return null; return qOf(it, q); };   // 표 · 어디로 갈까도 상세와 같은 값(위한선 · 인수 보증금)
 /** 건물 · 호만 — '검암동 647-3 부경캐슬 5층502호' → '부경캐슬 5층502호' */
 const placeOf = (addr: string) => { const t = tblAddr(addr).split(/\s+/); return (t.length > 2 ? t.slice(2) : t).join(' '); };
 /** 달력 칸의 '추천 N' — 날마다 늘 보인다(2026-11-16 사용자). 그날 이전 자료로 회차 모델을 맞춰 표와 같은 기준으로 센다(유효조회수 모델의 응찰확률 30% 아래 · 조회수 모델의 예상응찰 1명 아래 · 신건 제외). 고른 날은 표의 추천 수 그대로 */
@@ -922,6 +936,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <!-- 입찰가 칸 — 왼쪽 입찰가(감정가 대비 %) · 세로 가름선 · 오른쪽 낙찰확률(빨강). 두 퍼센트가 헷갈리지 않게(2026-11-19 사용자 시안 2) -->
               <div class="c bid split"><div class="bl"><span class="l">입찰가 <span class="pc fx"><i v-for="v in Q_VALS" :key="v" aria-hidden="true">{{ apprPct(qOf(sel, v), sel.target.appr) }}</i><em>{{ apprPct(qOf(sel, qPct / 100), sel.target.appr) }}</em></span></span><span class="v"><span class="fx"><i v-for="v in Q_VALS" :key="v" aria-hidden="true">{{ won(qOf(sel, v)) }}</i><em>{{ won(qOf(sel, qPct / 100)) }}</em></span></span><span class="d">최저가 <span class="fx lt"><i v-for="v in Q_VALS" :key="v" aria-hidden="true">{{ signWon(qOf(sel, v) - sel.target.min) }}</i><em>{{ signWon(qOf(sel, qPct / 100) - sel.target.min) }}</em></span></span></div><div class="qr"><span>낙찰확률</span><b>{{ qPct }}%</b></div></div>
             </div>
+            <small v-if="takeoverOf(sel.key)" class="bpt-hugnote"><span class="bpt-rt">권리</span>{{ takeoverOf(sel.key)!.note }}</small>
             <small v-if="hugNote(sel)" class="bpt-hugnote"><span class="bpt-hug sm">허그</span>{{ hugNote(sel) }}</small>
             <small v-if="sel.result && sel.result.sold > 0">{{ `실제 ${won(sel.result.sold)}${hugWon(sel.key) ? `(허그) · 실질 ${won(realOf(sel))}(${sel.result.bids >= 2 ? '2등' : '최저가'})` : ''} — ${winAt(sel) == null ? '' : winAt(sel)! <= 0.7 ? '70% 추천가로 이김' : winAt(sel)! <= 1 ? `70% 추천가로는 짐, ${Math.min(100, Math.ceil(winAt(sel)! * 100))}% 입찰가면 이김` : '100% 입찰가로도 짐'}` }}</small></div>
         </div>
@@ -949,7 +964,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td v-else>—</td>
               <td class="r">{{ it.result ? (it.result.sold > 0 ? (it.result.bids ? `${it.result.bids}명` : '모름') : '유찰') : '입찰 전' }}</td>
               <td class="r act-sold"><span v-if="it.result && it.result.sold > 0" class="bpt-nb">{{ won(it.result.sold) }}<small v-if="it.target?.appr" class="bpt-at bpt-nb"><span v-if="hugWon(it.key)" class="bpt-hug sm" :data-tip="HUG_WON_TIP">허그</span>{{ apprPct(it.result.sold, it.target.appr) }}</small><small v-if="hugWon(it.key)" class="bpt-at bpt-nb bpt-real">실질 {{ won(realOf(it)) }}{{ it.result.bids >= 2 ? '(2등)' : '(최저가)' }}</small></span><template v-else>—</template></td>
-              <td v-if="it.result && it.result.sold > 0 && preds.get(it.key)" class="r"><span class="bpt-nb">{{ signWon(realOf(it) - (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small class="bpt-at bpt-nb">{{ sgn(realOf(it) / (preds.get(it.key)!.after ?? preds.get(it.key)!.before).median - 1) }}</small></span></td>
+              <td v-if="it.result && it.result.sold > 0 && preds.get(it.key)" class="r"><span class="bpt-nb">{{ signWon(realOf(it) - qOf(it, 0.5)) }}<small class="bpt-at bpt-nb">{{ sgn(realOf(it) / qOf(it, 0.5) - 1) }}</small></span></td>
               <td v-else class="r">—</td>
             </tr>
           </tbody>
@@ -1143,6 +1158,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl td .bpt-hug.sm { padding: 0 3px; margin: 0 3px 0 0; border-radius: 3px; font-weight: 400; line-height: 14px; vertical-align: 1px; }   /* 굵기 없이 작게 — 글자는 웹 하한 12px(2026-11-17 사용자) */   /* 실제 낙찰가는 굵게 */
 /* 실제 낙찰가 — 흐린 빨강(채도 낮게), 두 표 모두(2026-11-15 사용자) */
 .bpt-tbl td.act-sold .bpt-nb { color: #e0475b; }   /* 숫자만 — 유찰 · 입찰 전 · '—'는 칠하지 않는다 */
+.bpt-hugnote .bpt-rt { font-size: 12px; line-height: 18px; padding: 0 6px; border-radius: 4px; background: #eef1f6; color: #4b5563; }
 .bpt-hugnote { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: #4b5563; }
 .bpt-tbl td.act-sold small.bpt-real { display: block; color: #4b5563; font-weight: 400; }   /* 허그 1등 줄 — 실질가(2등) */
 :root[data-theme="dark"] .bpt-tbl td.act-sold .bpt-nb { color: #ff7a8a; }
