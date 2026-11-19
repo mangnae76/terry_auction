@@ -945,7 +945,32 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <small v-if="sel.result && sel.result.sold > 0">{{ `실제 ${won(sel.result.sold)}${hugWon(sel.key) ? `(허그) · ${sel.result.bids >= 2 ? '2등' : '최저가'} ${won(realOf(sel))}` : ''} — ${winAt(sel) == null ? '' : winAt(sel)! <= 0.7 ? '70% 추천가로 이김' : winAt(sel)! <= 1 ? `70% 추천가로는 짐, ${Math.min(100, Math.ceil(winAt(sel)! * 100))}% 입찰가면 이김` : '100% 입찰가로도 짐'}` }}</small></div>
         </div>
       </div>
-      <p v-else-if="items.length" class="bpt-pickhint">표에서 사건을 선택하세요</p>
+      <!-- 고른 사건이 없을 때 — 내비게이터는 그대로 두고 값만 비운다, 제목 자리에 파란 안내(2026-11-19 사용자) -->
+      <div v-else-if="items.length" class="bpt-detail empty">
+        <h3 class="bpt-h3"><span class="bpt-pickhint">표에서 사건을 선택하세요</span></h3>
+        <div class="bpt-flow">
+          <div class="bpt-tile bpt-stack">
+            <div class="h"><span>전일까지 누적 조회수</span><b>&nbsp;</b><small>&nbsp;</small></div>
+            <div class="h"><span>예상 응찰 인원</span><b>&nbsp;</b><small>&nbsp;</small></div>
+          </div>
+          <div class="bpt-tile key wide"><span>입찰가별 낙찰확률(입찰자가 있을 때)</span>
+            <div class="bpt-qs">
+              <div v-for="q in Q_CELLS" :key="q" :class="['bpt-q', { on: Math.round(q * 100) === qPct }]" :style="{ left: `${(q - 0.5) / 0.5 * 100}%` }" role="button" tabindex="0" @click="qPct = Math.round(q * 100)" @keydown.enter="qPct = Math.round(q * 100)">
+                <span v-if="q === 0.7" class="p">추천</span><b class="w">&nbsp;</b>
+              </div>
+            </div>
+            <div class="bpt-qsl">
+              <div class="bar"><span class="k"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="1" fill="currentColor" /></svg>낙찰확률</span><input v-model.number="qPct" type="range" min="50" max="100" step="1" aria-label="낙찰확률" :style="{ '--f': (qPct - 50) / Q_SPAN }" /><span class="bub" :style="{ left: `${(qPct - 50) / Q_SPAN * 100}%` }">{{ qPct }}%</span></div>
+              <div class="tk"><span v-for="t in [50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]" :key="t" :class="{ b: t % 10 === 0 }" :style="{ left: `${(t - 50) / Q_SPAN * 100}%` }"><i />{{ t }}%</span></div>
+            </div>
+            <div class="bpt-qout3">
+              <div class="c"><span class="l">감정가 <span class="pc">100%</span></span><span class="v">&nbsp;</span><span class="d">법원 감정</span></div>
+              <div class="c"><span class="l">최저가</span><span class="v">&nbsp;</span><span class="d">&nbsp;</span></div>
+              <div class="c bid split"><div class="bl"><span class="l">입찰가</span><span class="v">&nbsp;</span><span class="d">&nbsp;</span></div><div class="qr"><span>낙찰확률</span><b>{{ qPct }}%</b></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
           <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게. 칸마다 가장 넓은 내용(검암동 · 11-13 · 17 · 20 에서 잼) + 같은 여백 15px(정렬 머리는 화살표 자리 14px 더), 주소는 남는 폭(2026-11-17 사용자: 간격 균일) -->
@@ -1174,7 +1199,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl td.act-sold .bpt-sold i, .bpt-tbl td.act-sold .bpt-sold em { font-style: normal; font-weight: 400; color: #6b7280; }
 .bpt-tbl td.act-sold .bpt-sold em { text-align: right; font-variant-numeric: tabular-nums; }
 .bpt-tbl td.act-sold .bpt-sold .bpt-nb.real { color: #4b5563; font-weight: 400; }
-.bpt-pickhint { margin: 12px 0 8px; font-size: 14px; color: #2b6df3; }   /* 상세 자리 — 아직 고른 사건이 없을 때 */
+.bpt-detail.empty .bpt-flow { width: 100%; }   /* 값이 비어도 채워졌을 때와 같은 폭 */
+.bpt-pickhint { font-size: 14px; font-weight: 400; color: #2b6df3; }   /* 빈 내비게이터 제목 — 아직 고른 사건이 없을 때 */
 .bpt-tbl td .bpt-hug.two { background: #eef1f6; color: #4b5563; }   /* 1등 · 2등 칩 — 허그 칩과 같은 꼴, 회색 */
 .bpt-day .bpt-tbl td.addr { text-align: left; }
 .bpt-day .bpt-tbl th.hd-addr { text-align: center; }   /* 주소 머리는 가운데 — 칸 폭을 내용 폭에 맞춰 내용 덩어리와 가운데가 맞는다(2026-11-17 사용자) */
