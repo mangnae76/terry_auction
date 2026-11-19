@@ -77,6 +77,13 @@ const agentAgo = computed(() => { const at = agent.value?.at?.toMillis?.(); retu
 /** 'web-agent 2026.11.14-2' → 'ver.26.11.14-2'(매각분석과 같게) */
 const verLabel = (v: string) => { const m = /(\d{4})\.(\d{2})\.(\d{2})(-\d+)?/.exec(v); return m ? `ver.${m[1].slice(2)}.${m[2]}.${m[3]}${m[4] || ''}` : v.replace(/^web-agent\s*/, ''); };
 const stopCmd = async () => { try { await sendAgentStop(''); agentNote.value = '중지를 보냈습니다. 지금 사건까지 저장하고 멈춥니다.'; } catch { agentNote.value = '중지를 보내지 못했습니다. 다시 해 주세요.'; } };
+/** 마이 다시시작 · 대기 · 실행(2026-11-19) */
+const maiCmd = async (name: 'restart' | 'pause' | 'resume') => {
+  try {
+    await sendAgentCommand('', name, {});
+    agentNote.value = name === 'restart' ? '다시시작을 보냈습니다. 몇 초 뒤 마이가 새로 뜹니다(크롬 · 로그인은 그대로).' : name === 'pause' ? '대기를 보냈습니다. 마이가 수집 명령을 받지 않습니다.' : '실행을 보냈습니다. 마이가 다시 명령을 받습니다.';
+  } catch { agentNote.value = '명령을 보내지 못했습니다. 다시 해 주세요.'; }
+};
 const sendCmd = async (name: 'open' | 'daylist' | 'hits') => {
   try {
     const range = { site: '탱크옥션' as const, from: colFrom.value, to: colTo.value, court: colCourt.value.trim() || '인천-본원' };
@@ -734,23 +741,30 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       </header>
       <div class="bpt-in">
         <div class="bpt-box bpt-colbox">
-          <h3 class="bpt-colh">기일목록 · 조회수 수집
-            <span :class="['bpt-conn', agentOn ? 'on' : 'off']"><i aria-hidden="true" />{{ agentOn ? 'MyAgent · ' : 'MyAgent' }}<template v-if="agentOn"><span class="ago">{{ agentAgo }}</span>초 전</template></span>
-            <span v-if="agentOn && agent?.version" class="bpt-ver">{{ verLabel(agent.version) }}</span>
-          </h3>
+          <h3 class="bpt-colh">기일목록 · 조회수 수집</h3>
+          <!-- 마이 줄(2026-11-19 사용자 시안 B) — 상태 글 + 다시시작 · 대기/실행. 꺼짐은 웹에서 켤 수 없다(PC 자동 실행이 다시 띄움) -->
+          <div class="bpt-mai">
+            <span class="nm">마이</span>
+            <span :class="['s', !agentOn ? 'off' : agent?.paused ? 'rest' : 'on']"><i aria-hidden="true" /><template v-if="!agentOn">꺼짐 · PC가 켜지면 저절로 뜸</template><template v-else-if="agent?.paused">대기 중 · 수집 단추 잠김</template><template v-else>{{ agent?.busy ? '수집 중' : '켜짐' }} · <span class="ago">{{ agentAgo }}</span>초 전<template v-if="agent?.version && !agent?.busy"> · {{ verLabel(agent.version) }}</template></template></span>
+            <template v-if="agentOn">
+              <button type="button" class="b" @click="maiCmd('restart')">다시시작</button>
+              <button v-if="agent?.paused" type="button" class="b go" @click="maiCmd('resume')">실행</button>
+              <button v-else type="button" class="b" :disabled="!!agent?.busy" @click="maiCmd('pause')">대기</button>
+            </template>
+          </div>
           <div class="bpt-pair"><label class="bpt-date">법원<select v-model="colCourt" class="court" aria-label="법원"><option v-for="c in COURTS" :key="c" :value="c">{{ c }}</option></select></label><label class="bpt-date">동선택<input v-model="dongFilter" type="text" class="court" placeholder="검암동" /></label></div>
           <div class="bpt-date">기간<div class="bpt-range"><input v-model="colFrom" type="date" aria-label="시작일" /><span>~</span><input v-model="colTo" type="date" aria-label="끝일" /></div></div>
           <div class="bpt-btns">
-            <button type="button" class="bpt-btn line" :disabled="!agentOn || !!agent?.busy" @click="sendCmd('open')">브라우저열기</button>
-            <button type="button" class="bpt-btn" :disabled="!agentOn || !agent?.ready || !!agent?.busy" @click="sendCmd('daylist')">기일목록수집</button>
-            <button type="button" class="bpt-btn" :disabled="!agentOn || !agent?.ready || !!agent?.busy || !/(동|가|읍|면|리)$/.test(dongFilter.trim())" @click="sendCmd('hits')">조회수수집</button>
+            <button type="button" class="bpt-btn line" :disabled="!agentOn || !!agent?.busy || !!agent?.paused" @click="sendCmd('open')">브라우저열기</button>
+            <button type="button" class="bpt-btn" :disabled="!agentOn || !agent?.ready || !!agent?.busy || !!agent?.paused" @click="sendCmd('daylist')">기일목록수집</button>
+            <button type="button" class="bpt-btn" :disabled="!agentOn || !agent?.ready || !!agent?.busy || !!agent?.paused || !/(동|가|읍|면|리)$/.test(dongFilter.trim())" @click="sendCmd('hits')">조회수수집</button>
           </div>
           <div class="bpt-prog">
             <p v-if="agentOn && agent?.busy && agent?.target" class="bpt-target">수집 중인 곳 <b>{{ agent.target }}</b></p>
             <div class="row" role="progressbar" :aria-valuenow="agent?.busy && progView ? progView.pct : 0" aria-valuemin="0" aria-valuemax="100">
               <span class="bar"><b :style="{ width: `${agent?.busy && progView ? progView.pct : progView?.pct === 100 ? 100 : 0}%` }" /></span>
               <span v-if="progView && (agent?.busy || progView.pct === 100)" class="num"><b>{{ progView.pct }}%</b></span>
-              <button type="button" class="bpt-stop" :disabled="!agentOn || !agent?.busy" @click="stopCmd">{{ agentOn && agent?.busy ? '중지' : '대기중' }}</button>
+              <button type="button" class="bpt-stop" :disabled="!agentOn || !agent?.busy" @click="stopCmd">{{ agentOn && agent?.busy ? '중지' : '수집없음' }}</button>
             </div>
             <p v-if="progView && agent?.busy" class="bpt-sub num">{{ progView.what }}<template v-if="progView.left"> · {{ progView.left }}</template></p>
           </div>
@@ -1234,6 +1248,19 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 @keyframes bpt-live { 50% { box-shadow: 0 0 3px 1px rgba(61, 255, 122, .9), 0 0 7px 1px rgba(61, 255, 122, .4); } }
 @media (prefers-reduced-motion: reduce) { .bpt-conn.on i { animation: none; } }
 .bpt-ver { font-size: 12px; font-weight: 400; color: #6b7280; white-space: nowrap; }
+/* 마이 줄 — 상태 + 다시시작 · 대기/실행(2026-11-19 사용자 시안 B) */
+.bpt-mai { display: flex; align-items: center; gap: 8px; background: #f7f9fd; border: 1px solid #e3e7ee; border-radius: 8px; padding: 6px 8px 6px 10px; }
+.bpt-mai .nm { font-size: 12px; font-weight: 700; color: #4b5563; white-space: nowrap; }
+.bpt-mai .s { flex: 1; min-width: 0; font-size: 12px; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bpt-mai .s i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; background: #9ca3af; }
+.bpt-mai .s.on i { background: #22c55e; box-shadow: 0 0 0 2px rgba(34, 197, 94, .25); }
+.bpt-mai .s.rest { color: #b45309; }
+.bpt-mai .s.rest i { background: #f59e0b; }
+.bpt-mai .s.off { color: #6b7280; }
+.bpt-mai .s .ago { display: inline-block; min-width: 2ch; text-align: right; font-variant-numeric: tabular-nums; }
+.bpt-mai .b { flex: none; min-width: 44px; height: 26px; padding: 0 10px; border: 1px solid #d5dbe5; border-radius: 6px; background: #fff; color: #4b5563; font: inherit; font-size: 12px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.bpt-mai .b.go { background: #2b6df3; border-color: #2b6df3; color: #fff; }
+.bpt-mai .b:disabled { color: #c2c8d3; border-color: #e3e7ee; cursor: default; }
 .bpt-prog { display: grid; gap: 2px; }
 .bpt-target { margin: 0; font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bpt-target b { color: #2b6df3; font-weight: 700; }
@@ -1242,8 +1269,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-prog .bar b { display: block; height: 100%; background: #2b6df3; transition: width .3s; }
 .bpt-prog .num { font-variant-numeric: tabular-nums; }
 .bpt-prog .num b { color: #1f5fe0; }
-.bpt-stop { min-width: 64px; height: 34px; padding: 0 12px; border: 1px solid #c22e2e; border-radius: 8px; background: none; color: #c22e2e; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
-.bpt-stop:disabled { border-color: #e3e7ee; color: #9ca3af; cursor: default; }   /* 대기중 · 중지 한 단추 — 쉬면 회색 '대기중', 수집 중이면 빨간 '중지'(폭 고정) */
+.bpt-stop { min-width: 84px; height: 34px; padding: 0 12px; border: 1px solid #c22e2e; border-radius: 8px; background: none; color: #c22e2e; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.bpt-stop:disabled { border-color: #e3e7ee; color: #9ca3af; cursor: default; }   /* 수집없음 · 중지 한 단추 — 쉬면 회색 '수집없음', 수집 중이면 빨간 '중지'(폭 고정) */
 .bpt-grade-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .bpt-grade-head .bpt-h3 { margin-right: auto; }
 .bpt-grade { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }

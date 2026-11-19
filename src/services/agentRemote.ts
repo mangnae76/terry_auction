@@ -15,7 +15,7 @@
 import { collection, doc, getDoc, getDocFromServer, getDocs, onSnapshot, query, runTransaction, serverTimestamp, setDoc, where, type Unsubscribe } from 'firebase/firestore';
 import { firestore } from './firebase';
 
-export type AgentCmdName = 'open' | 'screen' | 'auto' | 'enrich' | 'queue' | 'daylist' | 'hits';
+export type AgentCmdName = 'open' | 'screen' | 'auto' | 'enrich' | 'queue' | 'daylist' | 'hits' | 'restart' | 'pause' | 'resume';
 export type AgentCmdArgs = { site?: '옥션원' | '탱크옥션'; months?: 0 | 6 | 12 | 24 | 36; src?: 'near' | 'same'; fresh?: boolean; from?: string; to?: string; court?: string; dong?: string };
 export type AgentStatus = {
   at?: { toMillis(): number } | null;
@@ -29,6 +29,8 @@ export type AgentStatus = {
   site?: string;
   /** 지금 받는 곳(읍면동 · 사건) — 도우미 2026.11.08-2 부터 */
   target?: string;
+  /** 웹 [대기]로 명령을 안 받는 중 — 마이 2026-11-19 부터 */
+  paused?: boolean;
 };
 /** 모은 동네 하나 — at 은 마지막으로 모은 시각(ms), n 은 그때 그 동네 물건 수 */
 export type AgentCoverage = { at: number; n: number; region?: string; kind?: string; site?: string; src?: string; months?: number };
