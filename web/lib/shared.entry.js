@@ -68,7 +68,7 @@ export { buildingAgeOf, buildingAgeText } from '../../src/utils/buildingAge';
 export { caseLabelOf } from '../../src/utils/caseLabel';
 export { fetchDongTradeStats, fetchDongTradeDetails } from '../../src/services/publicDataApi';
 /* 대문의 가벼운 로그인 창이 '로그인'을 누를 때 쓴다 — 로그인 유지 방식 · 카카오 설정 여부 */
-export { setLoginPersistence } from '../../src/services/authRepository';
+export { setLoginPersistence, loadAccountDetail } from '../../src/services/authRepository';   /* loadAccountDetail — 기일입찰 탭 서류의 이름 · 전화 · 주소(내 정보)를 채운다 */
 export { isKakaoLoginConfigured } from '../../src/services/socialAuth';
 export { stageDates, bidStageOf, stageLabelOf, shownWonDate, shownBalanceDueDate } from '../../src/utils/stageLabel';
 export { shownAddressOf, shownPlaceOf } from '../../src/utils/addressName';   /* 홈 일정 · 최근 분석 — 주소에 건물명 끼우기(앱과 같은 규칙) */
