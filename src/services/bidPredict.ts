@@ -77,7 +77,7 @@ const lstsq = (X: number[][], y: number[]): number[] => {
 const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); const n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : NaN; };
 
 /** 덧붙일 값 — 시세 대비 최저가 · 엘베 · 세대수처럼 사건마다 따로 받는 것(2026-11-14). 없으면 지금 식 그대로 */
-export type PriceExtra = (x: { key: string; addr: string; area: number | null; min: number; d: string }) => number[];
+export type PriceExtra = (x: { key: string; addr: string; area: number | null; min: number; d: string; appr: number }) => number[];   // appr — 평단 감정가(2026-11-19)
 export type PriceModel = { b: number[]; res: number[][]; n: number; pool: Sold[]; px?: PriceExtra };
 /** 매각기일 이전 2년 · 같은 동(모자라면 전체) · 2~4차 · 응찰자 수 있는 매각 건으로 배수 식을 맞춘다 */
 export const fitPriceModel = (recs: Sold[], t: BidTarget, px?: PriceExtra): PriceModel | null => {
@@ -85,7 +85,7 @@ export const fitPriceModel = (recs: Sold[], t: BidTarget, px?: PriceExtra): Pric
   let pool = recs.filter((r) => inWin(r) && r.round >= 1 && r.round <= 3 && r.bids != null && r.bids >= 1 && (!t.dong || r.dong === t.dong));
   if (pool.length < 60) pool = recs.filter((r) => inWin(r) && r.round >= 1 && r.round <= 3 && r.bids != null && r.bids >= 1);
   if (pool.length < 30) return null;
-  const X = pool.map((r) => [...feat(r, r.bids as number), ...(px ? px({ key: r.key, addr: r.addr, area: r.area, min: r.min, d: r.d }) : [])]); const y = pool.map((r) => Math.log(r.mx));
+  const X = pool.map((r) => [...feat(r, r.bids as number), ...(px ? px({ key: r.key, addr: r.addr, area: r.area, min: r.min, d: r.d, appr: r.appr }) : [])]); const y = pool.map((r) => Math.log(r.mx));
   const b = lstsq(X, y);
   const res: number[][] = [[], [], [], [], []];
   pool.forEach((r, i) => res[bandOf(r.bids as number)].push(y[i] - X[i].reduce((s, v, j) => s + v * b[j], 0)));
@@ -107,7 +107,7 @@ export const similarBands = (recs: Sold[], t: BidTarget): { pi: number[]; n: num
 /** 인원 비율 + 배수 식 → 낙찰가 분포 */
 export const priceDist = (m: PriceModel, t: BidTarget, pi: number[]) => {
   const tt = { ...t, round: Math.min(Math.max(t.round, 1), 3) };
-  const ex = m.px ? m.px({ key: (t as BidTarget & { key?: string }).key ?? '', addr: (t as BidTarget & { addr?: string }).addr ?? '', area: t.area, min: t.min, d: t.date }) : [];
+  const ex = m.px ? m.px({ key: (t as BidTarget & { key?: string }).key ?? '', addr: (t as BidTarget & { addr?: string }).addr ?? '', area: t.area, min: t.min, d: t.date, appr: t.appr }) : [];
   const center = BAND_REP.map((n) => Math.exp([...feat(tt, n), ...ex].reduce((s, v, j) => s + v * m.b[j], 0)));
   const bandWon = center.map((c) => Math.round(t.min * c));
   /** 이 금액을 쓰면 이길 확률 = 낙찰가가 이보다 낮게 나올 확률 */
