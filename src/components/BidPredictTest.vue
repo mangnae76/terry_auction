@@ -963,7 +963,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td v-if="preds.get(it.key)" class="r strong"><span class="bpt-nb">{{ won((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small v-if="it.target?.appr" class="bpt-at bpt-nb">{{ apprPct((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median, it.target.appr) }}</small></span></td>
               <td v-else>—</td>
               <td class="r">{{ it.result ? (it.result.sold > 0 ? (it.result.bids ? `${it.result.bids}명` : '모름') : '유찰') : '입찰 전' }}</td>
-              <td class="r act-sold"><template v-if="it.result && it.result.sold > 0"><span class="bpt-sold"><span v-if="hugWon(it.key)" class="bpt-hug sm" :data-tip="HUG_WON_TIP">허그</span><span class="bpt-nb">{{ won(it.result.sold) }}</span><i>/</i><em>{{ it.target?.appr ? apprPct(it.result.sold, it.target.appr) : '' }}</em></span><span v-if="hugWon(it.key)" class="bpt-sold real"><span class="lb">{{ it.result.bids >= 2 ? '2등' : '최저가' }}</span><span class="bpt-nb">{{ won(realOf(it)) }}</span><i>/</i><em>{{ it.target?.appr ? apprPct(realOf(it), it.target.appr) : '' }}</em></span></template><template v-else>—</template></td>
+              <td class="r act-sold"><template v-if="it.result && it.result.sold > 0"><span class="bpt-sold"><span class="ch"><span v-if="hugWon(it.key)" class="bpt-hug sm" :data-tip="HUG_WON_TIP">허그</span></span><span class="bpt-nb">{{ won(it.result.sold) }}</span><i>/</i><em>{{ it.target?.appr ? apprPct(it.result.sold, it.target.appr) : '' }}</em><template v-if="hugWon(it.key)"><span class="ch"><span class="bpt-hug sm two">{{ it.result.bids >= 2 ? '2등' : '최저가' }}</span></span><span class="bpt-nb real">{{ won(realOf(it)) }}</span><i>/</i><em>{{ it.target?.appr ? apprPct(realOf(it), it.target.appr) : '' }}</em></template></span></template><template v-else>—</template></td>
               <td v-if="it.result && it.result.sold > 0 && preds.get(it.key)" class="r"><span class="bpt-nb">{{ signWon(realOf(it) - qOf(it, 0.5)) }}<small class="bpt-at bpt-nb">{{ sgn(realOf(it) / qOf(it, 0.5) - 1) }}</small></span></td>
               <td v-else class="r">—</td>
             </tr>
@@ -1163,11 +1163,13 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 :root[data-theme="dark"] .bpt-tbl td.act-sold .bpt-nb { color: #ff7a8a; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bpt-tbl td.act-sold .bpt-nb { color: #ff7a8a; } }
 /* 실제 낙찰가 — 금액 / % 한 줄, 허그가 1등이면 아랫줄 '2등 금액 / %'. 금액 · % 폭을 고정해 줄마다 끝자리가 세로로 맞는다(2026-11-19 사용자) */
-.bpt-tbl td.act-sold .bpt-sold { display: flex; justify-content: flex-end; align-items: baseline; gap: 4px; white-space: nowrap; }
-.bpt-tbl td.act-sold .bpt-sold i, .bpt-tbl td.act-sold .bpt-sold em, .bpt-tbl td.act-sold .bpt-sold .lb { font-style: normal; font-weight: 400; color: #6b7280; }
-.bpt-tbl td.act-sold .bpt-sold em { display: inline-block; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
-.bpt-tbl td.act-sold .bpt-sold.real .bpt-nb { color: #4b5563; font-weight: 400; }
-.bpt-tbl td.act-sold .bpt-sold .bpt-nb { min-width: 0; }   /* % 폭이 고정이라 금액 끝은 저절로 맞는다 — 이름표(2등)를 금액에 붙인다 */
+.bpt-tbl td.act-sold .bpt-sold { display: inline-grid; grid-template-columns: auto auto auto 6ch; column-gap: 4px; align-items: baseline; white-space: nowrap; }   /* 칩 · 금액 · / · % 네 칸 — 두 줄이 같은 열에 선다 */
+.bpt-tbl td.act-sold .bpt-sold .ch { justify-self: start; }
+.bpt-tbl td.act-sold .bpt-sold .bpt-nb { min-width: 0; justify-self: end; }
+.bpt-tbl td.act-sold .bpt-sold i, .bpt-tbl td.act-sold .bpt-sold em { font-style: normal; font-weight: 400; color: #6b7280; }
+.bpt-tbl td.act-sold .bpt-sold em { text-align: right; font-variant-numeric: tabular-nums; }
+.bpt-tbl td.act-sold .bpt-sold .bpt-nb.real { color: #4b5563; font-weight: 400; }
+.bpt-tbl td .bpt-hug.two { background: #eef1f6; color: #4b5563; }   /* 2등 칩 — 허그 칩과 같은 꼴, 회색 */
 .bpt-day .bpt-tbl td.addr { text-align: left; }
 .bpt-day .bpt-tbl th.hd-addr { text-align: center; }   /* 주소 머리는 가운데 — 칸 폭을 내용 폭에 맞춰 내용 덩어리와 가운데가 맞는다(2026-11-17 사용자) */
 .bpt-tbl.fixed { table-layout: fixed; }
