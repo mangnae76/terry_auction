@@ -850,8 +850,11 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
       <div v-if="sel && selP && sel.target" class="bpt-detail">
         <h3 class="bpt-h3">{{ caseLabel(sel.key) }} <small>{{ sel.addr }}</small> <button type="button" class="bpt-x" aria-label="상세 닫기" @click="pick = ''">✕</button></h3>
       <div class="bpt-flow">
-          <div class="bpt-tile"><span>전일까지 누적 조회수</span><b>{{ sel.views.toLocaleString('ko-KR') }}회</b><small>{{ useHits ? `${sel.viewAt.slice(5).replace('-', '.')}까지 · 그날 이전 ${selP.vmN.toLocaleString('ko-KR')}회차로 배움` : selP.vmN ? `조회수 규칙 ${selP.vmN}건으로 배움` : '조회수 규칙 없음(6건 이상 필요)' }}</small></div>
-          <div class="bpt-tile"><span>예상 응찰 인원</span><b>{{ selP.expBids != null ? `약 ${Math.round(selP.expBids)}명` : BAND_NAMES[selP.piBefore.indexOf(Math.max(...selP.piBefore))] + ' 가장 흔함' }}</b><small>{{ selP.p0 != null ? `${useHits ? '매각된다고 칠 때 · ' : ''}유찰 확률 ${pct(selP.p0)}` : `비슷한 물건 ${selP.simN}건${selP.loose ? '(조건 넓힘)' : ''}` }}</small></div>
+          <!-- 왼쪽 두 칸을 한 상자로 — 위 누적 조회수 · 아래 예상 응찰 인원, 가운데 가로 가름선(2026-11-19 사용자 시안 A) -->
+          <div class="bpt-tile bpt-stack">
+            <div class="h"><span>전일까지 누적 조회수</span><b>{{ sel.views.toLocaleString('ko-KR') }}회</b><small>{{ useHits ? `${sel.viewAt.slice(5).replace('-', '.')}까지 · 그날 이전 ${selP.vmN.toLocaleString('ko-KR')}회차로 배움` : selP.vmN ? `조회수 규칙 ${selP.vmN}건으로 배움` : '조회수 규칙 없음(6건 이상 필요)' }}</small></div>
+            <div class="h"><span>예상 응찰 인원</span><b>{{ selP.expBids != null ? `약 ${Math.round(selP.expBids)}명` : BAND_NAMES[selP.piBefore.indexOf(Math.max(...selP.piBefore))] + ' 가장 흔함' }}</b><small>{{ selP.p0 != null ? `${useHits ? '매각된다고 칠 때 · ' : ''}유찰 확률 ${pct(selP.p0)}` : `비슷한 물건 ${selP.simN}건${selP.loose ? '(조건 넓힘)' : ''}` }}</small></div>
+          </div>
           <div class="bpt-tile key wide"><span>입찰가별 낙찰확률(입찰자가 있을 때)</span>
             <!-- 온도계꼴(2026-11-18 사용자 시안 A): 네 칸(50 · 60 · 70 추천 · 80)의 가운데가 밑 슬라이더 눈금 바로 위, 슬라이더는 1%씩 · 말풍선은 막대 아래 눈금 줄. 표기는 탱크옥션처럼 '금액 (감정가 대비 %)' -->
             <div class="bpt-qs">
@@ -863,10 +866,11 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <div class="bar"><span class="k"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="1" fill="currentColor" /></svg>낙찰확률</span><input v-model.number="qPct" type="range" min="50" max="80" step="1" aria-label="낙찰확률" /><span class="bub" :style="{ left: `${(qPct - 50) / 30 * 100}%` }">{{ qPct }}%</span></div>
               <div class="tk"><span v-for="t in [50, 55, 60, 65, 70, 75, 80]" :key="t" :class="{ b: t % 10 === 0 }" :style="{ left: `${(t - 50) / 30 * 100}%` }"><i />{{ t }}%</span></div>
             </div>
-            <div class="bpt-qout">
-              <span>감정가 <b>{{ won(sel.target.appr) }}</b></span>
-              <span>최저가({{ sel.target.round + 1 }}차) <b>{{ won(sel.target.min) }}</b> <b class="pr">({{ apprPct(sel.target.min, sel.target.appr) }})</b></span>
-              <span>입찰가 <b class="fx v"><i v-for="v in 31" :key="v" aria-hidden="true">{{ won(qOf(sel, (v + 49) / 100)) }}</i><em>{{ won(qOf(sel, qPct / 100)) }}</em></b> <b class="fx pr"><i v-for="v in 31" :key="v" aria-hidden="true">({{ apprPct(qOf(sel, (v + 49) / 100), sel.target.appr) }})</i><em>({{ apprPct(qOf(sel, qPct / 100), sel.target.appr) }})</em></b></span>
+            <!-- 세 칸 카드(2026-11-19 사용자 시안 A) — 숫자 같은 크기, 퍼센트는 숫자 왼쪽, 입찰가 칸만 파랑. 바뀌는 값은 31개 값을 겹쳐 가장 넓은 폭(흔들림 없게) -->
+            <div class="bpt-qout3">
+              <div class="c"><span class="l">감정가</span><span class="v"><small>100%</small>{{ won(sel.target.appr) }}</span><span class="d">법원 감정</span></div>
+              <div class="c"><span class="l">최저가<span class="rd">{{ sel.target.round + 1 }}차</span></span><span class="v"><small>{{ apprPct(sel.target.min, sel.target.appr) }}</small>{{ won(sel.target.min) }}</span><span class="d">감정가보다 {{ won(sel.target.appr - sel.target.min) }} 낮음</span></div>
+              <div class="c bid"><span class="l">입찰가 · 낙찰확률 {{ qPct }}%</span><span class="v"><small class="fx"><i v-for="v in 31" :key="v" aria-hidden="true">{{ apprPct(qOf(sel, (v + 49) / 100), sel.target.appr) }}</i><em>{{ apprPct(qOf(sel, qPct / 100), sel.target.appr) }}</em></small><span class="fx"><i v-for="v in 31" :key="v" aria-hidden="true">{{ won(qOf(sel, (v + 49) / 100)) }}</i><em>{{ won(qOf(sel, qPct / 100)) }}</em></span></span><span class="d">최저가 <span class="fx lt"><i v-for="v in 31" :key="v" aria-hidden="true">{{ signWon(qOf(sel, (v + 49) / 100) - sel.target.min) }}</i><em>{{ signWon(qOf(sel, qPct / 100) - sel.target.min) }}</em></span></span></div>
             </div>
             <small v-if="sel.result && sel.result.sold > 0">{{ `실제 ${won(sel.result.sold)}${hugWon(sel.key) ? '(허그)' : ''} — ${winAt(sel) == null ? '' : winAt(sel)! <= 0.7 ? '70% 추천가로 이김' : winAt(sel)! <= 0.8 ? '70% 추천가로는 짐, 80% 입찰가면 이김' : '80% 입찰가로도 짐'}` }}</small></div>
         </div>
@@ -1135,7 +1139,13 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-fold { margin-left: auto; height: 24px; padding: 0 10px; border: 1px solid #d5dbe5; border-radius: 6px; background: #fff; font: inherit; font-size: 12px; font-weight: 700; color: #4b5563; cursor: pointer; }   /* 제목 줄 오른쪽 끝 접기 · 펼치기 */
 .bpt-h3:has(.bpt-fold) { display: flex; align-items: center; gap: 8px; }
 .bpt-x { border: 1px solid #d5dbe5; background: #fff; border-radius: 6px; width: 24px; height: 24px; font-size: 12px; color: #4b5563; cursor: pointer; padding: 0; }
-.bpt-flow:has(.bpt-tile.wide) { grid-template-columns: 170px 170px minmax(0, 1fr); }   /* 왼쪽 두 칸 170 · 나머지는 입찰가별 낙찰확률 일곱 칸(2026-11-17 사용자) */
+.bpt-flow:has(.bpt-tile.wide) { grid-template-columns: 170px minmax(0, 1fr); }   /* 왼쪽 한 상자 170(조회수 · 응찰 인원 위아래) · 나머지는 입찰가별 낙찰확률(2026-11-19 사용자 시안 A) */
+.bpt-tile.bpt-stack { padding: 0; gap: 0; display: grid; grid-template-rows: 1fr 1fr; }
+.bpt-stack .h { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.bpt-stack .h + .h { border-top: 1px solid #e3e7ee; }   /* 가운데 가로 가름선 */
+.bpt-stack .h span { font-size: 13px; }
+.bpt-stack .h b { font-size: 22px; font-weight: 800; line-height: 1.2; }
+.bpt-stack .h small { color: #6b7280; line-height: 1.5; }
 /* 입찰가별 낙찰확률 — 온도계꼴(2026-11-18 사용자 시안 A). 칸 폭 164(반 82), 칸 가운데 = 눈금 자리 */
 .bpt-qs { --half: 82px; position: relative; height: 44px; margin: 10px var(--half) 0; }
 .bpt-q { position: absolute; top: 0; bottom: 0; width: calc(var(--half) * 2); transform: translateX(-50%); box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid #e3e7ee; border-radius: 8px; background: #fff; cursor: pointer; }
@@ -1157,13 +1167,20 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-qsl .tk span { position: absolute; transform: translateX(-50%); display: grid; justify-items: center; gap: 2px; font-variant-numeric: tabular-nums; }
 .bpt-qsl .tk span i { display: block; width: 1px; height: 6px; background: #d5dbe5; }
 .bpt-qsl .tk span.b { color: #111827; font-weight: 700; }
-.bpt-qout { display: flex; flex-wrap: wrap; gap: 16px; align-items: baseline; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e3e7ee; font-size: 13px; color: #4b5563; }
-.bpt-tile.key .bpt-qout b { font-size: 13px; font-weight: 700; color: #111827; font-variant-numeric: tabular-nums; }
-.bpt-tile.key .bpt-qout b.v em { color: #1f5fe0; }
-.bpt-tile.key .bpt-qout b.pr, .bpt-tile.key .bpt-qout b.fx.pr em { color: #6b7280; }
-.bpt-qout b.fx { display: inline-grid; text-align: right; }   /* 값 상자 — 31개 값을 겹쳐 가장 넓은 폭(글자가 안 움직이게) */
-.bpt-qout b.fx > * { grid-area: 1 / 1; white-space: nowrap; font-style: normal; }
-.bpt-qout b.fx > i { visibility: hidden; }
+.bpt-qout3 { display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 10px; margin-top: 10px; padding-top: 12px; border-top: 1px solid #e3e7ee; }
+.bpt-qout3 .c { background: #fff; border: 1px solid #e3e7ee; border-radius: 10px; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.bpt-tile .bpt-qout3 .l { font-size: 12px; color: #6b7280; display: flex; gap: 6px; align-items: center; }
+.bpt-tile .bpt-qout3 .l .rd { font-size: 12px; color: #4b5563; background: #eef1f6; border-radius: 6px; padding: 0 6px; line-height: 18px; }
+.bpt-tile .bpt-qout3 .v { display: flex; align-items: baseline; font-size: 20px; font-weight: 800; line-height: 1.2; color: #111827; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bpt-tile .bpt-qout3 .v small { font-size: 13px; font-weight: 600; color: #6b7280; margin-right: 6px; }
+.bpt-tile .bpt-qout3 .d { font-size: 12px; color: #4b5563; font-variant-numeric: tabular-nums; }
+.bpt-qout3 .c.bid { border-color: #9fb8f5; background: #eef3fe; }
+.bpt-tile .bpt-qout3 .c.bid .l, .bpt-tile .bpt-qout3 .c.bid .v, .bpt-tile .bpt-qout3 .c.bid .v small { color: #1f5fe0; }
+.bpt-qout3 .fx { display: inline-grid; text-align: right; }   /* 값 상자 — 31개 값을 겹쳐 가장 넓은 폭 */
+.bpt-qout3 .fx.lt { text-align: left; }
+.bpt-tile .bpt-qout3 .v span.fx { font-size: inherit; color: inherit; }
+.bpt-qout3 .fx > * { grid-area: 1 / 1; white-space: nowrap; font-style: normal; }
+.bpt-qout3 .fx > i { visibility: hidden; }
 .bpt-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 12px; }
 .bpt-legend { display: flex; gap: 14px; margin: 0; font-size: 12px; color: #374151; }
 .bpt-legend span { display: inline-flex; align-items: center; gap: 5px; }
