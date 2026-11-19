@@ -16,6 +16,8 @@ import { buildingAgeOf } from '../utils/buildingAge';
 import { addressWithName, buildingNameOf } from '../utils/addressName';
 import { agentOnline, loadAgentDataset, loadCal as loadCalNums, loadDayLists, loadDayListsRange, loadHits, saveDayCsv, sendAgentCommand, sendAgentStop, watchAgentStatus, type AgentStatus, type CalRow, type DayListRow, type HitDoc } from '../services/agentRemote';
 import { readSheetRows } from '../services/saleExcel';
+import { withConfirmedPlan } from '../services/confirmedPlan';
+import { breakEvenBidOf } from '../services/profitMath';
 import { resolveRegionFromAddress } from '../services/regionResolver';
 import {
   BAND_NAMES, bandOf, caseKey, caseLabel, lotOf as lotParts, csvRows, dongOf, fitPriceModel, fitRoundModel, fitViewModel, parseViewLines, predictRound, priceDist, readDayRows, roundOfRatio, roundsOf, similarBands, soldOf, viewBands,
@@ -725,6 +727,17 @@ const auctions = useAuctionStore();
 const mineKeys = computed(() => new Set(auctions.auctions.map((a) => caseKey(a.caseNumber)).filter(Boolean)));
 /* ===== 대항력 임차인 인수 보증금 — 선정물건만, 내부 권리분석 값으로(2026-11-19 사용자 1번). 낙찰자가 떠안을 보증금만큼 남들도 낮춰 쓰므로 입찰가에서 뺀다.
  * 빼는 경우는 하나 — 대항력O · 확약서(남는 보증금 포기) · 인수조건변경 없음 · 배당요구 안 함. 배당요구한 임차인은 배당이 모자랄 때만 남는 돈을 인수 — 값이 입찰가에 따라 달라 빼지 않고 알림만 ===== */
+/** 손익분기선 — 선정물건만, 수익분석(확정한 안, 없으면 A안) 매도가 − 필요경비(취득세는 입찰가 × 세율). 이 값보다 높게 쓰면 낙찰받아도 남지 않는다.
+ *  q = 입찰가가 처음 손익분기를 넘는 낙찰확률(50~100%), 100%에서도 안 넘으면 null(2026-11-19 사용자 시안) */
+const selBE = computed(() => {
+  const it = sel.value; if (!it?.target) return null;
+  const a0 = auctions.auctions.find((x) => caseKey(x.caseNumber) === it.key); if (!a0) return null;
+  const a = withConfirmedPlan(a0);
+  const be = breakEvenBidOf(Number(a.expectedSaleValue) || 0, a.bidCost ?? {}); if (be == null) return null;
+  let q: number | null = null;
+  for (let i = 0; i <= 500; i++) { const x = 0.5 + i / 1000; if (qOf(it, x) > be) { q = x; break; } }
+  return { be, sale: Number(a.expectedSaleValue) || 0, q };
+});
 const takeoverOf = (key: string): { amt: number; note: string } | null => {
   const a = auctions.auctions.find((x) => caseKey(x.caseNumber) === key); if (!a) return null;
   if (a.oppositionStatus !== '대항력O') return { amt: 0, note: '대항력 임차인 없음(권리분석)' };
@@ -930,7 +943,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               </div>
             </div>
             <div class="bpt-qsl">
-              <div class="bar"><span class="k"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="1" fill="currentColor" /></svg>낙찰확률</span><input v-model.number="qPct" type="range" min="50" max="100" step="1" aria-label="낙찰확률" :style="{ '--f': (qPct - 50) / Q_SPAN }" /><span class="bub" :style="{ left: `${(qPct - 50) / Q_SPAN * 100}%` }">{{ qPct }}%</span></div>
+              <div class="bar"><span class="k"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="1" fill="currentColor" /></svg>낙찰확률</span><input v-model.number="qPct" type="range" min="50" max="100" step="1" aria-label="낙찰확률" :style="{ '--f': (qPct - 50) / Q_SPAN }" /><template v-if="selBE && selBE.q != null"><i class="loss" :style="{ left: `${(selBE.q * 100 - 50) / Q_SPAN * 100}%` }" /><i class="be" :style="{ left: `${(selBE.q * 100 - 50) / Q_SPAN * 100}%` }" /></template><span class="bub" :style="{ left: `${(qPct - 50) / Q_SPAN * 100}%` }">{{ qPct }}%</span></div>
               <div class="tk"><span v-for="t in [50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]" :key="t" :class="{ b: t % 10 === 0 }" :style="{ left: `${(t - 50) / Q_SPAN * 100}%` }"><i />{{ t }}%</span></div>
             </div>
             <!-- 세 칸 카드(2026-11-19 사용자 시안 A) — 숫자 같은 크기, 퍼센트는 숫자 왼쪽, 입찰가 칸만 파랑. 바뀌는 값은 31개 값을 겹쳐 가장 넓은 폭(흔들림 없게) -->
@@ -938,8 +951,9 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <div class="c"><span class="l">감정가 <span class="pc">100%</span></span><span class="v">{{ won(sel.target.appr) }}</span><span class="d">법원 감정<template v-if="firstSaleOf.get(sel.key)"> · 신건 {{ ymdDot(firstSaleOf.get(sel.key)!) }}</template></span></div>
               <div class="c"><span class="l">최저가<span class="rd">{{ sel.target.round + 1 }}차</span><span class="pc">{{ apprPct(sel.target.min, sel.target.appr) }}</span></span><span class="v">{{ won(sel.target.min) }}</span><span class="d">감정가보다 {{ won(sel.target.appr - sel.target.min) }} 낮음</span></div>
               <!-- 입찰가 칸 — 왼쪽 입찰가(감정가 대비 %) · 세로 가름선 · 오른쪽 낙찰확률(빨강). 두 퍼센트가 헷갈리지 않게(2026-11-19 사용자 시안 2) -->
-              <div class="c bid split"><div class="bl"><span class="l">입찰가 <span class="pc fx"><i v-for="v in Q_VALS" :key="v" aria-hidden="true">{{ apprPct(qOf(sel, v), sel.target.appr) }}</i><em>{{ apprPct(qOf(sel, qPct / 100), sel.target.appr) }}</em></span></span><span class="v"><span class="fx"><i v-for="v in Q_VALS" :key="v" aria-hidden="true">{{ won(qOf(sel, v)) }}</i><em>{{ won(qOf(sel, qPct / 100)) }}</em></span></span><span class="d">최저가 <span class="fx lt"><i v-for="v in Q_VALS" :key="v" aria-hidden="true">{{ signWon(qOf(sel, v) - sel.target.min) }}</i><em>{{ signWon(qOf(sel, qPct / 100) - sel.target.min) }}</em></span></span></div><div class="qr"><span>낙찰확률</span><b>{{ qPct }}%</b></div></div>
+              <div :class="['c bid split', { over: selBE && qOf(sel, qPct / 100) > selBE.be }]"><div class="bl"><span class="l">입찰가 <span class="pc fx"><i v-for="v in Q_VALS" :key="v" aria-hidden="true">{{ apprPct(qOf(sel, v), sel.target.appr) }}</i><em>{{ apprPct(qOf(sel, qPct / 100), sel.target.appr) }}</em></span></span><span class="v"><span class="fx"><i v-for="v in Q_VALS" :key="v" aria-hidden="true">{{ won(qOf(sel, v)) }}</i><em>{{ won(qOf(sel, qPct / 100)) }}</em></span></span><span class="d">최저가 <span class="fx lt"><i v-for="v in Q_VALS" :key="v" aria-hidden="true">{{ signWon(qOf(sel, v) - sel.target.min) }}</i><em>{{ signWon(qOf(sel, qPct / 100) - sel.target.min) }}</em></span></span></div><div class="qr"><span>낙찰확률</span><b>{{ qPct }}%</b></div></div>
             </div>
+            <small v-if="selBE" class="bpt-hugnote"><span class="bpt-rt">손익</span>손익분기 {{ won(selBE.be) }}({{ apprPct(selBE.be, sel.target.appr) }}{{ selBE.q != null ? ` · 낙찰확률 ${Math.round(selBE.q * 100)}%` : '' }}) · 수익분석 매도가 {{ won(selBE.sale) }} − 필요경비 {{ won(selBE.sale - selBE.be) }} · <span :class="qOf(sel, qPct / 100) > selBE.be ? 'bpt-loss' : 'bpt-gain'">{{ qOf(sel, qPct / 100) > selBE.be ? `지금 입찰가는 손익분기보다 ${won(qOf(sel, qPct / 100) - selBE.be)} 높음 · 손해` : `손익분기까지 ${won(selBE.be - qOf(sel, qPct / 100))} 여유` }}</span></small>
             <small v-if="takeoverOf(sel.key)" class="bpt-hugnote"><span class="bpt-rt">권리</span>{{ takeoverOf(sel.key)!.note }}</small>
             <small v-if="hugNote(sel)" class="bpt-hugnote"><span class="bpt-hug sm">허그</span>{{ hugNote(sel) }}</small>
             <small v-if="sel.result && sel.result.sold > 0">{{ `실제 ${won(sel.result.sold)}${hugWon(sel.key) ? `(허그) · ${sel.result.bids >= 2 ? '2등' : '최저가'} ${won(realOf(sel))}` : ''} — ${winAt(sel) == null ? '' : winAt(sel)! <= 0.7 ? '70% 추천가로 이김' : winAt(sel)! <= 1 ? `70% 추천가로는 짐, ${Math.min(100, Math.ceil(winAt(sel)! * 100))}% 입찰가면 이김` : '100% 입찰가로도 짐'}` }}</small></div>
@@ -1200,6 +1214,13 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl td.act-sold .bpt-sold em { text-align: right; font-variant-numeric: tabular-nums; }
 .bpt-tbl td.act-sold .bpt-sold .bpt-nb.real { color: #4b5563; font-weight: 400; }
 .bpt-detail.empty .bpt-flow { width: 100%; }   /* 값이 비어도 채워졌을 때와 같은 폭 */
+/* 손익분기선(선정물건) — 막대 위 점선 · 오른쪽 빗금(손해 구간), 넘으면 입찰가 칸 빨강(2026-11-19 사용자 시안) */
+.bpt-qsl .bar .loss { position: absolute; right: 0; top: 50%; height: 6px; transform: translateY(-50%); border-radius: 0 3px 3px 0; pointer-events: none; background: repeating-linear-gradient(135deg, transparent 0 3px, rgba(220, 38, 38, .45) 3px 5px); }
+.bpt-qsl .bar .be { position: absolute; top: -7px; bottom: -7px; width: 0; border-left: 2px dashed #111827; transform: translateX(-1px); pointer-events: none; }
+.bpt-qout3 .c.bid.over { border-color: #f3a7a7; background: #fdecec; }
+.bpt-tile .bpt-qout3 .c.bid.over .bl .l, .bpt-tile .bpt-qout3 .c.bid.over .bl .l .pc, .bpt-tile .bpt-qout3 .c.bid.over .bl .v { color: #dc2626; }
+.bpt-hugnote .bpt-loss { color: #dc2626; }
+.bpt-hugnote .bpt-gain { color: #16a34a; }
 .bpt-pickhint { font-size: 14px; font-weight: 400; color: #2b6df3; }   /* 빈 내비게이터 제목 — 아직 고른 사건이 없을 때 */
 .bpt-tbl td .bpt-hug.two { background: #eef1f6; color: #4b5563; }   /* 1등 · 2등 칩 — 허그 칩과 같은 꼴, 회색 */
 .bpt-day .bpt-tbl td.addr { text-align: left; }

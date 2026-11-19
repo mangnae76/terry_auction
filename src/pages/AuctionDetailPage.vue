@@ -70,7 +70,7 @@ import { fetchRealTradeAverage, fetchPlaceHistory, fetchDongHouseholds, PLACE_HI
 import { analyzeAddress, type CaseTradeRow } from '../services/caseTradeAnalysis';
 import { cached, cachedEntryOrStale, loadOrFail, cacheKey, readCache, writeCache, CACHE_TTL, type FetchState } from '../services/marketCache';
 // 셈은 화면 밖에 따로 둔다 — 표로 매번 확인할 수 있게 (profitMath.test.ts · registryAnalysis.test.ts)
-import { taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxProfitOf } from '../services/profitMath';
+import { taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxProfitOf, ACQ_TAX_DEFAULT_RATE } from '../services/profitMath';
 import { baseDateOf, isTakenOver, normalizeYmd } from '../services/registryAnalysis';
 import { VWORLD_KEY_EXPIRES, PRICE_YEAR } from '../services/vworldApi';
 import { simCond, type SonPriceOut } from '../services/priceAnalysis';
@@ -2464,7 +2464,6 @@ const scSlideBid = (sc: ProfitScenario, si: number, el: HTMLInputElement) => {
 
 // 취득세 — 기본 1.10%. 입찰가가 바뀌면 이 비율로 다시 계산하고,
 // 금액을 직접 고치면 그 값이 비율로 저장돼 다음 계산에 쓰인다.
-const ACQ_TAX_DEFAULT_RATE = 1.1;
 const scSyncAcqRate = (sc: ProfitScenario) => {
   const c = sc.cost;
   const bid = scBid(sc);

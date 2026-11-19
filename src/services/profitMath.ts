@@ -85,3 +85,18 @@ export const planSummaryOf = (bid: number, sale: number, c: PlanCostLike = {}) =
   const net = bid - loan + cost;
   return { bid, sale, loan, cost, gain, incomeTax, localTax, after, net, rate: net > 0 ? (after / net) * 100 : 0 };
 };
+
+/** 취득세율을 비워 두었을 때 쓰는 기본 세율(%) — 물건 상세 수익분석과 같은 값 */
+export const ACQ_TAX_DEFAULT_RATE = 1.1;
+
+/** 손익분기 입찰가 — 이 값에 낙찰받으면 매도가 − 입찰가 − 필요경비 = 0.
+ *  수익분석 scProfitAtBid 와 같은 식: 취득세만 입찰가 × 세율, 나머지 경비는 적어 둔 금액 그대로(대출 제외).
+ *  매도가가 없으면 null(2026-11-19 사용자 — 낙찰가예측 손익분기선) */
+export const breakEvenBidOf = (sale: number, c: PlanCostLike & { acquisitionTaxRate?: number } = {}): number | null => {
+  if (!(sale > 0)) return null;
+  const acq = c.acquisitionTaxRate && c.acquisitionTaxRate > 0 ? c.acquisitionTaxRate : ACQ_TAX_DEFAULT_RATE;
+  const fixed = (c.legalCostAmount ?? 0) + (c.interestAmount ?? 0) + (c.midRepaymentAmount ?? 0) + (c.brokerageAmount ?? 0)
+    + (c.arrearsFee ?? 0) + (c.repairCost ?? 0) + (c.evictionCost ?? 0) + (c.advertisingCost ?? 0);
+  const bid = Math.floor((sale - fixed) / (1 + acq / 100));
+  return bid > 0 ? bid : null;
+};
