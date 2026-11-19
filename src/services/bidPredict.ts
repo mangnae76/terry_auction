@@ -62,10 +62,10 @@ export const soldOf = (r: SaleRecLike): Sold | null => {
 const feat = (t: { round: number; appr: number; area: number | null; year: number | null; floor: number | null }, bids: number) => [
   1, t.round === 2 ? 1 : 0, t.round >= 3 ? 1 : 0, Math.log(t.appr / 1.5e8), (t.area ?? 50) - 50, (t.year ?? 2012) - 2012, Math.min(t.floor ?? 3, 6), Math.log(Math.max(1, bids)),
 ];
-/** 최소제곱(정규방정식 + 아주 작은 능선) */
-const lstsq = (X: number[][], y: number[]): number[] => {
-  const p = X[0].length;
-  const A = Array.from({ length: p }, (_, i) => Array.from({ length: p + 1 }, (_, j) => (j === p ? X.reduce((s, r, k) => s + r[i] * y[k], 0) : X.reduce((s, r) => s + r[i] * r[j], 0) + (i === j ? 1e-6 : 0))));
+/** 최소제곱(정규방정식 + 아주 작은 능선). w = 줄마다 무게(없으면 모두 1) */
+const lstsq = (X: number[][], y: number[], w?: number[]): number[] => {
+  const p = X[0].length; const wk = (k: number) => (w ? w[k] : 1);
+  const A = Array.from({ length: p }, (_, i) => Array.from({ length: p + 1 }, (_, j) => (j === p ? X.reduce((s, r, k) => s + wk(k) * r[i] * y[k], 0) : X.reduce((s, r, k) => s + wk(k) * r[i] * r[j], 0) + (i === j ? 1e-6 : 0))));
   for (let c = 0; c < p; c++) {
     let piv = c; for (let r = c + 1; r < p; r++) if (Math.abs(A[r][c]) > Math.abs(A[piv][c])) piv = r;
     [A[c], A[piv]] = [A[piv], A[c]];
@@ -78,7 +78,10 @@ const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); cons
 
 /** 덧붙일 값 — 시세 대비 최저가 · 엘베 · 세대수처럼 사건마다 따로 받는 것(2026-11-14). 없으면 지금 식 그대로 */
 export type PriceExtra = (x: { key: string; addr: string; area: number | null; min: number; d: string; appr: number }) => number[];   // appr — 평단 감정가(2026-11-19)
-export type PriceModel = { b: number[]; res: number[][]; n: number; pool: Sold[]; px?: PriceExtra };
+export type PriceModel = { b: number[]; res: number[][]; rw: number[][]; n: number; pool: Sold[]; px?: PriceExtra };   // rw = res 와 같은 자리의 무게
+/** 가격 최근 무게 — 매각기일에서 180일 지날 때마다 절반. 회귀 · 잔차 띠 모두. 6/1~11/19 143건 시험에서 어긋남 2.7 → 1.6%p, 50%값 오차 8.0% 그대로,
+ *  90% 칸 실제 이김 90%(30~120일은 11월 · 높은 칸이 나빠짐)(2026-11-19 사용자) */
+const PRICE_HALF_LIFE = 180;
 /** 매각기일 이전 2년 · 같은 동(모자라면 전체) · 2~4차 · 응찰자 수 있는 매각 건으로 배수 식을 맞춘다 */
 export const fitPriceModel = (recs: Sold[], t: BidTarget, px?: PriceExtra): PriceModel | null => {
   const inWin = (r: Sold) => r.d < t.date && r.d >= yearsBefore(t.date, 2);
@@ -86,11 +89,12 @@ export const fitPriceModel = (recs: Sold[], t: BidTarget, px?: PriceExtra): Pric
   if (pool.length < 60) pool = recs.filter((r) => inWin(r) && r.round >= 1 && r.round <= 3 && r.bids != null && r.bids >= 1);
   if (pool.length < 30) return null;
   const X = pool.map((r) => [...feat(r, r.bids as number), ...(px ? px({ key: r.key, addr: r.addr, area: r.area, min: r.min, d: r.d, appr: r.appr }) : [])]); const y = pool.map((r) => Math.log(r.mx));
-  const b = lstsq(X, y);
-  const res: number[][] = [[], [], [], [], []];
-  pool.forEach((r, i) => res[bandOf(r.bids as number)].push(y[i] - X[i].reduce((s, v, j) => s + v * b[j], 0)));
-  const all = res.flat();
-  return { b, res: res.map((r) => (r.length >= 5 ? r : all)), n: pool.length, pool, px };
+  const w = pool.map((r) => 0.5 ** (Math.max(0, Date.parse(t.date) - Date.parse(r.d)) / 864e5 / PRICE_HALF_LIFE));
+  const b = lstsq(X, y, w);
+  const res: number[][] = [[], [], [], [], []]; const rw: number[][] = [[], [], [], [], []];
+  pool.forEach((r, i) => { const k = bandOf(r.bids as number); res[k].push(y[i] - X[i].reduce((s, v, j) => s + v * b[j], 0)); rw[k].push(w[i]); });
+  const all = res.flat(); const allW = rw.flat();
+  return { b, res: res.map((r) => (r.length >= 5 ? r : all)), rw: rw.map((r, k) => (res[k].length >= 5 ? r : allW)), n: pool.length, pool, px };
 };
 
 /** 비슷한 물건(같은 차수 · 전용 ±10㎡ · 연식 ±6년 · 감정가 ±25%)이 지난 2년 받은 인원 비율 */
@@ -111,7 +115,8 @@ export const priceDist = (m: PriceModel, t: BidTarget, pi: number[]) => {
   const center = BAND_REP.map((n) => Math.exp([...feat(tt, n), ...ex].reduce((s, v, j) => s + v * m.b[j], 0)));
   const bandWon = center.map((c) => Math.round(t.min * c));
   /** 이 금액을 쓰면 이길 확률 = 낙찰가가 이보다 낮게 나올 확률 */
-  const win = (w: number) => pi.reduce((s, p, k) => s + (p ? p * (m.res[k].filter((e) => center[k] * Math.exp(e) < w / t.min).length / m.res[k].length) : 0), 0);
+  const tot = m.rw.map((r) => r.reduce((a, v) => a + v, 0) || 1);
+  const win = (w: number) => pi.reduce((s, p, k) => s + (p ? p * (m.res[k].reduce((a, e, i) => a + (center[k] * Math.exp(e) < w / t.min ? m.rw[k][i] : 0), 0) / tot[k]) : 0), 0);
   const q = (p: number) => { let lo = t.min, hi = t.min * 2.5; for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (win(mid) < p) lo = mid; else hi = mid; } return Math.round(hi / 10_000) * 10_000; };
   // 예상범위 — 차수마다 폭을 맞춘다(절반이 범위 안에 들게). 6월~11-12 시험: 신건은 76% 가 들어 너무 넓고, 3회차 이상은 40% 라 너무 좁았다(2026-11-15 사용자)
   const median = q(0.5); const s = RANGE_SCALE[Math.min(Math.max(t.round, 1), 3)];
