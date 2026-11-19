@@ -10,6 +10,7 @@ import { analyzeAddress, type CaseTradeRow } from '../services/caseTradeAnalysis
 import { lotOf } from '../services/bidPredict';
 import { addressWithName, buildingNameOf } from '../utils/addressName';
 import { kakaoBuildingName } from '../services/addressSearch';
+import { lookupAddress } from '../services/addressLookup';
 import { buildingAgeText } from '../utils/buildingAge';
 import { isLiveCase, lowBuyRows, LB_HOT, LB_WARN, LB_AREA_TOL, LB_YEAR_TOL, type LowBuyCase, type LowBuyRow, type LowBuyTrade } from '../services/lowBuy';
 
@@ -53,7 +54,8 @@ const load = async () => {
       await Promise.all(lots.slice(i, i + 4).map(async ([k, a]) => {
         const f = await getBuildingFacts(a); facts.value = { ...facts.value, [k]: f };
         /* 대장 · 다른 사건 주소에 이름이 없으면 카카오 주소 검색의 건물명 — 낙찰가예측과 같은 길(2026-11-20 사용자 '건물명 안 나오는 거 다 넣어') */
-        if (!String(f?.name ?? '').trim() && !nameByLot.value.get(k)) { const lot = lotStr(a); const nm = lot ? await kakaoBuildingName(lot).catch(() => '') : ''; if (nm) kNames.value = { ...kNames.value, [k]: nm }; }
+        if (!String(f?.name ?? '').trim() && !nameByLot.value.get(k)) { const lot = lotStr(a); const nm = lot ? await kakaoBuildingName(lot).catch(() => '') : ''; const nm2 = nm || await lookupAddress(a, { areaM2: undefined }).then((r) => String(r.price?.name ?? '').trim()).catch(() => '');   /* 그래도 없으면 공동주택가격(브이월드) 단지명(2026-11-20 사용자) */
+          if (nm2) kNames.value = { ...kNames.value, [k]: nm2 }; }
       }));
       n = Math.min(lots.length, i + 4); msg.value = `건축물대장 ${n.toLocaleString('ko-KR')} / ${lots.length.toLocaleString('ko-KR')}`;
     }

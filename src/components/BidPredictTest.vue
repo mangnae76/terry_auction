@@ -11,6 +11,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { getBuildingFacts } from '../services/buildingFacts';
 import { kakaoBuildingName } from '../services/addressSearch';
+import { lookupAddress } from '../services/addressLookup';
 import type { BuildingFacts } from '../services/publicDataApi';
 import { buildingAgeOf } from '../utils/buildingAge';
 import { addressWithName, buildingNameOf } from '../utils/addressName';
@@ -337,7 +338,7 @@ const fillElevs = async () => {
   try {
     const want = [...new Set(shownItems.value.map((it) => lotOf(it.addr)).filter((k) => k && !(k in elevs.value)))].slice(0, 400);
     for (let i = 0; i < want.length; i += 3) {
-      await Promise.all(want.slice(i, i + 3).map(async (k) => { const f = await getBuildingFacts(k); elevs.value = { ...elevs.value, [k]: f ? f.elevator : null }; bldYears.value = { ...bldYears.value, [k]: f?.year ?? null }; const nm = String(f?.name ?? '').trim() || await kakaoBuildingName(k); bldNames.value = { ...bldNames.value, [k]: nm }; }));   /* 대장에 이름이 없으면 카카오 주소 검색의 건물명 */
+      await Promise.all(want.slice(i, i + 3).map(async (k) => { const f = await getBuildingFacts(k); elevs.value = { ...elevs.value, [k]: f ? f.elevator : null }; bldYears.value = { ...bldYears.value, [k]: f?.year ?? null }; const nm = String(f?.name ?? '').trim() || await kakaoBuildingName(k) || await lookupAddress(k).then((r) => String(r.price?.name ?? '').trim()).catch(() => ''); bldNames.value = { ...bldNames.value, [k]: nm }; }));   /* 대장에 이름이 없으면 카카오 주소 검색의 건물명, 그래도 없으면 공동주택가격 단지명(2026-11-20) */
     }
   } finally { elevBusy = false; }
   if (shownItems.value.some((it) => { const k = lotOf(it.addr); return k && !(k in elevs.value); })) void fillElevs();
