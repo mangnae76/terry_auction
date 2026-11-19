@@ -129,7 +129,7 @@ const mktWarn = (r: LowBuyRow) => !!r.mkt && r.mkt.price < r.appr * LB_WARN;
           <thead><tr>
             <th>사건번호</th><th class="l">주소</th><th>전용</th><th>연식</th><th>엘베</th><th class="r">감정가</th><th class="r">최저가<br>1회 유찰</th><th class="r">비슷한 물건<br>평당 감정가</th>
             <th class="r sort" @click="sortDir = sortDir === 1 ? -1 : 1">비슷한 물건<br>대비 <i class="ar">{{ sortDir === 1 ? '▲' : '▼' }}</i></th>
-            <th class="r">면적 대비<br>이득</th><th class="r">실거래가<br>같은 평형</th><th>기일</th>
+            <th class="r">면적 대비<br>이득</th><th class="r">실거래가<br>같은 평형</th><th>다음기일</th>
           </tr></thead>
           <tbody>
             <tr v-for="r in rows" :key="r.key" :class="{ hot: r.hot }">
@@ -147,7 +147,7 @@ const mktWarn = (r: LowBuyRow) => !!r.mkt && r.mkt.price < r.appr * LB_WARN;
                 <template v-if="r.mkt"><span class="nb">{{ won(r.mkt.price) }}</span><small>{{ r.mkt.n }}건 · {{ d8(r.mkt.last) }} · 감정가 {{ Math.round(r.appr / r.mkt.price * 100) }}%</small><small v-if="mktWarn(r)" class="warn">실거래가 감정가보다 낮음</small></template>
                 <span v-else class="mu">{{ trades ? '—' : tradeMsg || '—' }}</span>
               </td>
-              <td>{{ d8(r.next) }}<small>신건 {{ d8(r.first) }}</small></td>
+              <td>{{ r.fails + 1 }}차 {{ d8(r.next) }}<small>신건 {{ d8(r.first) }} 유찰</small></td>   <!-- 위 = 이번에 입찰하는 날(1회 유찰 최저가), 아래 = 유찰된 신건 날(2026-11-20 사용자 — 헷갈림) -->
             </tr>
             <tr v-if="!rows.length"><td colspan="12" class="mu">비교할 1회 유찰 물건이 없습니다.</td></tr>
           </tbody>
