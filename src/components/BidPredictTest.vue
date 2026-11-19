@@ -10,6 +10,7 @@ import type { TipRow } from '../services/tipRows';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { getBuildingFacts } from '../services/buildingFacts';
+import { kakaoBuildingName } from '../services/addressSearch';
 import type { BuildingFacts } from '../services/publicDataApi';
 import { buildingAgeOf } from '../utils/buildingAge';
 import { addressWithName, buildingNameOf } from '../utils/addressName';
@@ -271,7 +272,8 @@ const shortAddr = (a: string) => { const m = a.match(/[가-힣0-9]+(?:동|가|�
 /** 표 주소 — 주소에 건물명이 없으면 건축물대장 건물명(없으면 같은 지번 다른 사건 주소의 이름)을 끼운다('검암동 634-7 ○○빌라 2층202호'). 복사는 원래 주소 그대로 */
 /** 지번마다 다른 사건 주소에 적힌 건물명 — 대장에 이름이 없는 필지(검암동 129곳 중 100곳)를 채운다 */
 const nameByLot = computed(() => { const m = new Map<string, string>(); [...hitDocs.value.map((h) => h.addr), ...recs.value.map((r) => r.addr)].forEach((a) => { const n = buildingNameOf(a); if (!n) return; const l = lotParts(a); const k = `${l.dong} ${l.jibun}`; if (!m.has(k)) m.set(k, n); }); return m; });
-const tblAddr = (a: string) => { const l = lotParts(a); const k = `${l.dong} ${l.jibun}`; return shortAddr(addressWithName(a, extFacts.value[k]?.name || nameByLot.value.get(k))); };
+/* 이름 출처 — ① 동 단위로 받은 대장(extFacts) ② 줄마다 엘베 · 연식을 채우며 읽은 대장, 대장에 이름이 없으면 카카오 주소 검색(bldNames, 2026-11-19 — '검암동 614-3 3층301호'처럼 빠졌다) ③ 같은 지번 다른 사건 주소 */
+const tblAddr = (a: string) => { const l = lotParts(a); const k = `${l.dong} ${l.jibun}`; return shortAddr(addressWithName(a, extFacts.value[k]?.name || bldNames.value[lotOf(a)] || nameByLot.value.get(k))); };
 /** 표 주소 두 줄 — 지번까지 윗줄, 건물명 · 동호수는 아랫줄(2026-11-16 사용자). 지번이 없으면 한 줄 */
 const addrLines = (a: string): [string, string] => {
   const parts = tblAddr(a).split(/\s+/).filter(Boolean);
@@ -289,6 +291,8 @@ const copyAddr = async (it: { key: string; addr: string }) => {
 const elevs = ref<Record<string, number | null>>({});
 /** 연식 — 매각사례에 같은 지번 기록이 없으면 건축물대장 사용승인 해 */
 const bldYears = ref<Record<string, number | null>>({});
+/** 지번(lotOf)마다 건축물대장 건물명 — 엘베 · 연식과 같이 읽는다. 빈 글 = 대장에 이름 없음 */
+const bldNames = ref<Record<string, string>>({});
 const yearShow = (it: Item) => it.target?.year || bldYears.value[lotOf(it.addr)] || null;
 const lotOf = (addr: string) => addr.replace(/\s*\(.*$/, '').replace(/\s*외\s*\d+필지.*$/, '').match(/^(.*?(?:동|가|읍|면|리)\s+(?:산\s*)?\d+(?:-\d+)?)/)?.[1]?.replace(/\s+/g, ' ') ?? '';
 const elevOf = (addr: string): number | null | undefined => { const k = lotOf(addr); return k ? elevs.value[k] : null; };
@@ -298,7 +302,7 @@ const fillElevs = async () => {
   try {
     const want = [...new Set(shownItems.value.map((it) => lotOf(it.addr)).filter((k) => k && !(k in elevs.value)))].slice(0, 400);
     for (let i = 0; i < want.length; i += 3) {
-      await Promise.all(want.slice(i, i + 3).map(async (k) => { const f = await getBuildingFacts(k); elevs.value = { ...elevs.value, [k]: f ? f.elevator : null }; bldYears.value = { ...bldYears.value, [k]: f?.year ?? null }; }));
+      await Promise.all(want.slice(i, i + 3).map(async (k) => { const f = await getBuildingFacts(k); elevs.value = { ...elevs.value, [k]: f ? f.elevator : null }; bldYears.value = { ...bldYears.value, [k]: f?.year ?? null }; const nm = String(f?.name ?? '').trim() || await kakaoBuildingName(k); bldNames.value = { ...bldNames.value, [k]: nm }; }));   /* 대장에 이름이 없으면 카카오 주소 검색의 건물명 */
     }
   } finally { elevBusy = false; }
   if (shownItems.value.some((it) => { const k = lotOf(it.addr); return k && !(k in elevs.value); })) void fillElevs();
