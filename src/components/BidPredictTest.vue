@@ -954,13 +954,13 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <div :class="['c bid split', { over: selBE && qOf(sel, qPct / 100) > selBE.be }]"><div class="bl"><span class="l">입찰가 <span class="pc fx"><i v-for="v in Q_VALS" :key="v" aria-hidden="true">{{ apprPct(qOf(sel, v), sel.target.appr) }}</i><em>{{ apprPct(qOf(sel, qPct / 100), sel.target.appr) }}</em></span></span><span class="v"><span class="fx"><i v-for="v in Q_VALS" :key="v" aria-hidden="true">{{ won(qOf(sel, v)) }}</i><em>{{ won(qOf(sel, qPct / 100)) }}</em></span></span><span class="d">최저가 <span class="fx lt"><i v-for="v in Q_VALS" :key="v" aria-hidden="true">{{ signWon(qOf(sel, v) - sel.target.min) }}</i><em>{{ signWon(qOf(sel, qPct / 100) - sel.target.min) }}</em></span></span></div><div class="qr"><span>낙찰확률</span><b>{{ qPct }}%</b></div></div>
             </div>
             <small v-if="selBE" class="bpt-hugnote"><span class="bpt-rt">손익</span>손익분기 {{ won(selBE.be) }}({{ apprPct(selBE.be, sel.target.appr) }}{{ selBE.q != null ? ` · 낙찰확률 ${Math.round(selBE.q * 100)}%` : '' }}) · 수익분석 매도가 {{ won(selBE.sale) }} − 필요경비 {{ won(selBE.sale - selBE.be) }} · <span :class="qOf(sel, qPct / 100) > selBE.be ? 'bpt-loss' : 'bpt-gain'">{{ qOf(sel, qPct / 100) > selBE.be ? `지금 입찰가는 손익분기보다 ${won(qOf(sel, qPct / 100) - selBE.be)} 높음 · 손해` : `손익분기까지 ${won(selBE.be - qOf(sel, qPct / 100))} 여유` }}</span></small>
-            <small v-if="takeoverOf(sel.key)" class="bpt-hugnote"><span class="bpt-rt">권리</span>{{ takeoverOf(sel.key)!.note }}</small>
-            <small v-if="hugNote(sel)" class="bpt-hugnote"><span class="bpt-hug sm">허그</span>{{ hugNote(sel) }}</small>
-            <small v-if="sel.result && sel.result.sold > 0">{{ `실제 ${won(sel.result.sold)}${hugWon(sel.key) ? `(허그) · ${sel.result.bids >= 2 ? '2등' : '최저가'} ${won(realOf(sel))}` : ''} — ${winAt(sel) == null ? '' : winAt(sel)! <= 0.7 ? '70% 추천가로 이김' : winAt(sel)! <= 1 ? `70% 추천가로는 짐, ${Math.min(100, Math.ceil(winAt(sel)! * 100))}% 입찰가면 이김` : '100% 입찰가로도 짐'}` }}</small></div>
+            <!-- 권리 줄(대항력 · 확약서)은 뺐다 — 인수 보증금이 없으면 계산에 영향이 없어서(2026-11-19 사용자). takeoverOf 는 qOf 에 그대로 -->
+            <!-- 허그 줄(최근 30일 허그 낙찰) · 실제 낙찰 줄(추천가로 이김/짐)은 뺐다 — 표에 다 있고 아는 것(2026-11-19 사용자) -->
+          </div>
         </div>
       </div>
       <!-- 고른 사건이 없을 때 — 내비게이터는 그대로 두고 값만 비운다, 제목 자리에 파란 안내(2026-11-19 사용자) -->
-      <div v-else-if="items.length" class="bpt-detail empty">
+      <div v-else-if="items.length" class="bpt-detail blank">
         <h3 class="bpt-h3"><span class="bpt-pickhint">표에서 사건을 선택하세요</span></h3>
         <div class="bpt-flow">
           <div class="bpt-tile bpt-stack">
@@ -1213,7 +1213,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tbl td.act-sold .bpt-sold i, .bpt-tbl td.act-sold .bpt-sold em { font-style: normal; font-weight: 400; color: #6b7280; }
 .bpt-tbl td.act-sold .bpt-sold em { text-align: right; font-variant-numeric: tabular-nums; }
 .bpt-tbl td.act-sold .bpt-sold .bpt-nb.real { color: #4b5563; font-weight: 400; }
-.bpt-detail.empty .bpt-flow { width: 100%; }   /* 값이 비어도 채워졌을 때와 같은 폭 */
+.bpt-detail.blank .bpt-flow { width: 100%; }   /* 값이 비어도 채워졌을 때와 같은 폭 */
 /* 손익분기선(선정물건) — 막대 위 점선 · 오른쪽 빗금(손해 구간), 넘으면 입찰가 칸 빨강(2026-11-19 사용자 시안) */
 .bpt-qsl .bar .loss { position: absolute; right: 0; top: 50%; height: 6px; transform: translateY(-50%); border-radius: 0 3px 3px 0; pointer-events: none; background: repeating-linear-gradient(135deg, transparent 0 3px, rgba(220, 38, 38, .45) 3px 5px); }
 .bpt-qsl .bar .be { position: absolute; top: -7px; bottom: -7px; width: 0; border-left: 2px dashed #111827; transform: translateX(-1px); pointer-events: none; }
@@ -1264,7 +1264,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-tile b { font-size: 19px; font-variant-numeric: tabular-nums; }
 .bpt-tile.key b { color: #1f5fe0; }
 .bpt-tile small { font-size: 12px; color: #4b5563; }
-.bpt-detail { border: 1px solid #e3e7ee; border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; background: #fbfcfe; }   /* 카드 안 상자 — 제목 15 · 800, 아이콘 없음 */
+.bpt-detail { border: 1px solid #e3e7ee; border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; background: #fbfcfe; }
+.bpt-detail { grid-template-rows: auto minmax(0, 1fr); min-height: 349px; box-sizing: border-box; }   /* 높이 고정 — 고르지 않음 · 손익 줄이 있고 없고에 상자가 움직이지 않게. 349 = 손익 줄이 있을 때(2026-11-19 사용자) */   /* 카드 안 상자 — 제목 15 · 800, 아이콘 없음 */
 .bpt-detail .bpt-h3 { display: flex; align-items: center; gap: 8px; }
 .bpt-detail .bpt-h3 small { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: #111827; }   /* 주소는 검정으로 또렷하게(2026-11-17 사용자) */
 .bpt-fold { margin-left: auto; height: 24px; padding: 0 10px; border: 1px solid #d5dbe5; border-radius: 6px; background: #fff; font: inherit; font-size: 12px; font-weight: 700; color: #4b5563; cursor: pointer; }   /* 제목 줄 오른쪽 끝 접기 · 펼치기 */
