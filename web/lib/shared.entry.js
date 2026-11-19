@@ -252,6 +252,15 @@ export const mountBidPredict = (el) => {
   app.mount(el);
   return () => app.unmount();
 };
+/* 시장분석 › 매각분석 › 저가매수(운영) — 1회 유찰 물건을 같은 동 진행 중 물건끼리 평당 감정가로 견준다(2026-11-20) */
+import LowBuyPick from '../../src/components/LowBuyPick.vue';
+export const mountLowBuy = (el) => {
+  const app = createApp(LowBuyPick);
+  app.use(getActivePinia());
+  app.provide('webEmbed', true);
+  app.mount(el);
+  return () => app.unmount();
+};
 export const mountAppAdmin = (el, key, provides = {}) => {
   const [path, component, props] = ADMIN_SCREENS[key];
   const Empty = { render: () => null };

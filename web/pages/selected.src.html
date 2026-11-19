@@ -395,7 +395,7 @@ button { cursor: pointer; }
 /* 아래 바닥 띠(.foot)가 표 바로 밑에 붙어 올라와 보였다 — 표 한 줄쯤 띄운다 */
 #marketView:has(.app-market:is([data-k="dong"], [data-k="case"])) .market-content { padding-bottom: 56px; }
 /* 매각분석 › 낙찰가예측 — 사건별 예측 표가 칸이 많아 1280 에서는 옆으로 굴렀다. 이 탭만 표가 딱 들어가는 폭(칸 너비 고정 · 주소 칸에 남는 폭 → 1560, 엘베 · 연식 · 전용 칸이 늘어서)으로(2026-11-14 사용자 — 1920은 너무 넓고 주소는 조금 더) */
-#marketContent:has(#bidPredictMount) { padding-bottom: 56px; }   /* 폭은 다른 화면과 같은 1280(2026-11-15 사용자) */
+#marketContent:has(#bidPredictMount, #lowBuyMount) { padding-bottom: 56px; }   /* 폭은 다른 화면과 같은 1280(2026-11-15 사용자) */
 /* 화면 끝까지 긋는 선 — transform 으로 옮기면 반 픽셀에 걸려 선이 흐려지고 파란 밑줄과 1px 어긋났다. left 로 옮긴다 */
 .app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 0; width: 100vw; height: 1px; background: var(--subtab-line); }
 .app-market[data-k="dong"] .adm-view-tabs button { position: relative; z-index: 1; }
@@ -5336,7 +5336,7 @@ span.cal-day.has { cursor: help; }
     if (head === 'roi') return { route: 'market', sub: 'dong' }; /* 수익분석은 뺐다 — 예전 주소는 지역분석으로 */
     if (head === 'bidrate') return { route: 'market', sub: 'sale', saleTab: m[2] === 'same' ? 'same' : 'near' }; /* 예전 '낙찰가율분석' 주소 */
     if (head === 'market' && (m[2] === 'near' || m[2] === 'same')) return { route: 'market', sub: 'sale', saleTab: m[2] }; /* 예전 인근 · 동일지번 하위 탭 — 매각사례 안 박스 탭으로 */
-    if (head === 'market' && m[2] === 'sale') return { route: 'market', sub: 'sale', saleTab: m[3] === 'predict' ? 'predict' : m[3] === 'same' ? 'same' : 'near' };   /* predict = 낙찰가예측 탭(2026-11-14) */
+    if (head === 'market' && m[2] === 'sale') return { route: 'market', sub: 'sale', saleTab: m[3] === 'predict' ? 'predict' : m[3] === 'lowbuy' ? 'lowbuy' : m[3] === 'same' ? 'same' : 'near' };   /* predict = 낙찰가예측 탭(2026-11-14) · lowbuy = 저가매수 탭(2026-11-20) */
     if (SUB_TAB_KEYS[head]) return { route: head, sub: SUB_TAB_KEYS[head].includes(m[2]) ? m[2] : SUB_TAB_KEYS[head][0] };
     if (PLAIN_ROUTES.includes(head)) return { route: head };
     if (head === 'list') return { route: 'list' };
@@ -8276,7 +8276,7 @@ span.cal-day.has { cursor: help; }
   })();
   const agSaveSel = () => { try { localStorage.setItem(AG_SEL_KEY, JSON.stringify({ site: agSel.site, months: agSel.months })); } catch (e) { /* 그만 */ } };
   const agIsAdmin = () => !!(CLOUD.on && CLOUD.T && CLOUD.T.isAdminEmail && CLOUD.auth && CLOUD.T.isAdminEmail(CLOUD.auth.email));
-  const agSaleOpen = () => (S.route === 'market' && S.marketTab === 'sale' && S.saleTab !== 'predict') || (S.route === 'item' && S.itemTab === 'survey' && sonSaleOn && !!$('sonSaleSlot'));
+  const agSaleOpen = () => (S.route === 'market' && S.marketTab === 'sale' && S.saleTab !== 'predict' && S.saleTab !== 'lowbuy') || (S.route === 'item' && S.itemTab === 'survey' && sonSaleOn && !!$('sonSaleSlot'));
   const agDate = (v) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || '')); return m ? `${m[1]}.${m[2]}.${m[3]}` : (v ? esc(String(v)) : '-'); };
   const agWon = (v) => (Number(v) > 0 ? Math.round(Number(v)).toLocaleString('ko-KR') : '-');
   /* 건축연도 — 연도가 비면 건축연월('2010.06') 앞 네 자리 */
@@ -8792,7 +8792,7 @@ span.cal-day.has { cursor: help; }
     if (S.route === 'item') { paintSonSale(); return; }   /* 경매사례 단추 · 칸이 부르는 다시 그리기 — 물건상세 손품조사 › 경매사례 탭이면 그 자리에 */
     renderSonHead();
     syncCrumb();
-    document.body.classList.toggle('sale-predict', S.marketTab === 'sale' && S.saleTab === 'predict');   /* 낙찰가예측 탭 — 위 '물건으로 · 지역으로' 토글 감춤(단위가 법원 · 계 · 기일이라 뜻 없음, 2026-11-18 사용자) */
+    document.body.classList.toggle('sale-predict', S.marketTab === 'sale' && (S.saleTab === 'predict' || S.saleTab === 'lowbuy'));   /* 낙찰가예측 탭 — 위 '물건으로 · 지역으로' 토글 감춤(단위가 법원 · 계 · 기일이라 뜻 없음, 2026-11-18 사용자) */
     const box = $('marketContent');
     const key = S.marketTab;
     const label = (SUBTABS[S.route].find((t) => t[0] === key) || [])[2] || '';
@@ -8800,7 +8800,7 @@ span.cal-day.has { cursor: help; }
     /* 경매사례는 운영자만 — 로그인 확인이 끝났는데 운영자가 아니면 지역분석으로(주소로 바로 들어와도) */
     if (key === 'sale' && S.authReady && !agIsAdmin()) { S.marketTab = 'dong'; writeHash(false); renderSubTabs(); renderMarket(); return; }
     /* 매각분석 탭 두 개 — 매각사례 | 낙찰가예측. 낙찰가예측은 앱 화면(BidPredictTest)을 붙인다(2026-11-14) */
-    const saleTabs = `<nav class="cm-tabs sale-tabs" role="tablist" aria-label="매각분석">${[['near', '매각사례'], ['predict', '낙찰가예측']].map(([k, t]) => { const on = k === 'predict' ? S.saleTab === 'predict' : S.saleTab !== 'predict'; return `<button type="button" role="tab" class="${on ? 'on' : ''}" aria-selected="${on}" data-act="sale-tab" data-v="${k}">${t}</button>`; }).join('')}</nav>`;   /* 매각분석 전체가 운영자만이라 탭에 운영 칩은 따로 달지 않는다 */
+    const saleTabs = `<nav class="cm-tabs sale-tabs" role="tablist" aria-label="매각분석">${[['near', '매각사례'], ['predict', '낙찰가예측'], ['lowbuy', '저가매수']].map(([k, t]) => { const on = k === 'near' ? S.saleTab !== 'predict' && S.saleTab !== 'lowbuy' : S.saleTab === k; return `<button type="button" role="tab" class="${on ? 'on' : ''}" aria-selected="${on}" data-act="sale-tab" data-v="${k}">${t}</button>`; }).join('')}</nav>`;   /* 매각분석 전체가 운영자만이라 탭에 운영 칩은 따로 달지 않는다 */
     if (key === 'sale' && S.saleTab === 'predict' && agIsAdmin()) {
       if (marketUnmount && box.querySelector('#bidPredictMount')) return;
       const ss = $('sonSaleSlot'); if (ss) ss.innerHTML = '';
@@ -8808,6 +8808,16 @@ span.cal-day.has { cursor: help; }
       box.innerHTML = `${saleTabs}<div id="bidPredictMount" class="bid-predict"></div>`;
       if (!T || !T.mountBidPredict) { $('bidPredictMount').innerHTML = itEmpty('불러오는 중입니다…'); return; }
       marketUnmount = T.mountBidPredict($('bidPredictMount'));
+      return;
+    }
+    /* 저가매수 — 1회 유찰 가격매력(앱 화면 LowBuyPick 을 붙인다, 2026-11-20) */
+    if (key === 'sale' && S.saleTab === 'lowbuy' && agIsAdmin()) {
+      if (marketUnmount && box.querySelector('#lowBuyMount')) return;
+      const ss = $('sonSaleSlot'); if (ss) ss.innerHTML = '';
+      closeAppMarket();
+      box.innerHTML = `${saleTabs}<div id="lowBuyMount" class="low-buy"></div>`;
+      if (!T || !T.mountLowBuy) { $('lowBuyMount').innerHTML = itEmpty('불러오는 중입니다…'); return; }
+      marketUnmount = T.mountLowBuy($('lowBuyMount'));
       return;
     }
     if (key === 'sale') { const ss = $('sonSaleSlot'); if (ss) ss.innerHTML = '';   /* 숨은 물건상세 경매사례 그림을 비운다 — 지도 자리(#sxMapSlot) · 결과(#sxResults)가 둘이 되면 지도가 숨은 쪽으로 옮겨 붙었다(2026-11-08) */
@@ -10670,7 +10680,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'buy-agree': if (S.modal && S.modal.kind === 'buy') { S.modal.agree = t.checked; const b = $('buyPay'); if (b) b.disabled = !t.checked; } break;
       case 'buy-pay': toast('결제는 준비 중입니다 — 결제 연동이 끝나면 열립니다.', 'info'); break;
       case 'store-login': openAppLogin(); break;   /* 콘텐츠 › 내콘텐츠 — 로그인 전 */
-      case 'sale-tab': { const nv = v === 'predict' ? 'predict' : 'near'; if (S.saleTab === nv) break; S.saleTab = nv; writeHash(true); renderMarket(); toTop(); break; }
+      case 'sale-tab': { const nv = v === 'predict' || v === 'lowbuy' ? v : 'near'; if (S.saleTab === nv) break; S.saleTab = nv; writeHash(true); renderMarket(); toTop(); break; }
       case 'store-tab': S.storeTab = v; store.set('wlp.web.storeTab2', v); renderInfo(); break;
       /* 전자책 무료로받기 — 회원가입 후 로그인한 회원만. 받은 기록을 남기고(콘텐츠 › 내콘텐츠) 새 탭으로 내려받는다 */
       case 'ebook-get': {
