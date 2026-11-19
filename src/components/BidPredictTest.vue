@@ -269,6 +269,9 @@ const credOf = computed(() => new Map(hitDocs.value.map((h) => [h.key, h.credito
 const isHug = (key: string) => /주택도시보증/.test(credOf.value.get(key) ?? '');
 /** 허그가 직접 낙찰 — 탱크는 낙찰자를 가림 글자로 준다. '주○○○○○○○'(여덟 자)이고 채권자가 허그면 주택도시보증공사로 본다(2026-11-17 사용자 — 칩은 실제 낙찰가에만) */
 const winOf = computed(() => new Map(hitDocs.value.map((h) => [h.key, h.winner])));
+/** 신건 날짜(1차 매각기일, 없으면 최초진행일) — 감정가 밑 '신건 26.09.07'. 감정 시점이 오래돼 감정가가 높게 잡힌 물건을 가려 보려고(2026-11-19 사용자) */
+const firstSaleOf = computed(() => new Map(hitDocs.value.map((h) => [h.key, (h.ev.find((e) => e.l === '1차 매각기일') ?? h.ev.find((e) => e.l === '최초진행일'))?.d ?? ''])));
+const ymdDot = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? `${d.slice(2, 4)}.${d.slice(5, 7)}.${d.slice(8)}` : '');
 const hugWon = (key: string) => { const w = winOf.value.get(key) ?? ''; return /주택도시보증/.test(w) || (/^주○{7}$/.test(w) && isHug(key)); };
 /* ===== 실질 낙찰가(2026-11-19 사용자) — 허그 · 실거주자는 우리 경쟁 상대가 아니다. 허그가 1등이면 2등(일반 입찰자) 가격, 허그 혼자면 최저가, 아니면 1등가.
  * 예상 낙찰가 · 입찰가별 낙찰확률은 이 값으로 배우고, 이김 판정 · 채점 · 차이도 이 값으로(6/1~11/19 매각 143건 시험: 낙찰확률 어긋남 6.2 → 1.1%p) ===== */
@@ -458,7 +461,8 @@ const preds = computed(() => {
   return out;
 });
 
-const sel = computed(() => items.value.find((it) => it.key === pick.value && preds.value.has(it.key)) ?? items.value.find((it) => preds.value.has(it.key)) ?? null);
+/** 고른 사건 — 처음엔 아무것도 고르지 않고 '표에서 사건을 선택하세요'(2026-11-19 사용자 — 첫 줄 사건을 저절로 보여 주지 않기) */
+const sel = computed(() => items.value.find((it) => it.key === pick.value && preds.value.has(it.key)) ?? null);
 const selP = computed(() => (sel.value ? preds.value.get(sel.value.key) ?? null : null));
 
 /** 내 낙찰확률 — 아무도 안 올 확률 + (누가 올 확률 × 그 사람들보다 높게 쓸 확률). 예전엔 '누가 온다'고만 쳐서
@@ -931,7 +935,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             </div>
             <!-- 세 칸 카드(2026-11-19 사용자 시안 A) — 숫자 같은 크기, 퍼센트는 숫자 왼쪽, 입찰가 칸만 파랑. 바뀌는 값은 31개 값을 겹쳐 가장 넓은 폭(흔들림 없게) -->
             <div class="bpt-qout3">
-              <div class="c"><span class="l">감정가 <span class="pc">100%</span></span><span class="v">{{ won(sel.target.appr) }}</span><span class="d">법원 감정</span></div>
+              <div class="c"><span class="l">감정가 <span class="pc">100%</span></span><span class="v">{{ won(sel.target.appr) }}</span><span class="d">법원 감정<template v-if="firstSaleOf.get(sel.key)"> · 신건 {{ ymdDot(firstSaleOf.get(sel.key)!) }}</template></span></div>
               <div class="c"><span class="l">최저가<span class="rd">{{ sel.target.round + 1 }}차</span><span class="pc">{{ apprPct(sel.target.min, sel.target.appr) }}</span></span><span class="v">{{ won(sel.target.min) }}</span><span class="d">감정가보다 {{ won(sel.target.appr - sel.target.min) }} 낮음</span></div>
               <!-- 입찰가 칸 — 왼쪽 입찰가(감정가 대비 %) · 세로 가름선 · 오른쪽 낙찰확률(빨강). 두 퍼센트가 헷갈리지 않게(2026-11-19 사용자 시안 2) -->
               <div class="c bid split"><div class="bl"><span class="l">입찰가 <span class="pc fx"><i v-for="v in Q_VALS" :key="v" aria-hidden="true">{{ apprPct(qOf(sel, v), sel.target.appr) }}</i><em>{{ apprPct(qOf(sel, qPct / 100), sel.target.appr) }}</em></span></span><span class="v"><span class="fx"><i v-for="v in Q_VALS" :key="v" aria-hidden="true">{{ won(qOf(sel, v)) }}</i><em>{{ won(qOf(sel, qPct / 100)) }}</em></span></span><span class="d">최저가 <span class="fx lt"><i v-for="v in Q_VALS" :key="v" aria-hidden="true">{{ signWon(qOf(sel, v) - sel.target.min) }}</i><em>{{ signWon(qOf(sel, qPct / 100) - sel.target.min) }}</em></span></span></div><div class="qr"><span>낙찰확률</span><b>{{ qPct }}%</b></div></div>
@@ -941,6 +945,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
             <small v-if="sel.result && sel.result.sold > 0">{{ `실제 ${won(sel.result.sold)}${hugWon(sel.key) ? `(허그) · ${sel.result.bids >= 2 ? '2등' : '최저가'} ${won(realOf(sel))}` : ''} — ${winAt(sel) == null ? '' : winAt(sel)! <= 0.7 ? '70% 추천가로 이김' : winAt(sel)! <= 1 ? `70% 추천가로는 짐, ${Math.min(100, Math.ceil(winAt(sel)! * 100))}% 입찰가면 이김` : '100% 입찰가로도 짐'}` }}</small></div>
         </div>
       </div>
+      <p v-else-if="items.length" class="bpt-pickhint">표에서 사건을 선택하세요</p>
       <div class="table-wrap bpt-tbl-wrap">
         <table class="bpt-tbl fixed">
           <!-- 칸 너비 고정 — 동 · 기일을 바꿔도 표가 흔들리지 않게. 칸마다 가장 넓은 내용(검암동 · 11-13 · 17 · 20 에서 잼) + 같은 여백 15px(정렬 머리는 화살표 자리 14px 더), 주소는 남는 폭(2026-11-17 사용자: 간격 균일) -->
@@ -955,7 +960,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td><span v-if="elevOf(it.addr) === undefined" class="ev u">·</span><span v-else-if="elevOf(it.addr) === null" class="ev u" title="건축물대장을 찾지 못했습니다">-</span><span v-else-if="elevOf(it.addr)! > 0" class="ev o two">{{ elevOf(it.addr) }}대<br>있음</span><span v-else class="ev x">없음</span></td>
               <td v-if="!it.viewAt" class="r">—</td>
               <td v-else class="r">{{ it.views.toLocaleString('ko-KR') }}<small :class="['bpt-at', { after: stale(it.viewAt) }]">{{ it.viewAt === dayDate ? '당일' : `${stale(it.viewAt) ? '~' : ''}${it.viewAt.slice(5).replace('-', '.')}` }}</small></td>
-              <td class="r"><span v-if="it.target?.appr" class="bpt-nb">{{ won(it.target.appr) }}</span><template v-else>—</template></td>
+              <td class="r"><span v-if="it.target?.appr" class="bpt-nb">{{ won(it.target.appr) }}<small v-if="firstSaleOf.get(it.key)" class="bpt-at bpt-nb">신건 {{ ymdDot(firstSaleOf.get(it.key)!) }}</small></span><template v-else>—</template></td>
               <td>{{ it.target ? `${it.target.round + 1}차` : '—' }}</td>
               <td class="r"><span v-if="it.target" class="bpt-nb">{{ won(it.target.min) }}<small v-if="it.target.appr" class="bpt-at bpt-nb">{{ apprPct(it.target.min, it.target.appr) }}</small></span><template v-else>자료 없음</template></td>
               <td>{{ sellOf(it.key) ? pct(sellOf(it.key)!.pSold) : '—' }}</td>
@@ -963,7 +968,7 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td v-if="preds.get(it.key)" class="r strong"><span class="bpt-nb">{{ won((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median) }}<small v-if="it.target?.appr" class="bpt-at bpt-nb">{{ apprPct((preds.get(it.key)!.after ?? preds.get(it.key)!.before).median, it.target.appr) }}</small></span></td>
               <td v-else>—</td>
               <td class="r">{{ it.result ? (it.result.sold > 0 ? (it.result.bids ? `${it.result.bids}명` : '모름') : '유찰') : '입찰 전' }}</td>
-              <td class="r act-sold"><template v-if="it.result && it.result.sold > 0"><span class="bpt-sold"><span class="ch"><span v-if="hugWon(it.key)" class="bpt-hug sm" :data-tip="HUG_WON_TIP">허그</span></span><span class="bpt-nb">{{ won(it.result.sold) }}</span><i>/</i><em>{{ it.target?.appr ? apprPct(it.result.sold, it.target.appr) : '' }}</em><template v-if="hugWon(it.key)"><span class="ch"><span class="bpt-hug sm two">{{ it.result.bids >= 2 ? '2등' : '최저가' }}</span></span><span class="bpt-nb real">{{ won(realOf(it)) }}</span><i>/</i><em>{{ it.target?.appr ? apprPct(realOf(it), it.target.appr) : '' }}</em></template></span></template><template v-else>—</template></td>
+              <td class="r act-sold"><template v-if="it.result && it.result.sold > 0"><span class="bpt-sold"><span class="ch"><span v-if="hugWon(it.key)" class="bpt-hug sm" :data-tip="HUG_WON_TIP">허그</span><span v-else class="bpt-hug sm two">1등</span></span><span class="bpt-nb">{{ won(it.result.sold) }}</span><i>/</i><em>{{ it.target?.appr ? apprPct(it.result.sold, it.target.appr) : '' }}</em><template v-if="hugWon(it.key)"><span class="ch"><span class="bpt-hug sm two">{{ it.result.bids >= 2 ? '2등' : '최저가' }}</span></span><span class="bpt-nb real">{{ won(realOf(it)) }}</span><i>/</i><em>{{ it.target?.appr ? apprPct(realOf(it), it.target.appr) : '' }}</em></template></span></template><template v-else>—</template></td>
               <td v-if="it.result && it.result.sold > 0 && preds.get(it.key)" class="r"><span class="bpt-nb">{{ signWon(realOf(it) - qOf(it, 0.5)) }}<small class="bpt-at bpt-nb">{{ sgn(realOf(it) / qOf(it, 0.5) - 1) }}</small></span></td>
               <td v-else class="r">—</td>
             </tr>
@@ -1163,13 +1168,14 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 :root[data-theme="dark"] .bpt-tbl td.act-sold .bpt-nb { color: #ff7a8a; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bpt-tbl td.act-sold .bpt-nb { color: #ff7a8a; } }
 /* 실제 낙찰가 — 금액 / % 한 줄, 허그가 1등이면 아랫줄 '2등 금액 / %'. 금액 · % 폭을 고정해 줄마다 끝자리가 세로로 맞는다(2026-11-19 사용자) */
-.bpt-tbl td.act-sold .bpt-sold { display: inline-grid; grid-template-columns: auto auto auto 6ch; column-gap: 4px; align-items: baseline; white-space: nowrap; }   /* 칩 · 금액 · / · % 네 칸 — 두 줄이 같은 열에 선다 */
+.bpt-tbl td.act-sold .bpt-sold { display: grid; justify-content: end; grid-template-columns: minmax(32px, auto) minmax(11ch, auto) auto 6ch; column-gap: 4px; align-items: baseline; white-space: nowrap; }   /* 칩 · 금액 · / · % 네 칸 — 두 줄 · 다른 줄 모두 같은 열에 선다(금액 칸 최소 11ch) */
 .bpt-tbl td.act-sold .bpt-sold .ch { justify-self: start; }
 .bpt-tbl td.act-sold .bpt-sold .bpt-nb { min-width: 0; justify-self: end; }
 .bpt-tbl td.act-sold .bpt-sold i, .bpt-tbl td.act-sold .bpt-sold em { font-style: normal; font-weight: 400; color: #6b7280; }
 .bpt-tbl td.act-sold .bpt-sold em { text-align: right; font-variant-numeric: tabular-nums; }
 .bpt-tbl td.act-sold .bpt-sold .bpt-nb.real { color: #4b5563; font-weight: 400; }
-.bpt-tbl td .bpt-hug.two { background: #eef1f6; color: #4b5563; }   /* 2등 칩 — 허그 칩과 같은 꼴, 회색 */
+.bpt-pickhint { margin: 12px 0 8px; font-size: 14px; color: #2b6df3; }   /* 상세 자리 — 아직 고른 사건이 없을 때 */
+.bpt-tbl td .bpt-hug.two { background: #eef1f6; color: #4b5563; }   /* 1등 · 2등 칩 — 허그 칩과 같은 꼴, 회색 */
 .bpt-day .bpt-tbl td.addr { text-align: left; }
 .bpt-day .bpt-tbl th.hd-addr { text-align: center; }   /* 주소 머리는 가운데 — 칸 폭을 내용 폭에 맞춰 내용 덩어리와 가운데가 맞는다(2026-11-17 사용자) */
 .bpt-tbl.fixed { table-layout: fixed; }
