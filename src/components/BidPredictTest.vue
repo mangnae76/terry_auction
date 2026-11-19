@@ -808,9 +808,9 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
               <td class="kinds"><template v-if="g.kinds">{{ g.kinds }}</template><small v-else class="bpt-at">기일목록수집 뒤</small></td>
               <td class="recs">
                 <div v-if="g.recs.length" class="bpt-recs">
-                  <template v-for="r in g.recs" :key="r.key">
+                  <div v-for="r in g.recs" :key="r.key" :class="['row', { on: pick === r.key }]">   <!-- 한 사건 한 줄(subgrid) — 고른 사건은 사건별 예측 표처럼 파란 바탕 · 왼쪽 파란 막대(2026-11-19 사용자) -->
                     <span class="bpt-rec" :data-tip="REC_TIP">경쟁↓</span><button type="button" class="bpt-link" @click="pick = r.key">{{ caseLabel(r.key) }}</button><span class="pl">{{ r.place }}</span><span>{{ r.round }}차</span><span class="pb"><b>{{ pct(r.pSold) }}</b><i>·</i><em>{{ r.bids.toFixed(1) }}명</em></span><span class="nb">{{ r.bid50 != null ? won(r.bid50) : '—' }}</span><span><span v-if="isHug(r.key)" class="bpt-hug sm" data-tip="채권자 허그(주택도시보증공사)">허그</span></span>
-                  </template>
+                  </div>
                 </div>
                 <small v-else class="bpt-at">{{ g.listed ? '경쟁↓ 없음 · 조회수 받은 사건 중 응찰확률 30% 아래 · 예상응찰 1명 아래가 없음' : '조회수수집 뒤' }}</small>
               </td>
@@ -1085,6 +1085,8 @@ const stale = (at: string) => useHits.value && !!at && at < plusDays(dayDate.val
 .bpt-recs { display: grid; grid-template-columns: 52px 112px minmax(140px, 1fr) 36px 150px 104px 44px; gap: 3px 8px; align-items: center; justify-items: center; font-size: 12.5px; }   /* 말머리(hd)와 줄이 같은 칸 폭 — 세로로 맞는다 */
 .bpt-recs .pl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .bpt-recs .nb { font-variant-numeric: tabular-nums; }
+.bpt-recs > .row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; justify-items: center; border-radius: 4px; }
+.bpt-recs > .row.on { background: #e8effd; box-shadow: inset 3px 0 0 #2b6df3; }   /* 고른 사건 — 사건별 예측 표의 고른 줄과 같은 왼쪽 파란 막대 */
 /* 허그 칩(남색) — 실제 낙찰가 % 앞(허그가 직접 낙찰) · 어디로 갈까 채권자 칸에 작게(2026-11-17 사용자) */
 .bpt-tbl td .bpt-hug { display: inline-block; padding: 1px 6px; border-radius: 4px; background: #213366; color: #fff; font-size: 12px; font-weight: 700; line-height: 16px; margin-bottom: 2px; }
 .bpt-tbl td .bpt-hug.sm { padding: 0 3px; margin: 0 3px 0 0; border-radius: 3px; font-weight: 400; line-height: 14px; vertical-align: 1px; }   /* 굵기 없이 작게 — 글자는 웹 하한 12px(2026-11-17 사용자) */   /* 실제 낙찰가는 굵게 */
