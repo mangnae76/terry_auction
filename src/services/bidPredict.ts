@@ -225,7 +225,8 @@ export const roundsOf = (h: HitLike, collectStart = '2025-06-15', lead = 0): Rou
 const lnp = (x: number) => Math.log(1 + Math.max(0, x));
 /** 고른 방법 — 누적 조회수 + 마지막 7일 + 회차(신건 · 3차 이상) */
 export type RoundExtra = (r: Round) => number[];
-export const roundFeat = (r: Pick<Round, 'views' | 'last7' | 'round'>, xf?: RoundExtra) => [1, lnp(r.views), lnp(r.last7), r.round === 0 ? 1 : 0, r.round >= 2 ? 1 : 0, ...(xf ? xf(r as Round) : [])];
+/** 차수 — 신건 · 2차(기준) · 3차 · 4차 이상을 따로(2026-11-19 사용자 — 3차 · 4차는 응찰 인원도 다르고 그 값대의 거래 가격이 따로 있다. 6/1~11/19 실제 응찰 평균 2차 2.5 · 3차 5.7 · 4차 8.8명) */
+export const roundFeat = (r: Pick<Round, 'views' | 'last7' | 'round'>, xf?: RoundExtra) => [1, lnp(r.views), lnp(r.last7), r.round === 0 ? 1 : 0, r.round === 2 ? 1 : 0, r.round >= 3 ? 1 : 0, ...(xf ? xf(r as Round) : [])];
 const ridge = (A: number[][], y: number[], lam: number) => {
   const p = A[0].length;
   const M = Array.from({ length: p }, (_, i) => Array.from({ length: p + 1 }, (_, j) => (j === p ? A.reduce((s, r, k) => s + r[i] * y[k], 0) : A.reduce((s, r) => s + r[i] * r[j], 0) + (i === j && i > 0 ? lam : 0))));
@@ -238,6 +239,8 @@ const ridge = (A: number[][], y: number[], lam: number) => {
 };
 export type RoundModel = { ps: number[]; b: number[]; s: number; n: number; nSold: number; before: string; xf?: RoundExtra };
 /** before 날짜 이전 회차로만 배운다(그날과 그 뒤 결과는 안 본다). 공고일부터 기록이 있는 4회 유찰까지 */
+/** 응찰 인원 학습 무게의 반감기(일) */
+const BIDS_HALF_LIFE = 60;
 export const fitRoundModel = (rounds: Round[], before: string, xf?: RoundExtra): RoundModel | null => {
   const tr = rounds.filter((r) => r.complete && r.round <= 4 && r.date < before && (r.result === 'fail' || (r.result === 'sold' && r.bids > 0)));
   const sd = tr.filter((r) => r.result === 'sold');
@@ -249,8 +252,10 @@ export const fitRoundModel = (rounds: Round[], before: string, xf?: RoundExtra):
     X.forEach((x, k) => { const e = x.reduce((s, v, j) => s + v * ps[j], 0); const p = 1 / (1 + Math.exp(-e)); const ww = Math.max(1e-6, p * (1 - p)); w.push(ww); z.push(e + (y[k] - p) / ww); });
     ps = ridge(X.map((x, k) => x.map((v) => v * Math.sqrt(w[k]))), z.map((v, k) => v * Math.sqrt(w[k])), 1);
   }
-  const Xs = sd.map((r) => roundFeat(r, xf)); const ys = sd.map((r) => lnp(r.bids)); const b = ridge(Xs, ys, 1e-3);
-  const s = Math.max(0.15, Math.sqrt(Xs.reduce((a, x, k) => a + (ys[k] - x.reduce((q, v, j) => q + v * b[j], 0)) ** 2, 0) / Math.max(1, Xs.length - b.length)));
+  // 응찰 인원은 최근 회차에 무게 — 60일마다 반(2026-11-19 시험: 11월 들어 같은 차수에도 인원이 크게 늘었다. 3차 · 4차 나눔과 같이 4차 오차 0.71 → 0.48)
+  const wt = sd.map((r) => 0.5 ** (Math.max(0, Date.parse(before) - Date.parse(r.date)) / 864e5 / BIDS_HALF_LIFE)); const sq = wt.map(Math.sqrt); const wsum = wt.reduce((a, v) => a + v, 0) || 1;
+  const Xs = sd.map((r) => roundFeat(r, xf)); const ys = sd.map((r) => lnp(r.bids)); const b = ridge(Xs.map((x, k) => x.map((v) => v * sq[k])), ys.map((v, k) => v * sq[k]), 1e-3);
+  const s = Math.max(0.15, Math.sqrt(Xs.reduce((a, x, k) => a + wt[k] * (ys[k] - x.reduce((q, v, j) => q + v * b[j], 0)) ** 2, 0) / wsum * Xs.length / Math.max(1, Xs.length - b.length)));
   return { ps, b, s, n: tr.length, nSold: sd.length, before, xf };
 };
 /** 팔릴 확률 · 팔릴 때 인원 구간 비율 · 예상 인원 */
