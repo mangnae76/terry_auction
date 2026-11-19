@@ -9,6 +9,7 @@ import { resolveRegionFromAddress } from '../services/regionResolver';
 import { analyzeAddress, type CaseTradeRow } from '../services/caseTradeAnalysis';
 import { lotOf } from '../services/bidPredict';
 import { addressWithName, buildingNameOf } from '../utils/addressName';
+import { kakaoBuildingName } from '../services/addressSearch';
 import { buildingAgeText } from '../utils/buildingAge';
 import { isLiveCase, lowBuyRows, LB_HOT, LB_WARN, LB_AREA_TOL, LB_YEAR_TOL, type LowBuyCase, type LowBuyRow, type LowBuyTrade } from '../services/lowBuy';
 
@@ -49,7 +50,11 @@ const load = async () => {
     const lots = [...new Map(liveHits.value.map((h) => [lotKey(h.addr), h.addr])).entries()].filter(([k]) => k);
     let n = 0;
     for (let i = 0; i < lots.length; i += 4) {
-      await Promise.all(lots.slice(i, i + 4).map(async ([k, a]) => { const f = await getBuildingFacts(a); facts.value = { ...facts.value, [k]: f }; }));
+      await Promise.all(lots.slice(i, i + 4).map(async ([k, a]) => {
+        const f = await getBuildingFacts(a); facts.value = { ...facts.value, [k]: f };
+        /* 대장 · 다른 사건 주소에 이름이 없으면 카카오 주소 검색의 건물명 — 낙찰가예측과 같은 길(2026-11-20 사용자 '건물명 안 나오는 거 다 넣어') */
+        if (!String(f?.name ?? '').trim() && !nameByLot.value.get(k)) { const lot = lotStr(a); const nm = lot ? await kakaoBuildingName(lot).catch(() => '') : ''; if (nm) kNames.value = { ...kNames.value, [k]: nm }; }
+      }));
       n = Math.min(lots.length, i + 4); msg.value = `건축물대장 ${n.toLocaleString('ko-KR')} / ${lots.length.toLocaleString('ko-KR')}`;
     }
     factsDone.value = true;
@@ -73,10 +78,13 @@ const loadTrades = async () => {
 onMounted(() => { void load(); });
 
 /** 지번마다 다른 사건 주소에 적힌 건물명 — 대장에 이름이 없는 필지를 채운다(낙찰가예측과 같은 길) */
+const kNames = ref<Record<string, string>>({});
+/** 주소에서 지번까지(카카오 건물명 찾기용) — 낙찰가예측 lotOf 와 같은 식 */
+const lotStr = (addr: string) => addr.replace(/\s*\(.*$/, '').replace(/\s*외\s*\d+필지.*$/, '').match(/^(.*?(?:동|가|읍|면|리)\s+(?:산\s*)?\d+(?:-\d+)?)/)?.[1]?.replace(/\s+/g, ' ') ?? '';
 const nameByLot = computed(() => { const m = new Map<string, string>(); hits.value.forEach((h) => { const n = buildingNameOf(h.addr); const k = lotKey(h.addr); if (n && k && !m.has(k)) m.set(k, n); }); return m; });
 const cases = computed<LowBuyCase[]>(() => liveHits.value.map((h) => {
   const lot = lotKey(h.addr); const f = facts.value[lot] ?? null;
-  return { key: h.key, addr: addressWithName(h.addr, f?.name || nameByLot.value.get(lot)), kind: h.kind, area: h.area ?? 0, appr: h.appr, min: h.min, fails: h.fails, next: h.next, state: h.state, first: firstOf(h),
+  return { key: h.key, addr: addressWithName(h.addr, f?.name || nameByLot.value.get(lot) || kNames.value[lot]), kind: h.kind, area: h.area ?? 0, appr: h.appr, min: h.min, fails: h.fails, next: h.next, state: h.state, first: firstOf(h),
     year: f?.year ?? null, elev: f ? f.elevator > 0 : null, lot };
 }));
 const all = computed(() => (factsDone.value ? lowBuyRows(cases.value, trades.value, today) : []));
