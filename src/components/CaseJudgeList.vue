@@ -68,7 +68,6 @@ const offOf = (r: JudgeRow) => official.value[r.key] ?? null;
 /** 허그 전세보증 기준 전세가 — 공시가 × 126%(주택가격 공시가 140% × 전세가율 90%) */
 const HUG_JEONSE_RATE = 1.26;
 const hugJeonse = (r: JudgeRow) => { const o = offOf(r); return o ? Math.round(o.price * HUG_JEONSE_RATE) : null; };
-const offPct = (r: JudgeRow) => { const o = offOf(r); return o ? apprToOfficial(r.appr, o.price) : null; };
 const emit = defineEmits<{ register: [row: JudgeRow]; photo: [row: JudgeRow]; toggle: [row: JudgeRow] }>();
 
 const won = (v: number) => Math.round(v).toLocaleString('ko-KR');
@@ -121,8 +120,8 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
           <small>전용 {{ r.area > 0 ? `${r.area.toFixed(2)}㎡ / ${pyOf(r.area)}평` : '—' }}<template v-if="r.lb?.year"> · {{ r.lb?.year }}년식 / {{ buildingAgeText(r.lb?.year) }}</template><template v-if="r.lb?.elev != null"> · 엘베 {{ r.lb?.elev ? '있음' : '없음' }}</template></small>
         </div>
         <div class="c ctr amtc"><span class="amt"><em class="rd">신건</em><span class="n">{{ r.appr ? won(r.appr) : '미확정' }}</span></span><small>{{ r.appr && r.area ? `평당 ${man(r.appr / (r.area / PY))}` : '' }}</small><span class="amt min"><em class="rd">{{ r.fails + 1 }}차</em><span class="n">{{ r.min ? won(r.min) : '—' }}</span></span><small class="minpy">{{ r.min && r.area ? `평당 ${man(r.min / (r.area / PY))}` : '' }}</small></div>
-        <!-- 허그 전세가 = 공시가 × 126% · 평당, (플피 · 갭 · 감정 % 줄은 뺌 — 2026-11-20 사용자) (2026-11-20 사용자) -->
-        <div class="c ctr hug"><template v-if="offOf(r)"><b>{{ won(hugJeonse(r)!) }}</b><small v-if="r.area">평당 {{ man(hugJeonse(r)! / (r.area / PY)) }}</small><small class="gongsi">공시 {{ eokText(offOf(r)!.price) }}</small></template><span v-else class="mu">—</span></div>
+        <!-- 허그 전세가 = 공시가 × 126% · 평당, · 허그 전세가 − 2차 최저가: 높으면 '플피 +n'(초록), 낮으면 '마피 −n'(빨강), 감정 % 줄은 뺌(2026-11-20 사용자) (2026-11-20 사용자) -->
+        <div class="c ctr hug"><template v-if="offOf(r)"><b>{{ won(hugJeonse(r)!) }}</b><small v-if="r.area">평당 {{ man(hugJeonse(r)! / (r.area / PY)) }}</small><small :class="hugJeonse(r)! >= r.min ? 'up' : 'down'">{{ hugJeonse(r)! >= r.min ? `플피 +${man(hugJeonse(r)! - r.min)}` : `마피 −${man(r.min - hugJeonse(r)!)}` }}</small><small class="gongsi">공시 {{ eokText(offOf(r)!.price) }}</small></template><span v-else class="mu">—</span></div>
         <div class="c ctr"><span class="nx">{{ d8(r.date) }}</span>{{ favRound(r).label }}<small v-if="favRound(r).pct">({{ favRound(r).pct }})</small><small v-if="r.status !== '진행'">{{ r.stateText }}</small></div>
         <template v-if="judged(r)">
           <!-- 예상 매도가 1 — 계산값, 체크박스는 금액 왼쪽 -->
