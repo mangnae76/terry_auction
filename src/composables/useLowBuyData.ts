@@ -4,7 +4,7 @@ import { computed, onMounted, ref } from 'vue';
 import { loadHits, type HitDoc } from '../services/agentRemote';
 import { getBuildingFacts } from '../services/buildingFacts';
 import type { BuildingFacts } from '../services/publicDataApi';
-import { resolveRegionFromAddress } from '../services/regionResolver';
+import { toJibunAddr } from '../services/roadToJibun';
 import { analyzeAddress, type CaseTradeRow } from '../services/caseTradeAnalysis';
 import { lotOf } from '../services/bidPredict';
 import { addressWithName, buildingNameOf } from '../utils/addressName';
@@ -24,14 +24,7 @@ export const useLowBuyData = (dong: string, today: string, auto = true) => {
 
   const lotKey = (a: string) => { const l = lotOf(a); return l.dong && l.jibun ? `${l.dong} ${l.jibun}` : ''; };
   /* 도로명 주소는 지번으로(낙찰가예측과 같은 길) — 동 · 지번으로 대장 · 실거래를 묶는다 */
-  const toJibun = async (a: string): Promise<string> => {
-    if (!a || lotOf(a).dong) return a;
-    const road = a.replace(/\s*\(.*$/, '').split(',')[0].trim();
-    const unit = (a.split(',')[1] ?? '').replace(/\s*\(.*$/, '').trim();
-    const name = a.match(/\([^,()]*,\s*([^()]+)\)/)?.[1]?.trim() ?? '';
-    try { const r = await resolveRegionFromAddress(road); if (r?.dong && r.jibun) return [r.sido, r.sigungu, r.dong, r.jibun, name, unit].filter(Boolean).join(' '); } catch { /* 그대로 */ }
-    return a;
-  };
+  const toJibun = toJibunAddr;   // services/roadToJibun 한 곳
   const firstOf = (h: HitDoc) => (h.ev.find((e) => e.l === '1차 매각기일') ?? h.ev.find((e) => e.l === '최초진행일'))?.d ?? '';
   const liveHits = computed(() => hits.value.filter((h) => isLiveCase(h, today)));
 

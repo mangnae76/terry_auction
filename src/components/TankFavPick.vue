@@ -11,6 +11,7 @@ import { addressWithName, buildingNameOf } from '../utils/addressName';
 import { kakaoBuildingName } from '../services/addressSearch';
 import { lookupAddress } from '../services/addressLookup';
 import { useLowBuyData } from '../composables/useLowBuyData';
+import { isJibunAddr, toJibunAddr } from '../services/roadToJibun';
 import { propTypeName } from '../utils/propertyType';
 import { buildingAgeText } from '../utils/buildingAge';
 import { LB_WARN, type LowBuyRow } from '../services/lowBuy';
@@ -27,7 +28,7 @@ const note = ref('');
 const load = async () => {
   try { doc.value = await loadTankFav(); } catch { note.value = '관심물건을 읽지 못했습니다. 새로고침해 주세요.'; }
   loading.value = false;
-  void fillLowBuy(); void fillNames();
+  void fillLowBuy(); void fillNames(); void fillJibun();
 };
 const items = computed<TankFav[]>(() => doc.value?.items ?? []);
 
@@ -101,7 +102,16 @@ const fillNames = async () => {
     }));
   }
 };
-const addrOf = (f: TankFav) => lbByKey.value.get(f.key)?.addr || addressWithName(f.addr || f.regn, names.value[lotStr(f.regn || f.addr)]);
+/** 도로명으로 온 주소를 지번 꼴로(다른 줄과 같게, 2026-11-20 사용자 — 정성드림빌5차) */
+const jibunOf = ref<Record<string, string>>({});
+const fillJibun = async () => {
+  const want = items.value.filter((f) => !lbByKey.value.get(f.key) && f.addr && !isJibunAddr(f.addr) && !(f.key in jibunOf.value));
+  for (let i = 0; i < want.length; i += 6) {
+    const got = await Promise.all(want.slice(i, i + 6).map(async (f) => [f.key, await toJibunAddr(f.addr || f.regn)] as const));
+    jibunOf.value = { ...jibunOf.value, ...Object.fromEntries(got) };
+  }
+};
+const addrOf = (f: TankFav) => { const a = lbByKey.value.get(f.key)?.addr || (isJibunAddr(f.addr) ? f.addr : jibunOf.value[f.key] || f.addr || f.regn);   /* 호수까지 있는 f.addr 우선(regn 은 호수가 없다) */ return isJibunAddr(a) ? addressWithName(a, names.value[lotStr(a)]) : a; };
 
 /* ---------- 목록 ---------- */
 const mine = computed(() => { const m = new Map<string, { id: string; ai: boolean }>(); auctions.auctions.forEach((a) => { const k = caseKey(a.caseNumber); if (k) m.set(k, { id: a.id, ai: !!(a as { rightsAi?: unknown }).rightsAi }); }); return m; });
