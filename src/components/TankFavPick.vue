@@ -232,7 +232,7 @@ const register = async (f: TankFav) => {
               <span class="ad">{{ addrOf(f) }}</span>
               <small>전용 {{ f.bArea > 0 ? `${f.bArea.toFixed(2)}㎡ / ${pyOf(f.bArea)}평` : '—' }}<template v-if="lbByKey.get(f.key)?.year"> · {{ lbByKey.get(f.key)?.year }}년식</template><template v-if="lbByKey.get(f.key)?.elev != null"> · 엘베 {{ lbByKey.get(f.key)?.elev ? '있음' : '없음' }}</template></small>
             </div>
-            <div class="c r"><span class="amt">{{ f.appr ? won(f.appr) : '미확정' }}</span><small>{{ f.appr && f.bArea ? `평당 ${man(f.appr / (f.bArea / FAV_PY))}` : '' }}</small><span class="amt min">{{ f.min ? won(f.min) : '—' }}</span><small>{{ favRound(f).pct }}</small></div>
+            <div class="c r"><span class="amt"><em class="lb">감정가</em>{{ f.appr ? won(f.appr) : '미확정' }}</span><small>{{ f.appr && f.bArea ? `평당 ${man(f.appr / (f.bArea / FAV_PY))}` : '' }}</small><span class="amt min"><em class="lb">최저가</em>{{ f.min ? won(f.min) : '—' }}</span><small>{{ favRound(f).pct }}</small></div>
             <div class="c ctr">{{ favRound(f).label }}<small v-if="favRound(f).pct">({{ favRound(f).pct }})</small></div>
             <div class="c ctr">{{ courtShort(f.court) }}{{ f.dept ? ` ${f.dept}` : '' }}<template v-if="f.status === '진행'"><span class="nx">{{ f.fails + 1 }}차 {{ d8(f.date) }}</span><small>{{ lastFail(f) || (f.fails > 0 ? `유찰 ${f.fails}회 · 지난 기일 모름` : '신건') }}</small></template><template v-else><small>{{ d8(f.date) }}</small><small>{{ f.state || f.status }}</small></template></div>   <!-- 진행 — 위 다음 기일(이번 차수), 아래 지난 유찰 날(2026-11-20 사용자) -->
             <div class="my">
@@ -321,6 +321,7 @@ const register = async (f: TankFav) => {
 .ctg { font-size: 12px; color: #6b7280; border: 1px solid #e3e7ee; border-radius: 4px; padding: 0 5px; line-height: 17px; }
 .star { color: #f59e0b; letter-spacing: -1px; }
 .cno { display: block; font-size: 15px; font-weight: 800; }
+.amt .lb { font-style: normal; font-size: 12px; font-weight: 400; color: #6b7280; margin-right: 6px; }   /* 금액 앞 이름표(2026-11-20 사용자) */
 .cno small, .addr .cno small { display: inline; margin-left: 4px; font-size: 12px; font-weight: 400; color: #6b7280; }   /* 물건번호는 사건번호 옆(2026-11-20 사용자) */
 .ad { display: block; line-height: 1.45; }
 .addr small, .c small { display: block; color: #6b7280; font-size: 12px; }
