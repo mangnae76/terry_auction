@@ -271,6 +271,13 @@ service cloud.firestore {
         && agentData().cats is list && agentData().cats.size() <= 100
         && agentData().by == 'agent';
     }
+    // 예상 매도가 2 — 운영진이 알아본 매도 가능 가격 · 고른 칸(1 · 2), 사건 열쇠마다 m.{key} = {p, use}(2026-11-20 저가매수 · 관심물건)
+    match /saleData/dayList/sale2/{doc} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin()
+        && agentData().keys().hasOnly(['m', 'at'])
+        && agentData().m is map && agentData().m.size() <= 5000;
+    }
     match /saleData/agentQueue {
       allow get: if isAdmin();
       allow create, update: if isAdmin()

@@ -10,7 +10,7 @@ import { lotOf } from '../services/bidPredict';
 import { addressWithName, buildingNameOf } from '../utils/addressName';
 import { kakaoBuildingName } from '../services/addressSearch';
 import { lookupAddress } from '../services/addressLookup';
-import { isLiveCase, lowBuyRows, type LowBuyCase, type LowBuyTrade, lbSkip, lbSkipWhy } from '../services/lowBuy';
+import { isLiveCase, lowBuyRows, lbSellProb, type LowBuyCase, type LowBuyTrade, lbSkip, lbSkipWhy } from '../services/lowBuy';
 
 /** auto = false 면 onMounted 를 걸지 않는다 — 화면이 뜬 뒤 동을 알게 되는 곳(관심물건)은 load() 를 직접 부른다 */
 export const useLowBuyData = (dong: string, today: string, auto = true) => {
@@ -54,11 +54,11 @@ export const useLowBuyData = (dong: string, today: string, auto = true) => {
   /** 국토부 매매 실거래 — 웹이 받아 둔 시군구 자료(이 브라우저 → DB → 국토부). 빌라 2년, 아파트가 있으면 아파트 1년도 */
   const loadTrades = async () => {
     const addr = liveHits.value.find((h) => lotKey(h.addr))?.addr; if (!addr) { tradeMsg.value = ''; return; }
-    const toT = (r: CaseTradeRow): LowBuyTrade | null => { const d = r.contractDate.replace(/\D/g, ''); return r.kind === '매매' && d.length === 8 ? { date: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`, price: r.price, area: r.areaM2, lot: `${r.umdNm} ${r.jibun}` } : null; };
+    const toT = (r: CaseTradeRow, group: 'villa' | 'apt'): LowBuyTrade | null => { const d = r.contractDate.replace(/\D/g, ''); return r.kind === '매매' && d.length === 8 ? { date: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`, price: r.price, area: r.areaM2, lot: `${r.umdNm} ${r.jibun}`, year: r.buildYear || undefined, group } : null; };
     try {
       const want: Array<['villa' | 'apt', number]> = [['villa', 2]]; if (liveHits.value.some((h) => /아파트/.test(h.kind))) want.push(['apt', 1]);
       const got = await Promise.all(want.map(([t, y]) => analyzeAddress({ address: addr, propertyType: t, years: y })));
-      const all = got.flatMap((g) => g.dongRows).map(toT).filter((x): x is LowBuyTrade => !!x);
+      const all = got.flatMap((g, i) => g.dongRows.map((r) => toT(r, want[i][0]))).filter((x): x is LowBuyTrade => !!x);
       trades.value = all;
       const ds = all.map((t) => t.date).sort();
       tradeSpan.value = ds.length ? `${ds[0].slice(2, 4)}.${ds[0].slice(5, 7)}~${ds[ds.length - 1].slice(2, 4)}.${ds[ds.length - 1].slice(5, 7)}` : '';
@@ -77,7 +77,9 @@ export const useLowBuyData = (dong: string, today: string, auto = true) => {
     return { key: h.key, addr: addressWithName(h.addr, f?.name || nameByLot.value.get(lot) || kNames.value[lot]), kind: h.kind, area: h.area ?? 0, appr: h.appr, min: h.min, fails: h.fails, next: h.next, state: h.state, first: firstOf(h),
       year: f?.year ?? null, elev: f ? f.elevator > 0 : null, lot };
   }));
-  const all = computed(() => (factsDone.value ? lowBuyRows(cases.value, trades.value, today) : []));
+  /** 응찰 확률 — 낙찰가예측 회차 모델(이 동 hits 전부로 배움, 다가오는 회차만) */
+  const pBids = computed(() => (factsDone.value ? lbSellProb(hits.value, new Set(liveHits.value.map((h) => h.key)), today) : new Map<string, number>()));
+  const all = computed(() => (factsDone.value ? lowBuyRows(cases.value, trades.value, today, pBids.value) : []));
   /** 엘베 없는 5층 이상이라 뺀 사건(2026-11-20 사용자) */
   const skipKeys = computed(() => new Set(factsDone.value ? cases.value.filter(lbSkip).map((c) => c.key) : []));
   /** 뺀 까닭별 건수 · 사건마다 까닭 */

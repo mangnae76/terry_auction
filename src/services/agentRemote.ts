@@ -12,7 +12,7 @@
 //   saleData/dayList/cal/{YYYY-MM}       기일별물건 달력 숫자(모든 법원 · 계 · 날짜 · 건수) — 마이가 탱크옥션을 열 때 저장
 // 공용 자료는 관리자 누구나 쓰고 로그인한 모두가 읽는다. 명령 · 상태 · 대기열은 각자 집 PC 라 운영자 본인만(firestore.rules).
 // 예전에는 모은 자료도 users/{uid}/datasets · agent/coverage 에 계정마다 쌓였다 — migrateLegacyAgentData 가 한 번 옮긴다.
-import { collection, doc, getDoc, getDocFromServer, getDocs, onSnapshot, query, runTransaction, serverTimestamp, setDoc, where, type Unsubscribe } from 'firebase/firestore';
+import { collection, deleteField, doc, getDoc, getDocFromServer, getDocs, onSnapshot, query, runTransaction, serverTimestamp, setDoc, where, type Unsubscribe } from 'firebase/firestore';
 import { firestore } from './firebase';
 
 export type AgentCmdName = 'open' | 'screen' | 'auto' | 'enrich' | 'queue' | 'daylist' | 'hits' | 'restart' | 'pause' | 'resume' | 'fav';   // fav — 탱크 관심물건 가져오기(2026-11-20)
@@ -269,4 +269,19 @@ export const loadTankFav = async (): Promise<TankFavDoc | null> => {
     date: t(r.date), hit: n(r.hit), bids: n(r.bids), second: n(r.second) }));
   const cats = (Array.isArray(x.cats) ? x.cats : []).map((c) => ({ nm: t(c?.nm), cnt: n(c?.cnt) }));
   return { items, cats, noCtgr: n(x.noCtgr), total: n(x.total), at: x.at?.toMillis?.() ?? 0 };
+};
+
+/* ===== 예상 매도가 2 — 운영진이 알아본 매도 가능 가격 · 고른 칸(1 계산 · 2 직접), 사건 열쇠마다 한 문서 map(2026-11-20 사용자 저가매수 · 관심물건 시안) ===== */
+export type Sale2 = { p: number; use: 1 | 2 };
+const sale2Ref = () => doc(db(), 'saleData', 'dayList', 'sale2', 'main');
+export const loadSale2 = async (): Promise<Record<string, Sale2>> => {
+  const snap = await getDocFromServer(sale2Ref()).catch(() => getDoc(sale2Ref()));
+  const m = (snap.exists() ? (snap.data() as { m?: Record<string, unknown> }).m : null) ?? {};
+  const out: Record<string, Sale2> = {};
+  Object.entries(m).forEach(([k, v]) => { const x = v as { p?: unknown; use?: unknown }; const p = typeof x?.p === 'number' && Number.isFinite(x.p) ? x.p : 0; out[k] = { p, use: x?.use === 2 ? 2 : 1 }; });
+  return out;
+};
+/** 한 사건만 바꾼다(merge) — null 이면 지운다 */
+export const saveSale2 = async (key: string, v: Sale2 | null): Promise<void> => {
+  await setDoc(sale2Ref(), { m: { [key]: v ? { p: Math.max(0, Math.round(v.p)), use: v.use } : deleteField() }, at: serverTimestamp() }, { merge: true });
 };

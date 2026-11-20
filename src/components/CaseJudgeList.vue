@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /* 사건 판단 표 — 물건등록 › 관심물건과 매각분석 › 저가매수가 같이 쓰는 한 표(2026-11-20 사용자 '두 표가 달라야 될 이유가 없다').
- * 머리 · 사건 · 주소 | 감정가 · 최저가 | 기일 · 유찰 | 비슷한 물건 평당 감정가 | 대비 | 감정가 대비 이득 | 실거래가 같은평형 | 최저가 대비 이득 | 처리.
+ * 머리 · 사건 · 주소 | 감정가 · 최저가 | 기일 · 유찰 | 예상 매도가 1 | 예상 매도가 2 | 최저가 낙찰 차익 | 응찰 확률 | 최저가 낙찰 확률 | 처리(2026-11-20 사용자 최종 시안).
  * 줄 꼴 · 칸 폭 · 색은 이 한 곳 — 탭마다 다른 것(분류 · 관심도 · 펼침)은 속성으로 */
 import { ref } from 'vue';
+import { useSale2 } from '../composables/useSale2';
 import { buildingAgeText } from '../utils/buildingAge';
 import { propTypeName } from '../utils/propertyType';
-import { LB_REL_MARK as RELMARK, lbMktRel, type LowBuyRow } from '../services/lowBuy';
+import { lbJudge, type LowBuyRow } from '../services/lowBuy';
 import { favRound } from '../services/tankFav';
 
 export type JudgeRow = {
@@ -38,7 +39,7 @@ export type JudgeRow = {
   stateText: string;
   /** 저가매수 계산 줄 — 없으면 null */
   lb: LowBuyRow | null;
-  /** 판단 칸을 못 채울 때 그 자리 글 */
+  /** 판단 칸 대신 쓸 글 — 진행 아님 · 계산에서 뺀 사건만. '' 이면 판단 칸(예상 매도가 · 차익 · 확률)을 보인다 */
   judgeMsg: string;
   /** 이미 물건목록에 있음 */
   registered: boolean;
@@ -66,22 +67,40 @@ const PY = 3.305785;
 const pyOf = (m2: number) => (m2 > 0 ? (m2 / PY).toFixed(2) : '');
 const pctSigned = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v * 100).toFixed(1)}%`;
 const gainText = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${man(Math.abs(v))}`;
-const judged = (r: JudgeRow) => r.status === '진행' && r.lb?.vs != null;
+const judged = (r: JudgeRow) => r.status === '진행' && !r.judgeMsg;
+/* ---------- 예상 매도가 1 · 2 — 체크한 칸으로 차익(2026-11-20 사용자 시안). 2 는 운영진 공용 자리에 저장(useSale2) ---------- */
+const { sale2, setSale2 } = useSale2();
+const judgeOf = (r: JudgeRow) => lbJudge(r.lb?.est ?? null, r.min, sale2.value[r.key]);
+const pick1 = (r: JudgeRow) => { const v = sale2.value[r.key]; if (v) setSale2(r.key, { ...v, use: 1 }); };
+const pick2 = (r: JudgeRow, ev: Event) => {
+  const v = sale2.value[r.key];
+  if (v && v.p > 0) { setSale2(r.key, { ...v, use: (ev.target as HTMLInputElement).checked ? 2 : 1 }); return; }
+  (ev.target as HTMLInputElement).checked = false;   // 값이 없으면 체크하지 않고 입력칸으로
+  ((ev.target as HTMLElement).parentElement?.querySelector('input.mev') as HTMLInputElement | null)?.focus();
+};
+const onSale2 = (r: JudgeRow, ev: Event) => {
+  const el = ev.target as HTMLInputElement; const p = Number(el.value.replace(/[^0-9]/g, '')) || 0;
+  el.value = p ? p.toLocaleString('ko-KR') : '';
+  setSale2(r.key, p ? { p, use: 2 } : null);   // 넣으면 2 에 저절로 체크, 지우면 1 로
+};
+const pctOf = (p: number) => `${Math.round(p * 100)}%`;
+const d8s = (d: string) => (d ? ` · ${d8(d)}` : '');
 const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 </script>
 
 <template>
   <div class="cjl">
+    <p v-if="rows.length" class="cjl-info">ⓘ 차익은 필요비용(취득세 · 수리 · 명도 · 이자 등) 제외 금액입니다. 필요비용은 집 상태에 따라 크게 달라집니다.</p>
     <p v-if="!rows.length && empty" class="cjl-empty">{{ empty }}</p>
-    <div v-if="rows.length" class="it hd" aria-hidden="true"><span>사건 · 주소</span><span class="ctr">감정가 · 최저가</span><span class="ctr">기일 · 유찰</span><span class="ctr">비슷한 물건<br>평당 감정가<br>(중앙값)</span><span class="ctr">비슷한 물건<br>대비</span><span class="ctr">감정가 대비<br>이득</span><span class="ctr">실거래가<br>같은평형</span><span class="ctr">최저가 대비<br>이득</span><span class="ctr">처리</span></div>
+    <div v-if="rows.length" class="it hd" aria-hidden="true"><span>사건 · 주소</span><span class="ctr">감정가 · 최저가</span><span class="ctr">기일 · 유찰</span><span class="ctr">예상 매도가 1</span><span class="ctr">예상 매도가 2</span><span class="ctr hm">최저가 낙찰<br>차익 ▼</span><span class="ctr">응찰<br>확률</span><span class="ctr hm">최저가 낙찰<br>확률</span><span class="ctr">처리</span></div>
     <template v-for="r in rows" :key="r.id">
-      <div :class="['it', { hot: r.lb?.hot, on: openId === r.id, click: expandable }]" :role="expandable ? 'button' : undefined" :tabindex="expandable ? 0 : undefined" @click="onRow(r)" @keydown.enter="onRow(r)">
+      <div :class="['it', { hot: judged(r) && judgeOf(r).hot, on: openId === r.id, click: expandable }]" :role="expandable ? 'button' : undefined" :tabindex="expandable ? 0 : undefined" @click="onRow(r)" @keydown.enter="onRow(r)">
         <div class="addr">
           <div v-if="r.cat || r.pri" class="meta top"><span v-if="r.cat" class="ctg">{{ r.cat }}</span><span v-if="r.pri" class="star">{{ stars(r.pri) }}</span></div>
           <!-- 줄마다 왼쪽 칩 | 오른쪽 글 — 종류 칩은 사건번호 줄, 주소 칩은 주소 줄과 같은 높이(2026-11-20 사용자) -->
             <span :class="['type-mark sm lc1', { blank: !r.kind }]">{{ r.kind ? propTypeName(r.kind) : '' }}</span>
             
-          <span class="cno">{{ r.caseNo }}<small v-if="r.pn"> (물번 {{ r.pn }})</small><small v-if="r.court" class="ct">{{ r.court }}</small><span v-if="r.lb?.hot" class="tchip hot cnohot">가격매력</span></span>
+          <span class="cno">{{ r.caseNo }}<small v-if="r.pn"> (물번 {{ r.pn }})</small><small v-if="r.court" class="ct">{{ r.court }}</small><span v-if="judged(r) && judgeOf(r).hot" class="tchip hot cnohot">가격매력</span></span>
           <span class="lc2" @click.stop><button v-if="r.addr" type="button" :class="['cpy', { done: copiedId === r.id }]" :data-tip="copiedId === r.id ? '복사됨' : '지번주소 복사'" :aria-label="`${r.caseNo} 주소 복사`" @click="copyAddr(r)"><svg v-if="copiedId !== r.id" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4.5h8.5A2.5 2.5 0 0 1 19 7v11" /><rect x="5" y="7.5" width="11" height="13" rx="2" /></svg><svg v-else viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>주소</button></span>
           <span class="ad">{{ noSido(r.addr) }}</span>   <!-- 화면엔 시 · 도 빼고(복사는 전체), 2026-11-20 사용자 -->
           <i class="lc3" aria-hidden="true" />
@@ -90,14 +109,18 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
         <div class="c ctr amtc"><span class="amt"><em class="rd">신건</em><span class="n">{{ r.appr ? won(r.appr) : '미확정' }}</span></span><small>{{ r.appr && r.area ? `평당 ${man(r.appr / (r.area / PY))}` : '' }}</small><span class="amt min"><em class="rd">{{ r.fails + 1 }}차</em><span class="n">{{ r.min ? won(r.min) : '—' }}</span></span><small class="minpy">{{ r.min && r.area ? `평당 ${man(r.min / (r.area / PY))}` : '' }}</small></div>
         <div class="c ctr"><span class="nx">{{ d8(r.date) }}</span>{{ favRound(r).label }}<small v-if="favRound(r).pct">({{ favRound(r).pct }})</small><small v-if="r.status !== '진행'">{{ r.stateText }}</small></div>
         <template v-if="judged(r)">
-          <div class="c ctr"><b>{{ man(r.lb!.peerPpy!) }}</b><small>{{ r.lb!.peerN.toLocaleString('ko-KR') }}건</small></div>
-          <div class="c ctr"><b :class="r.lb!.vs! < 0 ? 'good' : 'bad'">{{ pctSigned(r.lb!.vs!) }}</b></div>
-          <div class="c ctr"><b :class="r.lb!.gain! > 0 ? 'good' : 'bad'">{{ gainText(r.lb!.gain!) }}</b></div>
-          <div class="c ctr mk">
-            <template v-if="r.lb!.mkt"><b>{{ won(r.lb!.mkt!.price) }}</b><small :class="lbMktRel(r.lb!) === '높음' ? 'rise' : lbMktRel(r.lb!) === '낮음' ? 'fall' : ''">{{ RELMARK[lbMktRel(r.lb!)] }}감정가의 {{ Math.round(r.lb!.mkt!.price / r.lb!.appr * 100) }}%</small><small>{{ r.lb!.mkt!.n }}건 · {{ d8(r.lb!.mkt!.last) }}</small>   <!-- 실거래가가 감정가의 몇 % — ▲ 빨강 100% 위 · ▼ 파랑 아래(2026-11-20 사용자) --></template>
+          <!-- 예상 매도가 1 — 계산값, 체크박스는 금액 왼쪽 -->
+          <div :class="['c ctr pick', { on: !judgeOf(r).use2 && !!r.lb?.est }]" @click.stop>
+            <template v-if="r.lb?.est"><span class="ln"><input type="checkbox" :checked="!judgeOf(r).use2" :aria-label="`${r.caseNo} 예상 매도가 1로 계산`" @change="pick1(r)"><b>{{ won(r.lb.est.price) }}</b></span><small>{{ r.lb.est.how }} · {{ r.lb.est.n.toLocaleString('ko-KR') }}건{{ d8s(r.lb.est.last) }}</small><small v-if="judgeOf(r).weak" class="warn">1건 — 호가 확인</small></template>
             <span v-else class="mu">—</span>
           </div>
-          <div class="c ctr"><b v-if="r.lb!.gainMin != null" :class="r.lb!.gainMin > 0 ? 'good' : 'bad'">{{ gainText(r.lb!.gainMin) }}</b><span v-else class="mu">—</span></div>   <!-- 감정가 대비 → 실거래 → 최저가 대비 순으로 읽히게(2026-11-20 사용자) -->
+          <!-- 예상 매도가 2 — 알아본 값, 넣으면 저절로 체크 -->
+          <div :class="['c ctr pick', { on: judgeOf(r).use2 }]" @click.stop>
+            <span class="ln"><input type="checkbox" :checked="judgeOf(r).use2" :aria-label="`${r.caseNo} 예상 매도가 2로 계산`" @change="pick2(r, $event)"><input class="mev" inputmode="numeric" :value="sale2[r.key]?.p ? sale2[r.key].p.toLocaleString('ko-KR') : ''" :aria-label="`${r.caseNo} 예상 매도가 2`" @input="onSale2(r, $event)"></span>
+          </div>
+          <div class="c ctr"><template v-if="judgeOf(r).gap != null"><b :class="judgeOf(r).gap! > 0 ? 'good' : 'bad'">{{ gainText(judgeOf(r).gap!) }}</b><small>{{ pctSigned(judgeOf(r).rate!) }}</small></template><span v-else class="mu">—</span></div>
+          <div class="c ctr"><b v-if="r.lb?.pBid != null">{{ pctOf(r.lb.pBid) }}</b><span v-else class="mu">—</span></div>
+          <div class="c ctr"><template v-if="r.lb?.pBid != null"><b class="good">{{ pctOf(1 - r.lb.pBid) }}</b><span class="pbar"><i :style="{ width: pctOf(1 - r.lb.pBid) }" /></span></template><span v-else class="mu">—</span></div>
         </template>
         <div v-else class="c span5 mu">{{ r.judgeMsg }}</div>
         <div class="act" @click.stop>
@@ -114,8 +137,9 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 
 <style scoped>
 .cjl { display: grid; border: 1px solid #e3e7ee; border-radius: 8px; overflow: hidden; background: #fff; }
+.cjl-info { margin: 0; padding: 8px 12px; background: #fff8e6; color: #8a5a00; font-size: 12px; line-height: 1.6; border-bottom: 1px solid #e3e7ee; }   /* 노란 안내 — 굵기 없음 */
 .cjl-empty { margin: 0; padding: 28px 12px; text-align: center; font-size: 13px; color: #6b7280; }
-.it { display: grid; grid-template-columns: minmax(0, 1fr) 124px 80px 80px 72px 76px 132px 76px 104px;   /* 숫자 칸 폭 고르게 · 머리 · 값 모두 가운데(2026-11-20 사용자) */ gap: 10px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; font-size: 13px; color: #111827; }
+.it { display: grid; grid-template-columns: minmax(0, 1fr) 124px 80px 132px 132px 84px 52px 80px 104px;   /* 숫자 칸 폭 고르게 · 머리 · 값 모두 가운데(2026-11-20 사용자) */ gap: 10px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; font-size: 13px; color: #111827; }
 .it.click { cursor: pointer; }
 .it:last-child { border-bottom: 0; }
 .it.hot { background: #fff5f5; }
@@ -154,14 +178,20 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .c.amtc { display: grid; justify-content: center; }   /* 금액 묶음은 칸 가운데, 안에서는 끝자리 맞춤 */
 .c.amtc .amt, .c.amtc small { text-align: right; }
 .c.span5 { grid-column: span 5; text-align: center; font-size: 12px; }
-.c.mk small { display: block; white-space: nowrap; }
-.c em.apr { font-style: normal; color: #db2777; }
+.c.pick { align-self: stretch; display: flex; flex-direction: column; justify-content: center; border-radius: 6px; padding: 4px 2px; }
+.c.pick.on { background: #eef3fe; box-shadow: inset 0 0 0 1px #2b6df3; }   /* 고른 매도가 칸 */
+.c.pick .ln { display: flex; align-items: center; justify-content: center; gap: 6px; }   /* 체크박스는 금액 왼쪽 */
+.c.pick input[type='checkbox'] { flex: none; margin: 0; width: 15px; height: 15px; accent-color: #2b6df3; cursor: pointer; }
+.c.pick input.mev { width: 96px; box-sizing: border-box; border: 1px solid #d5dbe5; border-radius: 6px; padding: 4px 6px; text-align: right; font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; background: #fff; color: #111827; }
+.c.pick input.mev:focus { outline: none; border-color: #2b6df3; }
+.c small.warn { color: #b45309; }
+.pbar { display: block; width: 56px; height: 5px; margin: 4px auto 0; border-radius: 3px; background: #e3e7ee; overflow: hidden; }
+.pbar i { display: block; height: 100%; background: #16a34a; }
+.it.hd .hm { color: #2b6df3; }
 .cno .cnohot { margin-left: 8px; vertical-align: 2px; }
 .c b { font-weight: 700; color: #111827; white-space: nowrap; }
 .c b.good { color: #16a34a; }
 .c b.bad { color: #dc2626; }
-.c small.rise { color: #dc2626; }   /* ▲ 실거래가가 감정가보다 높음(감정이 쌈) — 시세표처럼 빨강 */
-.c small.fall { color: #2b6df3; }   /* ▼ 낮음(감정이 비쌈) — 파랑 */
 .mu { color: #9ca3af; }
 .act { display: grid; gap: 6px; justify-items: center; align-self: center; align-content: center; }
 .act .tfp-btn, .act .tchip.reg { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; height: 28px; width: 104px; padding: 0; border-radius: 8px; font-size: 12px; line-height: 1; }   /* 등록됨도 등록하기와 같은 크기 */

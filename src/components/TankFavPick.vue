@@ -8,12 +8,13 @@ import { useAuctionStore } from '../stores/auctionStore';
 import { caseKey } from '../services/bidPredict';
 import { parsedFromCase, caseNumberOf } from '../services/caseRegister';
 import CaseJudgeList, { type JudgeRow } from './CaseJudgeList.vue';
+import { useSale2 } from '../composables/useSale2';
 import { addressWithName, buildingNameOf } from '../utils/addressName';
 import { kakaoBuildingName } from '../services/addressSearch';
 import { lookupAddress } from '../services/addressLookup';
 import { useLowBuyData } from '../composables/useLowBuyData';
 import { isJibunAddr, toJibunAddr } from '../services/roadToJibun';
-import { type LowBuyRow } from '../services/lowBuy';
+import { lbJudge, type LowBuyRow } from '../services/lowBuy';
 import { FAV_FILTER0, FAV_STATUS, favCaseNo, favCourtName, favPass, favPlace, favSort, favStatusCounts, type FavFilter, type FavSort } from '../services/tankFav';
 
 const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -87,7 +88,6 @@ const lbByKey = computed(() => { const m = new Map<string, LowBuyRow>(); Object.
 /** 저가매수 계산에서 뺀 사건과 그 까닭(지하 · 반지하 · 엘베 없는 5층 이상 · 엘베 있는 건물) */
 const lbSkipWhyOf = (f: TankFav) => (lowBuy[favPlace(f).emd]?.skipWhy as unknown as Map<string, string> | undefined)?.get(f.key) ?? '';
 const lbSkipped = (f: TankFav) => !!(lowBuy[favPlace(f).emd]?.skipKeys as unknown as Set<string> | undefined)?.has(f.key);
-const lbDone = (f: TankFav) => { const x = lowBuy[favPlace(f).emd]; return !!x && (!!(x.factsDone as unknown as boolean) || /없습니다|읽지 못/.test(String((x.msg as unknown as string) ?? ''))); };
 
 /* ---------- 건물명 — 주소에 이름이 없으면 카카오 → 공동주택가격 단지명(낙찰가예측 · 저가매수와 같은 길) ---------- */
 const names = ref<Record<string, string>>({});
@@ -116,7 +116,9 @@ const addrOf = (f: TankFav) => { const a = lbByKey.value.get(f.key)?.addr || (is
 const mine = computed(() => { const m = new Map<string, { id: string; ai: boolean }>(); auctions.auctions.forEach((a) => { const k = caseKey(a.caseNumber); if (k) m.set(k, { id: a.id, ai: !!(a as { rightsAi?: unknown }).rightsAi }); }); return m; });
 const favMine = computed(() => items.value.filter((f) => mine.value.has(f.key)));
 const aiDone = computed(() => favMine.value.filter((f) => mine.value.get(f.key)?.ai).length);
-const shown = computed(() => favSort(items.value.filter((f) => favPass(f, q)), sortBy.value, (f) => lbByKey.value.get(f.key)?.vs ?? null));
+const { sale2 } = useSale2();
+/** '가격매력' 정렬 = 최저가 낙찰 차익률 큰 순(모르면 아래) */
+const shown = computed(() => favSort(items.value.filter((f) => favPass(f, q)), sortBy.value, (f) => { const j = lbJudge(lbByKey.value.get(f.key)?.est ?? null, f.min, sale2.value[f.key]); return j.rate != null ? -j.rate : null; }));
 const open = ref('');
 const SORTS: Array<[FavSort, string]> = [['case', '사건번호'], ['hot', '가격매력'], ['date', '매각기일'], ['appr', '감정가'], ['min', '최저가'], ['pri', '관심도']];
 
@@ -148,7 +150,7 @@ const register = async (r: JudgeRow) => {
 };
 
 /* ---------- 공통 표 줄(CaseJudgeList) — 저가매수와 같은 표 ---------- */
-const judgeMsgOf = (f: TankFav) => (f.status !== '진행' ? '—' : lbSkipped(f) ? `${lbSkipWhyOf(f)} — 저가매수 계산에서 뺌` : lbByKey.value.get(f.key) ? `비교 부족 · 비슷한 물건 ${lbByKey.value.get(f.key)!.peerN}건(5건 이상일 때 계산)` : lbDone(f) ? '같은 동 비교 자료 없음' : '비교 자료 불러오는 중');
+const judgeMsgOf = (f: TankFav) => (f.status !== '진행' ? '—' : lbSkipped(f) ? `${lbSkipWhyOf(f)} — 저가매수 계산에서 뺌` : '');   /* 진행이면 판단 칸(예상 매도가 · 차익 · 확률) — 같은 동 자료가 없어도 매도가 2 는 넣을 수 있게(2026-11-20 사용자 최종 시안) */
 const favRows = computed<JudgeRow[]>(() => shown.value.map((f) => {
   const c = favCaseNo(f.key);
   return { id: f.tid, key: f.key, tid: f.tid, kind: f.kind, cat: f.cat, pri: f.pri, caseNo: c.caseNo, pn: c.pn, court: `${courtShort(f.court)}${f.dept ? ` ${f.dept}` : ''}`,
