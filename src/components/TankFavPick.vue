@@ -230,6 +230,7 @@ const register = async (f: TankFav) => {
               <template v-if="f.status === '진행'">
                 <template v-if="lbByKey.get(f.key)?.vs != null">
                   <span><span v-if="lbByKey.get(f.key)?.hot" class="tchip hot">가격매력</span> 비슷한 물건보다 <b :class="lbByKey.get(f.key)!.vs! < 0 ? 'good' : 'bad'">{{ pctSigned(lbByKey.get(f.key)!.vs!) }}</b> · 이득 <b :class="lbByKey.get(f.key)!.gain! > 0 ? 'good' : 'bad'">{{ gainText(lbByKey.get(f.key)!.gain!) }}</b></span>
+                  <span v-if="lbByKey.get(f.key)?.peerPpy">비슷한 물건 평당 감정가 <b>{{ man(lbByKey.get(f.key)!.peerPpy!) }}</b> ({{ lbByKey.get(f.key)!.peerN.toLocaleString('ko-KR') }}건 가운데값)</span>   <!-- 저가매수 표의 '비슷한 물건 평당 감정가' 칸과 같은 값(2026-11-20 사용자) -->
                   <span v-if="lbByKey.get(f.key)?.mkt" :class="{ bad: mktWarn(lbByKey.get(f.key)!) }">실거래 같은 평형 <b>{{ won(lbByKey.get(f.key)!.mkt!.price) }}</b> ({{ lbByKey.get(f.key)!.mkt!.n }}건 · {{ d8(lbByKey.get(f.key)!.mkt!.last).slice(0, 5) }}){{ mktWarn(lbByKey.get(f.key)!) ? ' — 감정가보다 낮음' : '' }}</span>
                   <span v-else>실거래 같은 평형 없음</span>
                 </template>
