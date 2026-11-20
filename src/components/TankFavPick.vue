@@ -81,6 +81,15 @@ const fillLowBuy = async () => {
   for (const d of dongs) { if (lowBuy[d]) continue; const x = useLowBuyData(d, today, false); lowBuy[d] = x; void x.load(); }
 };
 const lbByKey = computed(() => { const m = new Map<string, LowBuyRow>(); Object.values(lowBuy).forEach((x) => (x.all as unknown as LowBuyRow[]).forEach((r) => m.set(r.key, r))); return m; });
+/** 지난 유찰 기일 — 마이 hits 의 기일내역(ev)에서 오늘 앞 마지막 'N차 매각기일'. 탱크 관심물건 목록엔 다음 기일만 있다(2026-11-20 사용자 — 언제 유찰됐는지) */
+const hitByKey = computed(() => { const m = new Map<string, { ev: { d: string; l: string }[] }>(); Object.values(lowBuy).forEach((x) => (x.hits as unknown as { key: string; ev: { d: string; l: string }[] }[]).forEach((h) => m.set(h.key, h))); return m; });
+const lastFail = (f: TankFav): string => {
+  if (!(f.fails > 0)) return '';
+  const ev = hitByKey.value.get(f.key)?.ev ?? [];
+  const past = ev.filter((e) => /^\d+차 매각기일$/.test(e.l) && e.d < today).sort((a, b) => a.d.localeCompare(b.d));
+  const e = past[past.length - 1]; if (!e) return '';
+  return `${e.l.replace(' 매각기일', '')} ${d8(e.d)} 유찰`;
+};
 /** 같은 동 비교 자료가 다 왔는지 — 다 왔는데 줄이 없으면 마이 조회수 수집에 없는 사건 */
 const lbDone = (f: TankFav) => { const x = lowBuy[favPlace(f).emd]; return !!x && (!!(x.factsDone as unknown as boolean) || /없습니다|읽지 못/.test(String((x.msg as unknown as string) ?? ''))); };
 
@@ -224,7 +233,7 @@ const register = async (f: TankFav) => {
             </div>
             <div class="c r"><span class="amt">{{ f.appr ? won(f.appr) : '미확정' }}</span><small>{{ f.appr && f.bArea ? `평당 ${man(f.appr / (f.bArea / FAV_PY))}` : '' }}</small><span class="amt min">{{ f.min ? won(f.min) : '—' }}</span><small>{{ favRound(f).pct }}</small></div>
             <div class="c ctr">{{ favRound(f).label }}<small v-if="favRound(f).pct">({{ favRound(f).pct }})</small></div>
-            <div class="c ctr">{{ courtShort(f.court) }}{{ f.dept ? ` ${f.dept}` : '' }}<small>{{ d8(f.date) }}</small><small>{{ f.state || f.status }}</small></div>
+            <div class="c ctr">{{ courtShort(f.court) }}{{ f.dept ? ` ${f.dept}` : '' }}<template v-if="f.status === '진행'"><span class="nx">{{ f.fails + 1 }}차 {{ d8(f.date) }}</span><small>{{ lastFail(f) || (f.fails > 0 ? `유찰 ${f.fails}회 · 지난 기일 모름` : '신건') }}</small></template><template v-else><small>{{ d8(f.date) }}</small><small>{{ f.state || f.status }}</small></template></div>   <!-- 진행 — 위 다음 기일(이번 차수), 아래 지난 유찰 날(2026-11-20 사용자) -->
             <div class="my">
               <template v-if="f.status === '진행'">
                 <template v-if="lbByKey.get(f.key)?.vs != null">
@@ -324,6 +333,7 @@ const register = async (f: TankFav) => {
 .chip.wait { background: #fff4e5; color: #b45309; }
 .chip.reg { background: #eef3fe; color: #2b6df3; }
 .my { display: grid; gap: 3px; font-size: 12px; color: #6b7280; }
+.c .nx { display: block; font-weight: 700; color: #111827; }
 .my > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* 가격매력 · 대비 · 이득 한 줄, 실거래 · 경고 한 줄(2026-11-20 사용자) */
 .my b { font-weight: 700; color: #111827; white-space: nowrap; }
 .my .good { color: #16a34a; }
