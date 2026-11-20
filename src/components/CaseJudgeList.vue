@@ -4,7 +4,6 @@
  * 줄 꼴 · 칸 폭 · 색은 이 한 곳 — 탭마다 다른 것(분류 · 관심도 · 펼침)은 속성으로 */
 import { ref, watch } from 'vue';
 import { useOfficialPrice } from '../composables/useOfficialPrice';
-import { eokText } from '../services/officialPrice';
 import { useSale2 } from '../composables/useSale2';
 import { buildingAgeText } from '../utils/buildingAge';
 import { propTypeName } from '../utils/propertyType';
@@ -121,7 +120,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
         </div>
         <div class="c ctr amtc"><span class="amt"><em class="rd">신건</em><span class="n">{{ r.appr ? won(r.appr) : '미확정' }}</span></span><small>{{ r.appr && r.area ? `평당 ${man(r.appr / (r.area / PY))}` : '' }}</small><span class="amt min"><em class="rd">{{ r.fails + 1 }}차</em><span class="n">{{ r.min ? won(r.min) : '—' }}</span></span><small class="minpy">{{ r.min && r.area ? `평당 ${man(r.min / (r.area / PY))}` : '' }}</small></div>
         <!-- 허그 전세가 = 공시가 × 126% · 평당, · 허그 전세가 − 2차 최저가: 높으면 '플피 +n'(초록), 낮으면 '마피 −n'(빨강), 감정 % 줄은 뺌(2026-11-20 사용자) (2026-11-20 사용자) -->
-        <div class="c ctr hug"><template v-if="offOf(r)"><b>{{ won(hugJeonse(r)!) }}</b><small v-if="r.area">평당 {{ man(hugJeonse(r)! / (r.area / PY)) }}</small><small :class="hugJeonse(r)! >= r.min ? 'up' : 'down'">{{ hugJeonse(r)! >= r.min ? `플피 +${man(hugJeonse(r)! - r.min)}` : `마피 −${man(r.min - hugJeonse(r)!)}` }}</small><small class="gongsi">공시 {{ eokText(offOf(r)!.price) }}</small></template><span v-else class="mu">—</span></div>
+        <div class="c ctr hug"><template v-if="offOf(r)"><b>{{ man(hugJeonse(r)!) }}</b><small v-if="r.area">평당 {{ man(hugJeonse(r)! / (r.area / PY)) }}</small><small :class="hugJeonse(r)! >= r.min ? 'up' : 'down'">{{ hugJeonse(r)! >= r.min ? `플피 +${man(hugJeonse(r)! - r.min)}` : `마피 −${man(r.min - hugJeonse(r)!)}` }}</small><small class="gongsi">공시 {{ man(offOf(r)!.price) }}</small></template><span v-else class="mu">—</span></div>
         <div class="c ctr"><span class="nx">{{ d8(r.date) }}</span>{{ favRound(r).label }}<small v-if="favRound(r).pct">({{ favRound(r).pct }})</small><small v-if="r.status !== '진행'">{{ r.stateText }}</small></div>
         <template v-if="judged(r)">
           <!-- 예상 매도가 1 — 계산값, 체크박스는 금액 왼쪽 -->
@@ -174,6 +173,8 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .type-mark.sm { height: 20px; padding: 0 7px; border-radius: 10px; font-size: 12px; }   /* 작은 종류 칩 — 사건번호 왼쪽 */
 .addr .type-mark.sm, .addr .cpy { box-sizing: border-box; width: 48px; min-width: 48px; padding: 0; margin: 0; height: 18px; justify-content: center; vertical-align: top; }   /* 종류 칩 · 주소 칩 같은 폭 — 시작 · 끝 줄 맞춤 */   /* 고정카드처럼 종류 칩 · 주소 칩 같은 크기, 위아래 줄 맞춤 */
 .cpy { display: inline-flex; align-items: center; justify-content: center; gap: 3px; padding: 0 8px; border: 1px solid #c7d7f7; border-radius: 999px; background: #fff; color: #2a5fbf; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }   /* 고정카드 주소 칩(.ih-copy)과 같은 꼴 · 같은 그림 */
+.cpy[data-tip]::after { left: 0; transform: translateY(3px); }   /* 맨 왼쪽 칸 — 말풍선을 왼쪽 끝에 맞춰 표 상자 밖으로 잘리지 않게 */
+.cpy[data-tip]:hover::after, .cpy[data-tip]:focus-visible::after { transform: translateY(0); }
 .cpy:hover { border-color: #2b6df3; }
 .cpy.done { border-color: #15803d; color: #15803d; }
 .cno small, .addr .cno small { display: inline; margin-left: 4px; font-size: 12px; font-weight: 400; color: #6b7280; }   /* 물건번호는 사건번호 옆 */
@@ -189,6 +190,8 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .amt .rd { display: inline-block; text-align: right; font-style: normal; font-size: 12px; font-weight: 400; color: #6b7280; margin-right: 6px; }   /* 금액 옆 작은 차수 — 신건 · 2차, 금액과 글자 한 칸쯤 떨어짐(2026-11-20 사용자) */
 .amt .n { display: inline-block; min-width: 10.5ch; text-align: right; font-variant-numeric: tabular-nums; }   /* 금액 폭을 같게 — 신건 · 2차 글이 세로로 한 줄 */
 .c small.gongsi { color: #6b7280; white-space: nowrap; margin-top: 2px; }
+.c.hug { display: grid; justify-content: center; align-content: center; }   /* 허그 칸 — 모든 줄 '만' 단위, 오른쪽 끝 '만'이 세로 한 줄(2026-11-20 사용자) */
+.c.hug > * { text-align: right; }
 .c.hug small.up { color: #16a34a; }   /* 전세가 ≥ 최저가 — 전세가보다 싸게 삼 */
 .c.hug small.down { color: #dc2626; }   /* 공시 · 감정 % — 감정가 · 최저가 칸 맨 아래 */
 .c small.minpy { color: #2b6df3; }

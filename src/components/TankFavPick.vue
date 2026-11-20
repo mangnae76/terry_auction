@@ -119,12 +119,9 @@ const aiDone = computed(() => favMine.value.filter((f) => mine.value.get(f.key)?
 const { sale2 } = useSale2();
 /** '가격매력' 정렬 = 최저가 낙찰 차익률 큰 순(모르면 아래) */
 const shown = computed(() => favSort(items.value.filter((f) => favPass(f, q)), sortBy.value, (f) => { const j = lbJudge(lbByKey.value.get(f.key)?.est ?? null, f.min, sale2.value[f.key]); return j.gap != null ? -j.gap : null; }));   /* 최저가 낙찰 차익 큰 순 — 저가매수와 같게 */
-const open = ref('');
 const SORTS: Array<[FavSort, string]> = [['case', '사건번호'], ['hot', '낙찰차익'], ['date', '매각기일'], ['appr', '감정가'], ['min', '최저가'], ['pri', '관심도']];
 
 /* ---------- 칸 글 ---------- */
-const won = (v: number) => Math.round(v).toLocaleString('ko-KR');
-const d8 = (d: string) => (/^\d{4}-\d{2}-\d{2}/.test(d) ? `${d.slice(2, 4)}.${d.slice(5, 7)}.${d.slice(8, 10)}` : '—');
 const fmtAt = (ms: number) => { if (!ms) return ''; const d = new Date(ms); return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
 /** '인천-본원' → '인천', '인천-부천' → '부천'(탱크 목록처럼 짧게) */
 const courtShort = (c: string) => { const [a, b] = c.split('-'); return b && b !== '본원' ? b : a || c; };
@@ -215,15 +212,7 @@ const favRows = computed<JudgeRow[]>(() => shown.value.map((f) => {
       <p v-if="loading" class="tfp-empty">불러오는 중입니다…</p>
       <p v-else-if="!doc" class="tfp-empty">'관심물건가져오기'를 누르면 마이가 탱크옥션 관심물건을 읽어 옵니다.</p>
       <!-- 표는 저가매수와 같은 공통 부품(2026-11-20 사용자) -->
-      <CaseJudgeList v-else :rows="favRows" :busy-id="busyId" :open-id="open" expandable empty="조건에 맞는 관심물건이 없습니다." @register="register" @photo="openPhotos" @toggle="(r) => (open = open === r.id ? '' : r.id)">
-        <template #detail="{ row }">
-          <div v-if="favById.get(row.id)" class="det">
-            <div class="bx"><b>탱크 제목(내용)</b><span>{{ favById.get(row.id)!.memo || '—' }}</span></div>
-            <div class="bx"><b>매각물건명세서 · 기일내역</b><span class="mu">매각물건명세서 공개 뒤 채움(법원경매정보에서 받기는 준비 중)</span></div>
-            <div class="bx"><b>탱크 목록 값</b><span>등록 {{ d8(favById.get(row.id)!.wdate) }} · 조회 {{ favById.get(row.id)!.hit.toLocaleString('ko-KR') }}<template v-if="favById.get(row.id)!.sold > 0"> · 낙찰 {{ won(favById.get(row.id)!.sold) }}<template v-if="favById.get(row.id)!.bids"> · {{ favById.get(row.id)!.bids }}명</template><template v-if="favById.get(row.id)!.second"> · 2등 {{ won(favById.get(row.id)!.second) }}</template></template></span></div>
-          </div>
-        </template>
-      </CaseJudgeList>
+      <CaseJudgeList v-else :rows="favRows" :busy-id="busyId" empty="조건에 맞는 관심물건이 없습니다." @register="register" @photo="openPhotos" />   <!-- 줄 눌러 펼치는 칸(탱크 제목 · 명세서 · 목록 값)은 뺌(2026-11-20 사용자) -->
     </section>
   </div>
 </template>
@@ -276,9 +265,5 @@ const favRows = computed<JudgeRow[]>(() => shown.value.map((f) => {
 /* 표 줄 꼴은 CaseJudgeList 한 곳 — 여기는 펼친 칸만 */
 .tfp-empty { margin: 0; padding: 28px 12px; text-align: center; font-size: 13px; color: #6b7280; border: 1px solid #e3e7ee; border-radius: 8px; }
 .mu { color: #9ca3af; }
-.det { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px; border-bottom: 1px solid #e3e7ee; background: #fbfcfe; }
-.det:last-child { border-bottom: 0; }
-.det .bx { border: 1px solid #e3e7ee; border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; font-size: 12px; color: #4b5563; min-width: 0; }
-.det .bx b { font-size: 13px; color: #111827; }
-@media (max-width: 900px) { .tfp-flt, .det { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 900px) { .tfp-flt { grid-template-columns: minmax(0, 1fr); } }
 </style>
