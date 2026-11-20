@@ -68,7 +68,7 @@ const mktWarn = (r: LowBuyRow) => !!r.mkt && r.mkt.price < r.appr * LB_WARN;
               <td :class="['r', r.vs! < 0 ? 'good' : 'bad']">{{ pctSigned(r.vs!) }}</td>
               <td :class="['r', r.gain! > 0 ? 'good' : 'bad']"><span class="nb">{{ r.gain! > 0 ? '+' : '−' }}{{ won(Math.abs(r.gain!)) }}</span></td>
               <td class="r">
-                <template v-if="r.mkt"><span class="nb">{{ won(r.mkt.price) }}</span><small>{{ r.mkt.n }}건 · {{ d8(r.mkt.last) }} · 감정가 {{ Math.round(r.appr / r.mkt.price * 100) }}%</small><small v-if="mktWarn(r)" class="warn">실거래가 감정가보다 낮음</small></template>
+                <template v-if="r.mkt"><span class="nb">{{ won(r.mkt.price) }}</span><small v-if="mktWarn(r)" class="warn">실거래가 감정가보다 낮음</small><small>{{ r.mkt.n }}건 · {{ d8(r.mkt.last) }} · 감정가 {{ Math.round(r.appr / r.mkt.price * 100) }}%</small></template>
                 <span v-else class="mu">{{ trades ? '—' : tradeMsg || '—' }}</span>
               </td>
               <td>{{ r.fails + 1 }}차 {{ d8(r.next) }}<small>신건 {{ d8(r.first) }} 유찰</small></td>   <!-- 위 = 이번에 입찰하는 날(1회 유찰 최저가), 아래 = 유찰된 신건 날(2026-11-20 사용자 — 헷갈림) -->

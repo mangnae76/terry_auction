@@ -246,7 +246,7 @@ const register = async (f: TankFav) => {
               <div class="c ctr"><b :class="lbByKey.get(f.key)!.vs! < 0 ? 'good' : 'bad'">{{ pctSigned(lbByKey.get(f.key)!.vs!) }}</b></div>
               <div class="c ctr"><b :class="lbByKey.get(f.key)!.gain! > 0 ? 'good' : 'bad'">{{ gainText(lbByKey.get(f.key)!.gain!) }}</b></div>
               <div class="c ctr mk">
-                <template v-if="lbByKey.get(f.key)?.mkt"><b>{{ won(lbByKey.get(f.key)!.mkt!.price) }}</b><small>{{ lbByKey.get(f.key)!.mkt!.n }}건 · {{ d8(lbByKey.get(f.key)!.mkt!.last) }} · <em class="apr">감정가 {{ Math.round(lbByKey.get(f.key)!.appr / lbByKey.get(f.key)!.mkt!.price * 100) }}%</em></small><small v-if="mktWarn(lbByKey.get(f.key)!)" class="bad">실거래가 감정가보다 낮음</small></template>
+                <template v-if="lbByKey.get(f.key)?.mkt"><b>{{ won(lbByKey.get(f.key)!.mkt!.price) }}</b><small v-if="mktWarn(lbByKey.get(f.key)!)" class="bad">실거래가 감정가보다 낮음</small><small>{{ lbByKey.get(f.key)!.mkt!.n }}건 · {{ d8(lbByKey.get(f.key)!.mkt!.last) }} · <em class="apr">감정가 {{ Math.round(lbByKey.get(f.key)!.appr / lbByKey.get(f.key)!.mkt!.price * 100) }}%</em></small></template>
                 <span v-else class="mu">—</span>
               </div>
             </template>
