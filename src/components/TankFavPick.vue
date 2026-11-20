@@ -6,16 +6,15 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { agentOnline, loadTankFav, sendAgentCommand, watchAgentStatus, type AgentStatus, type TankFav, type TankFavDoc } from '../services/agentRemote';
 import { useAuctionStore } from '../stores/auctionStore';
 import { caseKey } from '../services/bidPredict';
-import { parseAuctionPdfText } from '../services/pdfAuctionImport';
+import { parsedFromCase, caseNumberOf } from '../services/caseRegister';
+import CaseJudgeList, { type JudgeRow } from './CaseJudgeList.vue';
 import { addressWithName, buildingNameOf } from '../utils/addressName';
 import { kakaoBuildingName } from '../services/addressSearch';
 import { lookupAddress } from '../services/addressLookup';
 import { useLowBuyData } from '../composables/useLowBuyData';
 import { isJibunAddr, toJibunAddr } from '../services/roadToJibun';
-import { propTypeName } from '../utils/propertyType';
-import { buildingAgeText } from '../utils/buildingAge';
-import { LB_REL_MARK as RELMARK, lbMktRel, type LowBuyRow } from '../services/lowBuy';
-import { FAV_FILTER0, FAV_PY, FAV_STATUS, favCaseNo, favCourtName, favPass, favPlace, favRound, favSort, favStatusCounts, type FavFilter, type FavSort } from '../services/tankFav';
+import { type LowBuyRow } from '../services/lowBuy';
+import { FAV_FILTER0, FAV_STATUS, favCaseNo, favCourtName, favPass, favPlace, favSort, favStatusCounts, type FavFilter, type FavSort } from '../services/tankFav';
 
 const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const today = todayIso();
@@ -123,52 +122,39 @@ const SORTS: Array<[FavSort, string]> = [['case', '사건번호'], ['hot', '가�
 
 /* ---------- 칸 글 ---------- */
 const won = (v: number) => Math.round(v).toLocaleString('ko-KR');
-const man = (v: number) => `${Math.round(v / 1e4).toLocaleString('ko-KR')}만`;
 const d8 = (d: string) => (/^\d{4}-\d{2}-\d{2}/.test(d) ? `${d.slice(2, 4)}.${d.slice(5, 7)}.${d.slice(8, 10)}` : '—');
-const stars = (n: number) => (n > 0 ? '★'.repeat(Math.min(5, n)) : '');
-const pyOf = (m2: number) => (m2 > 0 ? (m2 / FAV_PY).toFixed(2) : '');
-const pctSigned = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v * 100).toFixed(1)}%`;
-const gainText = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${man(Math.abs(v))}`;
 const fmtAt = (ms: number) => { if (!ms) return ''; const d = new Date(ms); return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
-const caseText = (f: TankFav) => { const c = favCaseNo(f.key); return c; };
 /** '인천-본원' → '인천', '인천-부천' → '부천'(탱크 목록처럼 짧게) */
 const courtShort = (c: string) => { const [a, b] = c.split('-'); return b && b !== '본원' ? b : a || c; };
 
 /* ---------- 사진 — 탱크 사건 화면을 새 창으로 바로(사진 · 명세서 다 있음). 법원 사이트는 사건별 고정 주소가 없어 바로 못 간다(2026-11-20 사용자).
  *  사람이 누를 때 한 번 열리는 것이라 마이가 상세를 열지 않는 규칙과는 다르다 — 그 브라우저에 탱크 로그인이 있어야 한다 ---------- */
 const TANK_VIEW = 'https://www.tankauction.com/ca/inc/component/popup/caView.php?tid=';
-const openPhotos = (f: TankFav) => { window.open(`${TANK_VIEW}${encodeURIComponent(f.tid)}`, '_blank', 'noopener'); };
+const openPhotos = (r: JudgeRow) => { if (r.tid) window.open(`${TANK_VIEW}${encodeURIComponent(r.tid)}`, '_blank', 'noopener'); };
 
 /* ---------- 등록하기 — 목록 값만 채운 물건(PDF 등록 · 직접입력과 같은 저장 길). 탱크 제목은 메모로 ---------- */
-const busyKey = ref('');
-const register = async (f: TankFav) => {
-  if (busyKey.value || mine.value.has(f.key)) return;
-  busyKey.value = f.key;
+const busyId = ref('');
+const favById = computed(() => new Map(items.value.map((f) => [f.tid, f])));
+const register = async (r: JudgeRow) => {
+  const f = favById.value.get(r.id);
+  if (!f || busyId.value || mine.value.has(f.key)) return;
+  busyId.value = r.id;
   try {
     const c = favCaseNo(f.key);
-    const caseNumber = c.pn ? `${c.caseNo}(${c.pn})` : c.caseNo;
-    const parsed = {
-      ...parseAuctionPdfText('', '탱크 관심물건'),
-      sourceName: '탱크 관심물건',
-      caseNumber,
-      courtName: favCourtName(f.court),
-      propertyType: f.kind,
-      address: addrOf(f),
-      roadAddress: f.road,
-      auctionRound: f.fails > 0 ? `유찰 ${f.fails}회` : '신건',
-      eventDate: f.date,
-      appraisalValue: f.appr,
-      minimumBidValue: f.min,
-      depositValue: Math.round(f.min / 10),
-      buildingAreaM2: f.bArea,
-      landAreaM2: f.lArea,
-      notes: f.memo ? `탱크 관심물건 ${f.memo}` : '',
-    };
-    await auctions.importParsedPdfAuctions([parsed]);
-    note.value = `${caseNumber} 을 물건목록에 올렸습니다.`;
+    await auctions.importParsedPdfAuctions([parsedFromCase({ source: '탱크 관심물건', caseNo: c.caseNo, pn: c.pn, court: favCourtName(f.court), kind: f.kind, addr: addrOf(f), road: f.road, fails: f.fails, date: f.date, appr: f.appr, min: f.min, bArea: f.bArea, lArea: f.lArea, memo: f.memo ? `탱크 관심물건 ${f.memo}` : '' })]);
+    note.value = `${caseNumberOf(c)} 을 물건목록에 올렸습니다.`;
   } catch { note.value = '등록하지 못했습니다. 다시 해 주세요.'; }
-  busyKey.value = '';
+  busyId.value = '';
 };
+
+/* ---------- 공통 표 줄(CaseJudgeList) — 저가매수와 같은 표 ---------- */
+const judgeMsgOf = (f: TankFav) => (f.status !== '진행' ? '—' : lbSkipped(f) ? `${lbSkipWhyOf(f)} — 저가매수 계산에서 뺌` : lbByKey.value.get(f.key) ? `비교 부족 · 비슷한 물건 ${lbByKey.value.get(f.key)!.peerN}건(5건 이상일 때 계산)` : lbDone(f) ? '같은 동 비교 자료 없음' : '비교 자료 불러오는 중');
+const favRows = computed<JudgeRow[]>(() => shown.value.map((f) => {
+  const c = favCaseNo(f.key);
+  return { id: f.tid, key: f.key, tid: f.tid, kind: f.kind, cat: f.cat, pri: f.pri, caseNo: c.caseNo, pn: c.pn, court: `${courtShort(f.court)}${f.dept ? ` ${f.dept}` : ''}`,
+    addr: addrOf(f), area: f.bArea, appr: f.appr, min: f.min, fails: f.fails, date: f.date, status: f.status, stateText: f.state || f.status,
+    lb: lbByKey.value.get(f.key) ?? null, judgeMsg: judgeMsgOf(f), registered: mine.value.has(f.key) };
+}));
 </script>
 
 <template>
@@ -224,46 +210,18 @@ const register = async (f: TankFav) => {
         <div class="sort"><button v-for="[k, t] in SORTS" :key="k" type="button" :class="{ on: sortBy === k }" @click="sortBy = k">{{ t }}<template v-if="sortBy === k"> ▲</template></button></div>
       </div>
 
-      <div class="tfp-list">
-        <p v-if="loading" class="tfp-empty">불러오는 중입니다…</p>
-        <p v-else-if="!doc" class="tfp-empty">'관심물건가져오기'를 누르면 마이가 탱크옥션 관심물건을 읽어 옵니다.</p>
-        <p v-else-if="!shown.length" class="tfp-empty">조건에 맞는 관심물건이 없습니다.</p>
-        <div v-if="shown.length" class="it hd" aria-hidden="true"><span>사건 · 주소</span><span class="ctr">감정가 · 최저가</span><span class="ctr">기일 · 유찰</span><span class="ctr">비슷한 물건<br>평당 감정가</span><span class="ctr">비슷한 물건<br>대비</span><span class="ctr">면적 대비<br>이득</span><span class="ctr">실거래가<br>같은평형</span><span class="ctr">처리</span></div>   <!-- 표 머리(2026-11-20 사용자) -->
-        <template v-for="f in shown" :key="f.tid">
-          <div :class="['it', { hot: lbByKey.get(f.key)?.hot, on: open === f.tid }]" role="button" tabindex="0" @click="open = open === f.tid ? '' : f.tid" @keydown.enter="open = open === f.tid ? '' : f.tid">
-            <div class="addr">
-              <div class="meta"><span v-if="f.kind" class="type-mark">{{ propTypeName(f.kind) }}</span><span v-if="f.cat" class="ctg">{{ f.cat }}</span><span v-if="f.pri" class="star">{{ stars(f.pri) }}</span></div>
-              <span class="cno">{{ caseText(f).caseNo }}<small v-if="caseText(f).pn"> (물번 {{ caseText(f).pn }})</small><small class="ct">{{ courtShort(f.court) }}{{ f.dept ? ` ${f.dept}` : '' }}</small><span v-if="lbByKey.get(f.key)?.hot" class="tchip hot cnohot">가격매력</span></span>   <!-- 법원 계는 사건번호 오른쪽(2026-11-20 사용자) -->
-              <span class="ad">{{ addrOf(f) }}</span>
-              <small>전용 {{ f.bArea > 0 ? `${f.bArea.toFixed(2)}㎡ / ${pyOf(f.bArea)}평` : '—' }}<template v-if="lbByKey.get(f.key)?.year"> · {{ lbByKey.get(f.key)?.year }}년식 / {{ buildingAgeText(lbByKey.get(f.key)?.year) }}</template><template v-if="lbByKey.get(f.key)?.elev != null"> · 엘베 {{ lbByKey.get(f.key)?.elev ? '있음' : '없음' }}</template></small>
-            </div>
-            <div class="c ctr amtc"><span class="amt"><em class="rd">신건</em><span class="n">{{ f.appr ? won(f.appr) : '미확정' }}</span></span><small>{{ f.appr && f.bArea ? `평당 ${man(f.appr / (f.bArea / FAV_PY))}` : '' }}</small><span class="amt min"><em class="rd">{{ f.fails + 1 }}차</em><span class="n">{{ f.min ? won(f.min) : '—' }}</span></span><small class="minpy">{{ f.min && f.bArea ? `평당 ${man(f.min / (f.bArea / FAV_PY))}` : '' }}</small></div>   <!-- 최저가 평당도(2026-11-20 사용자). 이름표 뺌 — 옆 유찰 칸에 차수 · % 가 있어서(2026-11-20 사용자) -->
-            <div class="c ctr"><span class="nx">{{ d8(f.date) }}</span>{{ favRound(f).label }}<small v-if="favRound(f).pct">({{ favRound(f).pct }})</small><small v-if="f.status !== '진행'">{{ f.state || f.status }}</small></div>   <!-- 위 다음 기일, 그 아래 유찰 n회(%). 지난 유찰 날은 뺌(2026-11-20 사용자) -->
-            <!-- 판단 네 칸 — 저가매수 표와 같은 칸(2026-11-20 사용자 시안) -->
-            <template v-if="f.status === '진행' && lbByKey.get(f.key)?.vs != null">
-              <div class="c ctr"><b>{{ man(lbByKey.get(f.key)!.peerPpy!) }}</b><small>{{ lbByKey.get(f.key)!.peerN.toLocaleString('ko-KR') }}건</small></div>
-              <div class="c ctr"><b :class="lbByKey.get(f.key)!.vs! < 0 ? 'good' : 'bad'">{{ pctSigned(lbByKey.get(f.key)!.vs!) }}</b></div>
-              <div class="c ctr"><b :class="lbByKey.get(f.key)!.gain! > 0 ? 'good' : 'bad'">{{ gainText(lbByKey.get(f.key)!.gain!) }}</b></div>
-              <div class="c ctr mk">
-                <template v-if="lbByKey.get(f.key)?.mkt"><b>{{ won(lbByKey.get(f.key)!.mkt!.price) }}</b><small v-if="lbMktRel(lbByKey.get(f.key)!)" :class="lbMktRel(lbByKey.get(f.key)!) === '높음' ? 'rise' : lbMktRel(lbByKey.get(f.key)!) === '낮음' ? 'fall' : ''">{{ RELMARK[lbMktRel(lbByKey.get(f.key)!)] }}실거래가가 감정가보다 {{ lbMktRel(lbByKey.get(f.key)!) }}</small><small>{{ lbByKey.get(f.key)!.mkt!.n }}건 · {{ d8(lbByKey.get(f.key)!.mkt!.last) }} · <em class="apr">감정가 {{ Math.round(lbByKey.get(f.key)!.appr / lbByKey.get(f.key)!.mkt!.price * 100) }}%</em></small></template>
-                <span v-else class="mu">—</span>
-              </div>
-            </template>
-            <div v-else class="c span4 mu">{{ f.status !== '진행' ? '—' : lbSkipped(f) ? `${lbSkipWhyOf(f)} — 저가매수 계산에서 뺌` : lbByKey.get(f.key) ? `비교 부족 · 비슷한 물건 ${lbByKey.get(f.key)!.peerN}건(5건 이상일 때 계산)` : lbDone(f) ? '같은 동 비교 자료 없음' : '비교 자료 불러오는 중' }}</div>
-            <div class="act" @click.stop>
-              <span v-if="mine.has(f.key)" class="tchip reg">사건등록됨</span>
-              <button v-else type="button" class="tfp-btn" :disabled="!!busyKey" @click="register(f)">{{ busyKey === f.key ? '등록 중' : '사건등록하기' }}</button>
-              <button type="button" class="tfp-btn sub" @click="openPhotos(f)">사진 ↗</button>
-              <button type="button" class="tfp-btn sub" disabled title="매각물건명세서 받기는 준비 중입니다">매물명세 준비중</button>   <!-- 판단 칸의 '매각물건명세서 받기 준비 중' 줄 대신 단추(2026-11-20 사용자) -->
-            </div>
-          </div>
-          <div v-if="open === f.tid" class="det">
-            <div class="bx"><b>탱크 제목(내용)</b><span>{{ f.memo || '—' }}</span></div>
+      <p v-if="loading" class="tfp-empty">불러오는 중입니다…</p>
+      <p v-else-if="!doc" class="tfp-empty">'관심물건가져오기'를 누르면 마이가 탱크옥션 관심물건을 읽어 옵니다.</p>
+      <!-- 표는 저가매수와 같은 공통 부품(2026-11-20 사용자) -->
+      <CaseJudgeList v-else :rows="favRows" :busy-id="busyId" :open-id="open" expandable empty="조건에 맞는 관심물건이 없습니다." @register="register" @photo="openPhotos" @toggle="(r) => (open = open === r.id ? '' : r.id)">
+        <template #detail="{ row }">
+          <div v-if="favById.get(row.id)" class="det">
+            <div class="bx"><b>탱크 제목(내용)</b><span>{{ favById.get(row.id)!.memo || '—' }}</span></div>
             <div class="bx"><b>매각물건명세서 · 기일내역</b><span class="mu">매각물건명세서 공개 뒤 채움(법원경매정보에서 받기는 준비 중)</span></div>
-            <div class="bx"><b>탱크 목록 값</b><span>등록 {{ d8(f.wdate) }} · 조회 {{ f.hit.toLocaleString('ko-KR') }}<template v-if="f.sold > 0"> · 낙찰 {{ won(f.sold) }}<template v-if="f.bids"> · {{ f.bids }}명</template><template v-if="f.second"> · 2등 {{ won(f.second) }}</template></template></span></div>
+            <div class="bx"><b>탱크 목록 값</b><span>등록 {{ d8(favById.get(row.id)!.wdate) }} · 조회 {{ favById.get(row.id)!.hit.toLocaleString('ko-KR') }}<template v-if="favById.get(row.id)!.sold > 0"> · 낙찰 {{ won(favById.get(row.id)!.sold) }}<template v-if="favById.get(row.id)!.bids"> · {{ favById.get(row.id)!.bids }}명</template><template v-if="favById.get(row.id)!.second"> · 2등 {{ won(favById.get(row.id)!.second) }}</template></template></span></div>
           </div>
         </template>
-      </div>
+      </CaseJudgeList>
     </section>
   </div>
 </template>
@@ -313,59 +271,12 @@ const register = async (f: TankFav) => {
 .sort { display: flex; gap: 12px; }
 .sort button { border: 0; background: none; padding: 0; color: #6b7280; font: inherit; font-size: 12px; cursor: pointer; }
 .sort button.on { color: #2b6df3; font-weight: 700; }
-.tfp-list { display: grid; border: 1px solid #e3e7ee; border-radius: 8px; overflow: hidden; }
-.tfp-empty { margin: 0; padding: 28px 12px; text-align: center; font-size: 13px; color: #6b7280; }
-.it { display: grid; grid-template-columns: minmax(0, 1fr) 140px 96px 96px 96px 96px 160px 112px;   /* 숫자 칸 폭 고르게 · 머리 · 값 모두 가운데(2026-11-20 사용자) */ gap: 12px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; cursor: pointer; font-size: 13px; color: #111827; }
-.it:last-child, .det:last-child { border-bottom: 0; }
-.it.hot { background: #fff5f5; }
-.it.on { background: #eef3fe; box-shadow: inset 3px 0 0 #2b6df3; }
-.meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 3px; }
-.type-mark { display: inline-flex; align-items: center; justify-content: center; height: 22px; padding: 0 8px; border-radius: 11px; background: #2b6df3; color: #fff; font-size: 14px; font-weight: 700; line-height: 1; letter-spacing: -0.2px; white-space: nowrap; }   /* 종류 칩 — 선정물건 목록 type-mark 와 같은 꼴 · 같은 이름(utils/propertyType, 2026-11-20 사용자) */
-.ctg { font-size: 12px; color: #6b7280; border: 1px solid #e3e7ee; border-radius: 4px; padding: 0 5px; line-height: 17px; }
-.star { color: #f59e0b; letter-spacing: -1px; }
-.cno { display: block; font-size: 15px; font-weight: 800; }
-.cno .ct, .addr .cno .ct { margin-left: 8px; color: #4b5563; }
-.addr { word-break: keep-all; }
-.cno small, .addr .cno small { display: inline; margin-left: 4px; font-size: 12px; font-weight: 400; color: #6b7280; }   /* 물건번호는 사건번호 옆(2026-11-20 사용자) */
-.ad { display: block; line-height: 1.45; }
-.addr small, .c small { display: block; color: #6b7280; font-size: 12px; }
-.c { font-variant-numeric: tabular-nums; }
-.r { text-align: right; }
-.ctr { text-align: center; }
-.amt { display: block; font-weight: 700; }
-.amt.min { color: #2b6df3; }
-.tchip { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 20px; font-size: 12px; border-radius: 4px; padding: 0 6px; line-height: 1; vertical-align: middle; }   /* 글이 상자 가운데(위로 뜨던 것, 2026-11-20 사용자) */
-.tchip.hot { background: #fdecec; color: #dc2626; }
-.tchip.wait { background: #fff4e5; color: #b45309; }
-.tchip.reg { background: #eef3fe; color: #2b6df3; }
-.amt .rd { display: inline-block; min-width: 2.4em; text-align: left; font-style: normal; font-size: 12px; font-weight: 400; color: #6b7280; margin-right: 5px; }   /* 금액 옆 작은 차수 — 신건 · 2차(2026-11-20 사용자) */
-.amt .n { display: inline-block; min-width: 10.5ch; text-align: right; font-variant-numeric: tabular-nums; }   /* 금액 폭을 같게 — 신건 · 2차 글이 세로로 한 줄(2026-11-20 사용자) */
-.c small.minpy { color: #2b6df3; }
-.c .nx { display: block; font-weight: 400; color: #111827; margin-bottom: 2px; }   /* 날짜 굵기 없음(2026-11-20 사용자) */
-.it.hd { background: #f6f8fb; color: #6b7280; font-size: 12px; font-weight: 600; padding-top: 9px; padding-bottom: 9px; cursor: default; line-height: 1.35; }
-.it.hd .ctr { text-align: center; }
-.c.amtc { display: grid; justify-content: center; }   /* 금액 묶음은 칸 가운데, 안에서는 끝자리 맞춤 */
-.c.amtc .amt, .c.amtc small { text-align: right; }
-.c .span4, .c.span4 { grid-column: span 4; text-align: center; font-size: 12px; }
-.c.mk small { display: block; white-space: nowrap; }
-.c em.apr { font-style: normal; color: #db2777; }
-.cno .cnohot { margin-left: 8px; vertical-align: 2px; }
-.c b { font-weight: 700; color: #111827; white-space: nowrap; }
-.c b.good { color: #16a34a; }
-.c b.bad, .c small.bad { color: #dc2626; }
-.c small.rise { color: #dc2626; }   /* ▲ 실거래가가 감정가보다 높음(감정이 쌈) — 시세표처럼 빨강 */
-.c small.fall { color: #2b6df3; }   /* ▼ 낮음(감정이 비쌈) — 파랑 */
+/* 표 줄 꼴은 CaseJudgeList 한 곳 — 여기는 펼친 칸만 */
+.tfp-empty { margin: 0; padding: 28px 12px; text-align: center; font-size: 13px; color: #6b7280; border: 1px solid #e3e7ee; border-radius: 8px; }
 .mu { color: #9ca3af; }
-.act { display: grid; gap: 6px; justify-items: center; }
-.act { align-self: center; align-content: center; }
-.act .tfp-btn, .act .tchip.reg { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; height: 28px; width: 104px; padding: 0; border-radius: 8px; font-size: 12px; line-height: 1; }   /* 등록됨도 등록하기와 같은 크기 · 가로세로 가운데(2026-11-20 사용자) */
-.act .tchip.reg { border: 1px solid #c9d6f5; font-weight: 700; }
-.act .tfp-btn.sub { font-weight: 400; color: #2b6df3; }
-.act .tfp-btn.sub:disabled { color: #9ca3af; background: #f6f8fb; cursor: default; }
-.tfp-btn { border: 1px solid #d5dbe5; background: #fff; color: #111827; border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
-.tfp-btn:disabled { color: #c2c8d3; cursor: default; }
 .det { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px; border-bottom: 1px solid #e3e7ee; background: #fbfcfe; }
+.det:last-child { border-bottom: 0; }
 .det .bx { border: 1px solid #e3e7ee; border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; font-size: 12px; color: #4b5563; min-width: 0; }
 .det .bx b { font-size: 13px; color: #111827; }
-@media (max-width: 900px) { .tfp-flt, .det { grid-template-columns: minmax(0, 1fr); } .it { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 900px) { .tfp-flt, .det { grid-template-columns: minmax(0, 1fr); } }
 </style>
