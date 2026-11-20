@@ -96,7 +96,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
           <div class="c ctr"><b :class="r.lb!.vs! < 0 ? 'good' : 'bad'">{{ pctSigned(r.lb!.vs!) }}</b></div>
           <div class="c ctr"><b :class="r.lb!.gain! > 0 ? 'good' : 'bad'">{{ gainText(r.lb!.gain!) }}</b></div>
           <div class="c ctr mk">
-            <template v-if="r.lb!.mkt"><b>{{ won(r.lb!.mkt!.price) }}</b><small v-if="lbMktRel(r.lb!)" :class="lbMktRel(r.lb!) === '높음' ? 'rise' : lbMktRel(r.lb!) === '낮음' ? 'fall' : ''">{{ RELMARK[lbMktRel(r.lb!)] }}실거래가가 감정가보다 {{ lbMktRel(r.lb!) }}</small><small>{{ r.lb!.mkt!.n }}건 · {{ d8(r.lb!.mkt!.last) }} · <em class="apr">감정가 {{ Math.round(r.lb!.appr / r.lb!.mkt!.price * 100) }}%</em></small></template>
+            <template v-if="r.lb!.mkt"><b>{{ won(r.lb!.mkt!.price) }}</b><small :class="lbMktRel(r.lb!) === '높음' ? 'rise' : lbMktRel(r.lb!) === '낮음' ? 'fall' : ''">{{ RELMARK[lbMktRel(r.lb!)] }}감정가의 {{ Math.round(r.lb!.mkt!.price / r.lb!.appr * 100) }}%</small><small>{{ r.lb!.mkt!.n }}건 · {{ d8(r.lb!.mkt!.last) }}</small>   <!-- 실거래가가 감정가의 몇 % — ▲ 빨강 100% 위 · ▼ 파랑 아래(2026-11-20 사용자) --></template>
             <span v-else class="mu">—</span>
           </div>
           <div class="c ctr"><b v-if="r.lb!.gainMin != null" :class="r.lb!.gainMin > 0 ? 'good' : 'bad'">{{ gainText(r.lb!.gainMin) }}</b><span v-else class="mu">—</span></div>   <!-- 감정가 대비 → 실거래 → 최저가 대비 순으로 읽히게(2026-11-20 사용자) -->
@@ -117,7 +117,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 <style scoped>
 .cjl { display: grid; border: 1px solid #e3e7ee; border-radius: 8px; overflow: hidden; background: #fff; }
 .cjl-empty { margin: 0; padding: 28px 12px; text-align: center; font-size: 13px; color: #6b7280; }
-.it { display: grid; grid-template-columns: minmax(0, 1fr) 124px 80px 80px 72px 76px 158px 76px 104px;   /* 숫자 칸 폭 고르게 · 머리 · 값 모두 가운데(2026-11-20 사용자) */ gap: 10px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; font-size: 13px; color: #111827; }
+.it { display: grid; grid-template-columns: minmax(0, 1fr) 124px 80px 80px 72px 76px 132px 76px 104px;   /* 숫자 칸 폭 고르게 · 머리 · 값 모두 가운데(2026-11-20 사용자) */ gap: 10px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; font-size: 13px; color: #111827; }
 .it.click { cursor: pointer; }
 .it:last-child { border-bottom: 0; }
 .it.hot { background: #fff5f5; }

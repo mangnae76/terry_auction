@@ -62,7 +62,7 @@ const openPhotos = (j: JudgeRow) => { if (j.tid) window.open(`${TANK_VIEW}${enco
       <div class="lbp-how">
         <div><b>평당 감정가 비교</b>같은 동 · 같은 종류 · 면적 ±5% 물건의 평당 감정가 가운데값과 견줍니다. 낮을수록 싸게 감정된 물건입니다.</div>
         <div><b>감정가 · 최저가 대비 이득</b>같은 면적을 비슷한 물건 수준으로 감정했을 때보다 감정가가, 그리고 지금 최저가가 얼마 낮은지입니다.</div>
-        <div><b>실거래로 한 번 더</b>같은건물 같은평형 매매 실거래가입니다. 감정가보다 높으면 ▲ 빨강, 낮으면 ▼ 파랑.</div>
+        <div><b>실거래로 한 번 더</b>같은건물 같은평형 매매 실거래가가 감정가의 몇 %인지입니다. 100% 위면 ▲ 빨강, 아래면 ▼ 파랑.</div>
       </div>
       <p v-if="!factsDone" class="lbp-wait">{{ msg }}</p>
       <template v-else>
