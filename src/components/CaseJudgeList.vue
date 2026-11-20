@@ -45,6 +45,8 @@ export type JudgeRow = {
 };
 
 const props = withDefaults(defineProps<{ rows: JudgeRow[]; busyId?: string; openId?: string; expandable?: boolean; empty?: string }>(), { busyId: '', openId: '', expandable: false, empty: '' });
+/** 화면 주소 — 맨 앞 시 · 도('인천광역시' · '인천' · '경기도')는 뺀다 */
+const noSido = (a: string) => a.replace(/^\s*(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충청북|충청남|충북|충남|전라북|전라남|전북|전남|경상북|경상남|경북|경남|제주)[가-힣]*\s+/, '');
 /** 주소 복사 — 괄호 안 도로명 · 외 n필지는 뺀다(낙찰가예측 주소복사와 같은 글) */
 const copiedId = ref('');
 let copyTimer: ReturnType<typeof setTimeout> | null = null;
@@ -83,7 +85,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
           </div>
           <div class="rc">
           <span class="cno">{{ r.caseNo }}<small v-if="r.pn"> (물번 {{ r.pn }})</small><small v-if="r.court" class="ct">{{ r.court }}</small><span v-if="r.lb?.hot" class="tchip hot cnohot">가격매력</span></span>
-          <span class="ad">{{ r.addr }}</span>
+          <span class="ad">{{ noSido(r.addr) }}</span>   <!-- 화면엔 시 · 도 빼고(복사는 전체), 2026-11-20 사용자 -->
           <small>전용 {{ r.area > 0 ? `${r.area.toFixed(2)}㎡ / ${pyOf(r.area)}평` : '—' }}<template v-if="r.lb?.year"> · {{ r.lb?.year }}년식 / {{ buildingAgeText(r.lb?.year) }}</template><template v-if="r.lb?.elev != null"> · 엘베 {{ r.lb?.elev ? '있음' : '없음' }}</template></small>
           </div>
         </div>
@@ -115,7 +117,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 <style scoped>
 .cjl { display: grid; border: 1px solid #e3e7ee; border-radius: 8px; overflow: hidden; background: #fff; }
 .cjl-empty { margin: 0; padding: 28px 12px; text-align: center; font-size: 13px; color: #6b7280; }
-.it { display: grid; grid-template-columns: minmax(0, 1fr) 128px 84px 84px 76px 84px 150px 84px 100px;   /* 숫자 칸 폭 고르게 · 머리 · 값 모두 가운데(2026-11-20 사용자) */ gap: 12px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; font-size: 13px; color: #111827; }
+.it { display: grid; grid-template-columns: minmax(0, 1fr) 124px 80px 80px 72px 76px 158px 76px 104px;   /* 숫자 칸 폭 고르게 · 머리 · 값 모두 가운데(2026-11-20 사용자) */ gap: 10px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; font-size: 13px; color: #111827; }
 .it.click { cursor: pointer; }
 .it:last-child { border-bottom: 0; }
 .it.hot { background: #fff5f5; }
@@ -130,7 +132,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .addr .meta.top { grid-column: 1 / -1; }   /* 분류 · 관심도는 맨 위 한 줄 — 종류 칩이 사건번호와 같은 줄에 */
 .addr .lc { display: grid; gap: 6px; justify-items: center; padding-top: 1px; }
 .type-mark.sm { height: 20px; padding: 0 7px; border-radius: 10px; font-size: 12px; }   /* 작은 종류 칩 — 사건번호 왼쪽 */
-.addr .lc .type-mark.sm, .addr .lc .cpy { box-sizing: border-box; min-width: 52px; height: 20px; }   /* 고정카드처럼 종류 칩 · 주소 칩 같은 크기, 위아래 줄 맞춤 */
+.addr .lc .type-mark.sm, .addr .lc .cpy { box-sizing: border-box; width: 56px; min-width: 56px; padding: 0; margin: 0; height: 20px; justify-content: center; vertical-align: top; }   /* 종류 칩 · 주소 칩 같은 폭 — 시작 · 끝 줄 맞춤 */   /* 고정카드처럼 종류 칩 · 주소 칩 같은 크기, 위아래 줄 맞춤 */
 .cpy { display: inline-flex; align-items: center; justify-content: center; gap: 3px; padding: 0 8px; border: 1px solid #c7d7f7; border-radius: 999px; background: #fff; color: #2a5fbf; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }   /* 고정카드 주소 칩(.ih-copy)과 같은 꼴 · 같은 그림 */
 .cpy:hover { border-color: #2b6df3; }
 .cpy.done { border-color: #15803d; color: #15803d; }
