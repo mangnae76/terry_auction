@@ -63,8 +63,11 @@ export const agentOnline = (s: AgentStatus | null, now = Date.now()) =>
   !!s?.at && typeof s.at.toMillis === 'function' && now - s.at.toMillis() < AGENT_ONLINE_MS;
 
 /** 명령 보내기 — id 가 바뀌면 도우미가 새 명령으로 안다 */
-export const sendAgentCommand = async (uid: string, name: AgentCmdName, args: AgentCmdArgs): Promise<void> => {
-  await setDoc(controlRef(uid), { cmd: { id: crypto.randomUUID(), name, args, at: serverTimestamp() }, webSeenAt: serverTimestamp() }, { merge: true });
+/** 돌려주는 값 = 명령 id — 마이 상태의 lastCmd 가 이 값이 되면 마이가 받은 것 */
+export const sendAgentCommand = async (uid: string, name: AgentCmdName, args: AgentCmdArgs): Promise<string> => {
+  const id = crypto.randomUUID();
+  await setDoc(controlRef(uid), { cmd: { id, name, args, at: serverTimestamp() }, webSeenAt: serverTimestamp() }, { merge: true });
+  return id;
 };
 export const sendAgentStop = async (uid: string): Promise<void> => {
   await setDoc(controlRef(uid), { stop: { id: crypto.randomUUID(), at: serverTimestamp() }, webSeenAt: serverTimestamp() }, { merge: true });

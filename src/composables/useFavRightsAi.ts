@@ -57,11 +57,16 @@ export const useFavRightsAi = (items: Ref<TankFav[]>) => {
 
   /** 법원에서 받을 사건 — 등록한 진행 · 예정 물건 중 매물명세가 없고 받은 PDF 도 없는 것(공개 전은 다시 물어본다) */
   const toFetch = computed(() => mineFav.value.filter((f) => (f.status === '진행' || f.status === '예정') && !hasSpecDoc(byKey.value.get(f.key)) && heads.value[f.key]?.state !== 'ok' && !byKey.value.get(f.key)?.rightsAi));
+  /** 명세서받기 진행 — sending(보내는 중) · sentId(보낸 명령 id, 마이가 받으면 상태 lastCmd 가 같아진다) */
+  const sending = ref(false);
+  const sentId = ref('');
   const fetchSpecs = async () => {
     const cases = toFetch.value.slice(0, 30).map((f) => { const m = f.key.match(/^(\d{4})-(\d+)(?:\((\d+)\))?$/); return m ? `${f.court}|${m[1]}타경${m[2]}|${m[3] ?? ''}|${f.key}` : ''; }).filter(Boolean);
     if (!cases.length) { note.value = '법원에서 받을 사건이 없습니다(등록한 진행 물건 모두 매물명세가 있습니다).'; return; }
-    try { await sendAgentCommand('', 'spec', { cases }); note.value = `매각물건명세서 받기를 보냈습니다 — ${cases.length}건. 마이가 법원경매정보에서 받는 대로 붙이고 분석합니다.`; }
+    sending.value = true; note.value = ''; sentId.value = '';
+    try { sentId.value = await sendAgentCommand('', 'spec', { cases }); }
     catch { note.value = '명령을 보내지 못했습니다. 다시 해 주세요.'; }
+    finally { sending.value = false; }
   };
 
   let pumping = false;
@@ -111,5 +116,5 @@ export const useFavRightsAi = (items: Ref<TankFav[]>) => {
   let t: ReturnType<typeof setTimeout> | null = null;
   watch([() => mineFav.value.map((f) => f.key).join(','), heads], () => { if (t) clearTimeout(t); t = setTimeout(() => { void pump(); }, 1500); });
 
-  return { liveFav, heads, reloadHeads, counts, stateOf, toFetch, fetchSpecs, auto, setAuto, limited, resume, runId, note, pump };
+  return { liveFav, heads, reloadHeads, counts, stateOf, toFetch, fetchSpecs, sending, sentId, auto, setAuto, limited, resume, runId, note, pump };
 };

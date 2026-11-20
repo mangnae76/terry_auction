@@ -124,7 +124,24 @@ const AI_ORDER: FavAiState[] = ['done', 'run', 'wait', 'limit', 'closed', 'befor
 const specBusy = computed(() => !!agent.value?.busy && agent.value?.target === '법원 매각물건명세서');
 const runName = computed(() => { const a = auctions.auctions.find((x) => x.id === ai.runId.value); return a ? a.caseNumber : ''; });
 /* 마이가 명세서 받기를 끝내면(바쁨 → 쉼) 받은 목록을 다시 읽는다 — 그러면 자동 줄이 붙이고 분석한다 */
-watch(() => agent.value?.busy, (b, was) => { if (was && !b && /매각물건명세서/.test(agent.value?.message ?? '')) { ai.note.value = agent.value?.message ?? ''; void ai.reloadHeads(); } });
+watch(() => agent.value?.busy, (b, was) => { if (was && !b && /매각물건명세서/.test(agent.value?.message ?? '')) { ai.note.value = agent.value?.message ?? ''; ai.sentId.value = ''; void ai.reloadHeads(); } });
+/** 명세서받기 단계 — idle · send(보내는 중) · wait(보냄, 마이가 아직 안 받음) · run(마이가 받아 하는 중) · said(마이가 받았지만 바로 끝남 — 거절 · 잘못) */
+const specStep = computed<'idle' | 'send' | 'wait' | 'run' | 'said'>(() => {
+  if (ai.sending.value) return 'send';
+  if (specBusy.value) return 'run';
+  if (!ai.sentId.value) return 'idle';
+  if (agent.value?.lastCmd !== ai.sentId.value) return 'wait';
+  return agent.value?.busy ? 'run' : 'said';
+});
+const SPEC_BTN: Record<string, string> = { idle: '명세서받기', send: '보내는 중', wait: '마이 응답 기다림', run: '명세서 받는 중', said: '명세서받기' };
+const specLine = computed(() => {
+  const st = specStep.value;
+  if (st === 'send') return '마이에 명세서받기를 보내는 중입니다…';
+  if (st === 'wait') return `마이에 보냈습니다(${ai.toFetch.value.length.toLocaleString('ko-KR')}건). 마이가 받으면 몇 초 안에 여기에 진행이 뜹니다.`;
+  if (st === 'run' || st === 'said') return agent.value?.message ?? '';
+  return '';
+});
+const specOff = computed(() => (!agentOn.value ? '마이가 꺼져 있어 누를 수 없습니다' : agent.value?.paused ? '마이가 대기 중입니다 — 마이 상자의 실행을 먼저 눌러 주세요' : agent.value?.busy && specStep.value === 'idle' ? '마이가 다른 일을 하는 중입니다 — 끝나면 누를 수 있습니다' : !ai.toFetch.value.length ? '받을 사건이 없습니다' : ''));
 const { sale2 } = useSale2();
 /** '가격매력' 정렬 = 최저가 낙찰 차익률 큰 순(모르면 아래) */
 const shown = computed(() => favSort(items.value.filter((f) => favPass(f, q)), sortBy.value, (f) => { const j = lbJudge(lbByKey.value.get(f.key)?.est ?? null, f.min, sale2.value[f.key]); return j.gap != null ? -j.gap : null; }));   /* 최저가 낙찰 차익 큰 순 — 저가매수와 같게 */
@@ -193,9 +210,9 @@ const favRows = computed<JudgeRow[]>(() => shown.value.map((f) => {
         <span class="sp" />
         <label class="auto"><input type="checkbox" :checked="ai.auto.value" @change="ai.setAuto(($event.target as HTMLInputElement).checked)" />자동분석</label>
         <button v-if="ai.limited.value" type="button" class="b" @click="ai.resume()">지금이어하기</button>
-        <button type="button" class="b" :disabled="!agentOn || !!agent?.paused || !!agent?.busy || !ai.toFetch.value.length" :data-tip="ai.toFetch.value.length ? `등록한 진행 물건 중 매물명세가 없는 ${ai.toFetch.value.length.toLocaleString('ko-KR')}건` : '받을 사건이 없습니다'" @click="ai.fetchSpecs()">{{ specBusy ? '명세서 받는 중' : '명세서받기' }}</button>
+        <button type="button" :class="['b', 'spec', { work: specStep === 'send' || specStep === 'wait' || specStep === 'run' }]" :disabled="!!specOff || specStep === 'send' || specStep === 'wait' || specStep === 'run'" :data-tip="specOff || `등록한 진행 물건 중 매물명세가 없는 ${ai.toFetch.value.length.toLocaleString('ko-KR')}건을 마이가 법원에서 받습니다`" @click="ai.fetchSpecs()"><i v-if="specStep === 'send' || specStep === 'wait' || specStep === 'run'" class="spin" aria-hidden="true" />{{ SPEC_BTN[specStep] }}</button>
       </div>
-      <p v-if="specBusy && agent?.message" class="tfp-note">{{ agent.message }}</p>
+      <p v-if="specLine" :class="['tfp-note', 'spec', { live: specStep !== 'said' }]">{{ specLine }}<template v-if="specStep === 'run' && agent?.prog"> · {{ (agent.prog.i + 1).toLocaleString('ko-KR') }}/{{ agent.prog.n.toLocaleString('ko-KR') }}</template></p>
       <p v-else-if="ai.note.value" class="tfp-note">{{ ai.note.value }}</p>
 
       <div class="tfp-flt">
@@ -270,7 +287,15 @@ const favRows = computed<JudgeRow[]>(() => shown.value.map((f) => {
 .tfp-ai .auto { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #111827; cursor: pointer; white-space: nowrap; }
 .tfp-ai .auto input { margin: 0; width: 14px; height: 14px; accent-color: #2b6df3; }
 .tfp-ai .b { height: 26px; padding: 0 10px; border: 1px solid #d5dbe5; border-radius: 6px; background: #fff; color: #4b5563; font: inherit; font-size: 12px; font-weight: 700; white-space: nowrap; cursor: pointer; }
-.tfp-ai .b:disabled { color: #c2c8d3; border-color: #e3e7ee; cursor: default; }
+.tfp-ai .b:not(:disabled):hover { background: #eef3fe; border-color: #2b6df3; color: #2b6df3; }
+.tfp-ai .b:not(:disabled):active { background: #dfe8fd; transform: translateY(1px); }
+.tfp-ai .b:focus-visible { outline: 2px solid #2b6df3; outline-offset: 1px; }
+.tfp-ai .b:disabled { color: #c2c8d3; border-color: #e3e7ee; cursor: not-allowed; }
+.tfp-ai .b.spec { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 112px; }
+.tfp-ai .b.spec.work:disabled { color: #2b6df3; border-color: #b9cdf8; background: #eef3fe; cursor: progress; }
+.tfp-ai .spin { width: 10px; height: 10px; border: 2px solid #b9cdf8; border-top-color: #2b6df3; border-radius: 50%; animation: tfp-spin .8s linear infinite; }
+@keyframes tfp-spin { to { transform: rotate(360deg); } }
+.tfp-note.spec.live { color: #2b6df3; }
 .tfp-flt { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 18px; background: #f6f8fb; border: 1px solid #e3e7ee; border-radius: 10px; padding: 12px 14px; }
 .fr { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .fl { width: 46px; flex: none; font-size: 13px; font-weight: 700; color: #111827; }
