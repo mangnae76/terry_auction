@@ -229,7 +229,7 @@ const register = async (f: TankFav) => {
         <p v-if="loading" class="tfp-empty">불러오는 중입니다…</p>
         <p v-else-if="!doc" class="tfp-empty">'관심물건가져오기'를 누르면 마이가 탱크옥션 관심물건을 읽어 옵니다.</p>
         <p v-else-if="!shown.length" class="tfp-empty">조건에 맞는 관심물건이 없습니다.</p>
-        <div v-if="shown.length" class="it hd" aria-hidden="true"><span>사건 · 주소</span><span class="r">감정가 · 최저가</span><span class="ctr">기일 · 유찰</span><span class="r">비슷한 물건<br>평당 감정가</span><span class="r">비슷한 물건<br>대비</span><span class="r">면적 대비<br>이득</span><span class="r">실거래가<br>같은 평형</span><span class="ctr">처리</span></div>   <!-- 표 머리(2026-11-20 사용자) -->
+        <div v-if="shown.length" class="it hd" aria-hidden="true"><span>사건 · 주소</span><span class="ctr">감정가 · 최저가</span><span class="ctr">기일 · 유찰</span><span class="ctr">비슷한 물건<br>평당 감정가</span><span class="ctr">비슷한 물건<br>대비</span><span class="ctr">면적 대비<br>이득</span><span class="ctr">실거래가<br>같은 평형</span><span class="ctr">처리</span></div>   <!-- 표 머리(2026-11-20 사용자) -->
         <template v-for="f in shown" :key="f.tid">
           <div :class="['it', { hot: lbByKey.get(f.key)?.hot, on: open === f.tid }]" role="button" tabindex="0" @click="open = open === f.tid ? '' : f.tid" @keydown.enter="open = open === f.tid ? '' : f.tid">
             <div class="addr">
@@ -238,14 +238,14 @@ const register = async (f: TankFav) => {
               <span class="ad">{{ addrOf(f) }}</span>
               <small>전용 {{ f.bArea > 0 ? `${f.bArea.toFixed(2)}㎡ / ${pyOf(f.bArea)}평` : '—' }}<template v-if="lbByKey.get(f.key)?.year"> · {{ lbByKey.get(f.key)?.year }}년식 / {{ buildingAgeText(lbByKey.get(f.key)?.year) }}</template><template v-if="lbByKey.get(f.key)?.elev != null"> · 엘베 {{ lbByKey.get(f.key)?.elev ? '있음' : '없음' }}</template></small>
             </div>
-            <div class="c r"><span class="amt"><em class="rd">신건</em><span class="n">{{ f.appr ? won(f.appr) : '미확정' }}</span></span><small>{{ f.appr && f.bArea ? `평당 ${man(f.appr / (f.bArea / FAV_PY))}` : '' }}</small><span class="amt min"><em class="rd">{{ f.fails + 1 }}차</em><span class="n">{{ f.min ? won(f.min) : '—' }}</span></span><small class="minpy">{{ f.min && f.bArea ? `평당 ${man(f.min / (f.bArea / FAV_PY))}` : '' }}</small></div>   <!-- 최저가 평당도(2026-11-20 사용자). 이름표 뺌 — 옆 유찰 칸에 차수 · % 가 있어서(2026-11-20 사용자) -->
+            <div class="c ctr amtc"><span class="amt"><em class="rd">신건</em><span class="n">{{ f.appr ? won(f.appr) : '미확정' }}</span></span><small>{{ f.appr && f.bArea ? `평당 ${man(f.appr / (f.bArea / FAV_PY))}` : '' }}</small><span class="amt min"><em class="rd">{{ f.fails + 1 }}차</em><span class="n">{{ f.min ? won(f.min) : '—' }}</span></span><small class="minpy">{{ f.min && f.bArea ? `평당 ${man(f.min / (f.bArea / FAV_PY))}` : '' }}</small></div>   <!-- 최저가 평당도(2026-11-20 사용자). 이름표 뺌 — 옆 유찰 칸에 차수 · % 가 있어서(2026-11-20 사용자) -->
             <div class="c ctr"><span class="nx">{{ d8(f.date) }}</span>{{ favRound(f).label }}<small v-if="favRound(f).pct">({{ favRound(f).pct }})</small><small v-if="f.status !== '진행'">{{ f.state || f.status }}</small></div>   <!-- 위 다음 기일, 그 아래 유찰 n회(%). 지난 유찰 날은 뺌(2026-11-20 사용자) -->
             <!-- 판단 네 칸 — 저가매수 표와 같은 칸(2026-11-20 사용자 시안) -->
             <template v-if="f.status === '진행' && lbByKey.get(f.key)?.vs != null">
-              <div class="c r"><b>{{ man(lbByKey.get(f.key)!.peerPpy!) }}</b><small>{{ lbByKey.get(f.key)!.peerN.toLocaleString('ko-KR') }}건</small></div>
-              <div class="c r"><b :class="lbByKey.get(f.key)!.vs! < 0 ? 'good' : 'bad'">{{ pctSigned(lbByKey.get(f.key)!.vs!) }}</b></div>
-              <div class="c r"><b :class="lbByKey.get(f.key)!.gain! > 0 ? 'good' : 'bad'">{{ gainText(lbByKey.get(f.key)!.gain!) }}</b></div>
-              <div class="c r mk">
+              <div class="c ctr"><b>{{ man(lbByKey.get(f.key)!.peerPpy!) }}</b><small>{{ lbByKey.get(f.key)!.peerN.toLocaleString('ko-KR') }}건</small></div>
+              <div class="c ctr"><b :class="lbByKey.get(f.key)!.vs! < 0 ? 'good' : 'bad'">{{ pctSigned(lbByKey.get(f.key)!.vs!) }}</b></div>
+              <div class="c ctr"><b :class="lbByKey.get(f.key)!.gain! > 0 ? 'good' : 'bad'">{{ gainText(lbByKey.get(f.key)!.gain!) }}</b></div>
+              <div class="c ctr mk">
                 <template v-if="lbByKey.get(f.key)?.mkt"><b>{{ won(lbByKey.get(f.key)!.mkt!.price) }}</b><small>{{ lbByKey.get(f.key)!.mkt!.n }}건 · {{ d8(lbByKey.get(f.key)!.mkt!.last).slice(0, 5) }} · <em class="apr">감정가 {{ Math.round(lbByKey.get(f.key)!.appr / lbByKey.get(f.key)!.mkt!.price * 100) }}%</em></small><small v-if="mktWarn(lbByKey.get(f.key)!)" class="bad">실거래가 감정가보다 낮음</small></template>
                 <span v-else class="mu">—</span>
               </div>
@@ -316,7 +316,7 @@ const register = async (f: TankFav) => {
 .sort button.on { color: #2b6df3; font-weight: 700; }
 .tfp-list { display: grid; border: 1px solid #e3e7ee; border-radius: 8px; overflow: hidden; }
 .tfp-empty { margin: 0; padding: 28px 12px; text-align: center; font-size: 13px; color: #6b7280; }
-.it { display: grid; grid-template-columns: minmax(0, 1fr) 140px 96px 92px 76px 96px 160px 112px; gap: 12px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; cursor: pointer; font-size: 13px; color: #111827; }
+.it { display: grid; grid-template-columns: minmax(0, 1fr) 140px 96px 96px 96px 96px 160px 112px;   /* 숫자 칸 폭 고르게 · 머리 · 값 모두 가운데(2026-11-20 사용자) */ gap: 12px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; cursor: pointer; font-size: 13px; color: #111827; }
 .it:last-child, .det:last-child { border-bottom: 0; }
 .it.hot { background: #fff5f5; }
 .it.on { background: #eef3fe; box-shadow: inset 3px 0 0 #2b6df3; }
@@ -344,7 +344,9 @@ const register = async (f: TankFav) => {
 .c small.minpy { color: #2b6df3; }
 .c .nx { display: block; font-weight: 400; color: #111827; margin-bottom: 2px; }   /* 날짜 굵기 없음(2026-11-20 사용자) */
 .it.hd { background: #f6f8fb; color: #6b7280; font-size: 12px; font-weight: 600; padding-top: 9px; padding-bottom: 9px; cursor: default; line-height: 1.35; }
-.it.hd .r { text-align: right; } .it.hd .ctr { text-align: center; }
+.it.hd .ctr { text-align: center; }
+.c.amtc { display: grid; justify-content: center; }   /* 금액 묶음은 칸 가운데, 안에서는 끝자리 맞춤 */
+.c.amtc .amt, .c.amtc small { text-align: right; }
 .c .span4, .c.span4 { grid-column: span 4; text-align: center; font-size: 12px; }
 .c.mk small { display: block; white-space: nowrap; }
 .c em.apr { font-style: normal; color: #db2777; }
