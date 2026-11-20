@@ -79,7 +79,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
           <!-- 왼쪽 작은 칸 — 종류 칩(작게) · 그 아래 주소복사(사건 카드처럼, 2026-11-20 사용자) -->
           <div class="lc" @click.stop>
             <span v-if="r.kind" class="type-mark sm">{{ propTypeName(r.kind) }}</span>
-            <button v-if="r.addr" type="button" :class="['cpy', { done: copiedId === r.id }]" :data-tip="copiedId === r.id ? '복사됨' : '주소복사'" :aria-label="`${r.caseNo} 주소 복사`" @click="copyAddr(r)"><svg v-if="copiedId !== r.id" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg><svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg></button>
+            <button v-if="r.addr" type="button" :class="['cpy', { done: copiedId === r.id }]" :data-tip="copiedId === r.id ? '복사됨' : '지번주소 복사'" :aria-label="`${r.caseNo} 주소 복사`" @click="copyAddr(r)"><svg v-if="copiedId !== r.id" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4.5h8.5A2.5 2.5 0 0 1 19 7v11" /><rect x="5" y="7.5" width="11" height="13" rx="2" /></svg><svg v-else viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>주소</button>
           </div>
           <div class="rc">
           <span class="cno">{{ r.caseNo }}<small v-if="r.pn"> (물번 {{ r.pn }})</small><small v-if="r.court" class="ct">{{ r.court }}</small><span v-if="r.lb?.hot" class="tchip hot cnohot">가격매력</span></span>
@@ -130,8 +130,9 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .addr .meta.top { grid-column: 1 / -1; }   /* 분류 · 관심도는 맨 위 한 줄 — 종류 칩이 사건번호와 같은 줄에 */
 .addr .lc { display: grid; gap: 6px; justify-items: center; padding-top: 1px; }
 .type-mark.sm { height: 20px; padding: 0 7px; border-radius: 10px; font-size: 12px; }   /* 작은 종류 칩 — 사건번호 왼쪽 */
-.cpy { display: inline-grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 1px solid #d5dbe5; border-radius: 6px; background: #fff; color: #4b5563; cursor: pointer; }   /* 낙찰가예측 주소복사와 같은 꼴 */
-.cpy:hover { border-color: #2b6df3; color: #2b6df3; }
+.addr .lc .type-mark.sm, .addr .lc .cpy { box-sizing: border-box; min-width: 52px; height: 20px; }   /* 고정카드처럼 종류 칩 · 주소 칩 같은 크기, 위아래 줄 맞춤 */
+.cpy { display: inline-flex; align-items: center; justify-content: center; gap: 3px; padding: 0 8px; border: 1px solid #c7d7f7; border-radius: 999px; background: #fff; color: #2a5fbf; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }   /* 고정카드 주소 칩(.ih-copy)과 같은 꼴 · 같은 그림 */
+.cpy:hover { border-color: #2b6df3; }
 .cpy.done { border-color: #15803d; color: #15803d; }
 .cno small, .addr .cno small { display: inline; margin-left: 4px; font-size: 12px; font-weight: 400; color: #6b7280; }   /* 물건번호는 사건번호 옆 */
 .ad { display: block; line-height: 1.45; }
@@ -143,7 +144,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .tchip { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 20px; font-size: 12px; border-radius: 4px; padding: 0 6px; line-height: 1; vertical-align: middle; }   /* 글이 상자 가운데 */
 .tchip.hot { background: #fdecec; color: #dc2626; }
 .tchip.reg { background: #eef3fe; color: #2b6df3; }
-.amt .rd { display: inline-block; min-width: 2.4em; text-align: left; font-style: normal; font-size: 12px; font-weight: 400; color: #6b7280; margin-right: 5px; }   /* 금액 옆 작은 차수 — 신건 · 2차 */
+.amt .rd { display: inline-block; text-align: right; font-style: normal; font-size: 12px; font-weight: 400; color: #6b7280; margin-right: 6px; }   /* 금액 옆 작은 차수 — 신건 · 2차, 금액과 글자 한 칸쯤 떨어짐(2026-11-20 사용자) */
 .amt .n { display: inline-block; min-width: 10.5ch; text-align: right; font-variant-numeric: tabular-nums; }   /* 금액 폭을 같게 — 신건 · 2차 글이 세로로 한 줄 */
 .c small.minpy { color: #2b6df3; }
 .c .nx { display: block; font-weight: 400; color: #111827; margin-bottom: 2px; }   /* 날짜 굵기 없음 */
