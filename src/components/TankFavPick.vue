@@ -329,7 +329,7 @@ const register = async (f: TankFav) => {
 .amt .rd { display: inline-block; min-width: 2.4em; text-align: left; font-style: normal; font-size: 12px; font-weight: 400; color: #6b7280; margin-right: 5px; }   /* 금액 옆 작은 차수 — 신건 · 2차(2026-11-20 사용자) */
 .amt .n { display: inline-block; min-width: 10.5ch; text-align: right; font-variant-numeric: tabular-nums; }   /* 금액 폭을 같게 — 신건 · 2차 글이 세로로 한 줄(2026-11-20 사용자) */
 .c small.minpy { color: #2b6df3; }
-.c .nx { display: block; font-weight: 700; color: #111827; margin-bottom: 2px; }
+.c .nx { display: block; font-weight: 400; color: #111827; margin-bottom: 2px; }   /* 날짜 굵기 없음(2026-11-20 사용자) */
 .my > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* 가격매력 · 대비 · 이득 한 줄, 실거래 · 경고 한 줄(2026-11-20 사용자) */
 .my b { font-weight: 700; color: #111827; white-space: nowrap; }
 .my .good { color: #16a34a; }
