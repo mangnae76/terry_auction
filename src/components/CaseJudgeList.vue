@@ -73,7 +73,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 <template>
   <div class="cjl">
     <p v-if="!rows.length && empty" class="cjl-empty">{{ empty }}</p>
-    <div v-if="rows.length" class="it hd" aria-hidden="true"><span>사건 · 주소</span><span class="ctr">감정가 · 최저가</span><span class="ctr">기일 · 유찰</span><span class="ctr">비슷한 물건<br>평당 감정가</span><span class="ctr">비슷한 물건<br>대비</span><span class="ctr">감정가 대비<br>이득</span><span class="ctr">실거래가<br>같은평형</span><span class="ctr">최저가 대비<br>이득</span><span class="ctr">처리</span></div>
+    <div v-if="rows.length" class="it hd" aria-hidden="true"><span>사건 · 주소</span><span class="ctr">감정가 · 최저가</span><span class="ctr">기일 · 유찰</span><span class="ctr">비슷한 물건<br>평당 감정가<br>(중앙값)</span><span class="ctr">비슷한 물건<br>대비</span><span class="ctr">감정가 대비<br>이득</span><span class="ctr">실거래가<br>같은평형</span><span class="ctr">최저가 대비<br>이득</span><span class="ctr">처리</span></div>
     <template v-for="r in rows" :key="r.id">
       <div :class="['it', { hot: r.lb?.hot, on: openId === r.id, click: expandable }]" :role="expandable ? 'button' : undefined" :tabindex="expandable ? 0 : undefined" @click="onRow(r)" @keydown.enter="onRow(r)">
         <div class="addr">
