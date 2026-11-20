@@ -55,14 +55,52 @@ export const useFavRightsAi = (items: Ref<TankFav[]>) => {
   const liveFav = computed(() => mineFav.value.filter((f) => f.status === '진행' || f.status === '예정'));
   const counts = computed(() => { const c: Record<FavAiState, number> = { done: 0, run: 0, wait: 0, limit: 0, closed: 0, before: 0, miss: 0 }; liveFav.value.forEach((f) => { c[stateOf(f)] += 1; }); return c; });
 
+  /* ---------- 안내 — 상태마다 왜 그런지 · 무엇을 하면 되는지(2026-11-20 사용자 '나머지는 왜 안 되는지 가이드가 없다') ---------- */
+  const dayOf = (s: string): Date | null => { const d = (s || '').replace(/\D/g, '').slice(0, 8); return d.length === 8 ? new Date(+d.slice(0, 4), +d.slice(4, 6) - 1, +d.slice(6, 8)) : null; };
+  /** 공개일 = 매각기일 1주 전(민사집행규칙 55조 — 매각물건명세서는 매각기일 1주 전까지 법원에 비치) */
+  const openDayOf = (f: TankFav): Date | null => { const d = dayOf(f.date); if (!d) return null; d.setDate(d.getDate() - 7); return d; };
+  const md = (d: Date) => `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+  const guide = computed(() => {
+    const by = (k: FavAiState) => liveFav.value.filter((f) => stateOf(f) === k);
+    const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+    const out: Array<{ k: FavAiState; n: number; text: string }> = [];
+    const before = by('before');
+    if (before.length) out.push({ k: 'before', n: before.length, text: `아직 법원에 물어보지 않은 물건입니다. 명세서받기를 누르면 마이가 받아 옵니다.` });
+    const closed = by('closed');
+    const opened = closed.filter((f) => { const o = openDayOf(f); return !o || o <= t0; });
+    const nowOpen = opened.filter(askAgain);
+    const today0 = opened.filter((f) => !askAgain(f));
+    const later = closed.filter((f) => !opened.includes(f)).map(openDayOf).filter((d): d is Date => !!d).sort((a, b) => a.getTime() - b.getTime());
+    if (nowOpen.length) out.push({ k: 'closed', n: nowOpen.length, text: `매각기일이 1주 안으로 들어와 이제 공개됐을 수 있습니다. 명세서받기를 다시 눌러 주세요.` });
+    if (today0.length) out.push({ k: 'closed', n: today0.length, text: `공개일이 지났는데 오늘 확인했을 때 아직 명세서가 없었습니다. 내일 명세서받기를 다시 눌러 주세요.` });
+    if (later.length) { const first = later[0]; const same = later.filter((d) => d.getTime() === first.getTime()).length;
+      out.push({ k: 'closed', n: later.length, text: `법원은 매각물건명세서를 매각기일 1주 전에 공개합니다. 가장 빠른 공개는 ${md(first)}(${same.toLocaleString('ko-KR')}건)입니다. 그날 이후 명세서받기를 다시 누르면 받아서 바로 분석합니다.` }); }
+    const miss = by('miss');
+    if (miss.length) out.push({ k: 'miss', n: miss.length, text: `법원 사건검색에서 사건이나 물건번호를 찾지 못했습니다. 사건번호 · 법원을 확인해 주세요.` });
+    const wait = by('wait');
+    if (wait.length && !auto.value) out.push({ k: 'wait', n: wait.length, text: `명세서는 받았고 분석만 남았습니다. 자동분석을 켜면 한 건씩 분석합니다.` });
+    const limit = by('limit');
+    if (limit.length) out.push({ k: 'limit', n: limit.length, text: `AI 사용 한도에 걸려 멈췄습니다. 내일 이 화면을 열면 이어서 하고, 지금이어하기로 바로 다시 할 수 있습니다.` });
+    const done = by('done');
+    if (done.length) out.push({ k: 'done', n: done.length, text: `분석이 끝난 물건은 물건목록에서 그 물건을 열고 권리분석 탭을 보면 됩니다.` });
+    return out;
+  });
+
   /** 법원에서 받을 사건 — 등록한 진행 · 예정 물건 중 매물명세가 없고 받은 PDF 도 없는 것(공개 전은 다시 물어본다) */
-  const toFetch = computed(() => mineFav.value.filter((f) => (f.status === '진행' || f.status === '예정') && !hasSpecDoc(byKey.value.get(f.key)) && heads.value[f.key]?.state !== 'ok' && !byKey.value.get(f.key)?.rightsAi));
+  /** 이미 물어봤는데 없던 사건(공개 전 · 못 찾음)은 다시 묻지 않는다 — 공개일(매각기일 1주 전)이 지났고 오늘 아직 안 물어봤을 때만(2026-11-20 사용자 '쓸데없이 22개를 또 받았다') */
+  const askAgain = (f: TankFav): boolean => {
+    const h = heads.value[f.key]; if (!h) return true;
+    const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+    if (h.at >= t0.getTime()) return false;
+    const o = openDayOf(f); return !o || o.getTime() <= t0.getTime();
+  };
+  const toFetch = computed(() => mineFav.value.filter((f) => (f.status === '진행' || f.status === '예정') && !hasSpecDoc(byKey.value.get(f.key)) && heads.value[f.key]?.state !== 'ok' && !byKey.value.get(f.key)?.rightsAi && askAgain(f)));
   /** 명세서받기 진행 — sending(보내는 중) · sentId(보낸 명령 id, 마이가 받으면 상태 lastCmd 가 같아진다) */
   const sending = ref(false);
   const sentId = ref('');
   const fetchSpecs = async () => {
     const cases = toFetch.value.slice(0, 30).map((f) => { const m = f.key.match(/^(\d{4})-(\d+)(?:\((\d+)\))?$/); return m ? `${f.court}|${m[1]}타경${m[2]}|${m[3] ?? ''}|${f.key}` : ''; }).filter(Boolean);
-    if (!cases.length) { note.value = '법원에서 받을 사건이 없습니다(등록한 진행 물건 모두 매물명세가 있습니다).'; return; }
+    if (!cases.length) { note.value = '지금 법원에 물어볼 사건이 없습니다. 공개 전 물건은 공개일이 지나면 다시 누를 수 있습니다.'; return; }
     sending.value = true; note.value = ''; sentId.value = '';
     try { sentId.value = await sendAgentCommand('', 'spec', { cases }); }
     catch { note.value = '명령을 보내지 못했습니다. 다시 해 주세요.'; }
@@ -116,5 +154,5 @@ export const useFavRightsAi = (items: Ref<TankFav[]>) => {
   let t: ReturnType<typeof setTimeout> | null = null;
   watch([() => mineFav.value.map((f) => f.key).join(','), heads], () => { if (t) clearTimeout(t); t = setTimeout(() => { void pump(); }, 1500); });
 
-  return { liveFav, heads, reloadHeads, counts, stateOf, toFetch, fetchSpecs, sending, sentId, auto, setAuto, limited, resume, runId, note, pump };
+  return { liveFav, heads, reloadHeads, counts, stateOf, toFetch, fetchSpecs, sending, sentId, guide, auto, setAuto, limited, resume, runId, note, pump };
 };

@@ -141,7 +141,7 @@ const specLine = computed(() => {
   if (st === 'run' || st === 'said') return agent.value?.message ?? '';
   return '';
 });
-const specOff = computed(() => (!agentOn.value ? '마이가 꺼져 있어 누를 수 없습니다' : agent.value?.paused ? '마이가 대기 중입니다 — 마이 상자의 실행을 먼저 눌러 주세요' : agent.value?.busy && specStep.value === 'idle' ? '마이가 다른 일을 하는 중입니다 — 끝나면 누를 수 있습니다' : !ai.toFetch.value.length ? '받을 사건이 없습니다' : ''));
+const specOff = computed(() => (!agentOn.value ? '마이가 꺼져 있어 누를 수 없습니다' : agent.value?.paused ? '마이가 대기 중입니다 — 마이 상자의 실행을 먼저 눌러 주세요' : agent.value?.busy && specStep.value === 'idle' ? '마이가 다른 일을 하는 중입니다 — 끝나면 누를 수 있습니다' : !ai.toFetch.value.length ? '지금 받을 사건이 없습니다 — 공개 전 물건은 공개일(매각기일 1주 전)이 지나면 다시 누를 수 있습니다' : ''));
 const { sale2 } = useSale2();
 /** '가격매력' 정렬 = 최저가 낙찰 차익률 큰 순(모르면 아래) */
 const shown = computed(() => favSort(items.value.filter((f) => favPass(f, q)), sortBy.value, (f) => { const j = lbJudge(lbByKey.value.get(f.key)?.est ?? null, f.min, sale2.value[f.key]); return j.gap != null ? -j.gap : null; }));   /* 최저가 낙찰 차익 큰 순 — 저가매수와 같게 */
@@ -214,6 +214,10 @@ const favRows = computed<JudgeRow[]>(() => shown.value.map((f) => {
       </div>
       <p v-if="specLine" :class="['tfp-note', 'spec', { live: specStep !== 'said' }]">{{ specLine }}<template v-if="specStep === 'run' && agent?.prog"> · {{ (agent.prog.i + 1).toLocaleString('ko-KR') }}/{{ agent.prog.n.toLocaleString('ko-KR') }}</template></p>
       <p v-else-if="ai.note.value" class="tfp-note">{{ ai.note.value }}</p>
+      <!-- 상태별 안내 — 왜 그런지 · 무엇을 하면 되는지 -->
+      <ul v-if="ai.guide.value.length" class="tfp-guide">
+        <li v-for="(g, i) in ai.guide.value" :key="i"><span :class="['q', g.k]">{{ FAV_AI_LABEL[g.k] }} <b>{{ g.n.toLocaleString('ko-KR') }}</b></span><span class="t">{{ g.text }}</span></li>
+      </ul>
 
       <div class="tfp-flt">
         <label class="fr"><span class="fl">분류</span><select v-model="q.cat" aria-label="분류"><option value="">-전체-</option><option v-for="c in catOpts" :key="c.v" :value="c.v">{{ c.t }}</option></select></label>
@@ -296,6 +300,14 @@ const favRows = computed<JudgeRow[]>(() => shown.value.map((f) => {
 .tfp-ai .spin { width: 10px; height: 10px; border: 2px solid #b9cdf8; border-top-color: #2b6df3; border-radius: 50%; animation: tfp-spin .8s linear infinite; }
 @keyframes tfp-spin { to { transform: rotate(360deg); } }
 .tfp-note.spec.live { color: #2b6df3; }
+.tfp-guide { list-style: none; margin: -4px 0 0; padding: 8px 10px; display: grid; gap: 6px; background: #f6f8fb; border-radius: 8px; font-size: 12px; color: #4b5563; }
+.tfp-guide li { display: grid; grid-template-columns: 84px minmax(0, 1fr); align-items: baseline; gap: 8px; }
+.tfp-guide .q { justify-self: start; border-radius: 4px; padding: 1px 7px; line-height: 18px; white-space: nowrap; }
+.tfp-guide .q b { font-weight: 700; }
+.tfp-guide .q.done { background: #e7f6ed; color: #16a34a; }
+.tfp-guide .q.wait { background: #fff; color: #111827; border: 1px solid #e3e7ee; }
+.tfp-guide .q.limit { background: #fdecec; color: #dc2626; }
+.tfp-guide .q.closed, .tfp-guide .q.before, .tfp-guide .q.miss { background: #fff; color: #6b7280; border: 1px solid #e3e7ee; }
 .tfp-flt { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 18px; background: #f6f8fb; border: 1px solid #e3e7ee; border-radius: 10px; padding: 12px 14px; }
 .fr { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .fl { width: 46px; flex: none; font-size: 13px; font-weight: 700; color: #111827; }
