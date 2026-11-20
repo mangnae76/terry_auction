@@ -12,6 +12,7 @@ import { kakaoBuildingName } from '../services/addressSearch';
 import { lookupAddress } from '../services/addressLookup';
 import { useLowBuyData } from '../composables/useLowBuyData';
 import { propTypeName } from '../utils/propertyType';
+import { buildingAgeText } from '../utils/buildingAge';
 import { LB_WARN, type LowBuyRow } from '../services/lowBuy';
 import { FAV_FILTER0, FAV_PY, FAV_STATUS, favCaseNo, favCourtName, favPass, favPlace, favRound, favSort, favStatusCounts, type FavFilter, type FavSort } from '../services/tankFav';
 
@@ -221,7 +222,7 @@ const register = async (f: TankFav) => {
               <div class="meta"><span v-if="f.kind" class="type-mark">{{ propTypeName(f.kind) }}</span><span v-if="f.cat" class="ctg">{{ f.cat }}</span><span v-if="f.pri" class="star">{{ stars(f.pri) }}</span></div>
               <span class="cno">{{ caseText(f).caseNo }}<small v-if="caseText(f).pn"> (물번 {{ caseText(f).pn }})</small><small class="ct">{{ courtShort(f.court) }}{{ f.dept ? ` ${f.dept}` : '' }}</small></span>   <!-- 법원 계는 사건번호 오른쪽(2026-11-20 사용자) -->
               <span class="ad">{{ addrOf(f) }}</span>
-              <small>전용 {{ f.bArea > 0 ? `${f.bArea.toFixed(2)}㎡ / ${pyOf(f.bArea)}평` : '—' }}<template v-if="lbByKey.get(f.key)?.year"> · {{ lbByKey.get(f.key)?.year }}년식</template><template v-if="lbByKey.get(f.key)?.elev != null"> · 엘베 {{ lbByKey.get(f.key)?.elev ? '있음' : '없음' }}</template></small>
+              <small>전용 {{ f.bArea > 0 ? `${f.bArea.toFixed(2)}㎡ / ${pyOf(f.bArea)}평` : '—' }}<template v-if="lbByKey.get(f.key)?.year"> · {{ lbByKey.get(f.key)?.year }}년식 / {{ buildingAgeText(lbByKey.get(f.key)?.year) }}</template><template v-if="lbByKey.get(f.key)?.elev != null"> · 엘베 {{ lbByKey.get(f.key)?.elev ? '있음' : '없음' }}</template></small>
             </div>
             <div class="c r"><span class="amt"><em class="rd">신건</em><span class="n">{{ f.appr ? won(f.appr) : '미확정' }}</span></span><small>{{ f.appr && f.bArea ? `평당 ${man(f.appr / (f.bArea / FAV_PY))}` : '' }}</small><span class="amt min"><em class="rd">{{ f.fails + 1 }}차</em><span class="n">{{ f.min ? won(f.min) : '—' }}</span></span><small class="minpy">{{ f.min && f.bArea ? `평당 ${man(f.min / (f.bArea / FAV_PY))}` : '' }}</small></div>   <!-- 최저가 평당도(2026-11-20 사용자). 이름표 뺌 — 옆 유찰 칸에 차수 · % 가 있어서(2026-11-20 사용자) -->
             <div class="c ctr"><span class="nx">{{ d8(f.date) }}</span>{{ favRound(f).label }}<small v-if="favRound(f).pct">({{ favRound(f).pct }})</small><small v-if="f.status !== '진행'">{{ f.state || f.status }}</small></div>   <!-- 위 다음 기일, 그 아래 유찰 n회(%). 지난 유찰 날은 뺌(2026-11-20 사용자) -->
