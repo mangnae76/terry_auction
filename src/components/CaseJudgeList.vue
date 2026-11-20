@@ -4,7 +4,7 @@
  * 줄 꼴 · 칸 폭 · 색은 이 한 곳 — 탭마다 다른 것(분류 · 관심도 · 펼침)은 속성으로 */
 import { ref, watch } from 'vue';
 import { useOfficialPrice } from '../composables/useOfficialPrice';
-import { apprToOfficial, eokText } from '../services/officialPrice';
+import { eokText } from '../services/officialPrice';
 import { useSale2 } from '../composables/useSale2';
 import { buildingAgeText } from '../utils/buildingAge';
 import { propTypeName } from '../utils/propertyType';
