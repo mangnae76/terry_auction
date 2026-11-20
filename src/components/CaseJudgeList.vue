@@ -58,10 +58,10 @@ const copyAddr = async (r: JudgeRow) => {
   catch { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 그만 */ } ta.remove(); }
   copiedId.value = r.id; if (copyTimer) clearTimeout(copyTimer); copyTimer = setTimeout(() => { copiedId.value = ''; }, 1500);
 };
-/* ---------- 공시가(공동주택가격) — 감정가가 공시가의 몇 %인지(2026-11-20 사용자). 진행 중 사건만, 호실이 맞을 때만 ---------- */
+/* ---------- 공시가(공동주택가격) — 감정가가 공시가의 몇 %인지(2026-11-20 사용자). 모든 상태(매각 · 종국도 — 2026-11-20 사용자), 호실이 맞을 때만 ---------- */
 const { official, want: wantOfficial } = useOfficialPrice();
-watch(() => props.rows.filter((r) => r.status === '진행').map((r) => `${r.key}|${r.addr}|${r.area}`).join(','), () => {
-  void wantOfficial(props.rows.filter((r) => r.status === '진행').map((r) => ({ key: r.key, addr: r.addr, area: r.area })));
+watch(() => props.rows.map((r) => `${r.key}|${r.addr}|${r.area}`).join(','), () => {
+  void wantOfficial(props.rows.map((r) => ({ key: r.key, addr: r.addr, area: r.area })));
 }, { immediate: true });
 const offOf = (r: JudgeRow) => official.value[r.key] ?? null;
 /** 허그 전세보증 기준 전세가 — 공시가 × 126%(주택가격 공시가 140% × 전세가율 90%) */
@@ -120,7 +120,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
         </div>
         <div class="c ctr amtc"><span class="amt"><em class="rd">신건</em><span class="n">{{ r.appr ? won(r.appr) : '미확정' }}</span></span><small>{{ r.appr && r.area ? `평당 ${man(r.appr / (r.area / PY))}` : '' }}</small><span class="amt min"><em class="rd">{{ r.fails + 1 }}차</em><span class="n">{{ r.min ? won(r.min) : '—' }}</span></span><small class="minpy">{{ r.min && r.area ? `평당 ${man(r.min / (r.area / PY))}` : '' }}</small></div>
         <!-- 허그 전세가 = 공시가 × 126% · 평당, · 허그 전세가 − 2차 최저가: 높으면 '플피 +n'(초록), 낮으면 '마피 −n'(빨강), 감정 % 줄은 뺌(2026-11-20 사용자) (2026-11-20 사용자) -->
-        <div class="c ctr hug"><template v-if="offOf(r)"><b>{{ man(hugJeonse(r)!) }}</b><small v-if="r.area">평당 {{ man(hugJeonse(r)! / (r.area / PY)) }}</small><small :class="hugJeonse(r)! >= r.min ? 'up' : 'down'">{{ hugJeonse(r)! >= r.min ? `플피 +${man(hugJeonse(r)! - r.min)}` : `마피 −${man(r.min - hugJeonse(r)!)}` }}</small><small class="gongsi">공시 {{ man(offOf(r)!.price) }}</small></template><span v-else class="mu">—</span></div>
+        <div class="c ctr hug"><template v-if="offOf(r)"><b>{{ man(hugJeonse(r)!) }}</b><small v-if="r.area">평당 {{ man(hugJeonse(r)! / (r.area / PY)) }}</small><small v-if="r.min > 0" :class="hugJeonse(r)! >= r.min ? 'up' : 'down'">{{ hugJeonse(r)! >= r.min ? `플피 +${man(hugJeonse(r)! - r.min)}` : `마피 −${man(r.min - hugJeonse(r)!)}` }}</small><small class="gongsi">공시 {{ man(offOf(r)!.price) }}</small></template><span v-else class="mu">—</span></div>
         <div class="c ctr"><span class="nx">{{ d8(r.date) }}</span>{{ favRound(r).label }}<small v-if="favRound(r).pct">({{ favRound(r).pct }})</small><small v-if="r.status !== '진행'">{{ r.stateText }}</small></div>
         <template v-if="judged(r)">
           <!-- 예상 매도가 1 — 계산값, 체크박스는 금액 왼쪽 -->
