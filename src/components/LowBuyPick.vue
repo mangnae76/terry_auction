@@ -3,7 +3,7 @@
  * 시안(2026-11-20 사용자 '일단 적용해봐') 배치 그대로. 계산은 services/lowBuy(순수). 자료 — 마이 사건 차트(hits) · 건축물대장(연식 · 엘베 · 이름) · 국토부 실거래(웹 캐시) */
 import { computed, ref } from 'vue';
 import { buildingAgeText } from '../utils/buildingAge';
-import { LB_HOT, LB_WARN, LB_AREA_TOL, LB_YEAR_TOL, type LowBuyRow } from '../services/lowBuy';
+import { LB_HOT, LB_WARN, LB_AREA_PCT, LB_MIN_PEERS, type LowBuyRow } from '../services/lowBuy';
 import { useLowBuyData } from '../composables/useLowBuyData';
 
 /** 동 — 낙찰가예측의 동선택(이 브라우저에 남긴 값)을 그대로, 없으면 검암동 */
@@ -11,7 +11,9 @@ const dong = (() => { try { return (JSON.parse(localStorage.getItem('bidtest.v1'
 const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const today = todayIso();
 
-const { msg, hits, liveHits, factsDone, trades, all, tradeMsg, tradeSpan } = useLowBuyData(dong, today);
+/** 뺀 까닭별 건수 — '엘베 있는 건물 30 · 지하 · 반지하 4 · 엘베 없는 5층 이상 6' */
+const skipText = computed(() => { const c = new Map<string, number>(); skipWhy.value.forEach((w) => c.set(w, (c.get(w) ?? 0) + 1)); return [...c].map(([w, n]) => `${w} ${n.toLocaleString('ko-KR')}`).join(' · '); });
+const { msg, hits, liveHits, factsDone, trades, all, tradeMsg, tradeSpan, skipKeys, skipWhy } = useLowBuyData(dong, today);
 /** 후보 — 1회 유찰이고 비교할 비슷한 물건이 있는 것 */
 const cand = computed(() => all.value.filter((r) => r.fails === 1 && r.vs != null));
 const sortDir = ref<1 | -1>(1);
@@ -39,9 +41,9 @@ const mktWarn = (r: LowBuyRow) => !!r.mkt && r.mkt.price < r.appr * LB_WARN;
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#213366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z" /><circle cx="7.5" cy="7.5" r="1.5" /></svg>
         <h2>저가매수 1회 유찰 가격매력</h2>
       </header>
-      <p class="lbp-desc"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4Z" /></svg>{{ dong }} · 진행 중 {{ liveHits.length.toLocaleString('ko-KR') }}건과 비교 · 1회 유찰 {{ cand.length.toLocaleString('ko-KR') }}건 · 비슷한 물건 = 같은 종류(빌라끼리 · 아파트끼리) · 전용 ±{{ LB_AREA_TOL }}㎡ · 연식 ±{{ LB_YEAR_TOL }}년 · 가격매력 = 평당 감정가가 비슷한 물건보다 {{ Math.abs(LB_HOT * 100) }}% 이상 낮음({{ hotN }}건)</p>
+      <p class="lbp-desc"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4Z" /></svg>{{ dong }} · 진행 중 {{ liveHits.length.toLocaleString('ko-KR') }}건과 비교 · 1회 유찰 {{ cand.length.toLocaleString('ko-KR') }}건<template v-if="skipKeys.size"> · 뺀 물건 {{ skipText }}</template> · 비슷한 물건 = 같은 종류(빌라끼리 · 아파트끼리) · 전용 ±{{ LB_AREA_PCT }}% · {{ LB_MIN_PEERS }}건 이상 · 가격매력 = 평당 감정가가 비슷한 물건보다 {{ Math.abs(LB_HOT * 100) }}% 이상 낮음({{ hotN }}건)</p>
       <div class="lbp-how">
-        <div><b>평당 감정가 비교</b>같은 동네 비슷한 물건(같은 종류 · 전용 · 연식)의 평당 감정가 가운데값과 비교합니다. 영상의 '19평인데 1억 4천'을 찾는 칸입니다.</div>
+        <div><b>평당 감정가 비교</b>같은 동네 비슷한 물건(같은 종류 · 전용면적 ±5%)의 평당 감정가 가운데값과 비교합니다. 영상의 '19평인데 1억 4천'을 찾는 칸입니다.</div>
         <div><b>면적 대비 이득</b>비슷한 물건 평당 감정가 × 이 물건 평수 − 이 물건 감정가. 같은 면적이면 감정이 이만큼 싸게 잡혔다는 뜻입니다.</div>
         <div><b>실거래로 한 번 더</b>같은 건물 같은 평형 매매 실거래가가 있으면 건수 · 날짜와 함께 보여 줍니다. 실거래가 감정가보다 10% 넘게 낮으면 빨간 경고.</div>
       </div>

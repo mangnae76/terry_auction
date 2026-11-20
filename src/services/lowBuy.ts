@@ -6,16 +6,26 @@
 export const LB_PY = 3.305785;
 /** 끝난 사건 — 진행 중 비교 무리에서 뺀다 */
 export const LB_DONE = /낙찰|매각|취하|기각|종결|정지/;
-/** 비슷한 물건 — 전용 ±5㎡ · 연식 ±5년, 3건 이상일 때만 가운데값 */
-export const LB_AREA_TOL = 5;
-export const LB_YEAR_TOL = 5;
-export const LB_MIN_PEERS = 3;
+/** 비슷한 물건 = 같은 동 · 같은 종류 · 전용면적 ±5%(시세분석 유사도 90% 와 같은 폭). 연식 · 층 · 엘베로는 거르지 않는다 — 영상처럼 면적만, 꼬이지 않게(2026-11-20 사용자) */
+export const LB_AREA_PCT = 5;
+/** 비슷한 물건이 이만큼 있어야 기준값을 낸다(모자라면 '비교 부족') */
+export const LB_MIN_PEERS = 5;
 /** 비교 무리 종류 — 빌라(다세대 · 연립 · 도시형생활주택)는 하나로, 아파트는 아파트끼리, 그 밖은 그 밖끼리(2026-11-20 사용자) */
 export const lbKindGroup = (kind: string): 'villa' | 'apt' | 'etc' => (/아파트/.test(kind) ? 'apt' : /다세대|연립|도시형|도생|빌라/.test(kind) ? 'villa' : 'etc');
 /** 가격매력 — 평당 감정가가 비슷한 물건보다 10% 이상 낮음 */
 export const LB_HOT = -0.1;
 /** 실거래가 감정가의 90% 아래면 경고 */
 export const LB_WARN = 0.9;
+
+/** 주소에서 층(지하는 음수, 못 읽으면 null) */
+export const lbFloorOf = (addr: string): number | null => { const m = /(지하|B)?\s*(\d+)층/.exec(addr); return m ? (m[1] ? -Number(m[2]) : Number(m[2])) : null; };
+/** 지하 · 반지하(지층 · B1 포함) */
+export const lbBasement = (addr: string): boolean => /반지하|지하|지층|\bB\d+\b|비\d+층/.test(addr.replace(/지하철|지하주차/g, '')) || (lbFloorOf(addr) ?? 0) < 0;
+/** 저가매수에서 빼는 까닭 — 지하 · 반지하, 엘베 없는 5층 이상(사지 않음). 후보에서도 비교 무리에서도 뺀다(2026-11-20 사용자). '' = 안 뺌.
+ *  엘베 있는 건물은 빼지 않는다 — 칸에 엘베 있음으로 보이고 판단은 사람이(같은 날 사용자) */
+export const lbSkipWhy = (c: Pick<LowBuyCase, 'addr' | 'elev'>): '' | '지하 · 반지하' | '엘베 없는 5층 이상' =>
+  lbBasement(c.addr) ? '지하 · 반지하' : c.elev === false && (lbFloorOf(c.addr) ?? 0) >= 5 ? '엘베 없는 5층 이상' : '';
+export const lbSkip = (c: Pick<LowBuyCase, 'addr' | 'elev'>): boolean => lbSkipWhy(c) !== '';
 
 export type LowBuyCase = {
   key: string; addr: string; kind: string; area: number; appr: number; min: number; fails: number; next: string; state: string;
@@ -56,10 +66,10 @@ export const sameUnitMkt = (trades: LowBuyTrade[], c: Pick<LowBuyCase, 'lot' | '
 
 /** 진행 중 사건 전부 → 줄마다 비슷한 물건 비교. trades 가 null 이면 실거래 칸만 비운다 */
 export const lowBuyRows = (live: LowBuyCase[], trades: LowBuyTrade[] | null, today: string): LowBuyRow[] => {
-  const base = live.map((c) => { const py = c.area / LB_PY; return { ...c, py, ppy: c.appr / py }; });
+  const base = live.filter((c) => !lbSkip(c)).map((c) => { const py = c.area / LB_PY; return { ...c, py, ppy: c.appr / py }; });
   return base.map((r) => {
     const g = lbKindGroup(r.kind);
-    const peers = base.filter((x) => x !== r && lbKindGroup(x.kind) === g && Math.abs(x.area - r.area) <= LB_AREA_TOL && (r.year == null || x.year == null || Math.abs(x.year - r.year) <= LB_YEAR_TOL));
+    const peers = base.filter((x) => x !== r && lbKindGroup(x.kind) === g && Math.abs(x.area - r.area) <= r.area * LB_AREA_PCT / 100);
     const peerPpy = peers.length >= LB_MIN_PEERS ? median(peers.map((x) => x.ppy)) : null;
     const vs = peerPpy ? r.ppy / peerPpy - 1 : null;
     return { ...r, peerN: peers.length, peerPpy, vs, gain: peerPpy ? peerPpy * r.py - r.appr : null, hot: vs != null && vs <= LB_HOT, mkt: trades ? sameUnitMkt(trades, r, today) : null };

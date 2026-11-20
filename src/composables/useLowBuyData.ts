@@ -10,7 +10,7 @@ import { lotOf } from '../services/bidPredict';
 import { addressWithName, buildingNameOf } from '../utils/addressName';
 import { kakaoBuildingName } from '../services/addressSearch';
 import { lookupAddress } from '../services/addressLookup';
-import { isLiveCase, lowBuyRows, type LowBuyCase, type LowBuyTrade } from '../services/lowBuy';
+import { isLiveCase, lowBuyRows, type LowBuyCase, type LowBuyTrade, lbSkip, lbSkipWhy } from '../services/lowBuy';
 
 /** auto = false 면 onMounted 를 걸지 않는다 — 화면이 뜬 뒤 동을 알게 되는 곳(관심물건)은 load() 를 직접 부른다 */
 export const useLowBuyData = (dong: string, today: string, auto = true) => {
@@ -85,5 +85,9 @@ export const useLowBuyData = (dong: string, today: string, auto = true) => {
       year: f?.year ?? null, elev: f ? f.elevator > 0 : null, lot };
   }));
   const all = computed(() => (factsDone.value ? lowBuyRows(cases.value, trades.value, today) : []));
-  return { msg, hits, liveHits, factsDone, trades, tradeMsg, tradeSpan, all, load };
+  /** 엘베 없는 5층 이상이라 뺀 사건(2026-11-20 사용자) */
+  const skipKeys = computed(() => new Set(factsDone.value ? cases.value.filter(lbSkip).map((c) => c.key) : []));
+  /** 뺀 까닭별 건수 · 사건마다 까닭 */
+  const skipWhy = computed(() => new Map(factsDone.value ? cases.value.map((c) => [c.key, lbSkipWhy(c)] as const).filter(([, w]) => w) : []));
+  return { msg, hits, liveHits, factsDone, trades, tradeMsg, tradeSpan, all, skipKeys, skipWhy, load };
 };

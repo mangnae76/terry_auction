@@ -84,6 +84,9 @@ const fillLowBuy = async () => {
 };
 const lbByKey = computed(() => { const m = new Map<string, LowBuyRow>(); Object.values(lowBuy).forEach((x) => (x.all as unknown as LowBuyRow[]).forEach((r) => m.set(r.key, r))); return m; });
 /** 같은 동 비교 자료가 다 왔는지 — 다 왔는데 줄이 없으면 마이 조회수 수집에 없는 사건 */
+/** 저가매수 계산에서 뺀 사건과 그 까닭(지하 · 반지하 · 엘베 없는 5층 이상 · 엘베 있는 건물) */
+const lbSkipWhyOf = (f: TankFav) => (lowBuy[favPlace(f).emd]?.skipWhy as unknown as Map<string, string> | undefined)?.get(f.key) ?? '';
+const lbSkipped = (f: TankFav) => !!(lowBuy[favPlace(f).emd]?.skipKeys as unknown as Set<string> | undefined)?.has(f.key);
 const lbDone = (f: TankFav) => { const x = lowBuy[favPlace(f).emd]; return !!x && (!!(x.factsDone as unknown as boolean) || /없습니다|읽지 못/.test(String((x.msg as unknown as string) ?? ''))); };
 
 /* ---------- 건물명 — 주소에 이름이 없으면 카카오 → 공동주택가격 단지명(낙찰가예측 · 저가매수와 같은 길) ---------- */
@@ -237,7 +240,7 @@ const register = async (f: TankFav) => {
                 <span v-else class="mu">—</span>
               </div>
             </template>
-            <div v-else class="c span4 mu">{{ f.status !== '진행' ? '—' : lbByKey.get(f.key) ? '비교할 비슷한 물건 없음' : lbDone(f) ? '같은 동 비교 자료 없음' : '비교 자료 불러오는 중' }}</div>
+            <div v-else class="c span4 mu">{{ f.status !== '진행' ? '—' : lbSkipped(f) ? `${lbSkipWhyOf(f)} — 저가매수 계산에서 뺌` : lbByKey.get(f.key) ? `비교 부족 · 비슷한 물건 ${lbByKey.get(f.key)!.peerN}건(5건 이상일 때 계산)` : lbDone(f) ? '같은 동 비교 자료 없음' : '비교 자료 불러오는 중' }}</div>
             <div class="act" @click.stop>
               <span v-if="mine.has(f.key)" class="tchip reg">사건등록됨</span>
               <button v-else type="button" class="tfp-btn" :disabled="!!busyKey" @click="register(f)">{{ busyKey === f.key ? '등록 중' : '사건등록하기' }}</button>
