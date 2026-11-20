@@ -49,6 +49,8 @@ export type LowBuyRow = LowBuyCase & {
   vs: number | null;
   /** 비슷한 물건 평당 감정가 × 이 물건 평수 − 이 물건 감정가 */
   gain: number | null;
+  /** 비슷한 물건 평당 감정가 × 이 물건 평수 − 지금 최저가 — 최저가로 사면 비슷한 물건 감정 수준보다 얼마 싼가(2026-11-20 사용자) */
+  gainMin: number | null;
   hot: boolean;
   mkt: LowBuyMkt | null;
 };
@@ -77,6 +79,6 @@ export const lowBuyRows = (live: LowBuyCase[], trades: LowBuyTrade[] | null, tod
     const peers = base.filter((x) => x !== r && lbKindGroup(x.kind) === g && Math.abs(x.area - r.area) <= r.area * LB_AREA_PCT / 100);
     const peerPpy = peers.length >= LB_MIN_PEERS ? median(peers.map((x) => x.ppy)) : null;
     const vs = peerPpy ? r.ppy / peerPpy - 1 : null;
-    return { ...r, peerN: peers.length, peerPpy, vs, gain: peerPpy ? peerPpy * r.py - r.appr : null, hot: vs != null && vs <= LB_HOT, mkt: trades ? sameUnitMkt(trades, r, today) : null };
+    return { ...r, peerN: peers.length, peerPpy, vs, gain: peerPpy ? peerPpy * r.py - r.appr : null, gainMin: peerPpy && r.min > 0 ? peerPpy * r.py - r.min : null, hot: vs != null && vs <= LB_HOT, mkt: trades ? sameUnitMkt(trades, r, today) : null };
   });
 };

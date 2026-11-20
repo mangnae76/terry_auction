@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /* 사건 판단 표 — 물건등록 › 관심물건과 매각분석 › 저가매수가 같이 쓰는 한 표(2026-11-20 사용자 '두 표가 달라야 될 이유가 없다').
- * 머리 · 사건 · 주소 | 감정가 · 최저가 | 기일 · 유찰 | 비슷한 물건 평당 감정가 | 대비 | 면적 대비 이득 | 실거래가 같은평형 | 처리.
+ * 머리 · 사건 · 주소 | 감정가 · 최저가 | 기일 · 유찰 | 비슷한 물건 평당 감정가 | 대비 | 감정가 대비 이득 | 실거래가 같은평형 | 최저가 대비 이득 | 처리.
  * 줄 꼴 · 칸 폭 · 색은 이 한 곳 — 탭마다 다른 것(분류 · 관심도 · 펼침)은 속성으로 */
 import { buildingAgeText } from '../utils/buildingAge';
 import { propTypeName } from '../utils/propertyType';
@@ -61,7 +61,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 <template>
   <div class="cjl">
     <p v-if="!rows.length && empty" class="cjl-empty">{{ empty }}</p>
-    <div v-if="rows.length" class="it hd" aria-hidden="true"><span>사건 · 주소</span><span class="ctr">감정가 · 최저가</span><span class="ctr">기일 · 유찰</span><span class="ctr">비슷한 물건<br>평당 감정가</span><span class="ctr">비슷한 물건<br>대비</span><span class="ctr">면적 대비<br>이득</span><span class="ctr">실거래가<br>같은평형</span><span class="ctr">처리</span></div>
+    <div v-if="rows.length" class="it hd" aria-hidden="true"><span>사건 · 주소</span><span class="ctr">감정가 · 최저가</span><span class="ctr">기일 · 유찰</span><span class="ctr">비슷한 물건<br>평당 감정가</span><span class="ctr">비슷한 물건<br>대비</span><span class="ctr">감정가 대비<br>이득</span><span class="ctr">실거래가<br>같은평형</span><span class="ctr">최저가 대비<br>이득</span><span class="ctr">처리</span></div>
     <template v-for="r in rows" :key="r.id">
       <div :class="['it', { hot: r.lb?.hot, on: openId === r.id, click: expandable }]" :role="expandable ? 'button' : undefined" :tabindex="expandable ? 0 : undefined" @click="onRow(r)" @keydown.enter="onRow(r)">
         <div class="addr">
@@ -80,8 +80,9 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
             <template v-if="r.lb!.mkt"><b>{{ won(r.lb!.mkt!.price) }}</b><small v-if="lbMktRel(r.lb!)" :class="lbMktRel(r.lb!) === '높음' ? 'rise' : lbMktRel(r.lb!) === '낮음' ? 'fall' : ''">{{ RELMARK[lbMktRel(r.lb!)] }}실거래가가 감정가보다 {{ lbMktRel(r.lb!) }}</small><small>{{ r.lb!.mkt!.n }}건 · {{ d8(r.lb!.mkt!.last) }} · <em class="apr">감정가 {{ Math.round(r.lb!.appr / r.lb!.mkt!.price * 100) }}%</em></small></template>
             <span v-else class="mu">—</span>
           </div>
+          <div class="c ctr"><b v-if="r.lb!.gainMin != null" :class="r.lb!.gainMin > 0 ? 'good' : 'bad'">{{ gainText(r.lb!.gainMin) }}</b><span v-else class="mu">—</span></div>   <!-- 감정가 대비 → 실거래 → 최저가 대비 순으로 읽히게(2026-11-20 사용자) -->
         </template>
-        <div v-else class="c span4 mu">{{ r.judgeMsg }}</div>
+        <div v-else class="c span5 mu">{{ r.judgeMsg }}</div>
         <div class="act" @click.stop>
           <span v-if="r.registered" class="tchip reg">사건등록됨</span>
           <button v-else type="button" class="tfp-btn" :disabled="!!busyId" @click="emit('register', r)">{{ busyId === r.id ? '등록 중' : '사건등록하기' }}</button>
@@ -97,7 +98,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 <style scoped>
 .cjl { display: grid; border: 1px solid #e3e7ee; border-radius: 8px; overflow: hidden; background: #fff; }
 .cjl-empty { margin: 0; padding: 28px 12px; text-align: center; font-size: 13px; color: #6b7280; }
-.it { display: grid; grid-template-columns: minmax(0, 1fr) 140px 96px 96px 96px 96px 160px 112px;   /* 숫자 칸 폭 고르게 · 머리 · 값 모두 가운데(2026-11-20 사용자) */ gap: 12px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; font-size: 13px; color: #111827; }
+.it { display: grid; grid-template-columns: minmax(0, 1fr) 136px 88px 88px 80px 88px 156px 88px 104px;   /* 숫자 칸 폭 고르게 · 머리 · 값 모두 가운데(2026-11-20 사용자) */ gap: 12px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; font-size: 13px; color: #111827; }
 .it.click { cursor: pointer; }
 .it:last-child { border-bottom: 0; }
 .it.hot { background: #fff5f5; }
@@ -127,7 +128,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .it.hd .ctr { text-align: center; }
 .c.amtc { display: grid; justify-content: center; }   /* 금액 묶음은 칸 가운데, 안에서는 끝자리 맞춤 */
 .c.amtc .amt, .c.amtc small { text-align: right; }
-.c.span4 { grid-column: span 4; text-align: center; font-size: 12px; }
+.c.span5 { grid-column: span 5; text-align: center; font-size: 12px; }
 .c.mk small { display: block; white-space: nowrap; }
 .c em.apr { font-style: normal; color: #db2777; }
 .cno .cnohot { margin-left: 8px; vertical-align: 2px; }
