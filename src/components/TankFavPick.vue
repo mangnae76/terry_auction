@@ -14,7 +14,7 @@ import { useLowBuyData } from '../composables/useLowBuyData';
 import { isJibunAddr, toJibunAddr } from '../services/roadToJibun';
 import { propTypeName } from '../utils/propertyType';
 import { buildingAgeText } from '../utils/buildingAge';
-import { lbMktRel, type LowBuyRow } from '../services/lowBuy';
+import { LB_REL_MARK as RELMARK, lbMktRel, type LowBuyRow } from '../services/lowBuy';
 import { FAV_FILTER0, FAV_PY, FAV_STATUS, favCaseNo, favCourtName, favPass, favPlace, favRound, favSort, favStatusCounts, type FavFilter, type FavSort } from '../services/tankFav';
 
 const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -245,7 +245,7 @@ const register = async (f: TankFav) => {
               <div class="c ctr"><b :class="lbByKey.get(f.key)!.vs! < 0 ? 'good' : 'bad'">{{ pctSigned(lbByKey.get(f.key)!.vs!) }}</b></div>
               <div class="c ctr"><b :class="lbByKey.get(f.key)!.gain! > 0 ? 'good' : 'bad'">{{ gainText(lbByKey.get(f.key)!.gain!) }}</b></div>
               <div class="c ctr mk">
-                <template v-if="lbByKey.get(f.key)?.mkt"><b>{{ won(lbByKey.get(f.key)!.mkt!.price) }}</b><small v-if="lbMktRel(lbByKey.get(f.key)!)" :class="lbMktRel(lbByKey.get(f.key)!) === '높음' ? 'up' : lbMktRel(lbByKey.get(f.key)!) === '낮음' ? 'bad' : ''">실거래가가 감정가보다 {{ lbMktRel(lbByKey.get(f.key)!) }}</small><small>{{ lbByKey.get(f.key)!.mkt!.n }}건 · {{ d8(lbByKey.get(f.key)!.mkt!.last) }} · <em class="apr">감정가 {{ Math.round(lbByKey.get(f.key)!.appr / lbByKey.get(f.key)!.mkt!.price * 100) }}%</em></small></template>
+                <template v-if="lbByKey.get(f.key)?.mkt"><b>{{ won(lbByKey.get(f.key)!.mkt!.price) }}</b><small v-if="lbMktRel(lbByKey.get(f.key)!)" :class="lbMktRel(lbByKey.get(f.key)!) === '높음' ? 'rise' : lbMktRel(lbByKey.get(f.key)!) === '낮음' ? 'fall' : ''">{{ RELMARK[lbMktRel(lbByKey.get(f.key)!)] }}실거래가가 감정가보다 {{ lbMktRel(lbByKey.get(f.key)!) }}</small><small>{{ lbByKey.get(f.key)!.mkt!.n }}건 · {{ d8(lbByKey.get(f.key)!.mkt!.last) }} · <em class="apr">감정가 {{ Math.round(lbByKey.get(f.key)!.appr / lbByKey.get(f.key)!.mkt!.price * 100) }}%</em></small></template>
                 <span v-else class="mu">—</span>
               </div>
             </template>
@@ -353,7 +353,8 @@ const register = async (f: TankFav) => {
 .c b { font-weight: 700; color: #111827; white-space: nowrap; }
 .c b.good { color: #16a34a; }
 .c b.bad, .c small.bad { color: #dc2626; }
-.c small.up { color: #16a34a; }   /* 실거래가 감정가보다 높음 — 감정이 싸게 잡힘(초록) */
+.c small.rise { color: #dc2626; }   /* ▲ 실거래가가 감정가보다 높음(감정이 쌈) — 시세표처럼 빨강 */
+.c small.fall { color: #2b6df3; }   /* ▼ 낮음(감정이 비쌈) — 파랑 */
 .mu { color: #9ca3af; }
 .act { display: grid; gap: 6px; justify-items: center; }
 .act { align-self: center; align-content: center; }

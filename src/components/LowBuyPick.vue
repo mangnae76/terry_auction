@@ -3,7 +3,7 @@
  * 시안(2026-11-20 사용자 '일단 적용해봐') 배치 그대로. 계산은 services/lowBuy(순수). 자료 — 마이 사건 차트(hits) · 건축물대장(연식 · 엘베 · 이름) · 국토부 실거래(웹 캐시) */
 import { computed, ref } from 'vue';
 import { buildingAgeText } from '../utils/buildingAge';
-import { lbMktRel, LB_HOT, LB_AREA_PCT, LB_MIN_PEERS } from '../services/lowBuy';
+import { LB_REL_MARK as RELMARK, lbMktRel, LB_HOT, LB_AREA_PCT, LB_MIN_PEERS } from '../services/lowBuy';
 import { useLowBuyData } from '../composables/useLowBuyData';
 
 /** 동 — 낙찰가예측의 동선택(이 브라우저에 남긴 값)을 그대로, 없으면 검암동 */
@@ -44,7 +44,7 @@ const addrLines = (a: string): [string, string] => {
       <div class="lbp-how">
         <div><b>평당 감정가 비교</b>같은 동네 비슷한 물건(같은 종류 · 전용면적 ±5%)의 평당 감정가 가운데값과 비교합니다. 영상의 '19평인데 1억 4천'을 찾는 칸입니다.</div>
         <div><b>면적 대비 이득</b>비슷한 물건 평당 감정가 × 이 물건 평수 − 이 물건 감정가. 같은 면적이면 감정이 이만큼 싸게 잡혔다는 뜻입니다.</div>
-        <div><b>실거래로 한 번 더</b>같은건물 같은평형 매매 실거래가가 있으면 건수 · 날짜와 함께 보여 줍니다. 실거래가가 감정가보다 높으면 초록(감정이 쌈), 낮으면 빨강(감정이 비쌈).</div>
+        <div><b>실거래로 한 번 더</b>같은건물 같은평형 매매 실거래가가 있으면 건수 · 날짜와 함께 보여 줍니다. 실거래가가 감정가보다 높으면 빨강 ▲(감정이 쌈), 낮으면 파랑 ▼(감정이 비쌈).</div>
       </div>
       <p v-if="!factsDone" class="lbp-wait">{{ msg }}</p>
       <div v-else class="table-wrap lbp-tbl-wrap">
@@ -67,7 +67,7 @@ const addrLines = (a: string): [string, string] => {
               <td :class="['r', r.vs! < 0 ? 'good' : 'bad']">{{ pctSigned(r.vs!) }}</td>
               <td :class="['r', r.gain! > 0 ? 'good' : 'bad']"><span class="nb">{{ r.gain! > 0 ? '+' : '−' }}{{ won(Math.abs(r.gain!)) }}</span></td>
               <td class="r">
-                <template v-if="r.mkt"><span class="nb">{{ won(r.mkt.price) }}</span><small v-if="lbMktRel(r)" :class="lbMktRel(r) === '높음' ? 'up' : lbMktRel(r) === '낮음' ? 'warn' : ''">실거래가가 감정가보다 {{ lbMktRel(r) }}</small><small>{{ r.mkt.n }}건 · {{ d8(r.mkt.last) }} · 감정가 {{ Math.round(r.appr / r.mkt.price * 100) }}%</small></template>
+                <template v-if="r.mkt"><span class="nb">{{ won(r.mkt.price) }}</span><small v-if="lbMktRel(r)" :class="lbMktRel(r) === '높음' ? 'rise' : lbMktRel(r) === '낮음' ? 'fall' : ''">{{ RELMARK[lbMktRel(r)] }}실거래가가 감정가보다 {{ lbMktRel(r) }}</small><small>{{ r.mkt.n }}건 · {{ d8(r.mkt.last) }} · 감정가 {{ Math.round(r.appr / r.mkt.price * 100) }}%</small></template>
                 <span v-else class="mu">{{ trades ? '—' : tradeMsg || '—' }}</span>
               </td>
               <td>{{ r.fails + 1 }}차 {{ d8(r.next) }}<small>신건 {{ d8(r.first) }} 유찰</small></td>   <!-- 위 = 이번에 입찰하는 날(1회 유찰 최저가), 아래 = 유찰된 신건 날(2026-11-20 사용자 — 헷갈림) -->
@@ -101,7 +101,8 @@ const addrLines = (a: string): [string, string] => {
 .lbp-tbl .r { text-align: right; }
 .lbp-tbl td small { display: block; font-size: 12px; color: #6b7280; }
 .lbp-tbl td small.warn { color: #dc2626; }
-.lbp-tbl td small.up { color: #16a34a; }   /* 실거래가 감정가보다 높음 — 감정이 싸게 잡힘 */
+.lbp-tbl td small.rise { color: #dc2626; }   /* ▲ 실거래가가 감정가보다 높음(감정이 쌈) — 시세표처럼 빨강 */
+.lbp-tbl td small.fall { color: #2b6df3; }   /* ▼ 낮음(감정이 비쌈) — 파랑 */
 .lbp-tbl td.addr .ln { display: block; line-height: 18px; }
 .lbp-tbl th.sort { cursor: pointer; user-select: none; }
 .lbp-tbl th.sort:hover { background: #e9edf5; }

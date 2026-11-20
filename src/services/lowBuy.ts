@@ -17,6 +17,8 @@ export const LB_HOT = -0.1;
 /** 실거래가 감정가의 90% 아래면 경고 */
 export const LB_WARN = 0.9;
 /** 실거래가와 감정가 — 높음(감정이 싸게 잡힘, 좋음) · 낮음(감정이 비싸게 잡힘) · 같음. 정확히 견준다(2026-11-20 사용자) */
+/** 방향 표시 — 빨강 ▲ 높음 · 파랑 ▼ 낮음(시세표처럼, 2026-11-20 사용자) */
+export const LB_REL_MARK: Record<string, string> = { 높음: '▲ ', 낮음: '▼ ', 같음: '', '': '' };
 export const lbMktRel = (r: { appr: number; mkt: { price: number } | null }): '' | '높음' | '낮음' | '같음' =>
   !r.mkt ? '' : r.mkt.price > r.appr ? '높음' : r.mkt.price < r.appr ? '낮음' : '같음';
 
