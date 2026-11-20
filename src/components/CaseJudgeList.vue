@@ -90,9 +90,11 @@ const pick2 = (r: JudgeRow, ev: Event) => {
   (ev.target as HTMLInputElement).checked = false;   // 값이 없으면 체크하지 않고 입력칸으로
   ((ev.target as HTMLElement).parentElement?.querySelector('input.mev') as HTMLInputElement | null)?.focus();
 };
+/** 입력하는 동안은 쉼표만 — 값마다 저장 · 다시 정렬하면 줄이 차익 순으로 옮겨 가 입력칸이 아래로 내려갔다(2026-11-20 사용자). 칸을 떠나거나 Enter 에 저장 */
+const typeSale2 = (ev: Event) => { const el = ev.target as HTMLInputElement; const p = Number(el.value.replace(/[^0-9]/g, '')) || 0; el.value = p ? p.toLocaleString('ko-KR') : ''; };
 const onSale2 = (r: JudgeRow, ev: Event) => {
   const el = ev.target as HTMLInputElement; const p = Number(el.value.replace(/[^0-9]/g, '')) || 0;
-  el.value = p ? p.toLocaleString('ko-KR') : '';
+  if ((sale2.value[r.key]?.p ?? 0) === p) return;
   setSale2(r.key, p ? { p, use: 2 } : null);   // 넣으면 2 에 저절로 체크, 지우면 1 로
 };
 const pctOf = (p: number) => `${Math.round(p * 100)}%`;
@@ -130,7 +132,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
           </div>
           <!-- 예상 매도가 2 — 알아본 값, 넣으면 저절로 체크 -->
           <div :class="['c ctr pick', { on: judgeOf(r).use2 }]" @click.stop>
-            <span class="ln"><input type="checkbox" :checked="judgeOf(r).use2" :aria-label="`${r.caseNo} 예상 매도가 2로 계산`" @change="pick2(r, $event)"><input class="mev" inputmode="numeric" :value="sale2[r.key]?.p ? sale2[r.key].p.toLocaleString('ko-KR') : ''" :aria-label="`${r.caseNo} 예상 매도가 2`" @input="onSale2(r, $event)"></span>
+            <span class="ln"><input type="checkbox" :checked="judgeOf(r).use2" :aria-label="`${r.caseNo} 예상 매도가 2로 계산`" @change="pick2(r, $event)"><input class="mev" inputmode="numeric" :value="sale2[r.key]?.p ? sale2[r.key].p.toLocaleString('ko-KR') : ''" :aria-label="`${r.caseNo} 예상 매도가 2`" @input="typeSale2" @change="onSale2(r, $event)" @keydown.enter="($event.target as HTMLInputElement).blur()"></span>
             <!-- 1 칸 아래 근거 줄과 같은 높이 자리 — 두 칸 첫 줄(체크박스 · 금액/입력칸)이 한 가로선에(2026-11-20 사용자) -->
             <template v-if="r.lb?.est"><small class="ph" aria-hidden="true">{{ r.lb.est.how }} · {{ r.lb.est.n.toLocaleString('ko-KR') }}건{{ d8s(r.lb.est.last) }}</small></template>   <!-- 1 칸과 같은 글을 숨겨 둬 줄바꿈까지 같은 높이 -->
           </div>
@@ -140,10 +142,10 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
         </template>
         <div v-else class="c span5 mu">{{ r.judgeMsg }}</div>
         <div class="act" @click.stop>
-          <span v-if="r.registered" class="tchip reg">사건등록됨</span>
-          <button v-else type="button" class="tfp-btn" :disabled="!!busyId" @click="emit('register', r)">{{ busyId === r.id ? '등록 중' : '사건등록하기' }}</button>
+          <span v-if="r.registered" class="tchip reg">등록됨</span>
+          <button v-else type="button" class="tfp-btn" :disabled="!!busyId" @click="emit('register', r)">{{ busyId === r.id ? '등록 중' : '등록하기' }}</button>
           <button type="button" class="tfp-btn sub" :disabled="!r.tid" @click="emit('photo', r)">사진 ↗</button>
-          <button type="button" class="tfp-btn sub" disabled title="매각물건명세서 받기는 준비 중입니다">매물명세 준비중</button>
+          <span class="tfp-btn sub off" role="button" aria-disabled="true" data-tip="준비 중">매물명세</span>   <!-- 마우스를 올리면 '준비 중'(2026-11-20 사용자) -->
         </div>
       </div>
       <slot v-if="openId === r.id" name="detail" :row="r" />
@@ -155,7 +157,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .cjl { display: grid; border: 1px solid #e3e7ee; border-radius: 8px; overflow: hidden; background: #fff; }
 .cjl-info { margin: 0; padding: 8px 12px; background: #fff8e6; color: #8a5a00; font-size: 12px; line-height: 1.6; border-bottom: 1px solid #e3e7ee; }   /* 노란 안내 — 굵기 없음 */
 .cjl-empty { margin: 0; padding: 28px 12px; text-align: center; font-size: 13px; color: #6b7280; }
-.it { display: grid; grid-template-columns: minmax(0, 1fr) 118px 100px 68px 108px 100px 76px 46px 64px 92px;   /* 숫자 칸 폭 고르게 · 머리 · 값 모두 가운데(2026-11-20 사용자) */ gap: 8px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; font-size: 13px; color: #111827; }
+.it { display: grid; grid-template-columns: minmax(0, 1fr) 118px 100px 68px 122px 116px 76px 46px 64px 76px;   /* 숫자 칸 폭 고르게 · 머리 · 값 모두 가운데(2026-11-20 사용자) */ gap: 8px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; font-size: 13px; color: #111827; }
 .it.click { cursor: pointer; }
 .it:last-child { border-bottom: 0; }
 .it.hot { background: #fff5f5; }
@@ -202,7 +204,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .c.pick .ln { display: flex; align-items: center; justify-content: center; gap: 6px; height: 26px; }   /* 두 칸 첫 줄 높이 같게 — 입력칸 높이 26 */
 .c.pick small.ph { visibility: hidden; }   /* 체크박스는 금액 왼쪽 */
 .c.pick input[type='checkbox'] { flex: none; margin: 0; width: 15px; height: 15px; accent-color: #2b6df3; cursor: pointer; }
-.c.pick input.mev { width: 74px; height: 26px; box-sizing: border-box; border: 1px solid #d5dbe5; border-radius: 6px; padding: 4px 6px; text-align: right; font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; background: #fff; color: #111827; }
+.c.pick input.mev { width: 88px; height: 26px; box-sizing: border-box; border: 1px solid #d5dbe5; border-radius: 6px; padding: 4px 6px; text-align: right; font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; background: #fff; color: #111827; }
 .c.pick input.mev:focus { outline: none; border-color: #2b6df3; }
 .c small.warn { color: #b45309; }
 .pbar { display: block; width: 56px; height: 5px; margin: 4px auto 0; border-radius: 3px; background: #e3e7ee; overflow: hidden; }
@@ -214,11 +216,12 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .c b.bad { color: #dc2626; }
 .mu { color: #9ca3af; }
 .act { display: grid; gap: 6px; justify-items: center; align-self: center; align-content: center; }
-.act .tfp-btn, .act .tchip.reg { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; height: 28px; width: 88px; padding: 0; border-radius: 8px; font-size: 12px; line-height: 1; }   /* 등록됨도 등록하기와 같은 크기 */
+.act .tfp-btn, .act .tchip.reg { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; height: 28px; width: 72px; padding: 0; border-radius: 8px; font-size: 12px; line-height: 1; }   /* 등록됨도 등록하기와 같은 크기 */
 .act .tchip.reg { border: 1px solid #c9d6f5; font-weight: 700; }
 .tfp-btn { border: 1px solid #d5dbe5; background: #fff; color: #111827; border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .tfp-btn:disabled { color: #c2c8d3; cursor: default; }
 .act .tfp-btn.sub { font-weight: 400; color: #2b6df3; }
+.act .tfp-btn.off { color: #9ca3af; background: #f6f8fb; cursor: default; }
 .act .tfp-btn.sub:disabled { color: #9ca3af; background: #f6f8fb; cursor: default; }
 @media (max-width: 900px) { .it { grid-template-columns: minmax(0, 1fr); } }
 </style>
