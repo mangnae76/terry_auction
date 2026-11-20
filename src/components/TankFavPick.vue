@@ -82,15 +82,6 @@ const fillLowBuy = async () => {
   for (const d of dongs) { if (lowBuy[d]) continue; const x = useLowBuyData(d, today, false); lowBuy[d] = x; void x.load(); }
 };
 const lbByKey = computed(() => { const m = new Map<string, LowBuyRow>(); Object.values(lowBuy).forEach((x) => (x.all as unknown as LowBuyRow[]).forEach((r) => m.set(r.key, r))); return m; });
-/** 지난 유찰 기일 — 마이 hits 의 기일내역(ev)에서 오늘 앞 마지막 'N차 매각기일'. 탱크 관심물건 목록엔 다음 기일만 있다(2026-11-20 사용자 — 언제 유찰됐는지) */
-const hitByKey = computed(() => { const m = new Map<string, { ev: { d: string; l: string }[] }>(); Object.values(lowBuy).forEach((x) => (x.hits as unknown as { key: string; ev: { d: string; l: string }[] }[]).forEach((h) => m.set(h.key, h))); return m; });
-const lastFail = (f: TankFav): string => {
-  if (!(f.fails > 0)) return '';
-  const ev = hitByKey.value.get(f.key)?.ev ?? [];
-  const past = ev.filter((e) => /^\d+차 매각기일$/.test(e.l) && e.d < today).sort((a, b) => a.d.localeCompare(b.d));
-  const e = past[past.length - 1]; if (!e) return '';
-  return `${e.l.replace(' 매각기일', '')} ${d8(e.d)} 유찰`;
-};
 /** 같은 동 비교 자료가 다 왔는지 — 다 왔는데 줄이 없으면 마이 조회수 수집에 없는 사건 */
 const lbDone = (f: TankFav) => { const x = lowBuy[favPlace(f).emd]; return !!x && (!!(x.factsDone as unknown as boolean) || /없습니다|읽지 못/.test(String((x.msg as unknown as string) ?? ''))); };
 
@@ -233,7 +224,7 @@ const register = async (f: TankFav) => {
               <small>전용 {{ f.bArea > 0 ? `${f.bArea.toFixed(2)}㎡ / ${pyOf(f.bArea)}평` : '—' }}<template v-if="lbByKey.get(f.key)?.year"> · {{ lbByKey.get(f.key)?.year }}년식</template><template v-if="lbByKey.get(f.key)?.elev != null"> · 엘베 {{ lbByKey.get(f.key)?.elev ? '있음' : '없음' }}</template></small>
             </div>
             <div class="c r"><span class="amt">{{ f.appr ? won(f.appr) : '미확정' }}</span><small>{{ f.appr && f.bArea ? `평당 ${man(f.appr / (f.bArea / FAV_PY))}` : '' }}</small><span class="amt min">{{ f.min ? won(f.min) : '—' }}</span></div>   <!-- 이름표 뺌 — 옆 유찰 칸에 차수 · % 가 있어서(2026-11-20 사용자) -->
-            <div class="c ctr"><span class="nx">{{ f.status === '진행' ? `${f.fails + 1}차 ` : '' }}{{ d8(f.date) }}</span>{{ favRound(f).label }}<small v-if="favRound(f).pct">({{ favRound(f).pct }})</small><small v-if="f.status === '진행'">{{ lastFail(f) || (f.fails > 0 ? '지난 기일 모름' : '') }}</small><small v-else>{{ f.state || f.status }}</small></div>   <!-- 위 다음 기일, 그 아래 유찰 n회(%) · 지난 유찰 날(2026-11-20 사용자) -->
+            <div class="c ctr"><span class="nx">{{ f.status === '진행' ? `${f.fails + 1}차 ` : '' }}{{ d8(f.date) }}</span>{{ favRound(f).label }}<small v-if="favRound(f).pct">({{ favRound(f).pct }})</small><small v-if="f.status !== '진행'">{{ f.state || f.status }}</small></div>   <!-- 위 다음 기일, 그 아래 유찰 n회(%). 지난 유찰 날은 뺌(2026-11-20 사용자) -->
             <div class="my">
               <template v-if="f.status === '진행'">
                 <template v-if="lbByKey.get(f.key)?.vs != null">
