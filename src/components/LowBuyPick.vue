@@ -44,7 +44,7 @@ const addrLines = (a: string): [string, string] => {
       <div class="lbp-how">
         <div><b>평당 감정가 비교</b>같은 동네 비슷한 물건(같은 종류 · 전용면적 ±5%)의 평당 감정가 가운데값과 비교합니다. 영상의 '19평인데 1억 4천'을 찾는 칸입니다.</div>
         <div><b>면적 대비 이득</b>비슷한 물건 평당 감정가 × 이 물건 평수 − 이 물건 감정가. 같은 면적이면 감정이 이만큼 싸게 잡혔다는 뜻입니다.</div>
-        <div><b>실거래로 한 번 더</b>같은 건물 같은 평형 매매 실거래가가 있으면 건수 · 날짜와 함께 보여 줍니다. 실거래가 감정가보다 10% 넘게 낮으면 빨간 경고.</div>
+        <div><b>실거래로 한 번 더</b>같은건물 같은평형 매매 실거래가가 있으면 건수 · 날짜와 함께 보여 줍니다. 실거래가가 감정가보다 높으면 초록(감정이 쌈), 낮으면 빨강(감정이 비쌈).</div>
       </div>
       <p v-if="!factsDone" class="lbp-wait">{{ msg }}</p>
       <div v-else class="table-wrap lbp-tbl-wrap">
@@ -52,7 +52,7 @@ const addrLines = (a: string): [string, string] => {
           <thead><tr>
             <th>사건번호</th><th class="l">주소</th><th>전용</th><th>연식</th><th>엘베</th><th class="r">감정가</th><th class="r">최저가<br>1회 유찰</th><th class="r">비슷한 물건<br>평당 감정가</th>
             <th class="r sort" @click="sortDir = sortDir === 1 ? -1 : 1">비슷한 물건<br>대비 <i class="ar">{{ sortDir === 1 ? '▲' : '▼' }}</i></th>
-            <th class="r">면적 대비<br>이득</th><th class="r">실거래가<br>같은 평형</th><th>다음기일</th>
+            <th class="r">면적 대비<br>이득</th><th class="r">실거래가<br>같은평형</th><th>다음기일</th>
           </tr></thead>
           <tbody>
             <tr v-for="r in rows" :key="r.key" :class="{ hot: r.hot }">
@@ -67,7 +67,7 @@ const addrLines = (a: string): [string, string] => {
               <td :class="['r', r.vs! < 0 ? 'good' : 'bad']">{{ pctSigned(r.vs!) }}</td>
               <td :class="['r', r.gain! > 0 ? 'good' : 'bad']"><span class="nb">{{ r.gain! > 0 ? '+' : '−' }}{{ won(Math.abs(r.gain!)) }}</span></td>
               <td class="r">
-                <template v-if="r.mkt"><span class="nb">{{ won(r.mkt.price) }}</span><small v-if="lbMktRel(r)" :class="lbMktRel(r) === '높음' ? 'up' : lbMktRel(r) === '낮음' ? 'warn' : ''">실거래가 감정가보다 {{ lbMktRel(r) }}</small><small>{{ r.mkt.n }}건 · {{ d8(r.mkt.last) }} · 감정가 {{ Math.round(r.appr / r.mkt.price * 100) }}%</small></template>
+                <template v-if="r.mkt"><span class="nb">{{ won(r.mkt.price) }}</span><small v-if="lbMktRel(r)" :class="lbMktRel(r) === '높음' ? 'up' : lbMktRel(r) === '낮음' ? 'warn' : ''">실거래가가 감정가보다 {{ lbMktRel(r) }}</small><small>{{ r.mkt.n }}건 · {{ d8(r.mkt.last) }} · 감정가 {{ Math.round(r.appr / r.mkt.price * 100) }}%</small></template>
                 <span v-else class="mu">{{ trades ? '—' : tradeMsg || '—' }}</span>
               </td>
               <td>{{ r.fails + 1 }}차 {{ d8(r.next) }}<small>신건 {{ d8(r.first) }} 유찰</small></td>   <!-- 위 = 이번에 입찰하는 날(1회 유찰 최저가), 아래 = 유찰된 신건 날(2026-11-20 사용자 — 헷갈림) -->

@@ -228,7 +228,7 @@ const register = async (f: TankFav) => {
         <p v-if="loading" class="tfp-empty">불러오는 중입니다…</p>
         <p v-else-if="!doc" class="tfp-empty">'관심물건가져오기'를 누르면 마이가 탱크옥션 관심물건을 읽어 옵니다.</p>
         <p v-else-if="!shown.length" class="tfp-empty">조건에 맞는 관심물건이 없습니다.</p>
-        <div v-if="shown.length" class="it hd" aria-hidden="true"><span>사건 · 주소</span><span class="ctr">감정가 · 최저가</span><span class="ctr">기일 · 유찰</span><span class="ctr">비슷한 물건<br>평당 감정가</span><span class="ctr">비슷한 물건<br>대비</span><span class="ctr">면적 대비<br>이득</span><span class="ctr">실거래가<br>같은 평형</span><span class="ctr">처리</span></div>   <!-- 표 머리(2026-11-20 사용자) -->
+        <div v-if="shown.length" class="it hd" aria-hidden="true"><span>사건 · 주소</span><span class="ctr">감정가 · 최저가</span><span class="ctr">기일 · 유찰</span><span class="ctr">비슷한 물건<br>평당 감정가</span><span class="ctr">비슷한 물건<br>대비</span><span class="ctr">면적 대비<br>이득</span><span class="ctr">실거래가<br>같은평형</span><span class="ctr">처리</span></div>   <!-- 표 머리(2026-11-20 사용자) -->
         <template v-for="f in shown" :key="f.tid">
           <div :class="['it', { hot: lbByKey.get(f.key)?.hot, on: open === f.tid }]" role="button" tabindex="0" @click="open = open === f.tid ? '' : f.tid" @keydown.enter="open = open === f.tid ? '' : f.tid">
             <div class="addr">
@@ -245,7 +245,7 @@ const register = async (f: TankFav) => {
               <div class="c ctr"><b :class="lbByKey.get(f.key)!.vs! < 0 ? 'good' : 'bad'">{{ pctSigned(lbByKey.get(f.key)!.vs!) }}</b></div>
               <div class="c ctr"><b :class="lbByKey.get(f.key)!.gain! > 0 ? 'good' : 'bad'">{{ gainText(lbByKey.get(f.key)!.gain!) }}</b></div>
               <div class="c ctr mk">
-                <template v-if="lbByKey.get(f.key)?.mkt"><b>{{ won(lbByKey.get(f.key)!.mkt!.price) }}</b><small v-if="lbMktRel(lbByKey.get(f.key)!)" :class="lbMktRel(lbByKey.get(f.key)!) === '높음' ? 'up' : lbMktRel(lbByKey.get(f.key)!) === '낮음' ? 'bad' : ''">실거래가 감정가보다 {{ lbMktRel(lbByKey.get(f.key)!) }}</small><small>{{ lbByKey.get(f.key)!.mkt!.n }}건 · {{ d8(lbByKey.get(f.key)!.mkt!.last) }} · <em class="apr">감정가 {{ Math.round(lbByKey.get(f.key)!.appr / lbByKey.get(f.key)!.mkt!.price * 100) }}%</em></small></template>
+                <template v-if="lbByKey.get(f.key)?.mkt"><b>{{ won(lbByKey.get(f.key)!.mkt!.price) }}</b><small v-if="lbMktRel(lbByKey.get(f.key)!)" :class="lbMktRel(lbByKey.get(f.key)!) === '높음' ? 'up' : lbMktRel(lbByKey.get(f.key)!) === '낮음' ? 'bad' : ''">실거래가가 감정가보다 {{ lbMktRel(lbByKey.get(f.key)!) }}</small><small>{{ lbByKey.get(f.key)!.mkt!.n }}건 · {{ d8(lbByKey.get(f.key)!.mkt!.last) }} · <em class="apr">감정가 {{ Math.round(lbByKey.get(f.key)!.appr / lbByKey.get(f.key)!.mkt!.price * 100) }}%</em></small></template>
                 <span v-else class="mu">—</span>
               </div>
             </template>
