@@ -172,8 +172,10 @@ service cloud.firestore {
     function validAgentCmd(c) {
       return c is map && c.keys().hasOnly(['id', 'name', 'args', 'at'])
         && c.id is string && c.id.size() <= 64
-        && c.name in ['open', 'screen', 'auto', 'enrich', 'queue', 'daylist', 'hits', 'restart', 'pause', 'resume', 'fav']   // restart · pause · resume — 웹에서 마이 다시시작 · 대기 · 실행(2026-11-19), fav — 탱크 관심물건 가져오기(2026-11-20)
-        && c.args is map && c.args.keys().hasOnly(['site', 'months', 'src', 'fresh', 'from', 'to', 'court', 'dong'])
+        && c.name in ['open', 'screen', 'auto', 'enrich', 'queue', 'daylist', 'hits', 'restart', 'pause', 'resume', 'fav', 'spec']   // spec — 법원 매각물건명세서 받기(2026-11-20), restart · pause · resume — 웹에서 마이 다시시작 · 대기 · 실행(2026-11-19), fav — 탱크 관심물건 가져오기(2026-11-20)
+        && c.args is map && c.args.keys().hasOnly(['site', 'months', 'src', 'fresh', 'from', 'to', 'court', 'dong', 'cases'])
+        // spec — '인천-본원|2026타경500727|1|2026-500727(1)' 꼴 30건까지
+        && (!('cases' in c.args) || (c.args.cases is list && c.args.cases.size() <= 30))
         // daylist(기일 목록, 2026-11-14) — 기간 · 법원
         && (!('from' in c.args) || (c.args.from is string && c.args.from.size() == 10))
         && (!('to' in c.args) || (c.args.to is string && c.args.to.size() == 10))
@@ -269,6 +271,14 @@ service cloud.firestore {
         && agentData().keys().hasOnly(['items', 'cats', 'noCtgr', 'total', 'by', 'at'])
         && agentData().items is list && agentData().items.size() <= 500
         && agentData().cats is list && agentData().cats.size() <= 100
+        && agentData().by == 'agent';
+    }
+    // 법원 매각물건명세서 — 마이가 법원경매정보 '파일저장'으로 받은 PDF(base64 를 700KB 씩 {key}~p0 · ~p1 …, 머리 {key} 는 상태만). 관심물건이 등록 물건 매물명세 칸에 붙인다(2026-11-20)
+    match /saleData/dayList/spec/{doc} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin()
+        && agentData().keys().hasOnly(['key', 'state', 'court', 'no', 'pn', 'name', 'n', 'data', 'by', 'at'])
+        && agentData().data is string && agentData().data.size() <= 750000
         && agentData().by == 'agent';
     }
     // 예상 매도가 2 — 운영진이 알아본 매도 가능 가격 · 고른 칸(1 · 2), 사건 열쇠마다 m.{key} = {p, use}(2026-11-20 저가매수 · 관심물건)

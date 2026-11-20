@@ -10,6 +10,7 @@ import { parsedFromCase, caseNumberOf } from '../services/caseRegister';
 import CaseJudgeList, { type JudgeRow } from './CaseJudgeList.vue';
 import AppConfirm from './AppConfirm.vue';
 import { useCaseRegister } from '../composables/useCaseRegister';
+import { FAV_AI_LABEL, useFavRightsAi, type FavAiState } from '../composables/useFavRightsAi';
 import { useSale2 } from '../composables/useSale2';
 import { addressWithName, buildingNameOf } from '../utils/addressName';
 import { kakaoBuildingName } from '../services/addressSearch';
@@ -58,6 +59,7 @@ onMounted(() => {
   stopAgent = watchAgentStatus('', (st) => { agent.value = st; }, () => { agent.value = null; });
   tick = setInterval(() => { nowMs.value = Date.now(); }, 1000);
   void load();
+  void ai.reloadHeads();
 });
 onBeforeUnmount(() => { stopAgent?.(); if (tick) clearInterval(tick); });
 
@@ -116,8 +118,13 @@ const addrOf = (f: TankFav) => { const a = lbByKey.value.get(f.key)?.addr || (is
 
 /* ---------- 목록 ---------- */
 const mine = computed(() => { const m = new Map<string, { id: string; ai: boolean }>(); auctions.auctions.forEach((a) => { const k = caseKey(a.caseNumber); if (k) m.set(k, { id: a.id, ai: !!(a as { rightsAi?: unknown }).rightsAi }); }); return m; });
-const favMine = computed(() => items.value.filter((f) => mine.value.has(f.key)));
-const aiDone = computed(() => favMine.value.filter((f) => mine.value.get(f.key)?.ai).length);
+/* AI 권리분석 자동 줄 — composables/useFavRightsAi 한 곳 */
+const ai = useFavRightsAi(items);
+const AI_ORDER: FavAiState[] = ['done', 'run', 'wait', 'limit', 'closed', 'before', 'miss'];
+const specBusy = computed(() => !!agent.value?.busy && agent.value?.target === '법원 매각물건명세서');
+const runName = computed(() => { const a = auctions.auctions.find((x) => x.id === ai.runId.value); return a ? a.caseNumber : ''; });
+/* 마이가 명세서 받기를 끝내면(바쁨 → 쉼) 받은 목록을 다시 읽는다 — 그러면 자동 줄이 붙이고 분석한다 */
+watch(() => agent.value?.busy, (b, was) => { if (was && !b && /매각물건명세서/.test(agent.value?.message ?? '')) { ai.note.value = agent.value?.message ?? ''; void ai.reloadHeads(); } });
 const { sale2 } = useSale2();
 /** '가격매력' 정렬 = 최저가 낙찰 차익률 큰 순(모르면 아래) */
 const shown = computed(() => favSort(items.value.filter((f) => favPass(f, q)), sortBy.value, (f) => { const j = lbJudge(lbByKey.value.get(f.key)?.est ?? null, f.min, sale2.value[f.key]); return j.gap != null ? -j.gap : null; }));   /* 최저가 낙찰 차익 큰 순 — 저가매수와 같게 */
@@ -178,12 +185,18 @@ const favRows = computed<JudgeRow[]>(() => shown.value.map((f) => {
       </header>
       <p v-if="favBusy && agent?.message" class="tfp-note">{{ agent.message }}</p>
       <p v-else-if="note" class="tfp-note">{{ note }}</p>
+      <!-- AI 권리분석 자동 줄 — 마이가 법원에서 매각물건명세서를 받으면 등록 물건 매물명세 칸에 붙이고, 내 제미나이 키로 한 건씩 분석(2026-11-20) -->
       <div class="tfp-ai">
         <span class="nm">AI 권리분석</span>
-        <span class="q ok">분석됨 <b>{{ aiDone.toLocaleString('ko-KR') }}</b></span>
-        <span class="q wait">분석 안 함 <b>{{ (favMine.length - aiDone).toLocaleString('ko-KR') }}</b></span>
-        <span class="txt">등록한 관심물건 {{ favMine.length.toLocaleString('ko-KR') }}건 기준 · 매각물건명세서 자동 받기와 자동 분석은 준비 중</span>
+        <template v-for="k in AI_ORDER" :key="k"><span v-if="k === 'done' || k === 'wait' || ai.counts.value[k]" :class="['q', k]">{{ FAV_AI_LABEL[k] }} <b>{{ ai.counts.value[k].toLocaleString('ko-KR') }}</b></span></template>
+        <span class="txt">등록한 진행 · 예정 {{ ai.liveFav.value.length.toLocaleString('ko-KR') }}건 기준<template v-if="ai.runId.value"> · {{ runName }} 분석 중</template></span>
+        <span class="sp" />
+        <label class="auto"><input type="checkbox" :checked="ai.auto.value" @change="ai.setAuto(($event.target as HTMLInputElement).checked)" />자동분석</label>
+        <button v-if="ai.limited.value" type="button" class="b" @click="ai.resume()">지금이어하기</button>
+        <button type="button" class="b" :disabled="!agentOn || !!agent?.paused || !!agent?.busy || !ai.toFetch.value.length" :data-tip="ai.toFetch.value.length ? `등록한 진행 물건 중 매물명세가 없는 ${ai.toFetch.value.length.toLocaleString('ko-KR')}건` : '받을 사건이 없습니다'" @click="ai.fetchSpecs()">{{ specBusy ? '명세서 받는 중' : '명세서받기' }}</button>
       </div>
+      <p v-if="specBusy && agent?.message" class="tfp-note">{{ agent.message }}</p>
+      <p v-else-if="ai.note.value" class="tfp-note">{{ ai.note.value }}</p>
 
       <div class="tfp-flt">
         <label class="fr"><span class="fl">분류</span><select v-model="q.cat" aria-label="분류"><option value="">-전체-</option><option v-for="c in catOpts" :key="c.v" :value="c.v">{{ c.t }}</option></select></label>
@@ -249,6 +262,15 @@ const favRows = computed<JudgeRow[]>(() => shown.value.map((f) => {
 .tfp-ai .q b { font-weight: 700; }
 .tfp-ai .q.ok { background: #e7f6ed; color: #16a34a; }
 .tfp-ai .q.wait { background: #f6f8fb; color: #111827; border: 1px solid #e3e7ee; }
+.tfp-ai .q.done { background: #e7f6ed; color: #16a34a; }
+.tfp-ai .q.run { background: #eef3fe; color: #2b6df3; }
+.tfp-ai .q.limit { background: #fdecec; color: #dc2626; }
+.tfp-ai .q.closed, .tfp-ai .q.before, .tfp-ai .q.miss { background: #f6f8fb; color: #6b7280; border: 1px solid #e3e7ee; }
+.tfp-ai .sp { flex: 1; }
+.tfp-ai .auto { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #111827; cursor: pointer; white-space: nowrap; }
+.tfp-ai .auto input { margin: 0; width: 14px; height: 14px; accent-color: #2b6df3; }
+.tfp-ai .b { height: 26px; padding: 0 10px; border: 1px solid #d5dbe5; border-radius: 6px; background: #fff; color: #4b5563; font: inherit; font-size: 12px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.tfp-ai .b:disabled { color: #c2c8d3; border-color: #e3e7ee; cursor: default; }
 .tfp-flt { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 18px; background: #f6f8fb; border: 1px solid #e3e7ee; border-radius: 10px; padding: 12px 14px; }
 .fr { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .fl { width: 46px; flex: none; font-size: 13px; font-weight: 700; color: #111827; }

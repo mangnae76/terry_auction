@@ -83,8 +83,9 @@ import { useAuthStore } from '../stores/authStore';
 import { isAdminEmail } from '../services/accessControl';
 import { deleteSitePdf, deleteSitePhoto, isPdfEntry, isPdfFile, isPhotoId, loadSitePdf, loadSitePhoto, pdfNameOf, saveSitePdf, saveSitePhoto } from '../services/sitePhotoRepository';
 import { getGeminiKey, isGeminiOn, loadGeminiPrefs } from '../services/geminiPdf';
-import { askRightsAnalysis, DOC_LABELS, type RightsAi, type RightsDocPart } from '../services/geminiRights';
+import { askRightsAnalysis, type RightsAi, type RightsDocPart } from '../services/geminiRights';
 import { buildRightsFacts } from '../services/rightsFacts';
+import { collectRightsParts } from '../services/rightsDocParts';
 import RightsPanel from '../components/RightsPanel.vue';
 import SonpumPricePage from './SonpumPricePage.vue';
 import type { CasePropertyType } from '../services/caseTradeAnalysis';
@@ -5252,36 +5253,8 @@ const docDropKey = ref('');
 // === AI 권리분석 ===
 const rightsAiBusy = ref(false);
 const rightsAiErr = ref('');
-/** data URL 을 Gemini 가 받는 꼴로 쪼갠다 */
-const splitDataUrl = (url: string): { mimeType: string; base64: string } | null => {
-  const m = /^data:([^;,]+)[^,]*,(.*)$/s.exec(url);
-  return m ? { mimeType: m[1], base64: m[2] } : null;
-};
-const blobToBase64 = (blob: Blob) => new Promise<string>((done, fail) => {
-  const r = new FileReader();
-  r.onload = () => done(String(r.result).split(',')[1] ?? '');
-  r.onerror = () => fail(new Error('read'));
-  r.readAsDataURL(blob);
-});
-/** 다섯 칸에 올려 둔 서류를 Gemini 가 읽을 수 있는 꼴로 모은다 */
-const collectDocParts = async (): Promise<RightsDocPart[]> => {
-  const out: RightsDocPart[] = [];
-  for (const box of DOC_BOXES) {
-    const entry = extraList(box.key)[0];
-    if (!entry) continue;
-    const label = DOC_LABELS[box.key] ?? box.label;
-    if (isPdfEntry(entry)) {
-      const blob = await withTimeout(loadSitePdf(entry).catch(() => null), 20_000, null);
-      if (blob) out.push({ label, mimeType: 'application/pdf', base64: await blobToBase64(blob) });
-      continue;
-    }
-    // 올려 둔 그림 — 저장소에 담긴 것이면 꺼내 오고, data URL 이면 그대로 쓴다
-    const url = isPhotoId(entry) ? await withTimeout(loadSitePhoto(entry).catch(() => ''), 20_000, '') : entry;
-    const part = splitDataUrl(url);
-    if (part) out.push({ label, ...part });
-  }
-  return out;
-};
+/** 다섯 칸에 올려 둔 서류를 Gemini 가 읽을 수 있는 꼴로 모은다 — services/rightsDocParts 한 곳(관심물건 자동분석과 같이) */
+const collectDocParts = (): Promise<RightsDocPart[]> => collectRightsParts(auction.value?.extraPhotos);
 /** 'AI 분석 요청' — 올려 둔 서류로 권리분석을 받아 와 물건에 적어 둔다 */
 /** 분석 중 — 몇 초째인지 (대기 화면에 보여 살아 있음을 알린다) · 취소 신호 */
 const rightsAiSec = ref(0);
