@@ -232,8 +232,8 @@ const register = async (f: TankFav) => {
               <span class="ad">{{ addrOf(f) }}</span>
               <small>전용 {{ f.bArea > 0 ? `${f.bArea.toFixed(2)}㎡ / ${pyOf(f.bArea)}평` : '—' }}<template v-if="lbByKey.get(f.key)?.year"> · {{ lbByKey.get(f.key)?.year }}년식</template><template v-if="lbByKey.get(f.key)?.elev != null"> · 엘베 {{ lbByKey.get(f.key)?.elev ? '있음' : '없음' }}</template></small>
             </div>
-            <div class="c r"><span class="amt"><em class="lb">감정가</em>{{ f.appr ? won(f.appr) : '미확정' }}</span><small>{{ f.appr && f.bArea ? `평당 ${man(f.appr / (f.bArea / FAV_PY))}` : '' }}</small><span class="amt min"><em class="lb">{{ `${f.fails + 1}차 최저가${favRound(f).pct ? ` ${favRound(f).pct}` : ''}` }}</em>{{ f.min ? won(f.min) : '—' }}</span><span v-if="f.status === '진행'" class="amt dt"><em class="lb">{{ f.fails + 1 }}차 기일</em>{{ d8(f.date) }}</span><small v-if="f.status === '진행'">{{ lastFail(f) || (f.fails > 0 ? `유찰 ${f.fails}회 · 지난 기일 모름` : '신건') }}</small><template v-else><span class="amt dt"><em class="lb">기일</em>{{ d8(f.date) }}</span><small>{{ f.state || f.status }}</small></template></div>   <!-- 기일도 금액 칸에 합침(2026-11-20 사용자) -->
-            <div class="c ctr">{{ favRound(f).label }}<small v-if="favRound(f).pct">({{ favRound(f).pct }})</small></div>
+            <div class="c r"><span class="amt">{{ f.appr ? won(f.appr) : '미확정' }}</span><small>{{ f.appr && f.bArea ? `평당 ${man(f.appr / (f.bArea / FAV_PY))}` : '' }}</small><span class="amt min">{{ f.min ? won(f.min) : '—' }}</span></div>   <!-- 이름표 뺌 — 옆 유찰 칸에 차수 · % 가 있어서(2026-11-20 사용자) -->
+            <div class="c ctr"><span class="nx">{{ f.status === '진행' ? `${f.fails + 1}차 ` : '' }}{{ d8(f.date) }}</span>{{ favRound(f).label }}<small v-if="favRound(f).pct">({{ favRound(f).pct }})</small><small v-if="f.status === '진행'">{{ lastFail(f) || (f.fails > 0 ? '지난 기일 모름' : '') }}</small><small v-else>{{ f.state || f.status }}</small></div>   <!-- 위 다음 기일, 그 아래 유찰 n회(%) · 지난 유찰 날(2026-11-20 사용자) -->
             <div class="my">
               <template v-if="f.status === '진행'">
                 <template v-if="lbByKey.get(f.key)?.vs != null">
@@ -311,7 +311,7 @@ const register = async (f: TankFav) => {
 .sort button.on { color: #2b6df3; font-weight: 700; }
 .tfp-list { display: grid; border: 1px solid #e3e7ee; border-radius: 8px; overflow: hidden; }
 .tfp-empty { margin: 0; padding: 28px 12px; text-align: center; font-size: 13px; color: #6b7280; }
-.it { display: grid; grid-template-columns: minmax(0, 1fr) 210px 84px 384px 84px; gap: 12px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; cursor: pointer; font-size: 13px; color: #111827; }
+.it { display: grid; grid-template-columns: minmax(0, 1fr) 140px 120px 384px 84px; gap: 12px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; cursor: pointer; font-size: 13px; color: #111827; }
 .it:last-child, .det:last-child { border-bottom: 0; }
 .it.hot { background: #fff5f5; }
 .it.on { background: #eef3fe; box-shadow: inset 3px 0 0 #2b6df3; }
@@ -320,7 +320,6 @@ const register = async (f: TankFav) => {
 .ctg { font-size: 12px; color: #6b7280; border: 1px solid #e3e7ee; border-radius: 4px; padding: 0 5px; line-height: 17px; }
 .star { color: #f59e0b; letter-spacing: -1px; }
 .cno { display: block; font-size: 15px; font-weight: 800; }
-.amt .lb { font-style: normal; font-size: 12px; font-weight: 400; color: #6b7280; margin-right: 6px; white-space: nowrap; }   /* 금액 앞 이름표(2026-11-20 사용자) */
 .cno .ct, .addr .cno .ct { margin-left: 8px; color: #4b5563; }
 .addr { word-break: keep-all; }
 .cno small, .addr .cno small { display: inline; margin-left: 4px; font-size: 12px; font-weight: 400; color: #6b7280; }   /* 물건번호는 사건번호 옆(2026-11-20 사용자) */
@@ -329,14 +328,14 @@ const register = async (f: TankFav) => {
 .c { font-variant-numeric: tabular-nums; }
 .r { text-align: right; }
 .ctr { text-align: center; }
-.amt { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-weight: 700; }   /* 이름표는 칸 왼쪽 끝, 금액은 오른쪽(2026-11-20 사용자) */
+.amt { display: block; font-weight: 700; }
 .amt.min { color: #2b6df3; }
 .chip { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 20px; font-size: 12px; border-radius: 4px; padding: 0 6px; line-height: 1; vertical-align: middle; }   /* 글이 상자 가운데(위로 뜨던 것, 2026-11-20 사용자) */
 .chip.hot { background: #fdecec; color: #dc2626; }
 .chip.wait { background: #fff4e5; color: #b45309; }
 .chip.reg { background: #eef3fe; color: #2b6df3; }
 .my { display: grid; gap: 3px; font-size: 12px; color: #6b7280; }
-.amt.dt { color: #111827; margin-top: 4px; }
+.c .nx { display: block; font-weight: 700; color: #111827; margin-bottom: 2px; }
 .my > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* 가격매력 · 대비 · 이득 한 줄, 실거래 · 경고 한 줄(2026-11-20 사용자) */
 .my b { font-weight: 700; color: #111827; white-space: nowrap; }
 .my .good { color: #16a34a; }
