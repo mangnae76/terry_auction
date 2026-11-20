@@ -8,6 +8,8 @@ import { useAuctionStore } from '../stores/auctionStore';
 import { caseKey } from '../services/bidPredict';
 import { parsedFromCase, caseNumberOf } from '../services/caseRegister';
 import CaseJudgeList, { type JudgeRow } from './CaseJudgeList.vue';
+import AppConfirm from './AppConfirm.vue';
+import { useCaseRegister } from '../composables/useCaseRegister';
 import { useSale2 } from '../composables/useSale2';
 import { addressWithName, buildingNameOf } from '../utils/addressName';
 import { kakaoBuildingName } from '../services/addressSearch';
@@ -134,15 +136,13 @@ const openPhotos = (r: JudgeRow) => { if (r.tid) window.open(`${TANK_VIEW}${enco
 /* ---------- 등록하기 — 목록 값만 채운 물건(PDF 등록 · 직접입력과 같은 저장 길). 탱크 제목은 메모로 ---------- */
 const busyId = ref('');
 const favById = computed(() => new Map(items.value.map((f) => [f.tid, f])));
+const { confirmBox, register: registerCase } = useCaseRegister();
 const register = async (r: JudgeRow) => {
   const f = favById.value.get(r.id);
   if (!f || busyId.value || mine.value.has(f.key)) return;
   busyId.value = r.id;
-  try {
-    const c = favCaseNo(f.key);
-    await auctions.importParsedPdfAuctions([parsedFromCase({ source: '탱크 관심물건', caseNo: c.caseNo, pn: c.pn, court: favCourtName(f.court), kind: f.kind, addr: addrOf(f), road: f.road, fails: f.fails, date: f.date, appr: f.appr, min: f.min, bArea: f.bArea, lArea: f.lArea, memo: f.memo ? `탱크 관심물건 ${f.memo}` : '' })]);
-    note.value = `${caseNumberOf(c)} 을 물건목록에 올렸습니다.`;
-  } catch { note.value = '등록하지 못했습니다. 다시 해 주세요.'; }
+  const c = favCaseNo(f.key);
+  await registerCase(f.key, caseNumberOf(c), () => parsedFromCase({ source: '탱크 관심물건', caseNo: c.caseNo, pn: c.pn, court: favCourtName(f.court), kind: f.kind, addr: addrOf(f), road: f.road, fails: f.fails, date: f.date, appr: f.appr, min: f.min, bArea: f.bArea, lArea: f.lArea, memo: f.memo ? `탱크 관심물건 ${f.memo}` : '' }), (m) => { note.value = m; });
   busyId.value = '';
 };
 
@@ -214,6 +214,7 @@ const favRows = computed<JudgeRow[]>(() => shown.value.map((f) => {
       <!-- 표는 저가매수와 같은 공통 부품(2026-11-20 사용자) -->
       <CaseJudgeList v-else :rows="favRows" :busy-id="busyId" empty="조건에 맞는 관심물건이 없습니다." @register="register" @photo="openPhotos" />   <!-- 줄 눌러 펼치는 칸(탱크 제목 · 명세서 · 목록 값)은 뺌(2026-11-20 사용자) -->
     </section>
+    <Teleport to="body"><AppConfirm :box="confirmBox" @close="confirmBox = null" /></Teleport>   <!-- 보관함에 있으면 꺼낼지 묻는다 -->
   </div>
 </template>
 

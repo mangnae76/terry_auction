@@ -12,6 +12,8 @@ import { caseKey } from '../services/bidPredict';
 import { favCaseNo } from '../services/tankFav';
 import { parsedFromCase, caseNumberOf } from '../services/caseRegister';
 import CaseJudgeList, { type JudgeRow } from './CaseJudgeList.vue';
+import AppConfirm from './AppConfirm.vue';
+import { useCaseRegister } from '../composables/useCaseRegister';
 
 /* ---------- 조회 조건 — 웹 맨 위 띠(시/도 · 시/군/구 · 읍면동 · 종류 · 조회)가 'lowbuy:query' 로 알리고 이 브라우저에 남긴다(2026-11-20 사용자 시안) ---------- */
 type LbQuery = { sido: string; sgg: string; dong: string; kind: '연립다세대' | '아파트' | '오피스텔' };
@@ -100,14 +102,12 @@ const judgeRows = computed<JudgeRow[]>(() => rows.value.map((r) => {
 }));
 const note = ref('');
 const busyId = ref('');
+const { confirmBox, register: registerCase } = useCaseRegister();
 const register = async (j: JudgeRow) => {
   if (busyId.value || mine.value.has(j.key)) return;
   busyId.value = j.id;
-  try {
-    const c = favCaseNo(j.key);
-    await auctions.importParsedPdfAuctions([parsedFromCase({ source: '저가매수', caseNo: c.caseNo, pn: c.pn, court: '', kind: j.kind, addr: j.addr, fails: j.fails, date: j.date, appr: j.appr, min: j.min, bArea: j.area })]);
-    note.value = `${caseNumberOf(c)} 을 물건목록에 올렸습니다.`;
-  } catch { note.value = '등록하지 못했습니다. 다시 해 주세요.'; }
+  const c = favCaseNo(j.key);
+  await registerCase(j.key, caseNumberOf(c), () => parsedFromCase({ source: '저가매수', caseNo: c.caseNo, pn: c.pn, court: '', kind: j.kind, addr: j.addr, fails: j.fails, date: j.date, appr: j.appr, min: j.min, bArea: j.area }), (m) => { note.value = m; });
   busyId.value = '';
 };
 /** 사진 — 탱크 사건 화면을 새 창으로(관심물건과 같은 길) */
@@ -141,6 +141,7 @@ const openPhotos = (j: JudgeRow) => { if (j.tid) window.open(`${TANK_VIEW}${enco
       </template>
       <p v-if="hits.length" class="lbp-note">숫자는 마이가 {{ asOfSpan }}에 모은 {{ dong }} 사건과 저장된 국토부 실거래{{ tradeSpan ? `(${tradeSpan})` : '' }} 기준입니다. 연식 · 엘베는 건축물대장. 진행 상태는 그 뒤 바뀌었을 수 있습니다.</p>
     </section>
+    <Teleport to="body"><AppConfirm :box="confirmBox" @close="confirmBox = null" /></Teleport>   <!-- 보관함에 있으면 꺼낼지 묻는다 -->
   </div>
 </template>
 
