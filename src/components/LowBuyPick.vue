@@ -106,7 +106,7 @@ const mktWarn = (r: LowBuyRow) => !!r.mkt && r.mkt.price < r.appr * LB_WARN;
 .lbp-tbl th .ar { font-style: normal; font-size: 12px; color: #2b6df3; }
 .lbp-tbl tr.hot td { background: #fff5f5; }   /* 가격매력 줄 — 연분홍 */
 .lbp-case { color: #2b6df3; line-height: 1.35; }
-.lbp-chip { display: block; width: max-content; margin: 3px auto 0; font-size: 12px; padding: 0 6px; line-height: 18px; border-radius: 4px; background: #fdecec; color: #dc2626; }
+.lbp-chip { display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: max-content; height: 20px; margin: 3px auto 0; font-size: 12px; padding: 0 6px; line-height: 1; border-radius: 4px; background: #fdecec; color: #dc2626; }   /* 글이 상자 가운데(2026-11-20 사용자) */
 .lbp-tbl .ev { font-size: 12px; border-radius: 4px; padding: 1px 6px; white-space: nowrap; }   /* 엘베 — 낙찰가예측 표와 같은 칩 */
 .lbp-tbl .ev.o { background: #e7f6ed; color: #1f7a4a; font-weight: 600; }
 .lbp-tbl .ev.x { background: #fdecec; color: #dc2626; }

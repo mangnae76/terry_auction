@@ -185,7 +185,7 @@ const register = async (f: TankFav) => {
         <span class="nm">AI 권리분석</span>
         <span class="q ok">분석됨 <b>{{ aiDone.toLocaleString('ko-KR') }}</b></span>
         <span class="q wait">분석 안 함 <b>{{ (favMine.length - aiDone).toLocaleString('ko-KR') }}</b></span>
-        <span class="txt">등록한 관심물건 {{ favMine.length.toLocaleString('ko-KR') }}건 기준 · 명세서 자동 받기와 자동 분석은 준비 중</span>
+        <span class="txt">등록한 관심물건 {{ favMine.length.toLocaleString('ko-KR') }}건 기준 · 매각물건명세서 자동 받기와 자동 분석은 준비 중</span>
       </div>
 
       <div class="tfp-flt">
@@ -234,7 +234,7 @@ const register = async (f: TankFav) => {
                 </template>
                 <span v-else-if="lbByKey.get(f.key)">비교할 비슷한 물건 없음</span>
                 <span v-else>{{ lbDone(f) ? '같은 동 비교 자료 없음' : '비교 자료 불러오는 중' }}</span>
-                <span>명세서 <span class="chip wait">받기 준비 중</span></span>
+                <span>매각물건명세서 <span class="chip wait">받기 준비 중</span></span>
               </template>
               <span v-else class="mu">—</span>
             </div>
@@ -246,7 +246,7 @@ const register = async (f: TankFav) => {
           </div>
           <div v-if="open === f.tid" class="det">
             <div class="bx"><b>탱크 제목(내용)</b><span>{{ f.memo || '—' }}</span></div>
-            <div class="bx"><b>매각물건명세서 · 기일내역</b><span class="mu">명세서 공개 뒤 채움(법원경매정보에서 받기는 준비 중)</span></div>
+            <div class="bx"><b>매각물건명세서 · 기일내역</b><span class="mu">매각물건명세서 공개 뒤 채움(법원경매정보에서 받기는 준비 중)</span></div>
             <div class="bx"><b>탱크 목록 값</b><span>등록 {{ d8(f.wdate) }} · 조회 {{ f.hit.toLocaleString('ko-KR') }}<template v-if="f.sold > 0"> · 낙찰 {{ won(f.sold) }}<template v-if="f.bids"> · {{ f.bids }}명</template><template v-if="f.second"> · 2등 {{ won(f.second) }}</template></template></span></div>
           </div>
         </template>
@@ -302,7 +302,7 @@ const register = async (f: TankFav) => {
 .sort button.on { color: #2b6df3; font-weight: 700; }
 .tfp-list { display: grid; border: 1px solid #e3e7ee; border-radius: 8px; overflow: hidden; }
 .tfp-empty { margin: 0; padding: 28px 12px; text-align: center; font-size: 13px; color: #6b7280; }
-.it { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1.1fr) 84px minmax(0, 1fr) minmax(0, 1.6fr) 74px; gap: 12px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; cursor: pointer; font-size: 13px; color: #111827; }
+.it { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1.1fr) 84px minmax(0, 1fr) 384px 84px; gap: 12px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; cursor: pointer; font-size: 13px; color: #111827; }
 .it:last-child, .det:last-child { border-bottom: 0; }
 .it.hot { background: #fff5f5; }
 .it.on { background: #eef3fe; box-shadow: inset 3px 0 0 #2b6df3; }
@@ -319,16 +319,20 @@ const register = async (f: TankFav) => {
 .ctr { text-align: center; }
 .amt { display: block; font-weight: 700; }
 .amt.min { color: #2b6df3; }
-.chip { display: inline-block; font-size: 12px; border-radius: 4px; padding: 0 6px; line-height: 18px; }
+.chip { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 20px; font-size: 12px; border-radius: 4px; padding: 0 6px; line-height: 1; vertical-align: middle; }   /* 글이 상자 가운데(위로 뜨던 것, 2026-11-20 사용자) */
 .chip.hot { background: #fdecec; color: #dc2626; }
 .chip.wait { background: #fff4e5; color: #b45309; }
 .chip.reg { background: #eef3fe; color: #2b6df3; }
 .my { display: grid; gap: 3px; font-size: 12px; color: #6b7280; }
+.my > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* 가격매력 · 대비 · 이득 한 줄, 실거래 · 경고 한 줄(2026-11-20 사용자) */
 .my b { font-weight: 700; color: #111827; white-space: nowrap; }
 .my .good { color: #16a34a; }
 .my .bad, .my span.bad { color: #dc2626; }
 .mu { color: #9ca3af; }
 .act { display: grid; gap: 6px; justify-items: center; }
+.act { align-self: center; align-content: center; }
+.act .tfp-btn, .act .chip.reg { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; height: 30px; width: 76px; padding: 0; border-radius: 8px; font-size: 12px; line-height: 1; }   /* 등록됨도 등록하기와 같은 크기 · 가로세로 가운데(2026-11-20 사용자) */
+.act .chip.reg { border: 1px solid #c9d6f5; font-weight: 700; }
 .tfp-btn { border: 1px solid #d5dbe5; background: #fff; color: #111827; border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .tfp-btn:disabled { color: #c2c8d3; cursor: default; }
 .lnk { border: 0; background: none; padding: 0; color: #2b6df3; font: inherit; font-size: 12px; cursor: pointer; }
