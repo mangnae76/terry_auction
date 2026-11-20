@@ -2,7 +2,9 @@
 /* 사건 판단 표 — 물건등록 › 관심물건과 매각분석 › 저가매수가 같이 쓰는 한 표(2026-11-20 사용자 '두 표가 달라야 될 이유가 없다').
  * 머리 · 사건 · 주소 | 감정가 · 최저가 | 기일 · 유찰 | 예상 매도가 1 | 예상 매도가 2 | 최저가 낙찰 차익 | 응찰 확률 | 최저가 낙찰 확률 | 처리(2026-11-20 사용자 최종 시안).
  * 줄 꼴 · 칸 폭 · 색은 이 한 곳 — 탭마다 다른 것(분류 · 관심도 · 펼침)은 속성으로 */
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
+import { useOfficialPrice } from '../composables/useOfficialPrice';
+import { apprToOfficial, eokText } from '../services/officialPrice';
 import { useSale2 } from '../composables/useSale2';
 import { buildingAgeText } from '../utils/buildingAge';
 import { propTypeName } from '../utils/propertyType';
@@ -57,6 +59,13 @@ const copyAddr = async (r: JudgeRow) => {
   catch { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 그만 */ } ta.remove(); }
   copiedId.value = r.id; if (copyTimer) clearTimeout(copyTimer); copyTimer = setTimeout(() => { copiedId.value = ''; }, 1500);
 };
+/* ---------- 공시가(공동주택가격) — 감정가가 공시가의 몇 %인지(2026-11-20 사용자). 진행 중 사건만, 호실이 맞을 때만 ---------- */
+const { official, want: wantOfficial } = useOfficialPrice();
+watch(() => props.rows.filter((r) => r.status === '진행').map((r) => `${r.key}|${r.addr}|${r.area}`).join(','), () => {
+  void wantOfficial(props.rows.filter((r) => r.status === '진행').map((r) => ({ key: r.key, addr: r.addr, area: r.area })));
+}, { immediate: true });
+const offOf = (r: JudgeRow) => official.value[r.key] ?? null;
+const offPct = (r: JudgeRow) => { const o = offOf(r); return o ? apprToOfficial(r.appr, o.price) : null; };
 const emit = defineEmits<{ register: [row: JudgeRow]; photo: [row: JudgeRow]; toggle: [row: JudgeRow] }>();
 
 const won = (v: number) => Math.round(v).toLocaleString('ko-KR');
@@ -106,17 +115,19 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
           <i class="lc3" aria-hidden="true" />
           <small>전용 {{ r.area > 0 ? `${r.area.toFixed(2)}㎡ / ${pyOf(r.area)}평` : '—' }}<template v-if="r.lb?.year"> · {{ r.lb?.year }}년식 / {{ buildingAgeText(r.lb?.year) }}</template><template v-if="r.lb?.elev != null"> · 엘베 {{ r.lb?.elev ? '있음' : '없음' }}</template></small>
         </div>
-        <div class="c ctr amtc"><span class="amt"><em class="rd">신건</em><span class="n">{{ r.appr ? won(r.appr) : '미확정' }}</span></span><small>{{ r.appr && r.area ? `평당 ${man(r.appr / (r.area / PY))}` : '' }}</small><span class="amt min"><em class="rd">{{ r.fails + 1 }}차</em><span class="n">{{ r.min ? won(r.min) : '—' }}</span></span><small class="minpy">{{ r.min && r.area ? `평당 ${man(r.min / (r.area / PY))}` : '' }}</small></div>
+        <div class="c ctr amtc"><span class="amt"><em class="rd">신건</em><span class="n">{{ r.appr ? won(r.appr) : '미확정' }}</span></span><small>{{ r.appr && r.area ? `평당 ${man(r.appr / (r.area / PY))}` : '' }}</small><span class="amt min"><em class="rd">{{ r.fails + 1 }}차</em><span class="n">{{ r.min ? won(r.min) : '—' }}</span></span><small class="minpy">{{ r.min && r.area ? `평당 ${man(r.min / (r.area / PY))}` : '' }}</small><small v-if="offOf(r) && offPct(r)" class="gongsi">공시 {{ eokText(offOf(r)!.price) }} · 감정 {{ Math.round(offPct(r)!).toLocaleString('ko-KR') }}%</small></div>   <!-- 감정가 ÷ 공동주택가격(호실이 맞을 때만) -->
         <div class="c ctr"><span class="nx">{{ d8(r.date) }}</span>{{ favRound(r).label }}<small v-if="favRound(r).pct">({{ favRound(r).pct }})</small><small v-if="r.status !== '진행'">{{ r.stateText }}</small></div>
         <template v-if="judged(r)">
           <!-- 예상 매도가 1 — 계산값, 체크박스는 금액 왼쪽 -->
           <div :class="['c ctr pick', { on: !judgeOf(r).use2 && !!r.lb?.est }]" @click.stop>
-            <template v-if="r.lb?.est"><span class="ln"><input type="checkbox" :checked="!judgeOf(r).use2" :aria-label="`${r.caseNo} 예상 매도가 1로 계산`" @change="pick1(r)"><b>{{ won(r.lb.est.price) }}</b></span><small>{{ r.lb.est.how }} · {{ r.lb.est.n.toLocaleString('ko-KR') }}건{{ d8s(r.lb.est.last) }}</small><small v-if="judgeOf(r).weak" class="warn">1건 — 호가 확인</small></template>
+            <template v-if="r.lb?.est"><span class="ln"><input type="checkbox" :checked="!judgeOf(r).use2" :aria-label="`${r.caseNo} 예상 매도가 1로 계산`" @change="pick1(r)"><b>{{ won(r.lb.est.price) }}</b></span><small>{{ r.lb.est.how }} · {{ r.lb.est.n.toLocaleString('ko-KR') }}건{{ d8s(r.lb.est.last) }}</small></template>   <!-- '1건 — 호가 확인' 줄은 뺌 — 근거 줄이 같은 뜻(2026-11-20 사용자). 1건이면 칩을 안 다는 규칙은 그대로 -->
             <span v-else class="mu">—</span>
           </div>
           <!-- 예상 매도가 2 — 알아본 값, 넣으면 저절로 체크 -->
           <div :class="['c ctr pick', { on: judgeOf(r).use2 }]" @click.stop>
             <span class="ln"><input type="checkbox" :checked="judgeOf(r).use2" :aria-label="`${r.caseNo} 예상 매도가 2로 계산`" @change="pick2(r, $event)"><input class="mev" inputmode="numeric" :value="sale2[r.key]?.p ? sale2[r.key].p.toLocaleString('ko-KR') : ''" :aria-label="`${r.caseNo} 예상 매도가 2`" @input="onSale2(r, $event)"></span>
+            <!-- 1 칸 아래 근거 줄과 같은 높이 자리 — 두 칸 첫 줄(체크박스 · 금액/입력칸)이 한 가로선에(2026-11-20 사용자) -->
+            <template v-if="r.lb?.est"><small class="ph" aria-hidden="true">{{ r.lb.est.how }} · {{ r.lb.est.n.toLocaleString('ko-KR') }}건{{ d8s(r.lb.est.last) }}</small></template>   <!-- 1 칸과 같은 글을 숨겨 둬 줄바꿈까지 같은 높이 -->
           </div>
           <div class="c ctr"><template v-if="judgeOf(r).gap != null"><b :class="judgeOf(r).gap! > 0 ? 'good' : 'bad'">{{ gainText(judgeOf(r).gap!) }}</b><small>{{ pctSigned(judgeOf(r).rate!) }}</small></template><span v-else class="mu">—</span></div>
           <div class="c ctr"><b v-if="r.lb?.pBid != null">{{ pctOf(r.lb.pBid) }}</b><span v-else class="mu">—</span></div>
@@ -171,6 +182,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .tchip.reg { background: #eef3fe; color: #2b6df3; }
 .amt .rd { display: inline-block; text-align: right; font-style: normal; font-size: 12px; font-weight: 400; color: #6b7280; margin-right: 6px; }   /* 금액 옆 작은 차수 — 신건 · 2차, 금액과 글자 한 칸쯤 떨어짐(2026-11-20 사용자) */
 .amt .n { display: inline-block; min-width: 10.5ch; text-align: right; font-variant-numeric: tabular-nums; }   /* 금액 폭을 같게 — 신건 · 2차 글이 세로로 한 줄 */
+.c small.gongsi { color: #6b7280; white-space: nowrap; margin-top: 2px; }   /* 공시 · 감정 % — 감정가 · 최저가 칸 맨 아래 */
 .c small.minpy { color: #2b6df3; }
 .c .nx { display: block; font-weight: 400; color: #111827; margin-bottom: 2px; }   /* 날짜 굵기 없음 */
 .it.hd { background: #f6f8fb; color: #6b7280; font-size: 12px; font-weight: 600; padding-top: 9px; padding-bottom: 9px; cursor: default; line-height: 1.35; }
@@ -180,9 +192,10 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .c.span5 { grid-column: span 5; text-align: center; font-size: 12px; }
 .c.pick { align-self: stretch; display: flex; flex-direction: column; justify-content: center; border-radius: 6px; padding: 4px 2px; }
 .c.pick.on { background: #eef3fe; box-shadow: inset 0 0 0 1px #2b6df3; }   /* 고른 매도가 칸 */
-.c.pick .ln { display: flex; align-items: center; justify-content: center; gap: 6px; }   /* 체크박스는 금액 왼쪽 */
+.c.pick .ln { display: flex; align-items: center; justify-content: center; gap: 6px; height: 26px; }   /* 두 칸 첫 줄 높이 같게 — 입력칸 높이 26 */
+.c.pick small.ph { visibility: hidden; }   /* 체크박스는 금액 왼쪽 */
 .c.pick input[type='checkbox'] { flex: none; margin: 0; width: 15px; height: 15px; accent-color: #2b6df3; cursor: pointer; }
-.c.pick input.mev { width: 96px; box-sizing: border-box; border: 1px solid #d5dbe5; border-radius: 6px; padding: 4px 6px; text-align: right; font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; background: #fff; color: #111827; }
+.c.pick input.mev { width: 96px; height: 26px; box-sizing: border-box; border: 1px solid #d5dbe5; border-radius: 6px; padding: 4px 6px; text-align: right; font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; background: #fff; color: #111827; }
 .c.pick input.mev:focus { outline: none; border-color: #2b6df3; }
 .c small.warn { color: #b45309; }
 .pbar { display: block; width: 56px; height: 5px; margin: 4px auto 0; border-radius: 3px; background: #e3e7ee; overflow: hidden; }
