@@ -120,13 +120,10 @@ const caseText = (f: TankFav) => { const c = favCaseNo(f.key); return c; };
 const courtShort = (c: string) => { const [a, b] = c.split('-'); return b && b !== '본원' ? b : a || c; };
 const mktWarn = (r: LowBuyRow) => !!r.mkt && r.mkt.price < r.appr * LB_WARN;
 
-/* ---------- 사진 — 법원 사건 화면은 고정 주소가 없어 사건번호를 복사하고 경매사건검색을 새 창으로 ---------- */
-const COURT_SEARCH = 'https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ159M00.xml';
-const openPhotos = async (f: TankFav) => {
-  const c = favCaseNo(f.key);
-  try { await navigator.clipboard.writeText(c.caseNo); note.value = `${c.caseNo}${c.pn ? ` 물건 ${c.pn}` : ''}를 복사했습니다. 법원경매정보 경매사건검색에 붙여 넣으면 사진이 보입니다.`; } catch { note.value = `법원경매정보 경매사건검색에서 ${c.caseNo}${c.pn ? ` 물건 ${c.pn}` : ''}를 찾으면 사진이 보입니다.`; }
-  window.open(COURT_SEARCH, '_blank', 'noopener');
-};
+/* ---------- 사진 — 탱크 사건 화면을 새 창으로 바로(사진 · 명세서 다 있음). 법원 사이트는 사건별 고정 주소가 없어 바로 못 간다(2026-11-20 사용자).
+ *  사람이 누를 때 한 번 열리는 것이라 마이가 상세를 열지 않는 규칙과는 다르다 — 그 브라우저에 탱크 로그인이 있어야 한다 ---------- */
+const TANK_VIEW = 'https://www.tankauction.com/ca/inc/component/popup/caView.php?tid=';
+const openPhotos = (f: TankFav) => { window.open(`${TANK_VIEW}${encodeURIComponent(f.tid)}`, '_blank', 'noopener'); };
 
 /* ---------- 등록하기 — 목록 값만 채운 물건(PDF 등록 · 직접입력과 같은 저장 길). 탱크 제목은 메모로 ---------- */
 const busyKey = ref('');
