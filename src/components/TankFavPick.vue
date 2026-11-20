@@ -167,9 +167,11 @@ const register = async (f: TankFav) => {
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#213366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8l-5.8 3.1 1.1-6.5L2.6 9.8l6.5-.9L12 3Z" /></svg>
         <h2>관심물건<span class="tfp-op">운영</span></h2>
         <span class="tfp-sub"><template v-if="doc">탱크옥션 관심물건 {{ items.length.toLocaleString('ko-KR') }}건 · {{ fmtAt(doc.at) }} 가져옴</template><template v-else-if="!loading">아직 가져온 관심물건이 없습니다</template></span>
-        <span class="sp" />
-        <button type="button" class="tfp-go" :disabled="!agentOn || !!agent?.paused || !!agent?.busy" @click="fetchFav">{{ favBusy ? '가져오는 중' : '관심물건가져오기' }}</button>
       </header>
+      <!-- 가져오기 단추 왼쪽 · 세로 가름선 · 오른쪽 마이 상자, 높이 36 맞춤(2026-11-20 사용자) -->
+      <div class="tfp-bar">
+        <button type="button" class="tfp-go" :disabled="!agentOn || !!agent?.paused || !!agent?.busy" @click="fetchFav">{{ favBusy ? '가져오는 중' : '관심물건가져오기' }}</button>
+        <i class="tfp-vsep" aria-hidden="true" />
       <div class="tfp-mai">
         <span class="nm">마이</span>
         <span :class="['s', !agentOn ? 'off' : agent?.paused ? 'rest' : 'on']"><i aria-hidden="true" /><template v-if="!agentOn">꺼짐 · PC가 켜지면 저절로 뜸</template><template v-else-if="agent?.paused">대기 중 · 명령 단추 잠김</template><template v-else>{{ agent?.busy ? (favBusy ? '관심물건 가져오는 중' : '수집 중') : '켜짐' }} · <span class="ago">{{ agentAgo }}</span>초 전<template v-if="agent?.version"> · {{ verLabel(agent.version) }}</template></template></span>
@@ -178,6 +180,7 @@ const register = async (f: TankFav) => {
           <button v-if="agent?.paused" type="button" class="b go" @click="maiCmd('resume')">실행</button>
           <button v-else type="button" class="b" :disabled="!!agent?.busy" @click="maiCmd('pause')">대기</button>
         </template>
+      </div>
       </div>
       <p v-if="favBusy && agent?.message" class="tfp-note">{{ agent.message }}</p>
       <p v-else-if="note" class="tfp-note">{{ note }}</p>
@@ -267,6 +270,10 @@ const register = async (f: TankFav) => {
 .tfp-go:disabled { background: #c9d6f5; border-color: #c9d6f5; cursor: default; }
 .tfp-note { margin: -4px 0 0; font-size: 12px; color: #4b5563; }
 /* 마이 줄 — 낙찰가예측 수집 상자와 같은 꼴 */
+.tfp-bar { display: flex; align-items: center; gap: 12px; }
+.tfp-bar .tfp-go { height: 36px; box-sizing: border-box; padding-top: 0; padding-bottom: 0; flex: none; }
+.tfp-vsep { width: 1px; align-self: stretch; background: #e3e7ee; }
+.tfp-bar .tfp-mai { flex: 1; min-width: 0; height: 36px; box-sizing: border-box; padding-top: 0; padding-bottom: 0; }
 .tfp-mai { display: flex; align-items: center; gap: 8px; background: #f7f9fd; border: 1px solid #e3e7ee; border-radius: 8px; padding: 6px 8px 6px 10px; }
 .tfp-mai .nm, .tfp-ai .nm { font-size: 12px; font-weight: 700; color: #4b5563; white-space: nowrap; }
 .tfp-mai .s { flex: 1; min-width: 0; font-size: 12px; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
