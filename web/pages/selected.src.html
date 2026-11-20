@@ -5338,6 +5338,7 @@ span.cal-day.has { cursor: help; }
     if (head === 'market' && (m[2] === 'near' || m[2] === 'same')) return { route: 'market', sub: 'sale', saleTab: m[2] }; /* 예전 인근 · 동일지번 하위 탭 — 매각사례 안 박스 탭으로 */
     if (head === 'market' && m[2] === 'sale') return { route: 'market', sub: 'sale', saleTab: m[3] === 'predict' ? 'predict' : m[3] === 'lowbuy' ? 'lowbuy' : m[3] === 'same' ? 'same' : 'near' };   /* predict = 낙찰가예측 탭(2026-11-14) · lowbuy = 저가매수 탭(2026-11-20) */
     if (SUB_TAB_KEYS[head]) return { route: head, sub: SUB_TAB_KEYS[head].includes(m[2]) ? m[2] : SUB_TAB_KEYS[head][0] };
+    if (head === 'register') return { route: 'register', regTab: m[2] === 'fav' ? 'fav' : 'direct' };   /* fav = 관심물건(운영) 탭(2026-11-20) */
     if (PLAIN_ROUTES.includes(head)) return { route: head };
     if (head === 'list') return { route: 'list' };
     return { route: 'home' };   /* #/ · 빈 주소 — 홈(로그인 후 대문, 2026-11-03). 선정물건은 #/list */
@@ -5348,6 +5349,7 @@ span.cal-day.has { cursor: help; }
   if (H0.fromManual) fromManual();
   const S = {
     marketTab: H0.route === 'market' ? H0.sub : 'dong', /* 시장분석 하위 탭 */
+    regTab: H0.regTab || 'direct', /* 물건등록 탭 — direct 직접등록 · fav 관심물건(운영, 2026-11-20) */
     saleTab: H0.saleTab || 'near', /* 매각분석 탭 — near 매각사례(예전 same 도 매각사례로) · predict 낙찰가예측 */
     /* 낙찰이후 · 자금관리 · 더보기의 하위 탭 */
     pageTab: Object.fromEntries(Object.keys(APP_PAGE_NAMES).map((k) => [k, H0.route === k ? H0.sub : SUB_TAB_KEYS[k][0]])),
@@ -5378,6 +5380,7 @@ span.cal-day.has { cursor: help; }
   /** 지금 화면 → 주소 */
   const hashOf = () => (S.route === 'item' ? itemHash(S.itemId, S.itemTab)
     : S.route === 'market' && S.marketTab === 'sale' ? `#/market/sale/${S.saleTab}`
+    : S.route === 'register' && S.regTab === 'fav' ? '#/register/fav'
     : SUB_TAB_KEYS[S.route] ? `#/${S.route}/${S.route === 'market' ? S.marketTab : S.pageTab[S.route]}`
       : S.route === 'home' ? '#/' : `#/${S.route}`);
   /** 주소에 적는다 — 화면 · 하위 탭을 사람이 바꾸면 push(뒤로 가기로 바로 전 탭), 옛 주소 고치기 · 권한 때문에 돌리기 같은 자동 이동은 replace */
@@ -6310,6 +6313,7 @@ span.cal-day.has { cursor: help; }
     R.favs = R.favs.map((f, k) => (k === i ? { name: String(m.editName ?? f.name).trim() || '이름 없는 폴더', url } : f));
     R.sel = R.sel.map((u) => (u === old ? url : u)); saveFavs(); m.edit = -1; m.editName = undefined; m.editUrl = undefined; return true;
   };
+  let regFavUnmount = null;   /* 관심물건 탭에 붙인 앱 화면 떼기 */
   function renderRegister() {
     loadRegLists(); saveRegLists();
     const favName = (url) => (R.favs.find((f) => f.url === url) || {}).name || '이름 없는 폴더';
@@ -6318,10 +6322,14 @@ span.cal-day.has { cursor: help; }
     const masked = R.aiKey ? `${R.aiKey.slice(0, 4)}…${R.aiKey.slice(-4)}` : '';
     const aiV = { has: !!R.aiKey, on: !!(R.aiOn && R.aiKey) };
     /* 선정물건등록 — 상자 둘을 나란히: 왼쪽 구글드라이브 연동(1줄 제목·스캔할 폴더 칸 / 2줄 폴더등록·폴더스캔·PDF등록) · 오른쪽 AI 자동 분석 */
-    /* 흰 띠 — 경로(홈 › 물건등록)만. 자동등록 · 직접입력은 탭으로 가르지 않고 한 페이지에 위아래로 둔다(2026-11-03) */
+    /* 흰 띠 — 경로(홈 › 물건등록)만. 자동등록 · 직접입력은 탭으로 가르지 않고 한 페이지에 위아래로 둔다(2026-11-03).
+       운영진이면 탭 둘 — 직접등록(지금 화면 그대로) · 관심물건(탱크옥션 관심물건, 2026-11-20) */
+    const favOk = (() => { try { return agIsAdmin(); } catch (e) { return false; } })();
+    if (S.regTab === 'fav' && !favOk && S.authReady) { S.regTab = 'direct'; writeHash(false); }
     const tabbar = `
       <div class="reg-tabbar">
         <div class="sub-crumb-left" id="regCrumbLeft"></div>
+        ${favOk ? `<button type="button" role="tab" class="reg-tab ${S.regTab !== 'fav' ? 'on' : ''}" aria-selected="${S.regTab !== 'fav'}" data-act="reg-tab" data-v="direct">직접등록</button><button type="button" role="tab" class="reg-tab ${S.regTab === 'fav' ? 'on' : ''}" aria-selected="${S.regTab === 'fav'}" data-act="reg-tab" data-v="fav">관심물건<span class="adm-chip">운영</span></button>` : ''}
         <span class="save-mark" id="saveMarkReg" role="status" aria-live="polite" hidden></span>
         <div class="sub-crumb" id="regCrumbSlot"></div>
       </div>`;
@@ -6338,6 +6346,17 @@ span.cal-day.has { cursor: help; }
     { const sl = $('regCrumbLeft'); if (sl && CRUMBS) sl.appendChild(CRUMBS); }   /* 경로는 탭 줄 맨 앞(흰 띠 왼쪽) — '홈 › 물건등록'까지만 */
     /* 경로(홈 › …)는 다른 화면처럼 탭 줄 오른쪽 끝 — 탭 줄을 새로 그릴 때마다 다시 붙인다 */
     alignSubTabs();   /* 탭 줄을 '물건등록' 아래에서 시작 */
+    /* 관심물건 탭 — 앱 화면 TankFavPick 을 붙인다. 이미 붙어 있으면 그대로(다시 그리면 고른 거르기 · 펼친 줄이 풀린다) */
+    if (S.regTab === 'fav' && favOk) {
+      if (regFavUnmount && $('tankFavMount')) return;
+      if (regFavUnmount) { regFavUnmount(); regFavUnmount = null; }
+      $('regContent').innerHTML = '<div id="tankFavMount" class="tank-fav"></div>';
+      const T = CLOUD.T;
+      if (!T || !T.mountTankFav) { $('tankFavMount').innerHTML = itEmpty('불러오는 중입니다…'); return; }
+      regFavUnmount = T.mountTankFav($('tankFavMount'));
+      return;
+    }
+    if (regFavUnmount) { regFavUnmount(); regFavUnmount = null; }
     /* 자동등록 조작 상자 — 안내 상자 아래에 놓는다 (고정 상자에는 탭만 남는다) */
     const autoBox = `
       <!-- 자동 등록 — 가져와서 읽는 한 절차 (폴더·PDF 로 가져오고, AI 가 읽어 카드로 정리한다) -->
@@ -9989,6 +10008,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     S.route = h.route;
     if (h.route === 'item') { S.itemId = h.itemId; setLastItem(h.itemId); S.itemTab = h.itemTab; }
     if (h.route === 'market') { S.marketTab = h.sub; if (h.saleTab) S.saleTab = h.saleTab; }
+    if (h.route === 'register') S.regTab = h.regTab || 'direct';
     if (h.storeTab) { S.storeTab = h.storeTab; S.storeTabPinned = true; }
     if (h.fromManual) fromManual();
     if (h.ebook) { S.ebOpen = h.ebook; setTimeout(ebOpenShared, 0); }
@@ -10680,6 +10700,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'buy-agree': if (S.modal && S.modal.kind === 'buy') { S.modal.agree = t.checked; const b = $('buyPay'); if (b) b.disabled = !t.checked; } break;
       case 'buy-pay': toast('결제는 준비 중입니다 — 결제 연동이 끝나면 열립니다.', 'info'); break;
       case 'store-login': openAppLogin(); break;   /* 콘텐츠 › 내콘텐츠 — 로그인 전 */
+      case 'reg-tab': { const nv = v === 'fav' && agIsAdmin() ? 'fav' : 'direct'; if (S.regTab === nv) break; S.regTab = nv; writeHash(true); renderRegister(); toTop(); break; }
       case 'sale-tab': { const nv = v === 'predict' || v === 'lowbuy' ? v : 'near'; if (S.saleTab === nv) break; S.saleTab = nv; writeHash(true); renderMarket(); toTop(); break; }
       case 'store-tab': S.storeTab = v; store.set('wlp.web.storeTab2', v); renderInfo(); break;
       /* 전자책 무료로받기 — 회원가입 후 로그인한 회원만. 받은 기록을 남기고(콘텐츠 › 내콘텐츠) 새 탭으로 내려받는다 */

@@ -172,7 +172,7 @@ service cloud.firestore {
     function validAgentCmd(c) {
       return c is map && c.keys().hasOnly(['id', 'name', 'args', 'at'])
         && c.id is string && c.id.size() <= 64
-        && c.name in ['open', 'screen', 'auto', 'enrich', 'queue', 'daylist', 'hits', 'restart', 'pause', 'resume']   // restart · pause · resume — 웹에서 마이 다시시작 · 대기 · 실행(2026-11-19)
+        && c.name in ['open', 'screen', 'auto', 'enrich', 'queue', 'daylist', 'hits', 'restart', 'pause', 'resume', 'fav']   // restart · pause · resume — 웹에서 마이 다시시작 · 대기 · 실행(2026-11-19), fav — 탱크 관심물건 가져오기(2026-11-20)
         && c.args is map && c.args.keys().hasOnly(['site', 'months', 'src', 'fresh', 'from', 'to', 'court', 'dong'])
         // daylist(기일 목록, 2026-11-14) — 기간 · 법원
         && (!('from' in c.args) || (c.args.from is string && c.args.from.size() == 10))
@@ -260,6 +260,15 @@ service cloud.firestore {
         && agentData().keys().hasOnly(['month', 'rows', 'by', 'at'])
         && agentData().month is string && agentData().month.size() == 7
         && agentData().rows is list && agentData().rows.size() <= 2000
+        && agentData().by == 'agent';
+    }
+    // 탱크옥션 관심물건 — 마이가 목록 API 로 읽은 전부(500건까지) 한 문서. 물건등록 › 관심물건 탭이 읽는다(2026-11-20)
+    match /saleData/dayList/fav/{doc} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin()
+        && agentData().keys().hasOnly(['items', 'cats', 'noCtgr', 'total', 'by', 'at'])
+        && agentData().items is list && agentData().items.size() <= 500
+        && agentData().cats is list && agentData().cats.size() <= 100
         && agentData().by == 'agent';
     }
     match /saleData/agentQueue {

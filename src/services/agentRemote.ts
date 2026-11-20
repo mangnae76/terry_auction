@@ -15,7 +15,7 @@
 import { collection, doc, getDoc, getDocFromServer, getDocs, onSnapshot, query, runTransaction, serverTimestamp, setDoc, where, type Unsubscribe } from 'firebase/firestore';
 import { firestore } from './firebase';
 
-export type AgentCmdName = 'open' | 'screen' | 'auto' | 'enrich' | 'queue' | 'daylist' | 'hits' | 'restart' | 'pause' | 'resume';
+export type AgentCmdName = 'open' | 'screen' | 'auto' | 'enrich' | 'queue' | 'daylist' | 'hits' | 'restart' | 'pause' | 'resume' | 'fav';   // fav — 탱크 관심물건 가져오기(2026-11-20)
 export type AgentCmdArgs = { site?: '옥션원' | '탱크옥션'; months?: 0 | 6 | 12 | 24 | 36; src?: 'near' | 'same'; fresh?: boolean; from?: string; to?: string; court?: string; dong?: string };
 export type AgentStatus = {
   at?: { toMillis(): number } | null;
@@ -249,4 +249,24 @@ export const loadHits = async (dong: string): Promise<HitDoc[]> => {
       appr: n(x.appr), min: n(x.min), sold: n(x.sold), bids: n(x.bids), second: n(x.second), fails: n(x.fails), next: String(x.next ?? ''), state: String(x.state ?? ''), asOf: String(x.asOf ?? ''),
       ev: arr<{ d: string; l: string }>(x.ev), hd: arr<string>(x.hd), hc: arr<number>(x.hc), he: arr<number>(x.he), at: x.at?.toMillis?.() ?? 0, creditor: String(x.creditor ?? ''), winner: String(x.winner ?? '') };
   });
+};
+
+/* ===== 탱크옥션 관심물건 — 마이가 목록 API 로 읽은 전부(saleData/dayList/fav/tank, 2026-11-20) ===== */
+export type TankFav = {
+  tid: string; key: string; cat: string; pri: number; memo: string; wdate: string; kind: string; addr: string; road: string; regn: string;
+  bArea: number; lArea: number; appr: number; min: number; sold: number; fails: number; status: string; state: string; court: string; dept: string;
+  date: string; hit: number; bids: number; second: number;
+};
+export type TankFavDoc = { items: TankFav[]; cats: { nm: string; cnt: number }[]; noCtgr: number; total: number; at: number };
+export const loadTankFav = async (): Promise<TankFavDoc | null> => {
+  const snap = await getDocFromServer(doc(db(), 'saleData', 'dayList', 'fav', 'tank')).catch(() => getDoc(doc(db(), 'saleData', 'dayList', 'fav', 'tank')));
+  if (!snap.exists()) return null;
+  const x = snap.data() as Partial<TankFavDoc> & { at?: { toMillis(): number } };
+  const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0); const t = (v: unknown) => (typeof v === 'string' ? v : '');
+  const items = (Array.isArray(x.items) ? x.items : []).filter((r) => r && typeof r === 'object').map((r) => ({
+    tid: t(r.tid), key: t(r.key), cat: t(r.cat), pri: n(r.pri), memo: t(r.memo), wdate: t(r.wdate), kind: t(r.kind), addr: t(r.addr), road: t(r.road), regn: t(r.regn),
+    bArea: n(r.bArea), lArea: n(r.lArea), appr: n(r.appr), min: n(r.min), sold: n(r.sold), fails: n(r.fails), status: t(r.status), state: t(r.state), court: t(r.court), dept: t(r.dept),
+    date: t(r.date), hit: n(r.hit), bids: n(r.bids), second: n(r.second) }));
+  const cats = (Array.isArray(x.cats) ? x.cats : []).map((c) => ({ nm: t(c?.nm), cnt: n(c?.cnt) }));
+  return { items, cats, noCtgr: n(x.noCtgr), total: n(x.total), at: x.at?.toMillis?.() ?? 0 };
 };

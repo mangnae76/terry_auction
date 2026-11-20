@@ -254,6 +254,15 @@ export const mountBidPredict = (el) => {
 };
 /* 시장분석 › 매각분석 › 저가매수(운영) — 1회 유찰 물건을 같은 동 진행 중 물건끼리 평당 감정가로 견준다(2026-11-20) */
 import LowBuyPick from '../../src/components/LowBuyPick.vue';
+/* 물건등록 › 관심물건(운영) — 탱크옥션 관심물건을 보고 골라 등록(2026-11-20) */
+import TankFavPick from '../../src/components/TankFavPick.vue';
+export const mountTankFav = (el) => {
+  const app = createApp(TankFavPick);
+  app.use(getActivePinia());
+  app.provide('webEmbed', true);
+  app.mount(el);
+  return () => app.unmount();
+};
 export const mountLowBuy = (el) => {
   const app = createApp(LowBuyPick);
   app.use(getActivePinia());
