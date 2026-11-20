@@ -126,12 +126,12 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .star { color: #f59e0b; letter-spacing: -1px; }
 .cno { display: block; font-size: 14px; font-weight: 800; }
 .cno .ct, .addr .cno .ct { margin-left: 8px; color: #4b5563; }
-.addr { word-break: keep-all; display: grid; grid-template-columns: 56px minmax(0, 1fr); column-gap: 8px; row-gap: 2px; align-items: center; }
+.addr { word-break: keep-all; display: grid; grid-template-columns: 48px minmax(0, 1fr); column-gap: 8px; row-gap: 2px; align-items: center; }
 .addr .meta.top { grid-column: 1 / -1; }   /* 분류 · 관심도는 맨 위 한 줄 — 종류 칩이 사건번호와 같은 줄에 */
 .addr > .lc1, .addr > .lc2 { justify-self: start; }
 .addr .type-mark.blank { visibility: hidden; }
 .type-mark.sm { height: 20px; padding: 0 7px; border-radius: 10px; font-size: 12px; }   /* 작은 종류 칩 — 사건번호 왼쪽 */
-.addr .type-mark.sm, .addr .cpy { box-sizing: border-box; width: 56px; min-width: 56px; padding: 0; margin: 0; height: 18px; justify-content: center; vertical-align: top; }   /* 종류 칩 · 주소 칩 같은 폭 — 시작 · 끝 줄 맞춤 */   /* 고정카드처럼 종류 칩 · 주소 칩 같은 크기, 위아래 줄 맞춤 */
+.addr .type-mark.sm, .addr .cpy { box-sizing: border-box; width: 48px; min-width: 48px; padding: 0; margin: 0; height: 18px; justify-content: center; vertical-align: top; }   /* 종류 칩 · 주소 칩 같은 폭 — 시작 · 끝 줄 맞춤 */   /* 고정카드처럼 종류 칩 · 주소 칩 같은 크기, 위아래 줄 맞춤 */
 .cpy { display: inline-flex; align-items: center; justify-content: center; gap: 3px; padding: 0 8px; border: 1px solid #c7d7f7; border-radius: 999px; background: #fff; color: #2a5fbf; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }   /* 고정카드 주소 칩(.ih-copy)과 같은 꼴 · 같은 그림 */
 .cpy:hover { border-color: #2b6df3; }
 .cpy.done { border-color: #15803d; color: #15803d; }
