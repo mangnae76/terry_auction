@@ -11,6 +11,7 @@ import { addressWithName, buildingNameOf } from '../utils/addressName';
 import { kakaoBuildingName } from '../services/addressSearch';
 import { lookupAddress } from '../services/addressLookup';
 import { useLowBuyData } from '../composables/useLowBuyData';
+import { propTypeName } from '../utils/propertyType';
 import { LB_WARN, type LowBuyRow } from '../services/lowBuy';
 import { FAV_FILTER0, FAV_PY, FAV_STATUS, favCaseNo, favCourtName, favPass, favPlace, favRound, favSort, favStatusCounts, type FavFilter, type FavSort } from '../services/tankFav';
 
@@ -226,7 +227,7 @@ const register = async (f: TankFav) => {
         <template v-for="f in shown" :key="f.tid">
           <div :class="['it', { hot: lbByKey.get(f.key)?.hot, on: open === f.tid }]" role="button" tabindex="0" @click="open = open === f.tid ? '' : f.tid" @keydown.enter="open = open === f.tid ? '' : f.tid">
             <div class="addr">
-              <div class="meta"><span class="kind">{{ f.kind || '—' }}</span><span v-if="f.cat" class="ctg">{{ f.cat }}</span><span v-if="f.pri" class="star">{{ stars(f.pri) }}</span></div>
+              <div class="meta"><span v-if="f.kind" class="type-mark">{{ propTypeName(f.kind) }}</span><span v-if="f.cat" class="ctg">{{ f.cat }}</span><span v-if="f.pri" class="star">{{ stars(f.pri) }}</span></div>
               <span class="cno">{{ caseText(f).caseNo }}<small v-if="caseText(f).pn"> (물건 {{ caseText(f).pn }})</small></span>
               <span class="ad">{{ addrOf(f) }}</span>
               <small>전용 {{ f.bArea > 0 ? `${f.bArea.toFixed(2)}㎡ / ${pyOf(f.bArea)}평` : '—' }}<template v-if="lbByKey.get(f.key)?.year"> · {{ lbByKey.get(f.key)?.year }}년식</template><template v-if="lbByKey.get(f.key)?.elev != null"> · 엘베 {{ lbByKey.get(f.key)?.elev ? '있음' : '없음' }}</template></small>
@@ -316,11 +317,11 @@ const register = async (f: TankFav) => {
 .it.hot { background: #fff5f5; }
 .it.on { background: #eef3fe; box-shadow: inset 3px 0 0 #2b6df3; }
 .meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 3px; }
-.kind { color: #2b6df3; font-weight: 700; }
+.type-mark { display: inline-flex; align-items: center; justify-content: center; height: 22px; padding: 0 8px; border-radius: 11px; background: #2b6df3; color: #fff; font-size: 14px; font-weight: 700; line-height: 1; letter-spacing: -0.2px; white-space: nowrap; }   /* 종류 칩 — 선정물건 목록 type-mark 와 같은 꼴 · 같은 이름(utils/propertyType, 2026-11-20 사용자) */
 .ctg { font-size: 12px; color: #6b7280; border: 1px solid #e3e7ee; border-radius: 4px; padding: 0 5px; line-height: 17px; }
 .star { color: #f59e0b; letter-spacing: -1px; }
 .cno { display: block; font-size: 15px; font-weight: 800; }
-.cno small { font-size: 12px; font-weight: 400; color: #6b7280; }
+.cno small, .addr .cno small { display: inline; margin-left: 4px; font-size: 12px; font-weight: 400; color: #6b7280; }   /* 물건번호는 사건번호 옆(2026-11-20 사용자) */
 .ad { display: block; line-height: 1.45; }
 .addr small, .c small { display: block; color: #6b7280; font-size: 12px; }
 .c { font-variant-numeric: tabular-nums; }
