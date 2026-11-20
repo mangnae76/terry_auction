@@ -10,6 +10,8 @@ export const LB_DONE = /낙찰|매각|취하|기각|종결|정지/;
 export const LB_AREA_TOL = 5;
 export const LB_YEAR_TOL = 5;
 export const LB_MIN_PEERS = 3;
+/** 비교 무리 종류 — 빌라(다세대 · 연립 · 도시형생활주택)는 하나로, 아파트는 아파트끼리, 그 밖은 그 밖끼리(2026-11-20 사용자) */
+export const lbKindGroup = (kind: string): 'villa' | 'apt' | 'etc' => (/아파트/.test(kind) ? 'apt' : /다세대|연립|도시형|도생|빌라/.test(kind) ? 'villa' : 'etc');
 /** 가격매력 — 평당 감정가가 비슷한 물건보다 10% 이상 낮음 */
 export const LB_HOT = -0.1;
 /** 실거래가 감정가의 90% 아래면 경고 */
@@ -56,7 +58,8 @@ export const sameUnitMkt = (trades: LowBuyTrade[], c: Pick<LowBuyCase, 'lot' | '
 export const lowBuyRows = (live: LowBuyCase[], trades: LowBuyTrade[] | null, today: string): LowBuyRow[] => {
   const base = live.map((c) => { const py = c.area / LB_PY; return { ...c, py, ppy: c.appr / py }; });
   return base.map((r) => {
-    const peers = base.filter((x) => x !== r && Math.abs(x.area - r.area) <= LB_AREA_TOL && (r.year == null || x.year == null || Math.abs(x.year - r.year) <= LB_YEAR_TOL));
+    const g = lbKindGroup(r.kind);
+    const peers = base.filter((x) => x !== r && lbKindGroup(x.kind) === g && Math.abs(x.area - r.area) <= LB_AREA_TOL && (r.year == null || x.year == null || Math.abs(x.year - r.year) <= LB_YEAR_TOL));
     const peerPpy = peers.length >= LB_MIN_PEERS ? median(peers.map((x) => x.ppy)) : null;
     const vs = peerPpy ? r.ppy / peerPpy - 1 : null;
     return { ...r, peerN: peers.length, peerPpy, vs, gain: peerPpy ? peerPpy * r.py - r.appr : null, hot: vs != null && vs <= LB_HOT, mkt: trades ? sameUnitMkt(trades, r, today) : null };

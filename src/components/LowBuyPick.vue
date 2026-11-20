@@ -39,9 +39,9 @@ const mktWarn = (r: LowBuyRow) => !!r.mkt && r.mkt.price < r.appr * LB_WARN;
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#213366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z" /><circle cx="7.5" cy="7.5" r="1.5" /></svg>
         <h2>저가매수 1회 유찰 가격매력</h2>
       </header>
-      <p class="lbp-desc"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4Z" /></svg>{{ dong }} · 진행 중 {{ liveHits.length.toLocaleString('ko-KR') }}건과 비교 · 1회 유찰 {{ cand.length.toLocaleString('ko-KR') }}건 · 비슷한 물건 = 전용 ±{{ LB_AREA_TOL }}㎡ · 연식 ±{{ LB_YEAR_TOL }}년 · 가격매력 = 평당 감정가가 비슷한 물건보다 {{ Math.abs(LB_HOT * 100) }}% 이상 낮음({{ hotN }}건)</p>
+      <p class="lbp-desc"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4Z" /></svg>{{ dong }} · 진행 중 {{ liveHits.length.toLocaleString('ko-KR') }}건과 비교 · 1회 유찰 {{ cand.length.toLocaleString('ko-KR') }}건 · 비슷한 물건 = 같은 종류(빌라끼리 · 아파트끼리) · 전용 ±{{ LB_AREA_TOL }}㎡ · 연식 ±{{ LB_YEAR_TOL }}년 · 가격매력 = 평당 감정가가 비슷한 물건보다 {{ Math.abs(LB_HOT * 100) }}% 이상 낮음({{ hotN }}건)</p>
       <div class="lbp-how">
-        <div><b>평당 감정가 비교</b>같은 동네 비슷한 물건(전용 · 연식)의 평당 감정가 가운데값과 비교합니다. 영상의 '19평인데 1억 4천'을 찾는 칸입니다.</div>
+        <div><b>평당 감정가 비교</b>같은 동네 비슷한 물건(같은 종류 · 전용 · 연식)의 평당 감정가 가운데값과 비교합니다. 영상의 '19평인데 1억 4천'을 찾는 칸입니다.</div>
         <div><b>면적 대비 이득</b>비슷한 물건 평당 감정가 × 이 물건 평수 − 이 물건 감정가. 같은 면적이면 감정이 이만큼 싸게 잡혔다는 뜻입니다.</div>
         <div><b>실거래로 한 번 더</b>같은 건물 같은 평형 매매 실거래가가 있으면 건수 · 날짜와 함께 보여 줍니다. 실거래가 감정가보다 10% 넘게 낮으면 빨간 경고.</div>
       </div>

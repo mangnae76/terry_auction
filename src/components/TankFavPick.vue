@@ -231,7 +231,7 @@ const register = async (f: TankFav) => {
                 <template v-if="lbByKey.get(f.key)?.vs != null">
                   <span><span v-if="lbByKey.get(f.key)?.hot" class="tchip hot">가격매력</span> 비슷한 물건보다 <b :class="lbByKey.get(f.key)!.vs! < 0 ? 'good' : 'bad'">{{ pctSigned(lbByKey.get(f.key)!.vs!) }}</b> · 이득 <b :class="lbByKey.get(f.key)!.gain! > 0 ? 'good' : 'bad'">{{ gainText(lbByKey.get(f.key)!.gain!) }}</b></span>
                   <span v-if="lbByKey.get(f.key)?.peerPpy">비슷한 물건 평당 감정가 <b>{{ man(lbByKey.get(f.key)!.peerPpy!) }}</b> ({{ lbByKey.get(f.key)!.peerN.toLocaleString('ko-KR') }}건 가운데값)</span>   <!-- 저가매수 표의 '비슷한 물건 평당 감정가' 칸과 같은 값(2026-11-20 사용자) -->
-                  <span v-if="lbByKey.get(f.key)?.mkt" :class="{ bad: mktWarn(lbByKey.get(f.key)!) }">실거래 같은 평형 <b>{{ won(lbByKey.get(f.key)!.mkt!.price) }}</b> ({{ lbByKey.get(f.key)!.mkt!.n }}건 · {{ d8(lbByKey.get(f.key)!.mkt!.last).slice(0, 5) }}){{ mktWarn(lbByKey.get(f.key)!) ? ' — 감정가보다 낮음' : '' }}</span>
+                  <span v-if="lbByKey.get(f.key)?.mkt" :class="{ bad: mktWarn(lbByKey.get(f.key)!) }">실거래 같은 평형 <b>{{ won(lbByKey.get(f.key)!.mkt!.price) }}</b> ({{ lbByKey.get(f.key)!.mkt!.n }}건 · {{ d8(lbByKey.get(f.key)!.mkt!.last).slice(0, 5) }} · <em class="apr">감정가 {{ Math.round(lbByKey.get(f.key)!.appr / lbByKey.get(f.key)!.mkt!.price * 100) }}%</em>){{ mktWarn(lbByKey.get(f.key)!) ? ' — 감정가보다 낮음' : '' }}</span>
                   <span v-else>실거래 같은 평형 없음</span>
                 </template>
                 <span v-else-if="lbByKey.get(f.key)">비교할 비슷한 물건 없음</span>
@@ -330,6 +330,7 @@ const register = async (f: TankFav) => {
 .my { display: grid; gap: 3px; font-size: 12px; color: #6b7280; }
 .amt .rd { display: inline-block; min-width: 2.4em; text-align: left; font-style: normal; font-size: 12px; font-weight: 400; color: #6b7280; margin-right: 5px; }   /* 금액 옆 작은 차수 — 신건 · 2차(2026-11-20 사용자) */
 .amt .n { display: inline-block; min-width: 10.5ch; text-align: right; font-variant-numeric: tabular-nums; }   /* 금액 폭을 같게 — 신건 · 2차 글이 세로로 한 줄(2026-11-20 사용자) */
+.my em.apr { font-style: normal; color: #db2777; }   /* 실거래 대비 감정가 % — 찐핑크로 자리 보기(2026-11-20 사용자) */
 .c small.minpy { color: #2b6df3; }
 .c .nx { display: block; font-weight: 400; color: #111827; margin-bottom: 2px; }   /* 날짜 굵기 없음(2026-11-20 사용자) */
 .my > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* 가격매력 · 대비 · 이득 한 줄, 실거래 · 경고 한 줄(2026-11-20 사용자) */
