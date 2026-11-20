@@ -45,7 +45,7 @@ export const favStatusCounts = (items: TankFav[], q: FavFilter): Record<string, 
 };
 
 export type FavSort = 'case' | 'hot' | 'date' | 'appr' | 'min' | 'pri';
-/** 정렬 — hot(가격매력)은 비슷한 물건 대비 %가 낮은 순, 값이 없으면 뒤로 */
+/** 정렬 — hot(낙찰차익)은 최저가 낙찰 차익 큰 순(vsOf 가 −차익), 값이 없으면 뒤로 */
 export const favSort = <T extends TankFav>(rows: T[], by: FavSort, vsOf: (f: T) => number | null): T[] => {
   const k = (f: T): number | string => {
     if (by === 'case') return f.key;

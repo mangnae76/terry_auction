@@ -105,7 +105,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
   <div class="cjl">
     <p v-if="rows.length" class="cjl-info">ⓘ 차익은 필요비용(취득세 · 수리 · 명도 · 이자 등) 제외 금액입니다. 필요비용은 집 상태에 따라 크게 달라집니다.</p>
     <p v-if="!rows.length && empty" class="cjl-empty">{{ empty }}</p>
-    <div v-if="rows.length" class="it hd" aria-hidden="true"><span>사건 · 주소</span><span class="ctr">감정가 · 최저가</span><span class="ctr">허그 전세가<br>공시가 × 126%</span><span class="ctr">기일 · 유찰</span><span class="ctr">예상 매도가 1</span><span class="ctr">예상 매도가 2</span><span class="ctr hm">최저가 낙찰<br>차익 ▼</span><span class="ctr">응찰<br>확률</span><span class="ctr hm">최저가 낙찰<br>확률</span><span class="ctr">처리</span></div>
+    <div v-if="rows.length" class="it hd" aria-hidden="true"><span>사건 · 주소</span><span class="ctr">감정가 · 최저가</span><span class="ctr">허그 전세가<br>공시가 × 126%</span><span class="ctr">기일 · 유찰</span><span class="ctr">예상 매도가 1</span><span class="ctr">예상 매도가 2</span><span class="ctr hm">최저가 낙찰<br>차익</span><span class="ctr">응찰<br>확률</span><span class="ctr hm">최저가 낙찰<br>확률</span><span class="ctr">처리</span></div>
     <template v-for="r in rows" :key="r.id">
       <div :class="['it', { hot: judged(r) && judgeOf(r).hot, on: openId === r.id, click: expandable }]" :role="expandable ? 'button' : undefined" :tabindex="expandable ? 0 : undefined" @click="onRow(r)" @keydown.enter="onRow(r)">
         <div class="addr">

@@ -118,9 +118,9 @@ const favMine = computed(() => items.value.filter((f) => mine.value.has(f.key)))
 const aiDone = computed(() => favMine.value.filter((f) => mine.value.get(f.key)?.ai).length);
 const { sale2 } = useSale2();
 /** '가격매력' 정렬 = 최저가 낙찰 차익률 큰 순(모르면 아래) */
-const shown = computed(() => favSort(items.value.filter((f) => favPass(f, q)), sortBy.value, (f) => { const j = lbJudge(lbByKey.value.get(f.key)?.est ?? null, f.min, sale2.value[f.key]); return j.rate != null ? -j.rate : null; }));
+const shown = computed(() => favSort(items.value.filter((f) => favPass(f, q)), sortBy.value, (f) => { const j = lbJudge(lbByKey.value.get(f.key)?.est ?? null, f.min, sale2.value[f.key]); return j.gap != null ? -j.gap : null; }));   /* 최저가 낙찰 차익 큰 순 — 저가매수와 같게 */
 const open = ref('');
-const SORTS: Array<[FavSort, string]> = [['case', '사건번호'], ['hot', '가격매력'], ['date', '매각기일'], ['appr', '감정가'], ['min', '최저가'], ['pri', '관심도']];
+const SORTS: Array<[FavSort, string]> = [['case', '사건번호'], ['hot', '낙찰차익'], ['date', '매각기일'], ['appr', '감정가'], ['min', '최저가'], ['pri', '관심도']];
 
 /* ---------- 칸 글 ---------- */
 const won = (v: number) => Math.round(v).toLocaleString('ko-KR');
@@ -209,7 +209,7 @@ const favRows = computed<JudgeRow[]>(() => shown.value.map((f) => {
       <div class="tfp-bar">
         <button v-for="s in ['', ...FAV_STATUS]" :key="s" type="button" :class="['stab', { on: q.status === s }]" @click="q.status = s">{{ s || '-전체-' }} <b>{{ (statusCounts[s] ?? 0).toLocaleString('ko-KR') }}</b></button>
         <span class="sp" />
-        <div class="sort"><button v-for="[k, t] in SORTS" :key="k" type="button" :class="{ on: sortBy === k }" @click="sortBy = k">{{ t }}<template v-if="sortBy === k"> ▲</template></button></div>
+        <div class="sort"><button v-for="[k, t] in SORTS" :key="k" type="button" :class="{ on: sortBy === k }" @click="sortBy = k">{{ t }}</button></div>
       </div>
 
       <p v-if="loading" class="tfp-empty">불러오는 중입니다…</p>
