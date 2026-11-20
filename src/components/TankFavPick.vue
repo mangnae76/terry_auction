@@ -161,13 +161,9 @@ const favRows = computed<JudgeRow[]>(() => shown.value.map((f) => {
     <section class="tfp-card">
       <header class="tfp-head">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#213366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8l-5.8 3.1 1.1-6.5L2.6 9.8l6.5-.9L12 3Z" /></svg>
-        <h2>관심물건<span class="tfp-op">운영</span></h2>
-        <span class="tfp-sub"><template v-if="doc">탱크옥션 관심물건 {{ items.length.toLocaleString('ko-KR') }}건 · {{ fmtAt(doc.at) }} 가져옴</template><template v-else-if="!loading">아직 가져온 관심물건이 없습니다</template></span>
-        <!-- 제목 · 가져옴 글 오른쪽에 한 줄로 — 가져오기 단추 · 세로 가름선 · 마이 상자, 높이 36(2026-11-20 사용자) -->
-      <div class="tfp-bar">
-        <button type="button" class="tfp-go" :disabled="!agentOn || !!agent?.paused || !!agent?.busy" @click="fetchFav">{{ favBusy ? '가져오는 중' : '관심물건가져오기' }}</button>
-        <i class="tfp-vsep" aria-hidden="true" />
-      <div class="tfp-mai">
+        <h2>관심물건</h2>
+        <!-- 한 줄 — 제목 · 마이 상자(낙찰가예측 수집 상자 마이 줄과 같은 꼴) · 세로 가름선 · 관심물건가져오기 · 가져온 건수와 때(2026-11-20 사용자). 운영 칩은 뺌 -->
+        <div class="tfp-mai">
         <span class="nm">마이</span>
         <span :class="['s', !agentOn ? 'off' : agent?.paused ? 'rest' : 'on']"><i aria-hidden="true" /><template v-if="!agentOn">꺼짐 · PC가 켜지면 저절로 뜸</template><template v-else-if="agent?.paused">대기 중 · 명령 단추 잠김</template><template v-else>{{ agent?.busy ? (favBusy ? '관심물건 가져오는 중' : '수집 중') : '켜짐' }} · <span class="ago">{{ agentAgo }}</span>초 전<template v-if="agent?.version"> · {{ verLabel(agent.version) }}</template></template></span>
         <template v-if="agentOn">
@@ -176,7 +172,9 @@ const favRows = computed<JudgeRow[]>(() => shown.value.map((f) => {
           <button v-else type="button" class="b" :disabled="!!agent?.busy" @click="maiCmd('pause')">대기</button>
         </template>
       </div>
-      </div>
+        <i class="tfp-vsep" aria-hidden="true" />
+        <button type="button" class="tfp-go" :disabled="!agentOn || !!agent?.paused || !!agent?.busy" @click="fetchFav">{{ favBusy ? '가져오는 중' : '관심물건가져오기' }}</button>
+        <span class="tfp-sub"><template v-if="doc">탱크옥션 관심물건 {{ items.length.toLocaleString('ko-KR') }}건 · {{ fmtAt(doc.at) }} 가져옴</template><template v-else-if="!loading">아직 가져온 관심물건이 없습니다</template></span>
       </header>
       <p v-if="favBusy && agent?.message" class="tfp-note">{{ agent.message }}</p>
       <p v-else-if="note" class="tfp-note">{{ note }}</p>
@@ -221,19 +219,19 @@ const favRows = computed<JudgeRow[]>(() => shown.value.map((f) => {
 <style scoped>
 .tfp { display: grid; gap: 14px; }
 .tfp-card { background: #fff; border: 1px solid #e3e7ee; border-radius: 12px; padding: 16px; display: grid; gap: 12px; }
-.tfp-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tfp-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tfp-head .tfp-go { height: 36px; box-sizing: border-box; padding-top: 0; padding-bottom: 0; flex: none; }
+.tfp-head .tfp-mai { flex: none; height: 36px; box-sizing: border-box; padding-top: 0; padding-bottom: 0; }
+.tfp-head .tfp-mai .s { flex: none; }
+.tfp-head .tfp-vsep { height: 24px; align-self: center; }
 .tfp-head h2 { margin: 0; font-size: 16px; font-weight: 800; color: #111827; display: inline-flex; align-items: center; gap: 6px; }
-.tfp-op { font-size: 12px; font-weight: 400; color: #b45309; background: #fff4e5; border-radius: 4px; padding: 0 6px; line-height: 18px; }
 .tfp-sub { font-size: 12px; color: #6b7280; }
 .sp { flex: 1; }
 .tfp-go { border: 1px solid #2b6df3; background: #2b6df3; color: #fff; border-radius: 8px; padding: 7px 14px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; min-width: 128px; }
 .tfp-go:disabled { background: #c9d6f5; border-color: #c9d6f5; cursor: default; }
 .tfp-note { margin: -4px 0 0; font-size: 12px; color: #4b5563; }
 /* 마이 줄 — 낙찰가예측 수집 상자와 같은 꼴 */
-.tfp-bar { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; margin-left: 8px; }
-.tfp-bar .tfp-go { height: 36px; box-sizing: border-box; padding-top: 0; padding-bottom: 0; flex: none; }
 .tfp-vsep { width: 1px; align-self: stretch; background: #e3e7ee; }
-.tfp-bar .tfp-mai { flex: 1; min-width: 0; height: 36px; box-sizing: border-box; padding-top: 0; padding-bottom: 0; }
 .tfp-mai { display: flex; align-items: center; gap: 8px; background: #f7f9fd; border: 1px solid #e3e7ee; border-radius: 8px; padding: 6px 8px 6px 10px; }
 .tfp-mai .nm, .tfp-ai .nm { font-size: 12px; font-weight: 700; color: #4b5563; white-space: nowrap; }
 .tfp-mai .s { flex: 1; min-width: 0; font-size: 12px; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
