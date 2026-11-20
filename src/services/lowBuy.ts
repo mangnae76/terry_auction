@@ -16,6 +16,9 @@ export const lbKindGroup = (kind: string): 'villa' | 'apt' | 'etc' => (/아파�
 export const LB_HOT = -0.1;
 /** 실거래가 감정가의 90% 아래면 경고 */
 export const LB_WARN = 0.9;
+/** 실거래가와 감정가 — 높음(감정이 싸게 잡힘, 좋음) · 낮음(감정이 비싸게 잡힘) · 같음. 정확히 견준다(2026-11-20 사용자) */
+export const lbMktRel = (r: { appr: number; mkt: { price: number } | null }): '' | '높음' | '낮음' | '같음' =>
+  !r.mkt ? '' : r.mkt.price > r.appr ? '높음' : r.mkt.price < r.appr ? '낮음' : '같음';
 
 /** 주소에서 층(지하는 음수, 못 읽으면 null) */
 export const lbFloorOf = (addr: string): number | null => { const m = /(지하|B)?\s*(\d+)층/.exec(addr); return m ? (m[1] ? -Number(m[2]) : Number(m[2])) : null; };

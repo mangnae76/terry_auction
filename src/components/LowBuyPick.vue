@@ -3,7 +3,7 @@
  * 시안(2026-11-20 사용자 '일단 적용해봐') 배치 그대로. 계산은 services/lowBuy(순수). 자료 — 마이 사건 차트(hits) · 건축물대장(연식 · 엘베 · 이름) · 국토부 실거래(웹 캐시) */
 import { computed, ref } from 'vue';
 import { buildingAgeText } from '../utils/buildingAge';
-import { LB_HOT, LB_WARN, LB_AREA_PCT, LB_MIN_PEERS, type LowBuyRow } from '../services/lowBuy';
+import { lbMktRel, LB_HOT, LB_AREA_PCT, LB_MIN_PEERS } from '../services/lowBuy';
 import { useLowBuyData } from '../composables/useLowBuyData';
 
 /** 동 — 낙찰가예측의 동선택(이 브라우저에 남긴 값)을 그대로, 없으면 검암동 */
@@ -31,7 +31,6 @@ const addrLines = (a: string): [string, string] => {
   if (!m || m.index == null) return [a, ''];
   return [m[0], a.slice(m.index + m[0].length).replace(/\s*\(.*$/, '').trim()];
 };
-const mktWarn = (r: LowBuyRow) => !!r.mkt && r.mkt.price < r.appr * LB_WARN;
 </script>
 
 <template>
@@ -68,7 +67,7 @@ const mktWarn = (r: LowBuyRow) => !!r.mkt && r.mkt.price < r.appr * LB_WARN;
               <td :class="['r', r.vs! < 0 ? 'good' : 'bad']">{{ pctSigned(r.vs!) }}</td>
               <td :class="['r', r.gain! > 0 ? 'good' : 'bad']"><span class="nb">{{ r.gain! > 0 ? '+' : '−' }}{{ won(Math.abs(r.gain!)) }}</span></td>
               <td class="r">
-                <template v-if="r.mkt"><span class="nb">{{ won(r.mkt.price) }}</span><small v-if="mktWarn(r)" class="warn">실거래가 감정가보다 낮음</small><small>{{ r.mkt.n }}건 · {{ d8(r.mkt.last) }} · 감정가 {{ Math.round(r.appr / r.mkt.price * 100) }}%</small></template>
+                <template v-if="r.mkt"><span class="nb">{{ won(r.mkt.price) }}</span><small v-if="lbMktRel(r)" :class="lbMktRel(r) === '높음' ? 'up' : lbMktRel(r) === '낮음' ? 'warn' : ''">실거래가 감정가보다 {{ lbMktRel(r) }}</small><small>{{ r.mkt.n }}건 · {{ d8(r.mkt.last) }} · 감정가 {{ Math.round(r.appr / r.mkt.price * 100) }}%</small></template>
                 <span v-else class="mu">{{ trades ? '—' : tradeMsg || '—' }}</span>
               </td>
               <td>{{ r.fails + 1 }}차 {{ d8(r.next) }}<small>신건 {{ d8(r.first) }} 유찰</small></td>   <!-- 위 = 이번에 입찰하는 날(1회 유찰 최저가), 아래 = 유찰된 신건 날(2026-11-20 사용자 — 헷갈림) -->
@@ -102,6 +101,7 @@ const mktWarn = (r: LowBuyRow) => !!r.mkt && r.mkt.price < r.appr * LB_WARN;
 .lbp-tbl .r { text-align: right; }
 .lbp-tbl td small { display: block; font-size: 12px; color: #6b7280; }
 .lbp-tbl td small.warn { color: #dc2626; }
+.lbp-tbl td small.up { color: #16a34a; }   /* 실거래가 감정가보다 높음 — 감정이 싸게 잡힘 */
 .lbp-tbl td.addr .ln { display: block; line-height: 18px; }
 .lbp-tbl th.sort { cursor: pointer; user-select: none; }
 .lbp-tbl th.sort:hover { background: #e9edf5; }
