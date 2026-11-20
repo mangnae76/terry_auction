@@ -65,6 +65,9 @@ watch(() => props.rows.filter((r) => r.status === '진행').map((r) => `${r.key}
   void wantOfficial(props.rows.filter((r) => r.status === '진행').map((r) => ({ key: r.key, addr: r.addr, area: r.area })));
 }, { immediate: true });
 const offOf = (r: JudgeRow) => official.value[r.key] ?? null;
+/** 허그 전세보증 기준 전세가 — 공시가 × 126%(주택가격 공시가 140% × 전세가율 90%) */
+const HUG_JEONSE_RATE = 1.26;
+const hugJeonse = (r: JudgeRow) => { const o = offOf(r); return o ? Math.round(o.price * HUG_JEONSE_RATE) : null; };
 const offPct = (r: JudgeRow) => { const o = offOf(r); return o ? apprToOfficial(r.appr, o.price) : null; };
 const emit = defineEmits<{ register: [row: JudgeRow]; photo: [row: JudgeRow]; toggle: [row: JudgeRow] }>();
 
@@ -101,7 +104,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
   <div class="cjl">
     <p v-if="rows.length" class="cjl-info">ⓘ 차익은 필요비용(취득세 · 수리 · 명도 · 이자 등) 제외 금액입니다. 필요비용은 집 상태에 따라 크게 달라집니다.</p>
     <p v-if="!rows.length && empty" class="cjl-empty">{{ empty }}</p>
-    <div v-if="rows.length" class="it hd" aria-hidden="true"><span>사건 · 주소</span><span class="ctr">감정가 · 최저가</span><span class="ctr">기일 · 유찰</span><span class="ctr">예상 매도가 1</span><span class="ctr">예상 매도가 2</span><span class="ctr hm">최저가 낙찰<br>차익 ▼</span><span class="ctr">응찰<br>확률</span><span class="ctr hm">최저가 낙찰<br>확률</span><span class="ctr">처리</span></div>
+    <div v-if="rows.length" class="it hd" aria-hidden="true"><span>사건 · 주소</span><span class="ctr">감정가 · 최저가</span><span class="ctr">허그 전세가<br>공시가 × 126%</span><span class="ctr">기일 · 유찰</span><span class="ctr">예상 매도가 1</span><span class="ctr">예상 매도가 2</span><span class="ctr hm">최저가 낙찰<br>차익 ▼</span><span class="ctr">응찰<br>확률</span><span class="ctr hm">최저가 낙찰<br>확률</span><span class="ctr">처리</span></div>
     <template v-for="r in rows" :key="r.id">
       <div :class="['it', { hot: judged(r) && judgeOf(r).hot, on: openId === r.id, click: expandable }]" :role="expandable ? 'button' : undefined" :tabindex="expandable ? 0 : undefined" @click="onRow(r)" @keydown.enter="onRow(r)">
         <div class="addr">
@@ -115,7 +118,9 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
           <i class="lc3" aria-hidden="true" />
           <small>전용 {{ r.area > 0 ? `${r.area.toFixed(2)}㎡ / ${pyOf(r.area)}평` : '—' }}<template v-if="r.lb?.year"> · {{ r.lb?.year }}년식 / {{ buildingAgeText(r.lb?.year) }}</template><template v-if="r.lb?.elev != null"> · 엘베 {{ r.lb?.elev ? '있음' : '없음' }}</template></small>
         </div>
-        <div class="c ctr amtc"><span class="amt"><em class="rd">신건</em><span class="n">{{ r.appr ? won(r.appr) : '미확정' }}</span></span><small>{{ r.appr && r.area ? `평당 ${man(r.appr / (r.area / PY))}` : '' }}</small><span class="amt min"><em class="rd">{{ r.fails + 1 }}차</em><span class="n">{{ r.min ? won(r.min) : '—' }}</span></span><small class="minpy">{{ r.min && r.area ? `평당 ${man(r.min / (r.area / PY))}` : '' }}</small><small v-if="offOf(r) && offPct(r)" class="gongsi">공시 {{ eokText(offOf(r)!.price) }} · 감정 {{ Math.round(offPct(r)!).toLocaleString('ko-KR') }}%</small></div>   <!-- 감정가 ÷ 공동주택가격(호실이 맞을 때만) -->
+        <div class="c ctr amtc"><span class="amt"><em class="rd">신건</em><span class="n">{{ r.appr ? won(r.appr) : '미확정' }}</span></span><small>{{ r.appr && r.area ? `평당 ${man(r.appr / (r.area / PY))}` : '' }}</small><span class="amt min"><em class="rd">{{ r.fails + 1 }}차</em><span class="n">{{ r.min ? won(r.min) : '—' }}</span></span><small class="minpy">{{ r.min && r.area ? `평당 ${man(r.min / (r.area / PY))}` : '' }}</small></div>
+        <!-- 허그 전세가 = 공시가 × 126% — 2차 최저가보다 높으면 전세가보다 싸게 사는 것(2026-11-20 사용자) -->
+        <div class="c ctr hug"><template v-if="offOf(r)"><b>{{ won(hugJeonse(r)!) }}</b><small :class="hugJeonse(r)! >= r.min ? 'up' : 'down'">최저가보다 {{ gainText(hugJeonse(r)! - r.min) }}</small><small class="gongsi">공시 {{ eokText(offOf(r)!.price) }}</small><small class="gongsi">감정 {{ Math.round(offPct(r)!).toLocaleString('ko-KR') }}%</small></template><span v-else class="mu">—</span></div>
         <div class="c ctr"><span class="nx">{{ d8(r.date) }}</span>{{ favRound(r).label }}<small v-if="favRound(r).pct">({{ favRound(r).pct }})</small><small v-if="r.status !== '진행'">{{ r.stateText }}</small></div>
         <template v-if="judged(r)">
           <!-- 예상 매도가 1 — 계산값, 체크박스는 금액 왼쪽 -->
@@ -150,7 +155,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .cjl { display: grid; border: 1px solid #e3e7ee; border-radius: 8px; overflow: hidden; background: #fff; }
 .cjl-info { margin: 0; padding: 8px 12px; background: #fff8e6; color: #8a5a00; font-size: 12px; line-height: 1.6; border-bottom: 1px solid #e3e7ee; }   /* 노란 안내 — 굵기 없음 */
 .cjl-empty { margin: 0; padding: 28px 12px; text-align: center; font-size: 13px; color: #6b7280; }
-.it { display: grid; grid-template-columns: minmax(0, 1fr) 124px 80px 132px 132px 84px 52px 80px 104px;   /* 숫자 칸 폭 고르게 · 머리 · 값 모두 가운데(2026-11-20 사용자) */ gap: 10px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; font-size: 13px; color: #111827; }
+.it { display: grid; grid-template-columns: minmax(0, 1fr) 118px 100px 68px 108px 100px 76px 46px 64px 92px;   /* 숫자 칸 폭 고르게 · 머리 · 값 모두 가운데(2026-11-20 사용자) */ gap: 8px; align-items: center; padding: 12px; border-bottom: 1px solid #e3e7ee; font-size: 13px; color: #111827; }
 .it.click { cursor: pointer; }
 .it:last-child { border-bottom: 0; }
 .it.hot { background: #fff5f5; }
@@ -182,7 +187,9 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .tchip.reg { background: #eef3fe; color: #2b6df3; }
 .amt .rd { display: inline-block; text-align: right; font-style: normal; font-size: 12px; font-weight: 400; color: #6b7280; margin-right: 6px; }   /* 금액 옆 작은 차수 — 신건 · 2차, 금액과 글자 한 칸쯤 떨어짐(2026-11-20 사용자) */
 .amt .n { display: inline-block; min-width: 10.5ch; text-align: right; font-variant-numeric: tabular-nums; }   /* 금액 폭을 같게 — 신건 · 2차 글이 세로로 한 줄 */
-.c small.gongsi { color: #6b7280; white-space: nowrap; margin-top: 2px; }   /* 공시 · 감정 % — 감정가 · 최저가 칸 맨 아래 */
+.c small.gongsi { color: #6b7280; white-space: nowrap; margin-top: 2px; }
+.c.hug small.up { color: #16a34a; }   /* 전세가 ≥ 최저가 — 전세가보다 싸게 삼 */
+.c.hug small.down { color: #dc2626; }   /* 공시 · 감정 % — 감정가 · 최저가 칸 맨 아래 */
 .c small.minpy { color: #2b6df3; }
 .c .nx { display: block; font-weight: 400; color: #111827; margin-bottom: 2px; }   /* 날짜 굵기 없음 */
 .it.hd { background: #f6f8fb; color: #6b7280; font-size: 12px; font-weight: 600; padding-top: 9px; padding-bottom: 9px; cursor: default; line-height: 1.35; }
@@ -191,11 +198,11 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .c.amtc .amt, .c.amtc small { text-align: right; }
 .c.span5 { grid-column: span 5; text-align: center; font-size: 12px; }
 .c.pick { align-self: stretch; display: flex; flex-direction: column; justify-content: center; border-radius: 6px; padding: 4px 2px; }
-.c.pick.on { background: #eef3fe; box-shadow: inset 0 0 0 1px #2b6df3; }   /* 고른 매도가 칸 */
+.c.pick.on { background: #eef3fe; }   /* 고른 매도가 칸 — 파란 테두리는 뺌(2026-11-20 사용자) */   /* 고른 매도가 칸 */
 .c.pick .ln { display: flex; align-items: center; justify-content: center; gap: 6px; height: 26px; }   /* 두 칸 첫 줄 높이 같게 — 입력칸 높이 26 */
 .c.pick small.ph { visibility: hidden; }   /* 체크박스는 금액 왼쪽 */
 .c.pick input[type='checkbox'] { flex: none; margin: 0; width: 15px; height: 15px; accent-color: #2b6df3; cursor: pointer; }
-.c.pick input.mev { width: 96px; height: 26px; box-sizing: border-box; border: 1px solid #d5dbe5; border-radius: 6px; padding: 4px 6px; text-align: right; font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; background: #fff; color: #111827; }
+.c.pick input.mev { width: 74px; height: 26px; box-sizing: border-box; border: 1px solid #d5dbe5; border-radius: 6px; padding: 4px 6px; text-align: right; font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; background: #fff; color: #111827; }
 .c.pick input.mev:focus { outline: none; border-color: #2b6df3; }
 .c small.warn { color: #b45309; }
 .pbar { display: block; width: 56px; height: 5px; margin: 4px auto 0; border-radius: 3px; background: #e3e7ee; overflow: hidden; }
@@ -207,7 +214,7 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .c b.bad { color: #dc2626; }
 .mu { color: #9ca3af; }
 .act { display: grid; gap: 6px; justify-items: center; align-self: center; align-content: center; }
-.act .tfp-btn, .act .tchip.reg { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; height: 28px; width: 104px; padding: 0; border-radius: 8px; font-size: 12px; line-height: 1; }   /* 등록됨도 등록하기와 같은 크기 */
+.act .tfp-btn, .act .tchip.reg { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; height: 28px; width: 88px; padding: 0; border-radius: 8px; font-size: 12px; line-height: 1; }   /* 등록됨도 등록하기와 같은 크기 */
 .act .tchip.reg { border: 1px solid #c9d6f5; font-weight: 700; }
 .tfp-btn { border: 1px solid #d5dbe5; background: #fff; color: #111827; border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .tfp-btn:disabled { color: #c2c8d3; cursor: default; }
