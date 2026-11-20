@@ -60,9 +60,9 @@ const openPhotos = (j: JudgeRow) => { if (j.tid) window.open(`${TANK_VIEW}${enco
       </header>
       <p class="lbp-desc"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4Z" /></svg>{{ dong }} · 진행 중 {{ liveHits.length.toLocaleString('ko-KR') }}건과 비교 · 1회 유찰 {{ cand.length.toLocaleString('ko-KR') }}건<template v-if="skipKeys.size"> · 뺀 물건 {{ skipText }}</template> · 비슷한 물건 = 같은 종류(빌라끼리 · 아파트끼리) · 전용 ±{{ LB_AREA_PCT }}% · {{ LB_MIN_PEERS }}건 이상 · 가격매력 = 평당 감정가가 비슷한 물건보다 {{ Math.abs(LB_HOT * 100) }}% 이상 낮음({{ hotN }}건)</p>
       <div class="lbp-how">
-        <div><b>평당 감정가 비교</b>같은 동네 비슷한 물건(같은 종류 · 전용면적 ±5%)의 평당 감정가 가운데값과 비교합니다. 영상의 '19평인데 1억 4천'을 찾는 칸입니다.</div>
-        <div><b>면적 대비 이득</b>비슷한 물건 평당 감정가 × 이 물건 평수 − 이 물건 감정가. 같은 면적이면 감정이 이만큼 싸게 잡혔다는 뜻입니다.</div>
-        <div><b>실거래로 한 번 더</b>같은건물 같은평형 매매 실거래가가 있으면 건수 · 날짜와 함께 보여 줍니다. 실거래가가 감정가보다 높으면 빨강 ▲(감정이 쌈), 낮으면 파랑 ▼(감정이 비쌈).</div>
+        <div><b>평당 감정가 비교</b>같은 동 · 같은 종류 · 면적 ±5% 물건의 평당 감정가 가운데값과 견줍니다. 낮을수록 싸게 감정된 물건입니다.</div>
+        <div><b>면적 대비 이득</b>같은 면적을 비슷한 물건 수준으로 감정했을 때보다 낮은 금액입니다.</div>
+        <div><b>실거래로 한 번 더</b>같은건물 같은평형 매매 실거래가입니다. 감정가보다 높으면 ▲ 빨강, 낮으면 ▼ 파랑.</div>
       </div>
       <p v-if="!factsDone" class="lbp-wait">{{ msg }}</p>
       <template v-else>
