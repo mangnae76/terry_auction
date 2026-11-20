@@ -78,16 +78,14 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
       <div :class="['it', { hot: r.lb?.hot, on: openId === r.id, click: expandable }]" :role="expandable ? 'button' : undefined" :tabindex="expandable ? 0 : undefined" @click="onRow(r)" @keydown.enter="onRow(r)">
         <div class="addr">
           <div v-if="r.cat || r.pri" class="meta top"><span v-if="r.cat" class="ctg">{{ r.cat }}</span><span v-if="r.pri" class="star">{{ stars(r.pri) }}</span></div>
-          <!-- 왼쪽 작은 칸 — 종류 칩(작게) · 그 아래 주소복사(사건 카드처럼, 2026-11-20 사용자) -->
-          <div class="lc" @click.stop>
-            <span v-if="r.kind" class="type-mark sm">{{ propTypeName(r.kind) }}</span>
-            <button v-if="r.addr" type="button" :class="['cpy', { done: copiedId === r.id }]" :data-tip="copiedId === r.id ? '복사됨' : '지번주소 복사'" :aria-label="`${r.caseNo} 주소 복사`" @click="copyAddr(r)"><svg v-if="copiedId !== r.id" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4.5h8.5A2.5 2.5 0 0 1 19 7v11" /><rect x="5" y="7.5" width="11" height="13" rx="2" /></svg><svg v-else viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>주소</button>
-          </div>
-          <div class="rc">
+          <!-- 줄마다 왼쪽 칩 | 오른쪽 글 — 종류 칩은 사건번호 줄, 주소 칩은 주소 줄과 같은 높이(2026-11-20 사용자) -->
+            <span :class="['type-mark sm lc1', { blank: !r.kind }]">{{ r.kind ? propTypeName(r.kind) : '' }}</span>
+            
           <span class="cno">{{ r.caseNo }}<small v-if="r.pn"> (물번 {{ r.pn }})</small><small v-if="r.court" class="ct">{{ r.court }}</small><span v-if="r.lb?.hot" class="tchip hot cnohot">가격매력</span></span>
+          <span class="lc2" @click.stop><button v-if="r.addr" type="button" :class="['cpy', { done: copiedId === r.id }]" :data-tip="copiedId === r.id ? '복사됨' : '지번주소 복사'" :aria-label="`${r.caseNo} 주소 복사`" @click="copyAddr(r)"><svg v-if="copiedId !== r.id" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4.5h8.5A2.5 2.5 0 0 1 19 7v11" /><rect x="5" y="7.5" width="11" height="13" rx="2" /></svg><svg v-else viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>주소</button></span>
           <span class="ad">{{ noSido(r.addr) }}</span>   <!-- 화면엔 시 · 도 빼고(복사는 전체), 2026-11-20 사용자 -->
+          <i class="lc3" aria-hidden="true" />
           <small>전용 {{ r.area > 0 ? `${r.area.toFixed(2)}㎡ / ${pyOf(r.area)}평` : '—' }}<template v-if="r.lb?.year"> · {{ r.lb?.year }}년식 / {{ buildingAgeText(r.lb?.year) }}</template><template v-if="r.lb?.elev != null"> · 엘베 {{ r.lb?.elev ? '있음' : '없음' }}</template></small>
-          </div>
         </div>
         <div class="c ctr amtc"><span class="amt"><em class="rd">신건</em><span class="n">{{ r.appr ? won(r.appr) : '미확정' }}</span></span><small>{{ r.appr && r.area ? `평당 ${man(r.appr / (r.area / PY))}` : '' }}</small><span class="amt min"><em class="rd">{{ r.fails + 1 }}차</em><span class="n">{{ r.min ? won(r.min) : '—' }}</span></span><small class="minpy">{{ r.min && r.area ? `평당 ${man(r.min / (r.area / PY))}` : '' }}</small></div>
         <div class="c ctr"><span class="nx">{{ d8(r.date) }}</span>{{ favRound(r).label }}<small v-if="favRound(r).pct">({{ favRound(r).pct }})</small><small v-if="r.status !== '진행'">{{ r.stateText }}</small></div>
@@ -126,13 +124,14 @@ const onRow = (r: JudgeRow) => { if (props.expandable) emit('toggle', r); };
 .type-mark { display: inline-flex; align-items: center; justify-content: center; height: 22px; padding: 0 8px; border-radius: 11px; background: #2b6df3; color: #fff; font-size: 14px; font-weight: 700; line-height: 1; letter-spacing: -0.2px; white-space: nowrap; }   /* 종류 칩 — 선정물건 목록 type-mark 와 같은 꼴 */
 .ctg { font-size: 12px; color: #6b7280; border: 1px solid #e3e7ee; border-radius: 4px; padding: 0 5px; line-height: 17px; }
 .star { color: #f59e0b; letter-spacing: -1px; }
-.cno { display: block; font-size: 15px; font-weight: 800; }
+.cno { display: block; font-size: 14px; font-weight: 800; }
 .cno .ct, .addr .cno .ct { margin-left: 8px; color: #4b5563; }
-.addr { word-break: keep-all; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: start; }
+.addr { word-break: keep-all; display: grid; grid-template-columns: 56px minmax(0, 1fr); column-gap: 8px; row-gap: 2px; align-items: center; }
 .addr .meta.top { grid-column: 1 / -1; }   /* 분류 · 관심도는 맨 위 한 줄 — 종류 칩이 사건번호와 같은 줄에 */
-.addr .lc { display: grid; gap: 6px; justify-items: center; padding-top: 1px; }
+.addr > .lc1, .addr > .lc2 { justify-self: start; }
+.addr .type-mark.blank { visibility: hidden; }
 .type-mark.sm { height: 20px; padding: 0 7px; border-radius: 10px; font-size: 12px; }   /* 작은 종류 칩 — 사건번호 왼쪽 */
-.addr .lc .type-mark.sm, .addr .lc .cpy { box-sizing: border-box; width: 56px; min-width: 56px; padding: 0; margin: 0; height: 20px; justify-content: center; vertical-align: top; }   /* 종류 칩 · 주소 칩 같은 폭 — 시작 · 끝 줄 맞춤 */   /* 고정카드처럼 종류 칩 · 주소 칩 같은 크기, 위아래 줄 맞춤 */
+.addr .type-mark.sm, .addr .cpy { box-sizing: border-box; width: 56px; min-width: 56px; padding: 0; margin: 0; height: 18px; justify-content: center; vertical-align: top; }   /* 종류 칩 · 주소 칩 같은 폭 — 시작 · 끝 줄 맞춤 */   /* 고정카드처럼 종류 칩 · 주소 칩 같은 크기, 위아래 줄 맞춤 */
 .cpy { display: inline-flex; align-items: center; justify-content: center; gap: 3px; padding: 0 8px; border: 1px solid #c7d7f7; border-radius: 999px; background: #fff; color: #2a5fbf; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }   /* 고정카드 주소 칩(.ih-copy)과 같은 꼴 · 같은 그림 */
 .cpy:hover { border-color: #2b6df3; }
 .cpy.done { border-color: #15803d; color: #15803d; }
