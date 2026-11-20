@@ -34,7 +34,7 @@ export const useLowBuyData = (dong: string, today: string, auto = true) => {
       const out = [...raw];
       for (let i = 0; i < out.length; i += 6) await Promise.all(out.slice(i, i + 6).map(async (x, j) => { const a = await toJibun(x.addr); if (a !== x.addr) out[i + j] = { ...x, addr: a }; }));
       hits.value = out;
-      if (!liveHits.value.length) { msg.value = `${dong} 진행 중 사건이 없습니다. 낙찰가예측에서 조회수수집을 먼저 해 주세요.`; return; }
+      if (!liveHits.value.length) { msg.value = `${dong} 진행 중 사건이 없습니다.`; return; }
       // 건축물대장 — 지번마다 한 번(30일 저장), 넷씩
       const lots = [...new Map(liveHits.value.map((h) => [lotKey(h.addr), h.addr])).entries()].filter(([k]) => k);
       let n = 0;

@@ -1165,7 +1165,18 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-itemline .bar { width: 1px; height: 14px; background: var(--line); }
 .sx-itemline .dt { color: var(--text-2, var(--muted)); } .sx-itemline .dt em { font-style: normal; font-weight: 800; color: var(--blue); }
 .sx-topband .sx-pickanchor { flex: 0 0 auto; position: relative; }
-.sx-topband.one { flex-wrap: nowrap; }   /* 물건으로 — 한 줄에. 넘치면 주소만 줄임표 */
+.sx-topband.one { flex-wrap: nowrap; }
+.sx-topband.lb { flex-wrap: nowrap; gap: 12px; }   /* 저가매수 조회 띠 — 칸 150 · 종류 · 빈자리 · 조회 120(시안) */
+.sx-topband.lb .sx-f { flex: 0 1 150px; min-width: 110px; }
+.sx-topband.lb .sx-f select { height: 38px; }
+.sx-topband.lb .sx-go { height: 38px; }
+.sx-topband.lb .lb-sp { flex: 1 1 auto; }
+.sx-topband.lb .sx-go { background: var(--nav); }   /* 조회 — 시세예측 조회와 같은 남색(시안) */
+.sx-topband.lb .sx-go:not(:disabled):hover { background: var(--nav); filter: brightness(1.15); }
+.sx-topband.lb .sx-kind { display: flex; align-items: stretch; height: 38px; box-sizing: border-box; border: 0; border-radius: 8px; padding: 3px; background: var(--surface-3); gap: 0; }   /* 종류 — 시세예측 알약(회색 판 · 고른 것 흰 칸) */
+.sx-topband.lb .sx-kind button { height: auto; padding: 0 14px; border: 0 !important; border-radius: 6px; background: transparent; color: var(--muted); font-weight: 600; }
+.sx-topband.lb .sx-kind button.on { background: var(--surface); color: var(--text); font-weight: 700; box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
+@media (max-width: 900px) { .sx-topband.lb { flex-wrap: wrap; } .sx-topband.lb .lb-sp { display: none; } }   /* 물건으로 — 한 줄에. 넘치면 주소만 줄임표 */
 body.sale-predict #sonShell :is(.sx-mode, .sx-vsep) { display: none; }   /* 낙찰가예측 탭에선 물건으로 · 지역으로 토글과 그 옆 세로 가름선 없음 */
 .sx-plab.off { opacity: .5; }
 .sx-pseg button.sx-lock { opacity: .4; cursor: not-allowed; }   /* 지역으로 — 유사도 잠금 */
@@ -8640,6 +8651,66 @@ span.cal-day.has { cursor: help; }
     if (S.route === 'market') { renderSonHead(); return; }
     if (S.route === 'item') { const it = byId(S.itemId); const el = $('itemHead'); if (it && el) el.innerHTML = itemHeadHtml(it); }
   }
+  /* ===== 매각분석 › 저가매수 맨 위 조회 띠 — 시/도 · 시/군/구 · 읍면동 + 종류 + 조회(2026-11-20 사용자 시안 '저가매수 조회').
+     고르는 칸은 시세예측과 같은 전국 표(regionCodes), 읍면동은 국토부 최근 석 달 거래 동. 조회하면 'lowbuy:query' 로 앱 화면(LowBuyPick)에 알린다.
+     시세예측에서 더 나중에 고른 시도 · 시군구 · 읍면동 · 종류가 있으면 그것으로 이어 받는다 ===== */
+  const LB_Q_KEY = 'ta.web.lowbuy.q';
+  const LB_KINDS = ['연립다세대', '아파트', '오피스텔'];
+  const LB_DEF = { sido: '인천광역시', sgg: '서해구', dong: '검암동', kind: '연립다세대', at: 0 };
+  const LB = (() => { try { const v = JSON.parse(localStorage.getItem(LB_Q_KEY) || 'null'); return v && v.dong ? { ...LB_DEF, ...v } : { ...LB_DEF }; } catch (e) { return { ...LB_DEF }; } })();
+  let lbPeeked = false;
+  const lbApply = () => {
+    LB.at = Date.now();
+    try { localStorage.setItem(LB_Q_KEY, JSON.stringify(LB)); } catch (e) { /* 그만 */ }
+    window.dispatchEvent(new CustomEvent('lowbuy:query', { detail: { sido: LB.sido, sgg: LB.sgg, dong: LB.dong, kind: LB.kind } }));
+  };
+  /* 시세예측(수요분석)이 이 브라우저에 남긴 고른 값 — 저가매수보다 나중이면 이어 받는다 */
+  function lbPeekDemand() {
+    if (lbPeeked) return; lbPeeked = true;
+    try {
+      const rq = indexedDB.open('ta-screen-snapshots', 1);
+      rq.onupgradeneeded = () => { try { rq.result.createObjectStore('snap'); } catch (e) { /* 그만 */ } };
+      rq.onsuccess = () => {
+        try {
+          const g = rq.result.transaction('snap', 'readonly').objectStore('snap').get('adm.region.snapshot.v1');
+          g.onsuccess = () => {
+            const x = g.result; if (!x || !x.sido || !(Number(x.savedAt) > LB.at)) return;
+            const sgg = (regSggs(x.sido).find((d) => d.lawdCode === x.districtCode) || {}).label || '';
+            if (!sgg) return;
+            const kind = { villa: '연립다세대', apt: '아파트', officetel: '오피스텔' }[x.kind] || LB.kind;
+            const dong = x.dongFilter || (x.sido === LB.sido && sgg === LB.sgg ? LB.dong : '');
+            Object.assign(LB, { sido: x.sido, sgg, dong, kind });
+            if (dong) lbApply(); else { try { localStorage.setItem(LB_Q_KEY, JSON.stringify({ ...LB, dong: '' })); } catch (e) { /* 그만 */ } }
+            if (S.route === 'market' && S.marketTab === 'sale' && S.saleTab === 'lowbuy') renderSonHead();
+          };
+        } catch (e) { /* 그만 */ }
+      };
+    } catch (e) { /* 그만 */ }
+  }
+  function lbDongs() {
+    if (!LB.sgg) return [];
+    const key = regPeekKey(LB.sido, LB.sgg, LB.kind); const lawd = regLawd(LB.sido, LB.sgg);
+    if (lawd && !(key in DONG_PEEK) && CLOUD.T && CLOUD.T.fetchDongTradeStats) {
+      DONG_PEEK[key] = null;
+      CLOUD.T.fetchDongTradeStats({ lawdCd5: lawd, propertyType: SALE_PTYPE[LB.kind] || 'villa', months: 3 })
+        .then((r) => { DONG_PEEK[key] = ((r && r.rows) || []).map((x) => x.umdNm).filter(Boolean); })
+        .catch(() => { DONG_PEEK[key] = []; })
+        .then(() => { if (S.route === 'market' && S.marketTab === 'sale' && S.saleTab === 'lowbuy') renderSonHead(); });
+    }
+    const list = [...new Set([...(DONG_PEEK[key] || []), ...(LB.dong ? [LB.dong] : [])])];
+    return list.sort((a, b) => a.localeCompare(b, 'ko'));
+  }
+  function lowBuyTopHtml() {
+    lbPeekDemand();
+    const sel = (k, title, ph, list, dis) => `<label class="sx-f" aria-label="${title}"><select data-act="lb-q" data-k="${k}" class="${LB[k] && list.includes(LB[k]) ? '' : 'ph'}" ${dis ? 'disabled' : ''}><option value="">${ph}</option>${list.map((v) => `<option value="${esc(v)}" ${LB[k] === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>`;
+    const dongs = lbDongs(); const loading = LB.sgg && DONG_PEEK[regPeekKey(LB.sido, LB.sgg, LB.kind)] === null;
+    return `<div class="sx-topband lb">`
+      + sel('sido', '시도', '시도 선택', regSidos(), false)
+      + sel('sgg', '시군구', '시군구 선택', regSggs(LB.sido).map((d) => d.label), !LB.sido)
+      + sel('dong', '읍면동', loading && !dongs.length ? '불러오는 중…' : '읍면동 선택', dongs, !LB.sgg)
+      + `<div class="sx-seg sx-kind" role="group" aria-label="물건종류">${LB_KINDS.map((v) => `<button type="button" class="${LB.kind === v ? 'on' : ''}" data-act="lb-kind" data-v="${v}">${v}</button>`).join('')}</div>`
+      + `<span class="lb-sp"></span><button type="button" class="sx-btn sx-go" data-act="lb-go" ${LB.dong ? '' : 'disabled'}>조회</button></div>`;
+  }
   /* 시장분석 경매사례 맨 위 — 조회 띠(물건으로 / 지역으로) + 물건으로일 때 그 아래 고정카드(2026-11-08) */
   function saleTopHtml() {
     const picks = salePicks();
@@ -8777,6 +8848,7 @@ span.cal-day.has { cursor: help; }
     /* 경매사례 — 같은 틀에 고정카드(카드교체) */
     const saleCard = S.route === 'market' && S.marketTab === 'sale' && agIsAdmin();
     el.classList.toggle('sx-fixcard', saleCard);
+    if (saleCard && S.saleTab === 'lowbuy') { el.innerHTML = lowBuyTopHtml(); shell.hidden = false; return; }   /* 저가매수 — 지역 고르는 띠(2026-11-20) */
     if (saleCard) { el.innerHTML = saleTopHtml(); shell.hidden = false; saleAutoQuery(); return; }   /* 조회 띠(+ 물건으로일 때 고정카드) */
     let id = ''; try { id = localStorage.getItem('son.pick') || ''; } catch (e) { /* 그만 */ }
     const on = false;   /* 시장분석 손품조사는 이제 사건 카드 없이 주소 검색(지역분석과 같은 검색창) — 머리 카드는 선정물건 손품조사에만 */
@@ -10602,6 +10674,8 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
         break;
       } catch (err) { console.error('[직접입력] 등록 실패', err); toast(userMsg(err, '적지 못했습니다. 다시 해 주세요.'), 'info'); break; }
       case 'sale-seg': saleSeg[t.dataset.k] = t.dataset.v; saleSave(); renderMarket(); break;
+      case 'lb-kind': if (LB.kind !== t.dataset.v) { LB.kind = t.dataset.v; renderSonHead(); } break;   /* 저가매수 종류 — 동 목록은 종류마다 */
+      case 'lb-go': if (LB.dong) lbApply(); break;
       case 'sx-mreset': sxMapReset(); break;
       case 'sx-msave': sxMapSave(); break;
       case 'sx-ref-clear': sxSetRef(null); break;   /* 기준 매각물건 풀기 — 다시 지역 전체 */
@@ -10888,6 +10962,12 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       if (k === 'sido') { saleSeg.sgg = ''; saleSeg.dong = ''; }
       if (k === 'sgg') saleSeg.dong = '';
       saleSave(); renderMarket(); return;
+    }
+    if (e.target.dataset && e.target.dataset.act === 'lb-q') {   /* 저가매수 지역 칸 — 위 칸을 바꾸면 아래 칸은 비운다 */
+      const k = e.target.dataset.k; LB[k] = e.target.value;
+      if (k === 'sido') { LB.sgg = ''; LB.dong = ''; }
+      if (k === 'sgg') LB.dong = '';
+      renderSonHead(); return;
     }
     if (e.target.dataset && e.target.dataset.act === 'ag-reg') {
       const k = e.target.dataset.k; AG.reg[k] = e.target.value;
