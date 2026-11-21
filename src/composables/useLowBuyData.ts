@@ -95,3 +95,24 @@ export const lowBuyOf = (dong: string, today: string, fresh = false): ReturnType
   if (!c.p) c.p = c.x.load();
   return c.x;
 };
+
+/** 읍면동 '전체' — 그 시군구 동마다 lowBuyOf 를 모아 한 묶음처럼(2026-11-21 사용자 '전체도 있어야지').
+ *  비교 기준(같은 동 · 같은 종류 …)은 동마다 따로 계산한 그대로 — 동을 섞어 다시 계산하지 않는다 */
+export type LowBuyData = Pick<ReturnType<typeof useLowBuyData>, 'msg' | 'hits' | 'liveHits' | 'factsDone' | 'tradeSpan' | 'all' | 'skipWhy'>;
+const LOADING = '불러오는 중입니다…';
+export const lowBuyMany = (dongs: string[], today: string, label: string): LowBuyData => {
+  const xs = dongs.map((d) => lowBuyOf(d, today));
+  const doneOf = (x: ReturnType<typeof useLowBuyData>) => x.factsDone.value || x.msg.value !== LOADING;
+  const allDone = computed(() => xs.every(doneOf));
+  const liveHits = computed(() => xs.flatMap((x) => x.liveHits.value));
+  const spans = computed(() => xs.map((x) => x.tradeSpan.value).filter(Boolean).sort());
+  return {
+    msg: computed(() => (!allDone.value ? LOADING : liveHits.value.length ? '' : `${label} 진행 중 사건이 없습니다.`)) as unknown as LowBuyData['msg'],
+    hits: computed(() => xs.flatMap((x) => x.hits.value)) as unknown as LowBuyData['hits'],
+    liveHits,
+    factsDone: computed(() => allDone.value && liveHits.value.length > 0) as unknown as LowBuyData['factsDone'],
+    tradeSpan: computed(() => (spans.value.length ? `${spans.value[0].split('~')[0]}~${spans.value[spans.value.length - 1].split('~').pop()}` : '')) as unknown as LowBuyData['tradeSpan'],
+    all: computed(() => xs.flatMap((x) => x.all.value)),
+    skipWhy: computed(() => new Map(xs.flatMap((x) => [...x.skipWhy.value]))),
+  };
+};

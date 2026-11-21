@@ -6,7 +6,7 @@ import { LB_HOT_RATE, lbJudge, lbKindGroup } from '../services/lowBuy';
 import { agentOnline, sendAgentCommand, watchAgentStatus, type AgentStatus } from '../services/agentRemote';
 import { courtOfRegion } from '../services/courtRegion';
 import { useSale2 } from '../composables/useSale2';
-import { lowBuyOf } from '../composables/useLowBuyData';
+import { lowBuyMany, lowBuyOf, type LowBuyData } from '../composables/useLowBuyData';
 import { useAuctionStore } from '../stores/auctionStore';
 import { caseKey } from '../services/bidPredict';
 import { favCaseNo } from '../services/tankFav';
@@ -16,7 +16,7 @@ import AppConfirm from './AppConfirm.vue';
 import { useCaseRegister } from '../composables/useCaseRegister';
 
 /* ---------- 조회 조건 — 웹 맨 위 띠(시/도 · 시/군/구 · 읍면동 · 종류 · 조회)가 'lowbuy:query' 로 알리고 이 브라우저에 남긴다(2026-11-20 사용자 시안) ---------- */
-type LbQuery = { sido: string; sgg: string; dong: string; kind: '연립다세대' | '아파트' | '오피스텔' };
+type LbQuery = { sido: string; sgg: string; dong: string; kind: '연립다세대' | '아파트' | '오피스텔'; dongs?: string[] };   /* dong '전체' = dongs(그 시군구 읍면동) 모두 */
 const Q_KEY = 'ta.web.lowbuy.q';
 const KIND_GROUP: Record<LbQuery['kind'], 'villa' | 'apt' | 'etc'> = { 연립다세대: 'villa', 아파트: 'apt', 오피스텔: 'etc' };
 const readQ = (): LbQuery => {
@@ -25,17 +25,23 @@ const readQ = (): LbQuery => {
 };
 const q = ref<LbQuery>(readQ());
 const dong = computed(() => q.value.dong);
+const ALL = '전체';
+const isAll = computed(() => dong.value === ALL);
+/** 화면에 적는 이름 — '검암동' · '서해구 전체' */
+const place = computed(() => (isAll.value ? `${q.value.sgg} 전체` : dong.value));
 const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const today = todayIso();
 const isoPlus = (days: number) => { const d = new Date(); d.setDate(d.getDate() + days); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
 /** 동마다 자료 묶음 하나 — 한 번 읽은 동은 탭을 옮겨 와도 그대로(lowBuyOf, 관심물건과 같은 곳). fresh 는 마이가 새로 받은 뒤만 */
-const data = shallowRef(lowBuyOf(q.value.dong, today));
-const reload = (fresh = false) => { data.value = lowBuyOf(q.value.dong, today, fresh); };
+const pick = (): LowBuyData => (q.value.dong === ALL ? lowBuyMany(q.value.dongs ?? [], today, `${q.value.sgg} 전체`) : lowBuyOf(q.value.dong, today));
+const data = shallowRef<LowBuyData>(pick());
+/** fresh = 마이가 그 동을 새로 받은 뒤(전체면 그 동만 새로 읽고 다시 묶는다) */
+const reload = (freshDong = '') => { if (freshDong) lowBuyOf(freshDong, today, true); data.value = pick(); };
 const onQuery = (e: Event) => {
   const d = (e as CustomEvent<Partial<LbQuery>>).detail; if (!d?.dong) return;
-  const was = q.value.dong; q.value = { ...q.value, ...d } as LbQuery;
-  if (d.dong !== was) reload();
+  const was = `${q.value.sgg}|${q.value.dong}`; q.value = { ...q.value, ...d } as LbQuery;
+  if (`${q.value.sgg}|${q.value.dong}` !== was || d.dong === ALL) reload();
 };
 const msg = computed(() => data.value.msg.value);
 const hits = computed(() => data.value.hits.value);
@@ -70,7 +76,8 @@ let tick: ReturnType<typeof setInterval> | null = null;
 const agentOn = computed(() => agentOnline(agent.value, nowMs.value));
 const agentAgo = computed(() => { const at = agent.value?.at?.toMillis?.(); return at ? Math.max(0, Math.round((nowMs.value - at) / 1000)) : 0; });
 /** 마이가 지금 이 동을 받는 중인가 — target '2026-05-24 ~ 2027-01-18 인천-본원 검암동' */
-const hitsBusy = computed(() => !!agent.value?.busy && String(agent.value?.target ?? '').endsWith(` ${dong.value}`));
+const busyDong = computed(() => { const t = String(agent.value?.target ?? ''); if (!agent.value?.busy) return ''; return (isAll.value ? q.value.dongs ?? [] : [dong.value]).find((d) => t.endsWith(` ${d}`)) ?? ''; });
+const hitsBusy = computed(() => !!busyDong.value);
 const court = computed(() => courtOfRegion(q.value.sido, q.value.sgg));
 const cmdNote = ref('');
 const fetchHits = async (fresh: boolean) => {
@@ -82,7 +89,9 @@ const fetchHits = async (fresh: boolean) => {
   } catch { cmdNote.value = '명령을 보내지 못했습니다. 다시 해 주세요.'; }
 };
 /* 받기가 끝나면(바쁨 → 쉼) 다시 읽는다 */
-watch(() => agent.value?.busy, (b, was) => { if (was && !b && String(agent.value?.target ?? '').endsWith(` ${dong.value}`)) reload(true); });
+let lastBusyDong = '';
+watch(busyDong, (d) => { if (d) lastBusyDong = d; });
+watch(() => agent.value?.busy, (b, was) => { if (was && !b && lastBusyDong) { reload(lastBusyDong); lastBusyDong = ''; } });
 onMounted(() => {
   window.addEventListener('lowbuy:query', onQuery);
   stopAgent = watchAgentStatus('', (st) => { agent.value = st; }, () => { agent.value = null; });
@@ -122,11 +131,11 @@ const openPhotos = (j: JudgeRow) => { if (j.tid) window.open(`${TANK_VIEW}${enco
         <h2>저가매수 1회 유찰 최저가 낙찰 차익</h2>
       </header>
       <!-- 자료 상태 줄 — 받아 둔 자료 있음(초록) · 없음(주황) · 받는 중(파랑), 시안 그대로(2026-11-20) -->
-      <div v-if="hitsBusy" class="lbp-state run"><i class="dot" /><b>{{ dong }} {{ q.kind }}</b><span>마이가 탱크옥션에서 받는 중<template v-if="agent?.message"> · {{ agent.message }}</template></span></div>
-      <div v-else-if="loaded && !hits.length" class="lbp-state none"><i class="dot" /><b>{{ dong }} {{ q.kind }}</b><span>받아 둔 자료가 없습니다</span><span class="sp" /><small>{{ agentOn ? `마이 켜짐 · ${agentAgo.toLocaleString('ko-KR')}초 전` : '마이 꺼짐' }}</small><button type="button" class="lbp-btn pri" :disabled="!agentOn || !!agent?.busy || !!agent?.paused" @click="fetchHits(true)">마이로받기</button></div>
-      <div v-else-if="hits.length" class="lbp-state"><i class="dot" /><b>{{ dong }} {{ q.kind }}</b><span>진행 중 {{ liveHits.length.toLocaleString('ko-KR') }}건<template v-if="gotAt"> · {{ gotAt }} 받음(마이 · 탱크옥션)</template></span><span class="sp" /><small v-if="!agentOn">마이 꺼짐</small><button type="button" class="lbp-btn" :disabled="!agentOn || !!agent?.busy || !!agent?.paused" @click="fetchHits(false)">다시받기</button></div>
+      <div v-if="hitsBusy" class="lbp-state run"><i class="dot" /><b>{{ place }} {{ q.kind }}</b><span>마이가 탱크옥션에서 {{ isAll ? `${busyDong} ` : '' }}받는 중<template v-if="agent?.message"> · {{ agent.message }}</template></span></div>
+      <div v-else-if="loaded && !hits.length" class="lbp-state none"><i class="dot" /><b>{{ place }} {{ q.kind }}</b><span>받아 둔 자료가 없습니다</span><span class="sp" /><small>{{ agentOn ? `마이 켜짐 · ${agentAgo.toLocaleString('ko-KR')}초 전` : '마이 꺼짐' }}</small><button type="button" class="lbp-btn pri" :disabled="isAll || !agentOn || !!agent?.busy || !!agent?.paused" :data-tip="isAll ? '마이로받기는 읍면동을 골라서 합니다' : undefined" @click="fetchHits(true)">마이로받기</button></div>
+      <div v-else-if="hits.length" class="lbp-state"><i class="dot" /><b>{{ place }} {{ q.kind }}</b><span>진행 중 {{ liveHits.length.toLocaleString('ko-KR') }}건<template v-if="gotAt"> · {{ gotAt }} 받음(마이 · 탱크옥션)</template></span><span class="sp" /><small v-if="!agentOn">마이 꺼짐</small><button type="button" class="lbp-btn" :disabled="isAll || !agentOn || !!agent?.busy || !!agent?.paused" :data-tip="isAll ? '다시받기는 읍면동을 골라서 합니다' : undefined" @click="fetchHits(false)">다시받기</button></div>
       <p v-if="cmdNote" class="lbp-msg">{{ cmdNote }}</p>
-      <p v-if="hits.length" class="lbp-desc"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4Z" /></svg>{{ dong }} · {{ q.kind }} · 진행 중 {{ liveHits.length.toLocaleString('ko-KR') }}건 · 1회 유찰 {{ cand.length.toLocaleString('ko-KR') }}건<template v-if="skipKeys.size"> · 뺀 물건 {{ skipText }}</template> · 가격매력 = 최저가 낙찰 차익 {{ Math.round(LB_HOT_RATE * 100) }}% 이상 · 매도가 근거 2건 이상 또는 매도가 2 입력({{ hotN }}건)</p>
+      <p v-if="hits.length" class="lbp-desc"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4Z" /></svg>{{ place }} · {{ q.kind }} · 진행 중 {{ liveHits.length.toLocaleString('ko-KR') }}건 · 1회 유찰 {{ cand.length.toLocaleString('ko-KR') }}건<template v-if="skipKeys.size"> · 뺀 물건 {{ skipText }}</template> · 가격매력 = 최저가 낙찰 차익 {{ Math.round(LB_HOT_RATE * 100) }}% 이상 · 매도가 근거 2건 이상 또는 매도가 2 입력({{ hotN }}건)</p>
       <div class="lbp-how">
         <div><b>예상 매도가 1</b>같은건물 같은평형 실거래, 없으면 같은 건물 다른 평형, 그래도 없으면 같은 동 비슷한 물건 1년 평균으로 계산합니다.</div>
         <div><b>예상 매도가 2</b>알아본 매도 가능 가격을 넣으면 그 값으로 차익을 계산합니다. 체크한 칸으로 계산합니다.</div>
@@ -138,7 +147,7 @@ const openPhotos = (j: JudgeRow) => { if (j.tid) window.open(`${TANK_VIEW}${enco
         <!-- 표는 관심물건과 같은 공통 부품(2026-11-20 사용자) -->
         <CaseJudgeList :rows="judgeRows" :busy-id="busyId" empty="비교할 1회 유찰 물건이 없습니다." @register="register" @photo="openPhotos" />
       </template>
-      <p v-if="hits.length" class="lbp-note">숫자는 마이가 {{ asOfSpan }}에 모은 {{ dong }} 사건과 저장된 국토부 실거래{{ tradeSpan ? `(${tradeSpan})` : '' }} 기준입니다. 연식 · 엘베는 건축물대장. 진행 상태는 그 뒤 바뀌었을 수 있습니다.</p>
+      <p v-if="hits.length" class="lbp-note">숫자는 마이가 {{ asOfSpan }}에 모은 {{ place }} 사건과 저장된 국토부 실거래{{ tradeSpan ? `(${tradeSpan})` : '' }} 기준입니다. 연식 · 엘베는 건축물대장. 진행 상태는 그 뒤 바뀌었을 수 있습니다.</p>
     </section>
     <Teleport to="body"><AppConfirm :box="confirmBox" @close="confirmBox = null" /></Teleport>   <!-- 보관함에 있으면 꺼낼지 묻는다 -->
   </div>

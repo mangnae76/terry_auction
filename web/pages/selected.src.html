@@ -8661,8 +8661,9 @@ span.cal-day.has { cursor: help; }
   let lbPeeked = false;
   const lbApply = () => {
     LB.at = Date.now();
+    LB.dongs = LB.dong === '전체' ? lbDongs() : undefined;   /* 읍면동 '전체' — 그 시군구 동 목록을 같이 넘긴다(2026-11-21 사용자) */
     try { localStorage.setItem(LB_Q_KEY, JSON.stringify(LB)); } catch (e) { /* 그만 */ }
-    window.dispatchEvent(new CustomEvent('lowbuy:query', { detail: { sido: LB.sido, sgg: LB.sgg, dong: LB.dong, kind: LB.kind } }));
+    window.dispatchEvent(new CustomEvent('lowbuy:query', { detail: { sido: LB.sido, sgg: LB.sgg, dong: LB.dong, kind: LB.kind, dongs: LB.dongs } }));
   };
   /* 시세예측(수요분석)이 이 브라우저에 남긴 고른 값 — 저가매수보다 나중이면 이어 받는다 */
   function lbPeekDemand() {
@@ -8697,7 +8698,7 @@ span.cal-day.has { cursor: help; }
         .catch(() => { DONG_PEEK[key] = []; })
         .then(() => { if (S.route === 'market' && S.marketTab === 'sale' && S.saleTab === 'lowbuy') renderSonHead(); });
     }
-    const list = [...new Set([...(DONG_PEEK[key] || []), ...(LB.dong ? [LB.dong] : [])])];
+    const list = [...new Set([...(DONG_PEEK[key] || []), ...(LB.dong && LB.dong !== '전체' ? [LB.dong] : [])])];
     return list.sort((a, b) => a.localeCompare(b, 'ko'));
   }
   function lowBuyTopHtml() {
@@ -8707,7 +8708,7 @@ span.cal-day.has { cursor: help; }
     return `<div class="sx-topband lb">`
       + sel('sido', '시도', '시도 선택', regSidos(), false)
       + sel('sgg', '시군구', '시군구 선택', regSggs(LB.sido).map((d) => d.label), !LB.sido)
-      + sel('dong', '읍면동', loading && !dongs.length ? '불러오는 중…' : '읍면동 선택', dongs, !LB.sgg)
+      + sel('dong', '읍면동', loading && !dongs.length ? '불러오는 중…' : '읍면동 선택', dongs.length ? ['전체', ...dongs] : dongs, !LB.sgg)   /* 맨 위 '전체' = 그 시군구 모든 동(2026-11-21 사용자) */
       + `<div class="sx-seg sx-kind" role="group" aria-label="물건종류">${LB_KINDS.map((v) => `<button type="button" class="${LB.kind === v ? 'on' : ''}" data-act="lb-kind" data-v="${v}">${v}</button>`).join('')}</div>`
       + `<span class="lb-sp"></span><button type="button" class="sx-btn sx-go" data-act="lb-go" ${LB.dong ? '' : 'disabled'}>조회</button></div>`;
   }
