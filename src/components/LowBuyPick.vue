@@ -60,8 +60,10 @@ const { sale2 } = useSale2();
 /** 후보 — 1회 유찰(지하 · 반지하 · 엘베 없는 5층 이상은 lowBuyRows 에서 이미 뺌) */
 const cand = computed(() => all.value.filter((r) => r.fails === 1));
 const judgeOf = (r: (typeof cand.value)[number]) => lbJudge(r.est, r.min, sale2.value[r.key]);
-/** 최저가 낙찰 차익 큰 순(모르면 아래) */
-const rows = computed(() => [...cand.value].sort((a, b) => (judgeOf(b).gap ?? -Infinity) - (judgeOf(a).gap ?? -Infinity)));
+/** 최저가 낙찰 차익 큰 순(모르면 아래) — 매도가 1 기준 */
+/* 줄 순서는 예상 매도가 1(계산) 차익으로만 — 매도가 2를 넣어도 그 줄이 자리를 옮기지 않는다(2026-11-21 사용자 '입력하면 맨 밑으로 내려가, 그건 아니지') */
+const gap1 = (r: (typeof cand.value)[number]) => lbJudge(r.est, r.min).gap;
+const rows = computed(() => [...cand.value].sort((a, b) => (gap1(b) ?? -Infinity) - (gap1(a) ?? -Infinity)));
 const hotN = computed(() => cand.value.filter((r) => judgeOf(r).hot).length);
 const asOfSpan = computed(() => { const ds = hits.value.map((h) => h.asOf).filter(Boolean).sort(); const f = (d: string) => `${d.slice(5, 7)}-${d.slice(8)}`; return ds.length ? (ds[0] === ds[ds.length - 1] ? f(ds[0]) : `${f(ds[0])}~${f(ds[ds.length - 1])}`) : ''; });
 /** 받은 때 — 그 동 사건 문서가 마지막으로 저장된 때 '11.20 14:32' */
