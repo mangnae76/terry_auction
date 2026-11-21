@@ -6,7 +6,7 @@ import { LB_HOT_RATE, lbJudge, lbKindGroup } from '../services/lowBuy';
 import { agentOnline, sendAgentCommand, watchAgentStatus, type AgentStatus } from '../services/agentRemote';
 import { courtOfRegion } from '../services/courtRegion';
 import { useSale2 } from '../composables/useSale2';
-import { useLowBuyData } from '../composables/useLowBuyData';
+import { lowBuyOf } from '../composables/useLowBuyData';
 import { useAuctionStore } from '../stores/auctionStore';
 import { caseKey } from '../services/bidPredict';
 import { favCaseNo } from '../services/tankFav';
@@ -29,9 +29,9 @@ const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${Stri
 const today = todayIso();
 const isoPlus = (days: number) => { const d = new Date(); d.setDate(d.getDate() + days); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
-/** 동마다 자료 묶음 하나(관심물건과 같은 길 — useLowBuyData 를 동마다 만들고 load) */
-const data = shallowRef(useLowBuyData(q.value.dong, today, false));
-const reload = () => { data.value = useLowBuyData(q.value.dong, today, false); void data.value.load(); };
+/** 동마다 자료 묶음 하나 — 한 번 읽은 동은 탭을 옮겨 와도 그대로(lowBuyOf, 관심물건과 같은 곳). fresh 는 마이가 새로 받은 뒤만 */
+const data = shallowRef(lowBuyOf(q.value.dong, today));
+const reload = (fresh = false) => { data.value = lowBuyOf(q.value.dong, today, fresh); };
 const onQuery = (e: Event) => {
   const d = (e as CustomEvent<Partial<LbQuery>>).detail; if (!d?.dong) return;
   const was = q.value.dong; q.value = { ...q.value, ...d } as LbQuery;
@@ -82,12 +82,11 @@ const fetchHits = async (fresh: boolean) => {
   } catch { cmdNote.value = '명령을 보내지 못했습니다. 다시 해 주세요.'; }
 };
 /* 받기가 끝나면(바쁨 → 쉼) 다시 읽는다 */
-watch(() => agent.value?.busy, (b, was) => { if (was && !b && String(agent.value?.target ?? '').endsWith(` ${dong.value}`)) reload(); });
+watch(() => agent.value?.busy, (b, was) => { if (was && !b && String(agent.value?.target ?? '').endsWith(` ${dong.value}`)) reload(true); });
 onMounted(() => {
   window.addEventListener('lowbuy:query', onQuery);
   stopAgent = watchAgentStatus('', (st) => { agent.value = st; }, () => { agent.value = null; });
   tick = setInterval(() => { nowMs.value = Date.now(); }, 1000);
-  void data.value.load();
 });
 onBeforeUnmount(() => { window.removeEventListener('lowbuy:query', onQuery); stopAgent?.(); if (tick) clearInterval(tick); });
 

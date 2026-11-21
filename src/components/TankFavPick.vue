@@ -3,7 +3,7 @@
  * 시안(2026-11-20 사용자 '적용해줘봐' — 아티팩트 '관심물건 탭 시안' v5) 배치 그대로. 1 · 2단계만: 법원 명세서 받기 · 자동 분석 줄은 아직(그 자리엔 실제 상태만).
  * 마이턴 판단 칸은 저가매수와 같은 계산(composables/useLowBuyData · services/lowBuy) — 같은 동 진행 사건(마이 hits)이 있을 때만 */
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-import { agentOnline, loadTankFav, sendAgentCommand, watchAgentStatus, type AgentStatus, type TankFav, type TankFavDoc } from '../services/agentRemote';
+import { agentOnline, loadTankFav, sendAgentCommand, watchAgentStatus, type AgentStatus, type TankFav } from '../services/agentRemote';
 import { useAuctionStore } from '../stores/auctionStore';
 import { caseKey } from '../services/bidPredict';
 import { parsedFromCase, caseNumberOf } from '../services/caseRegister';
@@ -15,7 +15,8 @@ import { useSale2 } from '../composables/useSale2';
 import { addressWithName, buildingNameOf } from '../utils/addressName';
 import { kakaoBuildingName } from '../services/addressSearch';
 import { lookupAddress } from '../services/addressLookup';
-import { useLowBuyData } from '../composables/useLowBuyData';
+import { lowBuyOf, type useLowBuyData } from '../composables/useLowBuyData';
+import { favDocCache, favJibunCache, favNameCache } from '../composables/tankFavCache';
 import { isJibunAddr, toJibunAddr } from '../services/roadToJibun';
 import { lbJudge, type LowBuyRow } from '../services/lowBuy';
 import { FAV_FILTER0, FAV_STATUS, favCaseNo, favCourtName, favPass, favPlace, favSort, favStatusCounts, type FavFilter, type FavSort } from '../services/tankFav';
@@ -25,11 +26,12 @@ const today = todayIso();
 const auctions = useAuctionStore();
 
 /* ---------- 자료 ---------- */
-const doc = ref<TankFavDoc | null>(null);
-const loading = ref(true);
+const doc = favDocCache;   /* 한 번 읽은 것은 탭을 옮겨 와도 그대로(composables/tankFavCache) */
+const loading = ref(!doc.value);
 const note = ref('');
-const load = async () => {
-  try { doc.value = await loadTankFav(); } catch { note.value = '관심물건을 읽지 못했습니다. 새로고침해 주세요.'; }
+/** fresh = 마이가 관심물건을 새로 가져온 뒤만 다시 읽는다 */
+const load = async (fresh = false) => {
+  if (!doc.value || fresh) { try { doc.value = await loadTankFav(); } catch { note.value = '관심물건을 읽지 못했습니다. 새로고침해 주세요.'; } }
   loading.value = false;
   void fillLowBuy(); void fillNames(); void fillJibun();
 };
@@ -54,7 +56,7 @@ const fetchFav = async () => {
   try { await sendAgentCommand('', 'fav', {}); note.value = '관심물건가져오기를 보냈습니다. 마이가 탱크 관심물건 목록을 읽는 대로 아래 목록이 바뀝니다.'; } catch { note.value = '명령을 보내지 못했습니다. 다시 해 주세요.'; }
 };
 /* 마이가 가져오기를 끝내면(바쁨 → 쉼) 목록을 다시 읽는다. 실패 글(탱크 로그인 필요 · 막힘)은 마이 줄 아래에 그대로 */
-watch(() => agent.value?.busy, (b, was) => { if (was && !b && /관심물건/.test(agent.value?.message ?? '')) { note.value = agent.value?.message ?? ''; void load(); } });
+watch(() => agent.value?.busy, (b, was) => { if (was && !b && /관심물건/.test(agent.value?.message ?? '')) { note.value = agent.value?.message ?? ''; void load(true); } });
 onMounted(() => {
   stopAgent = watchAgentStatus('', (st) => { agent.value = st; }, () => { agent.value = null; });
   tick = setInterval(() => { nowMs.value = Date.now(); }, 1000);
@@ -85,7 +87,7 @@ const statusCounts = computed(() => favStatusCounts(items.value, q));
 const lowBuy = reactive<Record<string, ReturnType<typeof useLowBuyData>>>({});
 const fillLowBuy = async () => {
   const dongs = [...new Set(items.value.filter((f) => f.status === '진행').map((f) => favPlace(f).emd).filter(Boolean))].slice(0, 12);
-  for (const d of dongs) { if (lowBuy[d]) continue; const x = useLowBuyData(d, today, false); lowBuy[d] = x; void x.load(); }
+  for (const d of dongs) { if (lowBuy[d]) continue; lowBuy[d] = lowBuyOf(d, today); }   /* 한 번 읽은 동은 다시 안 읽는다(저가매수와 같은 곳) */
 };
 const lbByKey = computed(() => { const m = new Map<string, LowBuyRow>(); Object.values(lowBuy).forEach((x) => (x.all as unknown as LowBuyRow[]).forEach((r) => m.set(r.key, r))); return m; });
 /** 같은 동 비교 자료가 다 왔는지 — 다 왔는데 줄이 없으면 마이 조회수 수집에 없는 사건 */
@@ -94,19 +96,19 @@ const lbSkipWhyOf = (f: TankFav) => (lowBuy[favPlace(f).emd]?.skipWhy as unknown
 const lbSkipped = (f: TankFav) => !!(lowBuy[favPlace(f).emd]?.skipKeys as unknown as Set<string> | undefined)?.has(f.key);
 
 /* ---------- 건물명 — 주소에 이름이 없으면 카카오 → 공동주택가격 단지명(낙찰가예측 · 저가매수와 같은 길) ---------- */
-const names = ref<Record<string, string>>({});
+const names = favNameCache;
 const lotStr = (addr: string) => addr.replace(/\s*\(.*$/, '').replace(/\s*외\s*\d+필지.*$/, '').match(/^(.*?(?:동|가|읍|면|리)\s+(?:산\s*)?\d+(?:-\d+)?)/)?.[1]?.replace(/\s+/g, ' ') ?? '';
 const fillNames = async () => {
-  const want = [...new Set(items.value.filter((f) => f.status === '진행' && !buildingNameOf(f.regn || f.addr)).map((f) => lotStr(f.regn || f.addr)).filter(Boolean))].slice(0, 80);
+  const want = [...new Set(items.value.filter((f) => f.status === '진행' && !buildingNameOf(f.regn || f.addr)).map((f) => lotStr(f.regn || f.addr)).filter((lot) => lot && !(lot in names.value)))].slice(0, 80);   /* 이미 물어본 지번은 다시 안 묻는다 */
   for (let i = 0; i < want.length; i += 3) {
     await Promise.all(want.slice(i, i + 3).map(async (lot) => {
       const nm = await kakaoBuildingName(lot).catch(() => '') || await lookupAddress(lot).then((r) => String(r.price?.name ?? '').trim()).catch(() => '');
-      if (nm) names.value = { ...names.value, [lot]: nm };
+      names.value = { ...names.value, [lot]: nm };   /* 못 찾아도 '' 로 남겨 다시 안 묻는다 */
     }));
   }
 };
 /** 도로명으로 온 주소를 지번 꼴로(다른 줄과 같게, 2026-11-20 사용자 — 정성드림빌5차) */
-const jibunOf = ref<Record<string, string>>({});
+const jibunOf = favJibunCache;
 const fillJibun = async () => {
   const want = items.value.filter((f) => !lbByKey.value.get(f.key) && f.addr && !isJibunAddr(f.addr) && !(f.key in jibunOf.value));
   for (let i = 0; i < want.length; i += 6) {

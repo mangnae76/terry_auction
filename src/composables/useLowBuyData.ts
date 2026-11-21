@@ -85,3 +85,13 @@ export const useLowBuyData = (dong: string, today: string, auto = true) => {
   const skipWhy = computed(() => new Map(factsDone.value ? cases.value.map((c) => [c.key, lbSkipWhy(c)] as const).filter(([, w]) => w) : []));
   return { msg, hits, liveHits, factsDone, trades, tradeMsg, tradeSpan, all, skipKeys, skipWhy, load };
 };
+
+/** 동마다 한 번만 읽어 둔다 — 탭을 옮기거나 다시 와도 다시 안 읽는다(2026-11-21 사용자 '한 번만 로드해 놓으면 되잖아').
+ *  fresh = 마이가 그 동을 새로 받은 뒤처럼 꼭 다시 읽어야 할 때만. 새로고침하면 비워진다 */
+const CACHE = new Map<string, { x: ReturnType<typeof useLowBuyData>; p: Promise<void> | null }>();
+export const lowBuyOf = (dong: string, today: string, fresh = false): ReturnType<typeof useLowBuyData> => {
+  const k = `${dong}|${today}`; let c = CACHE.get(k);
+  if (!c || fresh) { c = { x: useLowBuyData(dong, today, false), p: null }; CACHE.set(k, c); }
+  if (!c.p) c.p = c.x.load();
+  return c.x;
+};
