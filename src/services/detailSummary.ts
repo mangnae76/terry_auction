@@ -149,7 +149,7 @@ export const bidRoundsOf = (a: AuctionDetail | null | undefined): BidRoundRow[] 
   if (!a) return [];
   const rows: AuctionHistoryRow[] = (a.auctionHistory ?? []).length > 0
     ? a.auctionHistory
-    : [{ round: a.auctionRound || '1차', date: a.eventDate, minPrice: currentMinBidOf(a), result: '' }];
+    : [{ round: roundLabel(a.auctionRound || '1차'), date: a.eventDate, minPrice: currentMinBidOf(a), result: '' }];
   const current = pickCurrentRound(rows, a.eventDate);
   const currentIdx = current ? rows.indexOf(current) : -1;
   const base = bidBaseValueOf(a);
@@ -170,5 +170,12 @@ export const roundToneOf = (status: string) => `st-${ROUND_STATUS_TONE[status] ?
 export const currentRoundLabelOf = (a: AuctionDetail | null | undefined) => {
   if (!a) return '';
   const rows = a.auctionHistory ?? [];
-  return pickCurrentRound(rows, a.eventDate)?.round || a.auctionRound || '1차';
+  return roundLabel(pickCurrentRound(rows, a.eventDate)?.round || a.auctionRound || '1차');
+};
+/** 차수 글로 맞춘다 — 감정가가 곧 신건 값이라 최저가 옆엔 차수(2026-11-21 사용자). '신건' → '1차', '유찰 2회' → '3차' */
+export const roundLabel = (r: string) => {
+  const s = String(r || '').trim();
+  if (s === '신건') return '1차';
+  const m = /^유찰\s*(\d+)\s*회$/.exec(s);
+  return m ? `${Number(m[1]) + 1}차` : s;
 };

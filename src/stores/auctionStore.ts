@@ -369,16 +369,12 @@ const normalizeStatus = (status: string): AuctionStatus => {
   return '손품';
 };
 
+/** 차수 — '신건' · 'n차'. '유찰 n회'는 n+1차로(관심물건 · 직접입력이 그렇게 저장했다). 예전엔 2 · 3차 말고는 전부 신건으로 바꿔 버렸다(2026-11-21 고침 — 4차 · 유찰 1회가 신건으로 보임) */
 const normalizeRound = (round: string) => {
-  if (round === '1차' || round === '신건') {
-    return '신건';
-  }
-  if (round === '2차') {
-    return '2차';
-  }
-  if (round === '3차') {
-    return '3차';
-  }
+  const s = String(round ?? '').trim();
+  if (!s || s === '1차' || s === '신건') return '신건';
+  const n = /^(\d+)\s*차$/.exec(s); if (n) return Number(n[1]) <= 1 ? '신건' : `${Number(n[1])}차`;
+  const f = /^유찰\s*(\d+)\s*회$/.exec(s); if (f) return Number(f[1]) >= 1 ? `${Number(f[1]) + 1}차` : '신건';
   return '신건';
 };
 

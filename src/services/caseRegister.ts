@@ -40,7 +40,7 @@ export const parsedFromCase = (c: CaseRegInput): ParsedPdfAuction => {
     propertyType: c.kind,
     address: c.addr,
     roadAddress: c.road ?? base.roadAddress,
-    auctionRound: c.fails > 0 ? `유찰 ${c.fails}회` : '신건',
+    auctionRound: `${c.fails + 1}차`,   /* 차수 — 신건 1차 · 1회 유찰 2차(2026-11-21 사용자) */
     eventDate: c.date,
     appraisalValue: c.appr,
     minimumBidValue: c.min,

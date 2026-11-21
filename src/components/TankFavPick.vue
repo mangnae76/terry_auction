@@ -120,6 +120,17 @@ const addrOf = (f: TankFav) => { const a = lbByKey.value.get(f.key)?.addr || (is
 
 /* ---------- 목록 ---------- */
 const mine = computed(() => { const m = new Map<string, { id: string; ai: boolean }>(); auctions.auctions.forEach((a) => { const k = caseKey(a.caseNumber); if (k) m.set(k, { id: a.id, ai: !!(a as { rightsAi?: unknown }).rightsAi }); }); return m; });
+/* 차수 바로잡기 — 예전 저장이 '유찰 n회'를 '신건'으로 바꿔 버렸다(2026-11-21 고침). 등록한 물건이 '신건'인데 관심물건 목록은 유찰이면 그 차수로 한 번 고친다 */
+const roundFixed = new Set<string>();
+watch(() => [items.value.length, auctions.auctions.length], () => {
+  const favByKey = new Map(items.value.map((f) => [f.key, f]));
+  auctions.auctions.forEach((a) => {
+    const k = caseKey(a.caseNumber); const f = k ? favByKey.get(k) : undefined;
+    if (!f || !(f.fails > 0) || a.auctionRound !== '신건' || (a.auctionHistory ?? []).length || roundFixed.has(a.id)) return;
+    roundFixed.add(a.id);
+    void auctions.saveAuction({ ...a, auctionRound: `${f.fails + 1}차` }, { silent: true }).catch(() => roundFixed.delete(a.id));
+  });
+}, { immediate: true });
 /* AI 권리분석 자동 줄 — composables/useFavRightsAi 한 곳 */
 const ai = useFavRightsAi(items);
 const AI_ORDER: FavAiState[] = ['done', 'run', 'wait', 'limit', 'closed', 'before', 'miss'];

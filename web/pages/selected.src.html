@@ -10653,7 +10653,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
           courtName: ($('mnCourt').value || '').trim(),
           propertyType: $('mnType').value || '',
           address: ($('mnAddr').value || '').trim(),
-          auctionRound: fails > 0 ? `유찰 ${fails}회` : '',
+          auctionRound: `${fails + 1}차`,   /* 차수 — 신건 1차 · 1회 유찰 2차(관심물건 등록과 같게, 2026-11-21) */
           eventDate: ($('mnDate').value || '').trim(),
           appraisalValue: num('mnAppr'),
           minimumBidValue: num('mnMin'),

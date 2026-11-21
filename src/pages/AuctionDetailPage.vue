@@ -56,7 +56,7 @@ import { useAuctionStore } from '../stores/auctionStore';
 import {
   bidBaseValueOf, bidRoundsOf, currentRoundLabelOf, depositAmountOf, headMetaLineOf,
   roundToneOf, saleKindOf, summaryApprovalAgeOf, summaryAreaText, summaryFloorPairOf, summarySeedOf, trunc2,
-  currentMinBidOf, exclusiveAreaText,
+  currentMinBidOf, exclusiveAreaText, roundLabel,
 } from '../services/detailSummary';
 import { AUCTION_STATUS_LABELS, AUCTION_STATUS_ORDER, type AgencyRow, type AuctionDetail, type AuctionStatus, type BidCostAnalysis, type DemandFilter, type DemandSnap, type DemandSnapRow, type MarketPicks, type MarketSurveyRow } from '../types/auction';
 import { Browser } from '@capacitor/browser';
@@ -7878,7 +7878,7 @@ const goBack = () => router.back();
                 <td class="r">{{ formatMoney(apprValue) }}</td>
               </tr>
               <tr>
-                <td>{{ auction.auctionRound ? `${auction.auctionRound}(최저가)` : '최저가' }}</td>
+                <td>{{ auction.auctionRound ? `${roundLabel(auction.auctionRound)}(최저가)` : '최저가' }}</td>
                 <td class="r">{{ apprValue > 0 ? formatPct((auction.metrics.minimumBidValue / apprValue) * 100) : '' }}</td>
                 <td class="r">{{ formatMoney(auction.metrics.minimumBidValue) }}</td>
               </tr>
@@ -8129,7 +8129,7 @@ const goBack = () => router.back();
                     <div v-else class="lab"><span>{{ bidSlideMin }}%</span><span v-if="auction.metrics.minimumBidValue > 0">최저가 {{ formatPct((auction.metrics.minimumBidValue / apprValue) * 100) }}</span><span>110%</span></div>
                   </div>
                   <div class="bx-row"><span class="bx-k"><span class="bx-kl">감정가</span><small v-if="firstRoundDate" class="bx-kd">신건 {{ firstRoundDate }}</small></span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(apprValue) }}</b></span></div>
-                  <div class="bx-row"><span class="bx-k"><span class="bx-kl">{{ auction.auctionRound ? `최저가(${auction.auctionRound})` : '최저가' }}</span><small v-if="curRoundDate" class="bx-kd">{{ curRoundStatus }} {{ curRoundDate }}</small></span><span class="bx-d">감정가 대비</span><span class="bx-p"><b class="bx-f pct ro">{{ apprValue > 0 ? ((auction.metrics.minimumBidValue / apprValue) * 100).toFixed(2) : '-' }}</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(auction.metrics.minimumBidValue) }}</b></span></div>
+                  <div class="bx-row"><span class="bx-k"><span class="bx-kl">{{ auction.auctionRound ? `최저가(${roundLabel(auction.auctionRound)})` : '최저가' }}</span><small v-if="curRoundDate" class="bx-kd">{{ curRoundStatus }} {{ curRoundDate }}</small></span><span class="bx-d">감정가 대비</span><span class="bx-p"><b class="bx-f pct ro">{{ apprValue > 0 ? ((auction.metrics.minimumBidValue / apprValue) * 100).toFixed(2) : '-' }}</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(auction.metrics.minimumBidValue) }}</b></span></div>
                   <div class="bx-row"><span class="bx-k">보증금</span><span class="bx-d">최저가의</span><span class="bx-p"><b class="bx-f pct ro">10.00</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(bidDeposit) }}</b></span></div>
                   <div class="bx-row last"><span class="bx-k">대출(사업자)</span><span class="bx-d">입찰가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cLoan-${si}`, scPctOfBid(sc, sc.cost.loanAmount))" inputmode="decimal" aria-label="대출 비중" @blur="pctDone()" @input="pctType(`cLoan-${si}`, $event); scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.loanAmount" class="bx-f amt" live-group /></span></div>
                 </section>
