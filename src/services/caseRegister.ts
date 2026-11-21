@@ -50,3 +50,14 @@ export const parsedFromCase = (c: CaseRegInput): ParsedPdfAuction => {
     notes: c.memo ?? '',
   };
 };
+
+/** 사건 열쇠 '2025-1788(2)' → '2025타경1788' · 물건번호 2(저가매수 · 공통 표가 쓴다, 예전 services/tankFav 에서 옮김) */
+export const favCaseNo = (key: string): { caseNo: string; pn: string } => {
+  const m = key.match(/^(\d{4})-(\d+)(?:\((\d+)\))?$/);
+  return m ? { caseNo: `${m[1]}타경${m[2]}`, pn: m[3] ?? '' } : { caseNo: key, pn: '' };
+};
+/** 신건 · 유찰 n회 — 최저가 ÷ 감정가 % */
+export const favRound = (f: { fails: number; min: number; appr: number }): { label: string; pct: string } => ({
+  label: f.fails > 0 ? `유찰 ${f.fails}회` : '신건',
+  pct: f.appr > 0 && f.min > 0 ? `${Math.round((f.min / f.appr) * 100)}%` : '',
+});

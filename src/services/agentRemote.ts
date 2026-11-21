@@ -15,8 +15,8 @@
 import { collection, deleteField, doc, getDoc, getDocFromServer, getDocs, onSnapshot, query, runTransaction, serverTimestamp, setDoc, where, type Unsubscribe } from 'firebase/firestore';
 import { firestore } from './firebase';
 
-export type AgentCmdName = 'open' | 'screen' | 'auto' | 'enrich' | 'queue' | 'daylist' | 'hits' | 'restart' | 'pause' | 'resume' | 'fav' | 'spec';   // fav — 탱크 관심물건 가져오기, spec — 법원 매각물건명세서 받기(2026-11-20)
-export type AgentCmdArgs = { site?: '옥션원' | '탱크옥션'; months?: 0 | 6 | 12 | 24 | 36; src?: 'near' | 'same'; fresh?: boolean; from?: string; to?: string; court?: string; dong?: string; cases?: string[] };
+export type AgentCmdName = 'open' | 'screen' | 'auto' | 'enrich' | 'queue' | 'daylist' | 'hits' | 'restart' | 'pause' | 'resume';
+export type AgentCmdArgs = { site?: '옥션원' | '탱크옥션'; months?: 0 | 6 | 12 | 24 | 36; src?: 'near' | 'same'; fresh?: boolean; from?: string; to?: string; court?: string; dong?: string };
 export type AgentStatus = {
   at?: { toMillis(): number } | null;
   version?: string;
@@ -254,26 +254,6 @@ export const loadHits = async (dong: string): Promise<HitDoc[]> => {
   });
 };
 
-/* ===== 탱크옥션 관심물건 — 마이가 목록 API 로 읽은 전부(saleData/dayList/fav/tank, 2026-11-20) ===== */
-export type TankFav = {
-  tid: string; key: string; cat: string; pri: number; memo: string; wdate: string; kind: string; addr: string; road: string; regn: string;
-  bArea: number; lArea: number; appr: number; min: number; sold: number; fails: number; status: string; state: string; court: string; dept: string;
-  date: string; hit: number; bids: number; second: number;
-};
-export type TankFavDoc = { items: TankFav[]; cats: { nm: string; cnt: number }[]; noCtgr: number; total: number; at: number };
-export const loadTankFav = async (): Promise<TankFavDoc | null> => {
-  const snap = await getDocFromServer(doc(db(), 'saleData', 'dayList', 'fav', 'tank')).catch(() => getDoc(doc(db(), 'saleData', 'dayList', 'fav', 'tank')));
-  if (!snap.exists()) return null;
-  const x = snap.data() as Partial<TankFavDoc> & { at?: { toMillis(): number } };
-  const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0); const t = (v: unknown) => (typeof v === 'string' ? v : '');
-  const items = (Array.isArray(x.items) ? x.items : []).filter((r) => r && typeof r === 'object').map((r) => ({
-    tid: t(r.tid), key: t(r.key), cat: t(r.cat), pri: n(r.pri), memo: t(r.memo), wdate: t(r.wdate), kind: t(r.kind), addr: t(r.addr), road: t(r.road), regn: t(r.regn),
-    bArea: n(r.bArea), lArea: n(r.lArea), appr: n(r.appr), min: n(r.min), sold: n(r.sold), fails: n(r.fails), status: t(r.status), state: t(r.state), court: t(r.court), dept: t(r.dept),
-    date: t(r.date), hit: n(r.hit), bids: n(r.bids), second: n(r.second) }));
-  const cats = (Array.isArray(x.cats) ? x.cats : []).map((c) => ({ nm: t(c?.nm), cnt: n(c?.cnt) }));
-  return { items, cats, noCtgr: n(x.noCtgr), total: n(x.total), at: x.at?.toMillis?.() ?? 0 };
-};
-
 /* ===== 예상 매도가 2 — 운영진이 알아본 매도 가능 가격 · 고른 칸(1 계산 · 2 직접), 사건 열쇠마다 한 문서 map(2026-11-20 사용자 저가매수 · 관심물건 시안) ===== */
 export type Sale2 = { p: number; use: 1 | 2 };
 const sale2Ref = () => doc(db(), 'saleData', 'dayList', 'sale2', 'main');
@@ -289,26 +269,3 @@ export const saveSale2 = async (key: string, v: Sale2 | null): Promise<void> => 
   await setDoc(sale2Ref(), { m: { [key]: v ? { p: Math.max(0, Math.round(v.p)), use: v.use } : deleteField() }, at: serverTimestamp() }, { merge: true });
 };
 
-/* ===== 법원 매각물건명세서 — 마이가 법원경매정보 '파일저장'으로 받은 PDF(saleData/dayList/spec, 2026-11-20) =====
- * 머리 {key} — state ok(PDF 있음) · none(명세서 단추 없음, 공개 전) · notfound · nocourt · bad, n 조각 수. 조각 {key}~p0 … 에 base64 */
-export type SpecHead = { key: string; state: string; court: string; no: string; pn: number; name: string; n: number; at: number };
-export const loadSpecHeads = async (): Promise<Record<string, SpecHead>> => {
-  const snaps = await getDocs(query(collection(db(), 'saleData', 'dayList', 'spec'), where('n', '>=', 0)));
-  const out: Record<string, SpecHead> = {};
-  snaps.docs.forEach((d) => {
-    const x = d.data() as Partial<SpecHead> & { at?: { toMillis(): number } };
-    const key = String(x.key ?? d.id);
-    out[key] = { key, state: String(x.state ?? ''), court: String(x.court ?? ''), no: String(x.no ?? ''), pn: Number(x.pn) || 0, name: String(x.name ?? ''), n: Number(x.n) || 0, at: x.at?.toMillis?.() ?? 0 };
-  });
-  return out;
-};
-/** 명세서 PDF — 조각을 모아 File 로(물건 매물명세 칸에 그대로 올린다) */
-export const loadSpecFile = async (h: SpecHead): Promise<File | null> => {
-  if (h.state !== 'ok' || h.n < 1) return null;
-  const parts = await Promise.all(Array.from({ length: h.n }, (_, i) => getDoc(doc(db(), 'saleData', 'dayList', 'spec', `${h.key}~p${i}`))));
-  const b64 = parts.map((p) => String((p.data() as { data?: string } | undefined)?.data ?? '')).join('');
-  if (!b64) return null;
-  const bin = atob(b64); const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
-  return new File([bytes], h.name || `${h.no} 매각물건명세서.pdf`, { type: 'application/pdf' });
-};

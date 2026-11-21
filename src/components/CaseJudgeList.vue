@@ -8,7 +8,7 @@ import { useSale2 } from '../composables/useSale2';
 import { buildingAgeText } from '../utils/buildingAge';
 import { propTypeName } from '../utils/propertyType';
 import { lbJudge, type LowBuyRow } from '../services/lowBuy';
-import { favRound } from '../services/tankFav';
+import { favRound } from '../services/caseRegister';
 
 export type JudgeRow = {
   /** 줄 열쇠(탱크 tid · 사건 열쇠) */

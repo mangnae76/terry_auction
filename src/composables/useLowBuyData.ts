@@ -1,5 +1,5 @@
 /* 저가매수 자료 — 그 동 마이 사건(hits) · 건축물대장(연식 · 엘베 · 이름) · 국토부 실거래로 lowBuyRows 를 만든다.
- * 매각분석 › 저가매수(LowBuyPick)와 물건등록 › 관심물건(TankFavPick)이 같이 쓴다(2026-11-20 — 같은 계산 한 곳) */
+ * 매각분석 › 저가매수(LowBuyPick)가 쓴다 */
 import { computed, onMounted, ref } from 'vue';
 import { loadHits, type HitDoc } from '../services/agentRemote';
 import { getBuildingFacts } from '../services/buildingFacts';
