@@ -16,7 +16,8 @@ describe('건물명 저절로 채우기', () => {
     expect(needsBuildingName({ address: '인천광역시 서구 검암동 597-4 2층 203호' })).toBe(true);
     expect(needsBuildingName({ address: '인천광역시 서구 검암동 597-4 엘리시움 2층 203호' })).toBe(false);
     expect(needsBuildingName({ address: '인천광역시 서구 검암동 597-4 2층 203호', basicSummary: { 'sum.buildingName': 'DS리치빌' } })).toBe(false);
-    expect(needsBuildingName({ address: '인천광역시 서구 검암동 597-4 2층 203호', basicSummary: { 'sum.buildingNameAuto': 'none' } })).toBe(false);
+    expect(needsBuildingName({ address: '인천광역시 서구 검암동 597-4 2층 203호', basicSummary: { 'sum.buildingNameAuto': 'none2' } })).toBe(false);
+    expect(needsBuildingName({ address: '인천광역시 서구 검암동 597-4 2층 203호', basicSummary: { 'sum.buildingNameAuto': 'none' } })).toBe(true);
   });
   it('보여 줄 주소 — 지번 뒤에 건물명', () => {
     expect(shownAddressOf({ address: '인천광역시 서구 검암동 597-4 2층 203호', basicSummary: { 'sum.buildingName': 'DS리치빌' } }))

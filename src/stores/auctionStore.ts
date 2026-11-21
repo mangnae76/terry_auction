@@ -927,10 +927,10 @@ export const useAuctionStore = defineStore('auction', () => {
     if (typeof window === 'undefined') return;
     window.clearTimeout(nameFillTimer);
     nameFillTimer = window.setTimeout(() => {
-      void fillMissingBuildingNames(auctions.value, async (id, name) => {
+      void fillMissingBuildingNames(auctions.value, async (id, name, mark) => {
         const cur = allAuctions.value.find((x) => x.id === id);
         if (!cur || String(cur.basicSummary?.['sum.buildingName'] ?? '').trim()) return;   // 그 사이 사용자가 적었다
-        cur.basicSummary = { ...(cur.basicSummary ?? {}), ...(name ? { 'sum.buildingName': name } : {}), [BUILDING_NAME_AUTO_KEY]: name ? 'bld' : 'none' };
+        cur.basicSummary = { ...(cur.basicSummary ?? {}), ...(name ? { 'sum.buildingName': name } : {}), [BUILDING_NAME_AUTO_KEY]: mark };
         await saveAuction(cur, { silent: true });
       });
     }, 2500);
