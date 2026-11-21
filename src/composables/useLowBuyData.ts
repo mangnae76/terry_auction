@@ -37,7 +37,6 @@ export const useLowBuyData = (dong: string, today: string, auto = true) => {
       if (!liveHits.value.length) { msg.value = `${dong} 진행 중 사건이 없습니다.`; return; }
       // 건축물대장 — 지번마다 한 번(30일 저장), 넷씩
       const lots = [...new Map(liveHits.value.map((h) => [lotKey(h.addr), h.addr])).entries()].filter(([k]) => k);
-      let n = 0;
       for (let i = 0; i < lots.length; i += 4) {
         await Promise.all(lots.slice(i, i + 4).map(async ([k, a]) => {
           const f = await getBuildingFacts(a); facts.value = { ...facts.value, [k]: f };
@@ -45,7 +44,7 @@ export const useLowBuyData = (dong: string, today: string, auto = true) => {
           if (!String(f?.name ?? '').trim() && !nameByLot.value.get(k)) { const lot = lotStr(a); const nm = lot ? await kakaoBuildingName(lot).catch(() => '') : ''; const nm2 = nm || await lookupAddress(a, { areaM2: undefined }).then((r) => String(r.price?.name ?? '').trim()).catch(() => '');   /* 그래도 없으면 공동주택가격(브이월드) 단지명(2026-11-20 사용자) */
             if (nm2) kNames.value = { ...kNames.value, [k]: nm2 }; }
         }));
-        n = Math.min(lots.length, i + 4); msg.value = `건축물대장 ${n.toLocaleString('ko-KR')} / ${lots.length.toLocaleString('ko-KR')}`;
+        /* 대장 몇 / 몇 진행 글은 화면에 안 보임(2026-11-21 사용자 '굳이 보여줘야 돼?') — '불러오는 중입니다…' 그대로 */
       }
       factsDone.value = true;
       void loadTrades();
