@@ -220,14 +220,19 @@ body{display:flex;align-items:center;justify-content:center;min-height:100%;over
 #cap .num.sm{font-size:22px}
 
 </style><style id="volcss">
-/* 음량 막대 — 2026-11-22 모든 장 공통(소리 단추 오른쪽) */
-#vol{-webkit-appearance:none;appearance:none;width:80px;height:18px;margin:0 4px 0 0;padding:0;background:transparent;cursor:pointer;flex:none}
+/* 음량 — 스피커 단추 위 세로 막대(모든 장 공통) */
+.volw{position:relative;display:flex;align-items:center;flex:none}
+.volpop{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);padding:0 0 8px;display:none;z-index:120}
+.volw:hover .volpop{display:block}   /* 마우스를 올리면 뜬다 · 스피커를 누르면 음소거 */
+.volpop .vbox{width:36px;height:116px;border-radius:8px;background:rgba(10,16,34,.88);box-shadow:0 4px 14px rgba(0,0,0,.3);position:relative}
+#vol{-webkit-appearance:none;appearance:none;position:absolute;left:50%;top:50%;width:92px;height:20px;margin:0;padding:0;background:transparent;cursor:pointer;transform:translate(-50%,-50%) rotate(-90deg)}
 #vol::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,#f3700a var(--v,100%),rgba(255,255,255,.3) var(--v,100%))}
 #vol::-moz-range-track{height:4px;border-radius:2px;background:rgba(255,255,255,.3)}
 #vol::-moz-range-progress{height:4px;border-radius:2px;background:#f3700a}
 #vol::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;margin-top:-4px;border-radius:50%;background:#fff;border:0}
 #vol::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:0}
 #vol:focus-visible{outline:2px solid #f3700a;outline-offset:2px}
+#bVoc,#vc{display:none!important}   /* 음성 안내 단추 · 아이콘은 모든 장에서 뺌(V 키는 그대로) */
 </style>
 </head>
 <body>
@@ -329,12 +334,12 @@ body{display:flex;align-items:center;justify-content:center;min-height:100%;over
   <button id="rs" aria-label="처음부터"><svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/></svg></button>
   <div id="seek" role="slider" aria-label="재생 위치"><div class="tr"><div class="fl"></div><div class="kn"></div></div></div>
   <span id="tm">0:00</span>
-  <button id="snd" aria-label="소리 켜기/끄기"><svg id="i-off" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l5 6M21 9l-5 6" stroke="#fff" stroke-width="2" fill="none"/></svg><svg id="i-on" viewBox="0 0 24 24" style="display:none"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="#fff" stroke-width="2" fill="none"/></svg></button><input id="vol" type="range" min="0" max="100" step="1" value="100" aria-label="음량" title="음량">
+  <div class="volw"><button id="snd" aria-label="소리 켜기/끄기"><svg id="i-off" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l5 6M21 9l-5 6" stroke="#fff" stroke-width="2" fill="none"/></svg><svg id="i-on" viewBox="0 0 24 24" style="display:none"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="#fff" stroke-width="2" fill="none"/></svg></button><div class="volpop"><div class="vbox"><input id="vol" type="range" min="0" max="100" step="1" value="100" aria-label="음량" title="음량"></div></div></div>
   <button id="vc" aria-label="음성 안내 켜기/끄기" style="display:none"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0z"/><path d="M17.5 6.5a4 4 0 0 1 0 5M20 4a7.5 7.5 0 0 1 0 10" stroke="#fff" stroke-width="1.8" fill="none"/></svg></button>
 </div>
 </div>
 <script id="voljs">
-/* 음량 막대 — 소리가 스피커로 나가기 직전에 음량 한 칸(GainNode)을 끼워 전체 음량을 조절한다.
+/* 음량 — 소리가 스피커로 나가기 직전에 음량 한 칸(GainNode)을 끼워 전체 음량을 조절한다.
    장마다 소리 코드가 달라도 같게 듣도록 AudioNode.connect(destination) 만 가로챈다. 고른 음량은 모든 장이 같이 쓴다(이 브라우저에만). */
 (function(){
   var KEY='myturnClipVol',V=1;
@@ -354,14 +359,15 @@ body{display:flex;align-items:center;justify-content:center;min-height:100%;over
     speechSynthesis.speak=function(u){try{if(u&&u.text&&u.text.trim())u.volume=(u.volume==null?1:u.volume)*V}catch(e){}return sp(u)}}
   function apply(){masters.forEach(function(p){var m=p[1];try{m.gain.setTargetAtTime(gainOf(V),m.context.currentTime,0.02)}catch(e){m.gain.value=gainOf(V)}})}
   document.addEventListener('DOMContentLoaded',function(){
-    var el=document.getElementById('vol');if(!el)return;
+    var el=document.getElementById('vol'),w=el&&el.closest('.volw');if(!el||!w)return;
     var paint=function(){el.style.setProperty('--v',Math.round(V*100)+'%');el.setAttribute('aria-valuetext','음량 '+Math.round(V*100))};
     el.value=Math.round(V*100);paint();
-    ['click','pointerdown','mousedown','touchstart','keydown'].forEach(function(t){el.addEventListener(t,function(e){e.stopPropagation()})});
+    var pop=w.querySelector('.volpop');
+    ['click','pointerdown','mousedown','touchstart','keydown'].forEach(function(t){pop.addEventListener(t,function(e){e.stopPropagation()})});
     el.addEventListener('input',function(){
       V=Math.max(0,Math.min(1,el.value/100));apply();paint();
       try{localStorage.setItem(KEY,String(V))}catch(e){}
-      var h=document.querySelector('button#hint,#hint[role=button]');                 // 소리를 아직 안 켰으면 막대를 움직일 때 같이 켬
+      var h=document.querySelector('button#hint,#hint[role=button]');   // 소리를 아직 안 켰으면 막대를 움직일 때 같이 켬
       if(V>0&&h&&h.offsetParent!==null&&getComputedStyle(h).display!=='none')h.click();
     });
   });

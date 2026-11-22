@@ -1821,11 +1821,14 @@ const toSec = (at) => { if (!at) return -1; const p = String(at).split(':').map(
 const ytId = (u) => { const m = String(u).match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/); return m ? m[1] : ''; };
 const ytSrc = (id, start, auto) => `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1${start > 0 ? `&start=${start}` : ''}${auto ? '&autoplay=1' : ''}`;
 /* 장 영상 — 전체 영상(src)이 아직 없을 때, 장마다 따로 만든 영상(clip). 고른 장이 없거나 영상이 없는 장이면 영상이 있는 첫 장 */
+/* 장 영상 판 — 영상 파일을 고치면 올린다(브라우저에 남은 옛 파일 대신 새 파일을 받게) */
+const CLIP_V = '261122b';
+const clipSrc = (c) => `${c.clip}?v=${CLIP_V}`;
 const clipCh = () => { const ch = V().chapters; return ch.find((c) => c.id === S.chapter && c.clip) || ch.find((c) => c.clip) || null; };
 function playerHtml() {
   const v = V();
   const cc = !vReady() && clipCh();
-  if (cc) return `<iframe id="vClip" src="${esc(cc.clip)}" title="${esc(cc.title)} 영상" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>`;
+  if (cc) return `<iframe id="vClip" src="${esc(clipSrc(cc))}" title="${esc(cc.title)} 영상" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>`;
   if (!vReady()) return `<img src="${IMG}${esc(v.poster)}" alt=""><div class="player-cover"><span class="stamp">${I('play')}준비 중</span><strong>웹 사용법 영상을 만들고 있습니다</strong><p>영상이 올라오면 이 자리에서 바로 재생되고, 목차를 눌러 원하는 장면으로 건너뛸 수 있습니다.</p><p class="more">그동안 같은 내용을 웹으로 보기에서 실제 화면과 함께 볼 수 있어요.</p><a class="btn-accent" href="#web" data-mode="web">${I('doc')}웹으로 보기</a></div>`;
   const id = ytId(v.src);
   if (id) return `<iframe id="vFrame" src="${esc(ytSrc(id, 0, false))}" title="마이턴 웹 사용법 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe>`;
@@ -1859,7 +1862,7 @@ function seekTo(id, auto) {
   const c = V().chapters.find((x) => x.id === id); if (!c) return;
   S.chapter = id; document.querySelectorAll('.vv-toc li').forEach((li) => li.classList.toggle('on', li.dataset.ch === id));
   if (!vReady() && c.clip) {   /* 장 영상 — 재생 칸을 그 장 영상으로 바꾼다 */
-    const fr = $('vClip'); if (!fr || fr.getAttribute('src') !== c.clip) $('player').innerHTML = playerHtml();
+    const fr = $('vClip'); if (!fr || fr.getAttribute('src') !== clipSrc(c)) $('player').innerHTML = playerHtml();
     const cap = $('vCap'); if (cap) cap.innerHTML = capHtml();
     if (auto) $('player').scrollIntoView({ behavior: reduce() ? 'auto' : 'smooth', block: 'nearest' });
     return;
