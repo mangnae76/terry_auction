@@ -2,6 +2,8 @@
 
 public/guide/clip 의 파일들. 사용자가 만든 영상 원본을 고치지 않고 그대로 둔다(백업 겸). 새 판이 오면 같은 이름으로 덮어쓰고 이 표를 고친다.
 받은 곳: 구글 드라이브 '02_가이드영상' 폴더(2026-11-16 내려받음).
+2026-11-22 모든 장 플레이어 손봄 — ① 소리 단추 오른쪽에 음량 막대(#vol, 고른 값은 localStorage myturnClipVol 로 모든 장 같이) ② 사람 모양 음성 안내 아이콘(#vc, 'ElevenLabs Sola') 숨김 ③ rights.html 「소리 · 음성 안내 켜기」가 화면 속 같은 id(#hint) 글에 걸려 눌러도 안 켜지던 것 고침. 넣는 스크립트 scripts/guide-clip-volume.py(head 의 #volcss · 첫 스크립트 앞 #voljs). 새 판으로 덮어쓰면 다시 넣어야 한다.
+음성 설정(새로 만들 때) — 솔라 · Eleven v4 · 안정성 0.1 · 유사성 0.8 · 복제 강도 0.
 2026-11-17 사용자 요청으로 영상 안 로고 그림만 MYTURN AUCTION(흰 AUCTION)으로 바꿨다. 다른 곳은 그대로. 바꾸기 전 원본은 ~/Downloads/로고교체전_원본_261117/02_가이드영상 에 있다.
 
 | 파일 | 장 | 원본 이름 | 길이 |
@@ -18,4 +20,4 @@ public/guide/clip 의 파일들. 사용자가 만든 영상 원본을 고치지 
 | trip.html | 임장경로 | myturn_임장경로_guide.html | 0:39 |
 | postwin.html | 낙찰이후 | myturn_guide_낙찰이후_음성_50초.html | 0:50 |
 | finance.html | 자금관리 | myturn_fund_guide.html | 0:47 |
-| privacy.html | 개인정보 설정 | (원본 없음 — 2026-11-22 Claude 가 finance.html 틀로 만듦, 음성 ElevenLabs Sola · 모델 eleven_v4(원본과 같은 소리, 목소리 음량 ×1.45), 배경음악은 layout 것을 끝 2.5초 줄여 씀) | 0:48 |
+| privacy.html | 개인정보 설정 | (원본 없음 — 2026-11-22 Claude 가 finance.html 틀로 만듦, 음성 ElevenLabs Sola · 모델 eleven_v4 · 안정성 0.1 · 유사성 0.8(11-22 다시 만듦, 목소리 음량 ×1.45), 배경음악은 layout 것을 끝 2.5초 줄여 씀) | 0:48 |

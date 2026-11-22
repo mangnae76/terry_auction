@@ -130,6 +130,16 @@ body{display:flex;align-items:center;justify-content:center;font-family:'Noto Sa
 #hint svg{width:18px;height:18px;fill:#fff}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,59,59,.6)}60%{box-shadow:0 0 0 12px rgba(255,59,59,0)}}
 </style>
+<style id="volcss">
+/* 음량 막대 — 2026-11-22 모든 장 공통(소리 단추 오른쪽) */
+#vol{-webkit-appearance:none;appearance:none;width:80px;height:18px;margin:0 4px 0 0;padding:0;background:transparent;cursor:pointer;flex:none}
+#vol::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,#f3700a var(--v,100%),rgba(255,255,255,.3) var(--v,100%))}
+#vol::-moz-range-track{height:4px;border-radius:2px;background:rgba(255,255,255,.3)}
+#vol::-moz-range-progress{height:4px;border-radius:2px;background:#f3700a}
+#vol::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;margin-top:-4px;border-radius:50%;background:#fff;border:0}
+#vol::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:0}
+#vol:focus-visible{outline:2px solid #f3700a;outline-offset:2px}
+</style>
 </head>
 <body>
 <div id="wrap" class="paused">
@@ -263,10 +273,44 @@ body{display:flex;align-items:center;justify-content:center;font-family:'Noto Sa
   <button id="bRe" title="처음부터"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
   <input id="seek" type="range" min="0" max="100" step="0.01" value="0">
   <span id="tm">0:00 / 0:00</span>
-  <button id="bSnd" title="소리 (M)" class="off"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6" fill="none" stroke="#fff" stroke-width="2"/></svg></button>
+  <button id="bSnd" title="소리 (M)" class="off"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6" fill="none" stroke="#fff" stroke-width="2"/></svg></button><input id="vol" type="range" min="0" max="100" step="1" value="100" aria-label="음량" title="음량">
   <button id="bVoc" title="음성 안내 (V)" class="off" style="font-weight:700;font-family:'Noto Sans KR',sans-serif">음성</button>
 </div>
 </div>
+<script id="voljs">
+/* 음량 막대 — 소리가 스피커로 나가기 직전에 음량 한 칸(GainNode)을 끼워 전체 음량을 조절한다.
+   장마다 소리 코드가 달라도 같게 듣도록 AudioNode.connect(destination) 만 가로챈다. 고른 음량은 모든 장이 같이 쓴다(이 브라우저에만). */
+(function(){
+  var KEY='myturnClipVol',V=1;
+  try{var s=localStorage.getItem(KEY);if(s!==null&&!isNaN(+s))V=Math.max(0,Math.min(1,+s))}catch(e){}
+  var gainOf=function(v){return v*v};                       // 귀에 고르게 들리도록 제곱
+  var masters=[];
+  if(window.AudioNode&&window.AudioDestinationNode){
+    var orig=AudioNode.prototype.connect;
+    AudioNode.prototype.connect=function(dst){
+      if(dst instanceof AudioDestinationNode){
+        var m=null;for(var i=0;i<masters.length;i++)if(masters[i][0]===dst)m=masters[i][1];
+        if(!m){m=dst.context.createGain();m.gain.value=gainOf(V);orig.call(m,dst);masters.push([dst,m])}
+        var a=Array.prototype.slice.call(arguments);a[0]=m;return orig.apply(this,a)}
+      return orig.apply(this,arguments)};
+  }
+  if(window.speechSynthesis){var sp=speechSynthesis.speak.bind(speechSynthesis);
+    speechSynthesis.speak=function(u){try{if(u&&u.text&&u.text.trim())u.volume=(u.volume==null?1:u.volume)*V}catch(e){}return sp(u)}}
+  function apply(){masters.forEach(function(p){var m=p[1];try{m.gain.setTargetAtTime(gainOf(V),m.context.currentTime,0.02)}catch(e){m.gain.value=gainOf(V)}})}
+  document.addEventListener('DOMContentLoaded',function(){
+    var el=document.getElementById('vol');if(!el)return;
+    var paint=function(){el.style.setProperty('--v',Math.round(V*100)+'%');el.setAttribute('aria-valuetext','음량 '+Math.round(V*100))};
+    el.value=Math.round(V*100);paint();
+    ['click','pointerdown','mousedown','touchstart','keydown'].forEach(function(t){el.addEventListener(t,function(e){e.stopPropagation()})});
+    el.addEventListener('input',function(){
+      V=Math.max(0,Math.min(1,el.value/100));apply();paint();
+      try{localStorage.setItem(KEY,String(V))}catch(e){}
+      var h=document.querySelector('button#hint,#hint[role=button]');                 // 소리를 아직 안 켰으면 막대를 움직일 때 같이 켬
+      if(V>0&&h&&h.offsetParent!==null&&getComputedStyle(h).display!=='none')h.click();
+    });
+  });
+})();
+</script>
 <script>
 'use strict';
 /* ================= 조절용 상수 ================= */

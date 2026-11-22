@@ -216,7 +216,17 @@ body{display:flex;align-items:center;justify-content:center;min-height:100%;over
 #nb-tip{background:#f8fafc;border-color:#e3e6eb}#nb-tip svg{color:#f59e0b}
 #cap .num.sm{font-size:22px}
 
-</style></head>
+</style><style id="volcss">
+/* 음량 막대 — 2026-11-22 모든 장 공통(소리 단추 오른쪽) */
+#vol{-webkit-appearance:none;appearance:none;width:80px;height:18px;margin:0 4px 0 0;padding:0;background:transparent;cursor:pointer;flex:none}
+#vol::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,#f3700a var(--v,100%),rgba(255,255,255,.3) var(--v,100%))}
+#vol::-moz-range-track{height:4px;border-radius:2px;background:rgba(255,255,255,.3)}
+#vol::-moz-range-progress{height:4px;border-radius:2px;background:#f3700a}
+#vol::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;margin-top:-4px;border-radius:50%;background:#fff;border:0}
+#vol::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:0}
+#vol:focus-visible{outline:2px solid #f3700a;outline-offset:2px}
+</style>
+</head>
 <body>
 <div id="wrap" class="paused" tabindex="0" aria-label="임장조사 가이드 모션 그래픽">
 <div id="stage">
@@ -307,10 +317,44 @@ body{display:flex;align-items:center;justify-content:center;min-height:100%;over
   <button id="rs" aria-label="처음부터"><svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/></svg></button>
   <div id="seek" role="slider" aria-label="재생 위치"><div class="tr"><div class="fl"></div><div class="kn"></div></div></div>
   <span id="tm">0:00</span>
-  <button id="snd" aria-label="소리 켜기/끄기"><svg id="i-off" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l5 6M21 9l-5 6" stroke="#fff" stroke-width="2" fill="none"/></svg><svg id="i-on" viewBox="0 0 24 24" style="display:none"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="#fff" stroke-width="2" fill="none"/></svg></button>
+  <button id="snd" aria-label="소리 켜기/끄기"><svg id="i-off" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l5 6M21 9l-5 6" stroke="#fff" stroke-width="2" fill="none"/></svg><svg id="i-on" viewBox="0 0 24 24" style="display:none"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="#fff" stroke-width="2" fill="none"/></svg></button><input id="vol" type="range" min="0" max="100" step="1" value="100" aria-label="음량" title="음량">
   <button id="vc" aria-label="음성 안내 켜기/끄기" style="display:none"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0z"/><path d="M17.5 6.5a4 4 0 0 1 0 5M20 4a7.5 7.5 0 0 1 0 10" stroke="#fff" stroke-width="1.8" fill="none"/></svg></button>
 </div>
 </div>
+<script id="voljs">
+/* 음량 막대 — 소리가 스피커로 나가기 직전에 음량 한 칸(GainNode)을 끼워 전체 음량을 조절한다.
+   장마다 소리 코드가 달라도 같게 듣도록 AudioNode.connect(destination) 만 가로챈다. 고른 음량은 모든 장이 같이 쓴다(이 브라우저에만). */
+(function(){
+  var KEY='myturnClipVol',V=1;
+  try{var s=localStorage.getItem(KEY);if(s!==null&&!isNaN(+s))V=Math.max(0,Math.min(1,+s))}catch(e){}
+  var gainOf=function(v){return v*v};                       // 귀에 고르게 들리도록 제곱
+  var masters=[];
+  if(window.AudioNode&&window.AudioDestinationNode){
+    var orig=AudioNode.prototype.connect;
+    AudioNode.prototype.connect=function(dst){
+      if(dst instanceof AudioDestinationNode){
+        var m=null;for(var i=0;i<masters.length;i++)if(masters[i][0]===dst)m=masters[i][1];
+        if(!m){m=dst.context.createGain();m.gain.value=gainOf(V);orig.call(m,dst);masters.push([dst,m])}
+        var a=Array.prototype.slice.call(arguments);a[0]=m;return orig.apply(this,a)}
+      return orig.apply(this,arguments)};
+  }
+  if(window.speechSynthesis){var sp=speechSynthesis.speak.bind(speechSynthesis);
+    speechSynthesis.speak=function(u){try{if(u&&u.text&&u.text.trim())u.volume=(u.volume==null?1:u.volume)*V}catch(e){}return sp(u)}}
+  function apply(){masters.forEach(function(p){var m=p[1];try{m.gain.setTargetAtTime(gainOf(V),m.context.currentTime,0.02)}catch(e){m.gain.value=gainOf(V)}})}
+  document.addEventListener('DOMContentLoaded',function(){
+    var el=document.getElementById('vol');if(!el)return;
+    var paint=function(){el.style.setProperty('--v',Math.round(V*100)+'%');el.setAttribute('aria-valuetext','음량 '+Math.round(V*100))};
+    el.value=Math.round(V*100);paint();
+    ['click','pointerdown','mousedown','touchstart','keydown'].forEach(function(t){el.addEventListener(t,function(e){e.stopPropagation()})});
+    el.addEventListener('input',function(){
+      V=Math.max(0,Math.min(1,el.value/100));apply();paint();
+      try{localStorage.setItem(KEY,String(V))}catch(e){}
+      var h=document.querySelector('button#hint,#hint[role=button]');                 // 소리를 아직 안 켰으면 막대를 움직일 때 같이 켬
+      if(V>0&&h&&h.offsetParent!==null&&getComputedStyle(h).display!=='none')h.click();
+    });
+  });
+})();
+</script>
 <script>
 const $=id=>document.getElementById(id);
 // 화면 크기와 무관하게 1920x1080 기준 좌표를 돌려줌
@@ -469,7 +513,7 @@ const AUD={bed:'SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYwLjE2LjEwMAAAAAAAAAAAAAAA//uE
       Promise.resolve(r).then(load).then(()=>{audioOn=true;$('hint').style.display='none';if(playing)aStart();else play();ui()}).catch(()=>{})}
     else{audioOn=false;aStop();ui()}}
   function setVoice(on){voiceOn=on;if(gVoice)gVoice.gain.setTargetAtTime(on?1:0,actx.currentTime,0.03);ui()}
-  $('vc').style.display='flex';$('vc').title='음성 안내: ElevenLabs Sola';
+  // 음성 안내 아이콘(#vc)은 숨김 — 2026-11-22 사용자 요청. V 키로 음성만 끄고 켜기는 그대로
   $('stage').addEventListener('click',toggle);$('big').addEventListener('click',toggle);
   $('pp').addEventListener('click',e=>{e.stopPropagation();toggle()});
   $('rs').addEventListener('click',e=>{e.stopPropagation();seek(0);play()});
