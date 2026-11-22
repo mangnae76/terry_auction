@@ -1591,13 +1591,13 @@ GUIDE.release({
     ];
   },
 });
-/* v1.7.1 — 2026.11.22 영상 14장 「개인정보 설정」 영상(clip/privacy.html, 0:47). 웹으로 보기 › 개인정보 설정을 실제 정보수정 화면에 맞춰 대본화, 음성은 다른 장과 같은 ElevenLabs Sola */
+/* v1.7.1 — 2026.11.22 영상 14장 「개인정보 설정」 영상(clip/privacy.html, 0:48). 웹으로 보기 › 개인정보 설정을 실제 정보수정 화면에 맞춰 대본화, 음성은 다른 장과 같은 ElevenLabs Sola */
 GUIDE.release({
   v: '1.7.1', date: '2026-11-22', base: '1.7.0', title: '개인정보 설정 영상',
-  notes: ['영상으로 보기 — 개인정보 설정 장에 영상(47초)을 올렸습니다'],
+  notes: ['영상으로 보기 — 개인정보 설정 장에 영상(48초)을 올렸습니다'],
   patch(c) {
     const ch = c.video.chapters.find((x) => x.id === 'setup');
-    if (ch) Object.assign(ch, { desc: '비밀번호 · 연락처 · 세금 계산 기준', clip: 'clip/privacy.html', len: '0:47' });
+    if (ch) Object.assign(ch, { desc: '비밀번호 · 연락처 · 세금 계산 기준', clip: 'clip/privacy.html', len: '0:48' });
   },
 });
 /* 다음 버전 예시 — 바뀐 곳만 patch 에서 고친다

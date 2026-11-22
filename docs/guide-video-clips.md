@@ -18,4 +18,4 @@ public/guide/clip 의 파일들. 사용자가 만든 영상 원본을 고치지 
 | trip.html | 임장경로 | myturn_임장경로_guide.html | 0:39 |
 | postwin.html | 낙찰이후 | myturn_guide_낙찰이후_음성_50초.html | 0:50 |
 | finance.html | 자금관리 | myturn_fund_guide.html | 0:47 |
-| privacy.html | 개인정보 설정 | (원본 없음 — 2026-11-22 Claude 가 finance.html 틀로 만듦, 음성 ElevenLabs Sola, 배경음악은 finance 것) | 0:47 |
+| privacy.html | 개인정보 설정 | (원본 없음 — 2026-11-22 Claude 가 finance.html 틀로 만듦, 음성 ElevenLabs Sola · 모델 eleven_v4(원본과 같은 소리, 목소리 음량 ×1.45), 배경음악은 layout 것을 끝 2.5초 줄여 씀) | 0:48 |
