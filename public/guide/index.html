@@ -1605,8 +1605,8 @@ GUIDE.release({
       const mi = at('돈이 나가는 순서');
       if (mi >= 0) { const [m] = lg.splice(mi, 1); m[1] = '왼쪽 맨 아래(비용 아래). ' + m[1]; lg.push(m); }
     }
-    /* 기일입찰 — 임장조사 뒤 새 페이지 */
-    const fi = subs.findIndex((x) => x.aid === 'help-item-field');
+    /* 기일입찰 — 임장경로 뒤 새 페이지(2026-11-23 사용자 '기일입찰은 임장경로보다 뒤') */
+    const fi = subs.findIndex((x) => x.aid === 'help-trip');
     subs.splice(fi + 1, 0, { aid: 'help-item-bid', label: '기일입찰', title: '물건상세 · 기일입찰', ic: 'doc', path: '물건상세 › 기일입찰', route: '#/', since: '1.8.0', blocks: [
       { t: 'p', html: '입찰 당일 봉투에 넣을 서류를 대법원 법원경매정보의 <b>공식 서식 그대로</b> 채웁니다. 물건상세 맨 끝 탭입니다.' },
       { t: 'table', head: ['자리', '쓰는 법'], rows: [
