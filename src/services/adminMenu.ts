@@ -77,6 +77,11 @@ export const OPS_MENU: OpsGroup[] = [
       { key: 'stats', label: '사용 통계', desc: '가입·접속·물건 수와 글 조회수', need: '집계 자리' },
     ],
   },
+  {
+    // 운영자 가이드 — 이용가이드에서 옮겨 옴(2026-11-23). 글은 DB adminDocs/guide 에만(운영자만 읽음)
+    title: '안내',
+    items: [{ key: 'guide', label: '운영자 가이드', desc: '운영 툴 · 매각분석 쓰는 법', ready: true }],
+  },
 ];
 
 /** 메뉴 하나 찾기 */

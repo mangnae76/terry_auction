@@ -310,6 +310,11 @@ service cloud.firestore {
     }
 
     // FAQ · 약관 — 로그인 전 화면(대문 · 가입)에도 보여야 해서 누구나 읽고, 운영자만 고친다(운영 › FAQ 관리 · 약관 관리)
+    // 운영자 가이드 — 운영 › 운영자 가이드가 읽는다. 운영자만 읽고 쓴다(이용가이드 파일에서 옮겨 옴, 2026-11-23)
+    match /adminDocs/{id} {
+      allow read, write: if isAdmin();
+    }
+
     match /contentDocs/{id} {
       allow read: if true;
       allow write: if isAdmin() && id == 'faq'
