@@ -1672,6 +1672,36 @@ GUIDE.release({
     ] });
   },
 });
+/* v1.8.1 — 2026.11.23 페이지안내 화면 그림 — 화면 공통 구성 · 물건목록 · 물건정보는 오늘 화면으로 다시, 손품조사 · 수익분석 · 임장조사 · 기일입찰 · 임장경로 · 낙찰이후 · 자금관리 · 시장분석은 새로.
+   실계정(정성드림빌)을 읽기만 해서 찍음 — 운영 단추 · 운영 칩 · 손품결론은 가리고, 기일입찰 서류의 이름 · 전화 · 주소와 임장경로 출발 · 도착지는 ○○로 가림.
+   배치가 바뀌어 물건목록 · 물건정보의 그림 위 번호는 뺐다(설명 번호는 그대로) */
+GUIDE.release({
+  v: '1.8.1', date: '2026-11-23', base: '1.8.0', title: '페이지안내 화면 그림',
+  notes: ['페이지안내 — 화면 공통 구성 · 물건목록 · 물건정보 그림을 오늘 화면으로 바꾸고, 손품조사 · 수익분석 · 임장조사 · 기일입찰 · 임장경로 · 낙찰이후 · 자금관리 · 시장분석에 화면 그림을 넣었습니다'],
+  patch(c) {
+    const U = 'terryauction-6b374.web.app/web#/';
+    const add = (k, h, url, alt) => { c.shots[k] = { src: `shot-${k}.webp?v=4`, w: 1600, h, url: U + url, alt }; };
+    add('layout', 330, 'market/dong', '화면 공통 구성 — 남색 머리띠(상단 메뉴 · 바로가기 · 내 계정), 흰 띠(경로 · 하위 탭), 그 아래 박스 탭');
+    add('list', 1052, 'list', '물건목록 · 물건카드 화면 — 도구 줄, 단계별 물건 수, 물건 카드와 분석 진행 · 수익률 분석');
+    add('basic', 1100, 'item/…/basic', '물건상세 · 물건정보 화면 — 사건 카드, 정보요약, 기본정보, 입지정보');
+    add('survey', 1300, 'item/…/survey', '물건상세 · 손품조사 화면 — 매매수요 · 시세분석 탭, 실사용자 · 빌라 입지비교 지도');
+    add('profit', 1200, 'item/…/profit', '물건상세 · 수익분석 화면 — A~D안 고르기, 요약 네 칸, 입찰정보 · 비용 · 수익 · 개인소득세율');
+    add('field', 1200, 'item/…/field', '물건상세 · 임장조사 화면 — 현장사진, 현장조사(입지 · 개별성 · 탐문 · 입찰자 현황조사), 부동산 현장 상담');
+    add('bid', 1250, 'item/…/bid', '물건상세 · 기일입찰 화면 — 입찰유형, 요약 네 칸, 봉투에 넣을 서류 작성(왼쪽 내 서류 · 오른쪽 예시)');
+    add('trip', 1000, 'trip', '임장경로 화면 — 경로설정 · 동선최적화 · 경로제외물건과 지도 경로');
+    add('postwin', 1150, 'postwin/win', '낙찰이후 › 절차별체크 화면 — 낙찰당일부터 세금까지 단계별 할 일');
+    add('finance', 1050, 'finance/cashFlow', '자금관리 › 자금입출금 화면 — 총 입금 · 총 출금 · 잔액과 입출금 표');
+    add('market', 1150, 'market/dong', '시장분석 › 실거래분석 화면 — 지역 · 종류 · 기간 조회, 요약 지표, 거래 타임라인');
+    const subs = c.sections.find((s) => s.id === 'pages').subs;
+    const page = (aid) => subs.find((x) => x.aid === aid);
+    const shotOf = (aid) => (page(aid) || { blocks: [] }).blocks.find((b) => b.t === 'shot');
+    ['help-list', 'help-item-basic'].forEach((aid) => { const b = shotOf(aid); if (b) b.pins = []; });   /* 배치가 바뀌어 그림 위 번호 자리가 맞지 않는다 */
+    const lb = shotOf('help-layout');
+    if (lb) { delete lb.mock; const r = (lb.legend || []).find((x) => x[0] === '바로가기'); if (r) r[1] = r[1].replace('공지 · 결제하기', '공지 · 게시판 · 결제하기'); }
+    const bid = page('help-item-bid');
+    if (bid && !shotOf('help-item-bid')) bid.blocks.splice(1, 0, { t: 'shot', key: 'bid', pins: [] });
+  },
+});
 /* 다음 버전 예시 — 바뀐 곳만 patch 에서 고친다
 GUIDE.release({
   v: '1.1.0', date: '2026-12-01', base: '1.0.0', title: '앱 출시 반영',
