@@ -48,7 +48,33 @@
   .mtp:hover .mid i, .mtp:focus-visible .mid i { transform: scale(1.07); }
   .mtp.started .mid, .mtp.hero .mid { display: none; }
   /* 대문 모드(?mode=hero) — 바로 재생 · 계속 되풀이. 썸네일 · 재생 단추 · 진행 막대 · 소리 단추는 감추고(소리는 바깥 대문이 켜고 끈다) */
-  .mtp.hero .poster, .mtp.hero .cover, .mtp.hero .bar, .mtp.hero .snd { display: none !important; }
+  .mtp.hero .poster, .mtp.hero .cover, .mtp.hero .bar, .mtp.hero .snd, .mtp.hero .ctl { display: none !important; }
+  /* 조작 줄 — 이용가이드 영상으로 보기 플레이어와 같은 기능(2026-11-23): 재생/일시정지 · 처음부터 · 재생 위치(끌기) · 시간 · 소리(누르면 음소거, 올리면 세로 음량 막대) */
+  .mtp .bar { display: none !important; }
+  .mtp .ctl { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; align-items: center; gap: 12px; padding: 28px 14px 10px; background: linear-gradient(transparent, rgba(10,16,34,.75)); opacity: 0; transition: opacity .2s; font: 600 13px/1 'Noto Sans KR', 'Noto Sans CJK KR', sans-serif; color: #fff; cursor: default; }
+  .mtp:not(.started) .ctl { display: none; }
+  .mtp.playing:hover .ctl, .mtp.paused .ctl, .mtp.ended .ctl, .mtp:focus-within .ctl { opacity: 1; }
+  .mtp .ctl button { all: unset; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; color: #fff; }
+  .mtp .ctl button:hover { background: rgba(255,255,255,.15); }
+  .mtp .ctl button:focus-visible { outline: 2px solid #f3700a; }
+  .mtp .ctl .c-pp svg, .mtp .ctl .c-rs svg { width: 20px; height: 20px; fill: #fff; }
+  .mtp .ctl .snd { position: static; opacity: 1; width: 32px; min-width: 0; aspect-ratio: auto; background: none; border-radius: 6px; padding: 0; display: flex; }
+  .mtp .ctl .snd svg { width: 20px; height: 20px; }
+  .mtp .c-seek { flex: 1; height: 18px; display: flex; align-items: center; cursor: pointer; }
+  .mtp .c-seek .tr { position: relative; width: 100%; height: 4px; border-radius: 2px; background: rgba(255,255,255,.3); }
+  .mtp .c-seek .fl { position: absolute; left: 0; top: 0; bottom: 0; background: #f3700a; border-radius: 2px; }
+  .mtp .c-seek .kn { position: absolute; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #fff; }
+  .mtp .c-tm { font-variant-numeric: tabular-nums; white-space: nowrap; opacity: .9; }
+  .mtp .volw { position: relative; display: flex; align-items: center; }
+  .mtp .vpop { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); padding-bottom: 8px; display: none; }
+  .mtp .volw:hover .vpop { display: block; }
+  .mtp .vpop .vbox { width: 36px; height: 116px; border-radius: 8px; background: rgba(10,16,34,.88); box-shadow: 0 4px 14px rgba(0,0,0,.3); position: relative; }
+  .mtp #vol { -webkit-appearance: none; appearance: none; position: absolute; left: 50%; top: 50%; width: 92px; height: 20px; margin: 0; padding: 0; background: transparent; cursor: pointer; transform: translate(-50%,-50%) rotate(-90deg); }
+  .mtp #vol::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(to right, #f3700a var(--v,100%), rgba(255,255,255,.3) var(--v,100%)); }
+  .mtp #vol::-moz-range-track { height: 4px; border-radius: 2px; background: rgba(255,255,255,.3); }
+  .mtp #vol::-moz-range-progress { height: 4px; border-radius: 2px; background: #f3700a; }
+  .mtp #vol::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4px; border-radius: 50%; background: #fff; border: 0; }
+  .mtp #vol::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 0; }
   .mtp.hero { cursor: default; }
 </style>
 </head>
@@ -59,7 +85,7 @@
   <div class="mid" aria-hidden="true"><i><svg viewBox="0 0 24 24"><path d="M6 3.8v16.4a1 1 0 0 0 1.5.86l13.2-8.2a1 1 0 0 0 0-1.72L7.5 2.94A1 1 0 0 0 6 3.8z"/></svg></i></div>
   <div class="cover"><div class="big"><i><svg viewBox="0 0 24 24"><path d="M6 3.8v16.4a1 1 0 0 0 1.5.86l13.2-8.2a1 1 0 0 0 0-1.72L7.5 2.94A1 1 0 0 0 6 3.8z"/></svg></i><span>소개 영상 보기 · 46초</span></div></div>
   <div class="bar"><b></b></div>
-  <button class="snd" type="button" aria-label="소리 끄기/켜기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path class="w" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path class="x" d="m22 9-6 6m0-6 6 6" style="display:none"/></svg></button>
+  <div class="ctl" id="ctl"><button type="button" class="c-pp" aria-label="재생/일시정지"><svg class="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg><svg class="i-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg></button><button type="button" class="c-rs" aria-label="처음부터"><svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/></svg></button><div class="c-seek" role="slider" aria-label="재생 위치"><div class="tr"><div class="fl"></div><div class="kn"></div></div></div><span class="c-tm">0:00</span><div class="volw"><button class="snd" type="button" aria-label="소리 끄기/켜기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path class="w" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path class="x" d="m22 9-6 6m0-6 6 6" style="display:none"/></svg></button><div class="vpop"><div class="vbox"><input id="vol" type="range" min="0" max="100" step="1" value="100" aria-label="음량" title="음량"></div></div></div></div>
 </div>
 <script>
 // MYTURN promo data: logo geometry + beat grid
@@ -3230,7 +3256,7 @@ keys.forEach(k => { const im = new Image(); im.onload = () => { IMG[k] = im; if 
     let t = clock();
     if (!audio.paused && audio.currentTime > 0 && Math.abs(t - audio.currentTime) > 0.12) { t0 = performance.now() - audio.currentTime * 1000; t = audio.currentTime; }   // stay locked to the sound
     if (t >= DUR) return finish();
-    render(Math.max(0, t)); bar.style.width = (t / DUR * 100) + '%';
+    render(Math.max(0, t)); bar.style.width = (t / DUR * 100) + '%'; ui(t);
     raf = requestAnimationFrame(frame);
   }
   function start(from) {
@@ -3244,7 +3270,7 @@ keys.forEach(k => { const im = new Image(); im.onload = () => { IMG[k] = im; if 
     });
     cancelAnimationFrame(raf); raf = requestAnimationFrame(frame);
   }
-  function pause() { held = clock(); state = 'paused'; audio.pause(); cancelAnimationFrame(raf); cls('paused'); label.textContent = '계속 보기'; box.setAttribute('aria-label', '계속 재생'); }
+  function pause() { held = clock(); state = 'paused'; audio.pause(); cancelAnimationFrame(raf); cls('paused'); label.textContent = '계속 보기'; box.setAttribute('aria-label', '계속 재생'); ui(held); }
   function finish() {
     if (HERO) {
       loops += 1;
@@ -3252,14 +3278,49 @@ keys.forEach(k => { const im = new Image(); im.onload = () => { IMG[k] = im; if 
       start(0); return;
     }
     state = 'ended'; audio.pause(); cancelAnimationFrame(raf); held = 0; render(DUR - 0.6); bar.style.width = '100%';
-    cls('ended'); label.textContent = '다시 보기'; box.setAttribute('aria-label', '다시 재생');
+    cls('ended'); label.textContent = '다시 보기'; box.setAttribute('aria-label', '다시 재생'); ui(DUR);
   }
   function toggle() { if (state === 'playing') pause(); else start(state === 'ended' ? 0 : undefined); }
   box.addEventListener('click', e => {
     if (HERO) { tell({ type: 'myturn-promo:click' }); return; }
-    if (!snd.contains(e.target)) toggle();
+    if (!e.target.closest('.ctl')) toggle();
   });
-  box.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); } });
+  box.addEventListener('keydown', e => {
+    if (e.target.closest && e.target.closest('.vpop')) return;
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); }
+    else if (e.key === 'ArrowRight') seek(cur() + 5); else if (e.key === 'ArrowLeft') seek(cur() - 5);
+    else if (e.key === 'm' || e.key === 'M') snd.click();
+  });
+  // ---- 조작 줄(영상으로 보기와 같은 기능) ----
+  const ctl = box.querySelector('.ctl'), FL = ctl.querySelector('.fl'), KN = ctl.querySelector('.kn'), TM = ctl.querySelector('.c-tm');
+  const fmt = x => { x = Math.max(0, Math.floor(x)); return Math.floor(x / 60) + ':' + String(x % 60).padStart(2, '0'); };
+  const cur = () => (state === 'playing' ? clock() : state === 'ended' ? DUR : held);
+  function ui(t) {
+    const p = Math.max(0, Math.min(100, t / DUR * 100)).toFixed(2) + '%'; FL.style.width = p; KN.style.left = p; TM.textContent = fmt(t) + ' / ' + fmt(DUR);
+    const on = state === 'playing'; ctl.querySelector('.i-play').style.display = on ? 'none' : 'block'; ctl.querySelector('.i-pause').style.display = on ? 'block' : 'none';
+  }
+  function seek(v) {
+    const t = Math.max(0, Math.min(DUR - 0.05, v));
+    if (state === 'playing') { start(t); return; }
+    held = t; started = true; state = 'paused'; audio.currentTime = t; render(t); cls('paused'); label.textContent = '계속 보기'; ui(t);
+  }
+  ctl.addEventListener('click', e => e.stopPropagation());
+  ctl.querySelector('.c-pp').addEventListener('click', () => toggle());
+  ctl.querySelector('.c-rs').addEventListener('click', () => start(0));
+  const sk = ctl.querySelector('.c-seek'); let drag = false;
+  const seekX = x => { const r = sk.getBoundingClientRect(); seek(Math.max(0, Math.min(1, (x - r.left) / r.width)) * DUR); };
+  sk.addEventListener('pointerdown', e => { e.stopPropagation(); drag = true; sk.setPointerCapture(e.pointerId); seekX(e.clientX); });
+  sk.addEventListener('pointermove', e => { if (drag) seekX(e.clientX); });
+  sk.addEventListener('pointerup', () => { drag = false; });
+  ui(0);
+  // 음량 — 고른 값은 이용가이드 장별 영상과 같이 씀(localStorage myturnClipVol). 아이폰은 브라우저가 음량 바꾸기를 막아 기기 음량 단추로만 바뀐다
+  const vol = document.getElementById('vol');
+  const gainOf = v => v * v;
+  let V = 1; try { const sv = localStorage.getItem('myturnClipVol'); if (sv !== null && !isNaN(+sv)) V = Math.max(0, Math.min(1, +sv)); } catch (e) {}
+  const paintVol = () => { vol.value = Math.round(V * 100); vol.style.setProperty('--v', Math.round(V * 100) + '%'); try { audio.volume = gainOf(V); } catch (e) {} };
+  paintVol();
+  ['click', 'pointerdown', 'mousedown', 'touchstart', 'keydown'].forEach(t => vol.addEventListener(t, e => e.stopPropagation()));
+  vol.addEventListener('input', () => { V = Math.max(0, Math.min(1, vol.value / 100)); paintVol(); try { localStorage.setItem('myturnClipVol', String(V)); } catch (e) {} });
   snd.addEventListener('click', () => { audio.muted = !audio.muted; snd.querySelector('.w').style.display = audio.muted ? 'none' : ''; snd.querySelector('.x').style.display = audio.muted ? '' : 'none'; });
   audio.addEventListener('playing', () => { if (state === 'playing') t0 = performance.now() - audio.currentTime * 1000; });
   audio.addEventListener('waiting', () => { if (state === 'playing') held = audio.currentTime; });
