@@ -8,6 +8,7 @@ public/guide/clip 의 파일들. 사용자가 만든 영상 원본을 고치지 
 
 | 파일 | 장 | 원본 이름 | 길이 |
 |---|---|---|---|
+| start.html | 시작하며 | (원본 없음 — 2026-11-23 Claude 가 privacy.html 틀에 장면을 새로 그림, 만드는 스크립트 scripts/guide-clip-src/build-start.py, 음성 솔라 · Eleven v4 · 안정성 0.1 · 유사성 0.8 · 음량 ×1.45, 배경음악은 survey 것) | 1:18 |
 | layout.html | 화면 공통 구성 | myturn_guide_common_short.html | 0:57 |
 | home.html | 로그인 후 대문 | myturn_login_main_guide_short.html | 0:46 |
 | register.html | 물건등록 | myturn_register_guide_short.html | 1:01 |

@@ -1617,6 +1617,15 @@ GUIDE.release({
     ];
   },
 });
+/* v1.7.3 — 2026.11.23 영상 1장 「시작하며」(clip/start.html, 1:18) — 서비스 목표 · 방향성(소개서와 같은 문구)을 장면으로, 음성 솔라 · Eleven v4 · 0.1 / 0.8 */
+GUIDE.release({
+  v: '1.7.3', date: '2026-11-23', base: '1.7.2', title: '시작하며 영상',
+  notes: ['영상으로 보기 — 시작하며 장에 영상(1분 18초)을 올렸습니다'],
+  patch(c) {
+    const ch = c.video.chapters.find((x) => x.id === 'start');
+    if (ch) Object.assign(ch, { clip: 'clip/start.html', len: '1:18' });
+  },
+});
 /* 다음 버전 예시 — 바뀐 곳만 patch 에서 고친다
 GUIDE.release({
   v: '1.1.0', date: '2026-12-01', base: '1.0.0', title: '앱 출시 반영',
@@ -1839,7 +1848,7 @@ const ytId = (u) => { const m = String(u).match(/(?:youtu\.be\/|youtube(?:-nocoo
 const ytSrc = (id, start, auto) => `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1${start > 0 ? `&start=${start}` : ''}${auto ? '&autoplay=1' : ''}`;
 /* 장 영상 — 전체 영상(src)이 아직 없을 때, 장마다 따로 만든 영상(clip). 고른 장이 없거나 영상이 없는 장이면 영상이 있는 첫 장 */
 /* 장 영상 판 — 영상 파일을 고치면 올린다(브라우저에 남은 옛 파일 대신 새 파일을 받게) */
-const CLIP_V = '261122b';
+const CLIP_V = '261123';
 const clipSrc = (c) => `${c.clip}?v=${CLIP_V}`;
 const clipCh = () => { const ch = V().chapters; return ch.find((c) => c.id === S.chapter && c.clip) || ch.find((c) => c.clip) || null; };
 function playerHtml() {
