@@ -19,6 +19,7 @@ public/guide/clip 의 파일들. 사용자가 만든 영상 원본을 고치지 
 | profit.html | 수익분석 | myturn_profit_guide.html | 0:46 |
 | field.html | 임장조사 | myturn_field_guide.html | 0:43 |
 | trip.html | 임장경로 | myturn_임장경로_guide.html | 0:39 |
+| bid.html | 기일입찰 | (원본 없음 — 2026-11-23 Claude 가 privacy.html 틀에 실제 기일입찰 탭 화면 한 장(1.3배, 이름 · 전화 · 주소 ○○○)을 깔아 만듦, scripts/guide-clip-src/build-bid.py, 음성 솔라 · v4 · 0.1/0.8, 배경음악 register 것) | 1:00 |
 | postwin.html | 낙찰이후 | myturn_guide_낙찰이후_음성_50초.html | 0:50 |
 | finance.html | 자금관리 | myturn_fund_guide.html | 0:47 |
 | privacy.html | 개인정보 설정 | (원본 없음 — 2026-11-22 Claude 가 finance.html 틀로 만듦, 음성 ElevenLabs Sola · 모델 eleven_v4 · 안정성 0.1 · 유사성 0.8(11-22 다시 만듦, 목소리 음량 ×1.45), 배경음악은 layout 것을 끝 2.5초 줄여 씀) | 0:48 |

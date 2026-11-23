@@ -1652,6 +1652,18 @@ GUIDE.release({
     if (bid && !shotOf('help-item-bid')) bid.blocks.splice(1, 0, { t: 'shot', key: 'bid', pins: [] });
   },
 });
+/* v1.8.2 — 2026.11.23 영상 기일입찰 장(clip/bid.html, 1:00) — 임장경로 다음. 실제 기일입찰 탭 화면(이름 · 전화 · 주소 ○○○)을 1.3배로 내려 가며 짚음, 음성 솔라 · v4 · 0.1/0.8 */
+GUIDE.release({
+  v: '1.8.2', date: '2026-11-23', base: '1.8.1', title: '기일입찰 영상',
+  notes: ['영상으로 보기 — 기일입찰 장에 영상(1분)을 올렸습니다'],
+  patch(c) {
+    const chs = c.video.chapters;
+    if (!chs.find((x) => x.id === 'bid')) {
+      const ti = chs.findIndex((x) => x.id === 'trip');
+      chs.splice(ti + 1, 0, { id: 'bid', title: '기일입찰', desc: '입찰서류를 법원 공식 서식 그대로', at: '', aid: 'help-item-bid', clip: 'clip/bid.html', len: '1:00' });
+    }
+  },
+});
 /* 다음 버전 예시 — 바뀐 곳만 patch 에서 고친다
 GUIDE.release({
   v: '1.1.0', date: '2026-12-01', base: '1.0.0', title: '앱 출시 반영',
