@@ -109,6 +109,10 @@ const judgeRows = computed<JudgeRow[]>(() => rows.value.map((r) => {
   return { id: r.key, key: r.key, tid: tidOf.value.get(r.key) ?? '', kind: r.kind, caseNo: c.caseNo, pn: c.pn, court: '', addr: r.addr, area: r.area, appr: r.appr, min: r.min, fails: r.fails,
     date: r.next, status: '진행', stateText: '', lb: r, judgeMsg: '', registered: mine.value.has(r.key) };
 }));
+/* 표 위 주소 검색 — 띄어쓰기 없이 비교해 '검암동 123' · '검암동123' 모두 찾는다(2026-11-23 사용자) */
+const addrQuery = ref('');
+const squash = (t: string) => t.replace(/\s+/g, '').toLowerCase();
+const shownRows = computed(() => { const k = squash(addrQuery.value); return k ? judgeRows.value.filter((j) => squash(String(j.addr ?? '')).includes(k)) : judgeRows.value; });
 const note = ref('');
 const busyId = ref('');
 const { confirmBox, register: registerCase } = useCaseRegister();
@@ -146,7 +150,13 @@ const openPhotos = (j: JudgeRow) => { if (j.tid) window.open(`${TANK_VIEW}${enco
       <template v-else-if="factsDone">
         <p v-if="note" class="lbp-msg">{{ note }}</p>
         <!-- 표는 관심물건과 같은 공통 부품(2026-11-20 사용자) -->
-        <CaseJudgeList :rows="judgeRows" :busy-id="busyId" empty="비교할 1회 유찰 물건이 없습니다." @register="register" @photo="openPhotos" />
+        <div v-if="judgeRows.length" :class="['lbp-find', { on: addrQuery }]">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <input v-model="addrQuery" type="search" placeholder="주소 검색" aria-label="저가매수 표 안에서 주소 찾기" />
+          <small v-if="addrQuery.trim()">{{ shownRows.length.toLocaleString('ko-KR') }}건</small>
+          <button v-if="addrQuery" type="button" aria-label="검색어 지우기" @click="addrQuery = ''">×</button>
+        </div>
+        <CaseJudgeList :rows="shownRows" :busy-id="busyId" :empty="addrQuery.trim() ? '찾는 주소가 없습니다.' : '비교할 1회 유찰 물건이 없습니다.'" @register="register" @photo="openPhotos" />
       </template>
       <p v-if="hits.length" class="lbp-note">숫자는 마이가 {{ asOfSpan }}에 모은 {{ place }} 사건과 저장된 국토부 실거래{{ tradeSpan ? `(${tradeSpan})` : '' }} 기준입니다. 연식 · 엘베는 건축물대장. 진행 상태는 그 뒤 바뀌었을 수 있습니다.</p>
     </section>
@@ -177,5 +187,13 @@ const openPhotos = (j: JudgeRow) => { if (j.tid) window.open(`${TANK_VIEW}${enco
 .lbp-wait { margin: 0; padding: 24px 0; text-align: center; font-size: 13px; color: #6b7280; }
 .lbp-msg { margin: 0; font-size: 12px; color: #4b5563; }
 .lbp-note { margin: 0; font-size: 12px; color: #6b7280; line-height: 1.7; }
+/* 표 위 주소 검색 — 실거래 리스트 검색칸과 같은 꼴, 글이 있으면 포커스가 빠져도 파란 테두리 */
+.lbp-find { width: 100%; max-width: 420px; display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; color: #9ca3af; box-sizing: border-box; }
+.lbp-find:focus-within, .lbp-find.on { border-color: #2b6df3; }
+.lbp-find input { flex: 1; min-width: 0; height: 100%; border: 0; outline: none; background: transparent; font-family: inherit; font-size: 14px; color: #111827; }
+.lbp-find input::placeholder { color: #9aa3b2; }
+.lbp-find input::-webkit-search-cancel-button { display: none; }
+.lbp-find small { flex: none; font-size: 13px; font-weight: 700; color: #2b6df3; }
+.lbp-find button { flex: none; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: #eef1f6; font-size: 15px; line-height: 1; color: #6b7280; cursor: pointer; }
 @media (max-width: 720px) { .lbp-how { grid-template-columns: minmax(0, 1fr); } }
 </style>
