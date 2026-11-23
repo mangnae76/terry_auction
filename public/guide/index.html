@@ -1600,6 +1600,23 @@ GUIDE.release({
     if (ch) Object.assign(ch, { desc: '비밀번호 · 연락처 · 세금 계산 기준', clip: 'clip/privacy.html', len: '0:48' });
   },
 });
+/* v1.7.2 — 2026.11.23 서비스 방향성 문구를 소개서(웹 마더 261112) 5장 '서비스 목표'와 같게 — 큰 글 · 작은 글 · 핵심 가치 넷 */
+GUIDE.release({
+  v: '1.7.2', date: '2026-11-23', base: '1.7.1', title: '서비스 방향성 문구',
+  notes: ['서비스 목표 › 방향성 — 소개서와 같은 문구로 맞췄습니다(감이 아닌 정확한 데이터로, 경매의 처음부터 끝까지)'],
+  patch(c) {
+    const dir = c.sections.find((s) => s.id === 'goal').subs.find((x) => x.id === 'direction');
+    const q = dir.blocks.find((b) => b.t === 'quote');
+    Object.assign(q, { html: '감이 아닌 정확한 데이터로,<br><em>경매의 처음부터 끝까지.</em>', small: '물건 고르는 날부터 세금 신고까지, 모든 판단에 근거를 남깁니다.' });
+    const cards = dir.blocks.find((b) => b.t === 'cards');
+    cards.items = [
+      { no: '핵심 가치 1', title: 'AI가 먼저 읽고', html: '경매 서류를 AI가 읽어 사건카드와 권리분석을 채웁니다.' },
+      { no: '핵심 가치 2', title: '데이터로 검증', html: '실거래가 · 수요지표 · 입지등수로 숫자에 근거를 붙입니다.' },
+      { no: '핵심 가치 3', title: '현장과 이어지고', html: '책상에서는 웹으로 조사하고, 현장에서는 앱으로 확인합니다.' },
+      { no: '핵심 가치 4', title: '끝까지 관리', html: '낙찰 뒤 잔금 · 명도 · 매도 · 세금까지 꾸준히 챙깁니다.', tone: 'hot' },
+    ];
+  },
+});
 /* 다음 버전 예시 — 바뀐 곳만 patch 에서 고친다
 GUIDE.release({
   v: '1.1.0', date: '2026-12-01', base: '1.0.0', title: '앱 출시 반영',
