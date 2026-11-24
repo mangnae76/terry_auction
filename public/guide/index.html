@@ -741,7 +741,7 @@ const V1 = {
   hero: {
     badge: '브랜드 이야기',
     title: '“내 차례!”<br>그 한마디에<br><em>가슴 뛰던 날</em>',
-    text: '거실 바닥에 부루마블 판을 펼치고, 가족 · 친구들과 둘러앉아 부동산 부자를 꿈꾸던 어린 시절.<br>주사위를 꼭 쥐고 <b>‘내 차례!’</b>를 외치던 그 설렘, 기억하시나요?',
+    text: '거실 바닥에 보드게임 판을 펼치고, 가족 · 친구들과 둘러앉아 부동산 부자를 꿈꾸던 어린 시절.<br>주사위를 꼭 쥐고 <b>‘내 차례!’</b>를 외치던 그 설렘, 기억하시나요?',
     chips: [],
     photo: 'hero-board.webp',
     photoAlt: '마이턴 게임판 위로 주사위가 굴러가는 장면',
@@ -860,8 +860,8 @@ const V1 = {
         { t: 'p', html: '물건 검색은 경매 정보 사이트에 맡기고, 마이턴은 고른 물건을 <b>끝까지 진행</b>하는 데 집중합니다. 자료를 모으고 계산하는 번거로운 일은 앱이, 입찰가를 정하는 판단은 사람이 합니다.' },
       ] },
       { id: 'concept', label: '컨셉', title: '마이턴, 내 차례', ic: 'play', blocks: [
-        { t: 'lead', html: '‘마이턴(My Turn)’은 <b>내 차례</b>라는 뜻입니다. 부루마블에서 주사위를 굴려 땅을 사고 집을 짓던 것처럼, 경매도 내 차례가 오면 한 칸씩 나아가 부동산을 손에 넣습니다.' },
-        { t: 'p', html: '마이턴은 <b>리치마블</b>의 올인원 경매 분석 플랫폼 브랜드입니다.' },
+        { t: 'lead', html: '‘마이턴(My Turn)’은 <b>내 차례</b>라는 뜻입니다. 보드게임에서 주사위를 굴려 땅을 사고 집을 짓던 것처럼, 경매도 내 차례가 오면 한 칸씩 나아가 부동산을 손에 넣습니다.' },
+        { t: 'p', html: '<b>마이턴옥션</b>은 마이턴의 올인원 경매 분석 플랫폼입니다.' },
         { t: 'bi' },
         { t: 'h4', text: '물건 하나가 말 하나입니다' },
         { t: 'p', html: '물건목록에 올린 물건은 모두 아래 칸 위에 놓입니다. 카드의 단계 단추를 누르면 말이 그 칸으로 옮겨 가고, 칸에 맞는 화면이 함께 움직입니다.' },
@@ -1993,7 +1993,7 @@ function renderContent() {
 function renderFoot() {
   const k = C().contact; const L = GUIDE.latest();
   $('foot').innerHTML = `<div class="wrap">
-    <div><p><b>마이턴 이용가이드</b> v${esc(S.rel.v)} · ${dot(S.rel.date)} 기준</p><p>최신 버전 v${esc(L.v)} · <button type="button" class="linkish" data-act="log">업데이트 내역</button></p><p>마이턴은 리치마블의 부동산 경매 브랜드입니다.</p></div>
+    <div><p><b>마이턴 이용가이드</b> v${esc(S.rel.v)} · ${dot(S.rel.date)} 기준</p><p>최신 버전 v${esc(L.v)} · <button type="button" class="linkish" data-act="log">업데이트 내역</button></p><p>마이턴옥션은 마이턴의 부동산 경매 플랫폼입니다.</p></div>
     <div><p>문의 ${esc(k.phone)} · 대표메일 ${esc(k.email)}</p><p>${esc(k.address)}</p><p>COPYRIGHT ⓒMyTurn. ALL RIGHTS RESERVED.</p></div>
   </div>`;
 }
