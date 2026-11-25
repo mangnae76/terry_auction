@@ -20,13 +20,21 @@ while true; do
     echo "commit: $(git rev-parse --short HEAD 2>/dev/null)"
     echo "manuals: $(cd web/manual 2>/dev/null && ls *.html 2>/dev/null | tr '\n' ' ')"
     # 앱 쪽에 커밋 안 된 변경이 있으면 작업 중인 코드가 나가지 않도록 멈춘다(web/manual 은 제외)
-    dirty="$(git status --porcelain --untracked-files=no -- . ':(exclude)web/manual' 2>/dev/null)"
+    dirty="$(git status --porcelain --untracked-files=no -- . ':(exclude)web/manual' ':(exclude)scripts/manual-deploy.sh' 2>/dev/null)"
     if [[ -n "$dirty" ]]; then
       echo "blocked: 저장소에 커밋 안 된 변경이 있어 배포하지 않았습니다"
       echo "$dirty"
       rc=2
     else
-      npm run build && npx --yes firebase-tools deploy --only hosting --non-interactive
+      # 매뉴얼 배포는 앱을 다시 빌드하지 않는다 — 지금 배포된 앱(dist)을 그대로 두고
+      # firebase predeploy 가 web/manual/*.html 만 dist/web/manual 로 복사해 올린다.
+      # (앱 코드에 작업 중인 오류가 있어도 매뉴얼은 나간다. dist 가 없을 때만 빌드한다)
+      if [[ -f dist/index.html ]]; then
+        echo "mode: 매뉴얼만 (앱 빌드 생략, dist 앱 $(grep -o 'assets/index-[^\"]*\.js' dist/index.html | head -1))"
+        npx --yes firebase-tools deploy --only hosting --non-interactive
+      else
+        npm run build && npx --yes firebase-tools deploy --only hosting --non-interactive
+      fi
       rc=$?
     fi
     echo "exit: $rc"
