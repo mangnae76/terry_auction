@@ -6810,6 +6810,14 @@ const firstRoundDate = computed(() => bidRounds.value[0]?.date ?? '');
 const curRound = computed(() => bidRounds.value.find((r) => r.current));
 const curRoundDate = computed(() => curRound.value?.date ?? '');
 const curRoundStatus = computed(() => curRound.value?.status || '진행');
+/** 감정가 줄 신건 날짜 밑 — 신건 뒤로 이번 회차 전까지 지난 회차의 차수 · 날짜 · 결과 · 최저가(2026-11-25 사용자). 이번 회차는 바로 아래 최저가 줄에 있다 */
+const pastRounds = computed(() => {
+  const rows = bidRounds.value;
+  const cur = rows.findIndex((r) => r.current);
+  return rows.slice(1, cur >= 0 ? cur : rows.length)
+    .filter((r) => r.status !== '예정')
+    .map((r) => ({ round: roundLabel(r.label.replace(/\s*최저가$/, '')), date: r.date, status: r.status, price: r.price }));
+});
 
 // 차수 배지 — '신건'(비율로 추정한 값) 대신 기일내역상 진행 중인 회차를 쓴다
 const currentRoundLabel = computed(() => currentRoundLabelOf(auction.value));
@@ -8128,7 +8136,7 @@ const goBack = () => router.back();
                     <div v-else-if="bidFloorHit === si" class="lab warn"><span>최저가 미만으로는 내릴 수 없습니다</span></div>
                     <div v-else class="lab"><span>{{ bidSlideMin }}%</span><span v-if="auction.metrics.minimumBidValue > 0">최저가 {{ formatPct((auction.metrics.minimumBidValue / apprValue) * 100) }}</span><span>110%</span></div>
                   </div>
-                  <div class="bx-row"><span class="bx-k"><span class="bx-kl">감정가</span><small v-if="firstRoundDate" class="bx-kd">신건 {{ firstRoundDate }}</small></span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(apprValue) }}</b></span></div>
+                  <div class="bx-row"><span class="bx-k"><span class="bx-kl">감정가</span><small v-if="firstRoundDate" class="bx-kd">신건 {{ firstRoundDate }}</small><span v-if="pastRounds.length" class="bx-past"><small v-for="(r, ri) in pastRounds" :key="ri"><span class="bx-kl">{{ r.round }}</span>{{ [r.status, r.date].filter(Boolean).join(' ') }}<b>{{ formatMoney(r.price) }}</b></small></span></span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(apprValue) }}</b></span></div>
                   <div class="bx-row"><span class="bx-k"><span class="bx-kl">{{ auction.auctionRound ? `최저가(${roundLabel(auction.auctionRound)})` : '최저가' }}</span><small v-if="curRoundDate" class="bx-kd">{{ curRoundStatus }} {{ curRoundDate }}</small></span><span class="bx-d">감정가 대비</span><span class="bx-p"><b class="bx-f pct ro">{{ apprValue > 0 ? ((auction.metrics.minimumBidValue / apprValue) * 100).toFixed(2) : '-' }}</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(auction.metrics.minimumBidValue) }}</b></span></div>
                   <div class="bx-row"><span class="bx-k">보증금</span><span class="bx-d">최저가의</span><span class="bx-p"><b class="bx-f pct ro">10.00</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(bidDeposit) }}</b></span></div>
                   <div class="bx-row last"><span class="bx-k">대출(사업자)</span><span class="bx-d">입찰가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cLoan-${si}`, scPctOfBid(sc, sc.cost.loanAmount))" inputmode="decimal" aria-label="대출 비중" @blur="pctDone()" @input="pctType(`cLoan-${si}`, $event); scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.loanAmount" class="bx-f amt" live-group /></span></div>
@@ -15165,6 +15173,10 @@ select.adp-pub-input option { text-align: center; }
 .bx-row.wide { grid-template-columns: auto minmax(0, 1fr) 162px 132px; }
 .bx-k .bx-kl { display: inline-block; min-width: 5.6em; }   /* 감정가 · 최저가(N차) 이름 폭을 같게 — 신건 · 진행 날짜가 한 세로줄에서 시작한다 */
 .bx-k .bx-kd { margin-left: 8px; font-size: 12px; font-weight: 400; color: #6b7280; }   /* 감정가 · 최저가 줄의 기일(신건 · 진행) */
+.bx-k .bx-past { display: grid; gap: 2px; margin: 4px 0 6px; }   /* 감정가 줄 밑 지난 회차 — 차수 이름 폭을 위 줄과 같게, 날짜가 신건 날짜와 한 세로줄 */
+.bx-k .bx-past small { font-size: 12px; color: #6b7280; }
+.bx-k .bx-past .bx-kl { min-width: 78.4px; margin-right: 8px; }   /* 위 줄 이름 칸(5.6em × 14px)과 같은 폭 */
+.bx-k .bx-past b { margin-left: 8px; font-weight: 600; color: #374151; }
 .bx-p i { font-style: normal; font-size: 12px; color: #6b7280; }
 .bx-minus { font-style: normal; margin: 0; color: #6b7280; }
 .bx-a { min-width: 0; text-align: right; }
