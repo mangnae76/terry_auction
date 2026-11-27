@@ -140,6 +140,7 @@ const info = ref<Ebook | null>(null);
               <span class="t1">{{ coverOf(b)!.title[0] }}</span>
               <span v-if="coverOf(b)!.title[1]" class="t2">{{ coverOf(b)!.title[1] }}</span>
               <span class="sb">{{ coverOf(b)!.sub }}</span>
+              <span class="by">골든 지음</span>
               <template v-if="coverOf(b)!.steps.length">
                 <i class="bx" /><i class="ln" />
                 <template v-if="coverOf(b)!.mark">
@@ -279,6 +280,7 @@ const info = ref<Ebook | null>(null);
 .mc .t1 { top: 35.2cqw; }
 .mc .t2 { top: 53.1cqw; color: #f0a35e; }
 .mc .sb { left: 8cqw; top: 75.6cqw; font-size: 4.17cqw; font-weight: 700; letter-spacing: -.08cqw; color: #e3e8f2; }
+.mc .by { left: 8cqw; top: 82.6cqw; font-size: 2.83cqw; font-weight: 600; color: #c3cde6; }   /* 지은이 '골든 지음'(2026-11-27) */
 .mc .bx { left: 8cqw; top: 92.5cqw; width: 84cqw; height: 20.83cqw; border-radius: 2.33cqw; background: rgba(255, 255, 255, .07); border: .17cqw solid rgba(255, 255, 255, .15); }
 .mc .ln { left: 17.17cqw; top: 100.67cqw; width: 65.67cqw; height: .67cqw; border-radius: 1cqw; background: rgba(255, 255, 255, .28); }
 .mc .bd { top: 100.17cqw; height: 1.67cqw; border-radius: 1cqw; background: #f4700a; }
