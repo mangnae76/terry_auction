@@ -3,7 +3,7 @@
 // 상품은 웹과 같은 자료(운영자가 올린 ebooks). 모바일앱 · 관리 탭은 앱에 두지 않는다.
 import { computed, onUnmounted, ref } from 'vue';
 import MyContentsPage from '../pages/MyContentsPage.vue';
-import whiteLogo from '../assets/icones/log/LOGO_AUCTION_WHITE.png';
+import whiteLogo from '../assets/icones/log/LOGO_SCHOOL_WHITE.png';   // 콘텐츠(매뉴얼 · 전자책 · 리포트)는 마이턴스쿨 — 브랜드북 SC-11(2026-11-27)
 import { userMessage } from '../services/userMessage';
 import {
   downloadEbook, ebookBodyHtml, ebookReleaseText, ebookSummary, isPaidEbook, isUpcomingEbook,
