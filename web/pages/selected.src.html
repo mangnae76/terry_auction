@@ -1689,6 +1689,30 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .pa.mk-v .mv-pin.cmp-bub.mkd.me .mk-me { position: absolute; left: -12px; top: -22px; display: block; }   /* 조회물건 — 작은 핀 아이콘, 끝이 그 자리(2026-11-29 사용자) */
 .pa.mk-v .map .mk-pulse { display: block; width: 14px; height: 14px; border-radius: 50%; pointer-events: none; animation: mkPulse 1.4s ease-out infinite; }   /* 고른 점 고리 — 하나만 */
 @keyframes mkPulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pc, #2b6df3) 55%, transparent); } 70% { box-shadow: 0 0 0 10px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+/* 빌라 가격동향(시안 v7) — 시세분석 표 아래 카드 */
+.pa.mk-trend { display: grid; gap: 12px; margin-top: 16px; }
+.mk-trend .mk-th { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mk-trend .mk-th h3 { margin: 0; font-size: 16px; font-weight: 800; }
+.mk-trend .mk-sub { font-size: 13px; color: var(--muted); }
+.mk-trend .mk-tw { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 18px; align-items: start; }
+.mk-trend .mk-tl { display: grid; gap: 10px; min-width: 0; }
+.mk-trend .mk-cap { font-size: 13px; color: var(--muted); }
+.mk-trend .mk-hl { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.mk-trend .mk-v { font-size: 28px; font-weight: 900; color: #2b6df3; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+.mk-trend .mk-v small { font-size: 16px; font-weight: 700; margin-left: 2px; }
+.mk-trend .mk-say { font-size: 13px; color: var(--muted); }
+.mk-trend .mk-st3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mk-trend .mk-st3 > div { display: grid; gap: 3px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; text-align: center; }
+.mk-trend .mk-st3 .k { font-size: 13px; color: var(--muted); }
+.mk-trend .mk-st3 b { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.mk-trend .mk-st3 b.up { color: #e03131; } .mk-trend .mk-st3 b.dn { color: #2b6df3; }
+.mk-trend .mk-st3 .r { font-size: 12px; color: var(--faint, #9ca3af); font-variant-numeric: tabular-nums; }
+.mk-trend .mk-mini { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.mk-trend .mk-line { font-size: 13px; color: var(--text); }
+.mk-trend .mk-line .lb { display: inline-block; margin-right: 8px; font-size: 12px; color: var(--muted); }
+.mk-trend .mk-tr { display: grid; gap: 6px; min-width: 0; color: var(--text); }
+.mk-trend .mk-tr svg { width: 100%; height: auto; }
+@media (max-width: 900px) { .mk-trend .mk-tw { grid-template-columns: 1fr; } }
 .pa.mk-v .map .legend .lg-me { width: 15px; height: 15px; vertical-align: -3px; margin-right: 2px; }
 .pa.mk-v .map .mk-pop { position: absolute; z-index: 1000; min-width: 0; padding: 8px 10px; border-radius: 8px; background: var(--surface); color: var(--text); box-shadow: 0 6px 20px rgba(0, 0, 0, .18); font-size: 12px; line-height: 1.35; }
 .pa.mk-v .map .mk-pop .t { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; font-size: 13px; font-weight: 800; white-space: nowrap; }

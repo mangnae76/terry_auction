@@ -36,6 +36,8 @@ import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { isAdminEmail } from '../services/accessControl';
 import { aucSoldShared, auctionsOfDong, matchAfter, soldKey, type AucRec } from '../services/auctionNear';
+import { priceTrend } from '../services/priceTrend';
+import { loadUserPrefs } from '../services/userPrefsRepository';
 
 /** loose — 시장분석 › 시세예측처럼 선정물건이 아닌 검색 주소로 볼 때. 적어 둘 물건이 없어 저장 · 임장경로 넣기는 감추고 '선정물건'은 '검색주소'로 */
 /** months — 기간을 바깥 줄(시세예측 주소 줄)이 고를 때. 이 화면의 기간 · 조회는 감춘다 */
@@ -349,6 +351,57 @@ if (sv?.keep) colFilter.picked.value = { ...colFilter.picked.value, ...sv.keep }
 const webEmbed = inject<boolean>('webEmbed', false) || !!props.app;
 /** 시장분석 › 시세예측 빌라(웹) — 시안 v7(2026-11-29 사용자, docs/시세예측-v7-대조표.md). 손품조사 · 아파트 · 오피스텔 · 앱은 그대로 */
 const mkV = computed(() => !!props.loose && webEmbed && !props.app && props.kind === 'villa');
+// ===== 빌라 가격동향(시안 v7, 2026-11-29) — 시세분석 표 아래 카드. 12개월 전 대비를 보려면 15개월치가 있어야 해서 2년치를 따로 받는다(같은 시군구 달 자료는 캐시) =====
+const trendOn = computed(() => mkV.value && !props.aucTab);
+const trend2y = shallowRef<CaseTradeRow[]>([]);
+watch([res, trendOn], ([r, on]) => {
+  if (!on || !r) return;
+  if (loadedMonths.value >= 24) { trend2y.value = r.dongRows ?? []; return; }
+  const addr = props.auction.address;
+  void analyzeAddress({ address: addr, propertyType: props.kind, years: 2 }, props.dongOnly ? { dongOnly: true } : undefined)
+    .then((o) => { if (props.auction.address === addr) trend2y.value = o.dongRows ?? []; }).catch(() => undefined);
+}, { immediate: true });
+/** 반경(또는 동 전체) 안 매매 — 위치를 못 찾은 지번은 반경 안인지 몰라 뺀다 */
+const trendData = computed(() => {
+  if (!trendOn.value) return null;
+  const rows = trend2y.value.filter((r) => (r.kind === '매매' || r.kind === '직거래') && r.price > 0 && r.areaM2 > 0)
+    .filter((r) => { if (radius.value === DONG) return true; const d = distOf(r.jibun); return d != null && d <= radius.value; })
+    .map((r) => ({ ymd: r.contractDate.replace(/\D/g, ''), perPy: r.price / (r.areaM2 / PY), direct: r.kind === '직거래' }));
+  return rows.length ? priceTrend(rows) : null;
+});
+/** 매물 소화기간 — 수요분석에 적은 그 동 총 매물수(사용자 설정) ÷ 이 동 월평균 매매. 수요분석과 같은 값 */
+const dmListings = ref<number | null>(null);
+const authT = useAuthStore();   // authS 는 아래에서 만든다 — 여기서 먼저 쓰면 아직 없다
+watch([trendOn, () => region.value?.dong, () => authT.uid], async ([on, d, uid]) => {
+  dmListings.value = null;
+  if (!on || !d || !uid) return;
+  const prefs = await loadUserPrefs(uid).catch(() => null);
+  const m = (prefs?.adminRegionManual ?? {}) as Record<string, { listings?: number }>;
+  const hit = Object.entries(m).find(([k, v]) => k.startsWith('villa|') && k.endsWith(`|${d}`) && (v?.listings ?? 0) > 0);
+  dmListings.value = hit ? hit[1].listings ?? null : null;
+}, { immediate: true });
+const dongMonthly = computed(() => (res.value?.dongRows ?? []).length ? periodRows.value.filter((r) => r.kind === '매매' || r.kind === '직거래').length / Math.max(1, loadedMonths.value) : 0);
+/** 그래프 — 월별 가운데값 선(빈 달은 건너뛴다), 첫 달 점선 기준 */
+const trendSvg = computed(() => {
+  const t = trendData.value; if (!t) return null;
+  const pts = t.months.map((m, i) => ({ i, v: m.med, label: m.label })).filter((p) => p.v != null) as Array<{ i: number; v: number; label: string }>;
+  if (pts.length < 2) return null;
+  const W = 560, H = 210, x0 = 48, x1 = W - 34, y0 = 24, y1 = 176;
+  const vs = pts.map((p) => p.v); const lo = Math.min(...vs); const hi = Math.max(...vs); const pad = Math.max((hi - lo) * 0.15, hi * 0.03);
+  const mn = lo - pad, mx = hi + pad;
+  const X = (i: number) => x0 + ((x1 - x0) * i) / 11; const Y = (v: number) => y1 - ((y1 - y0) * (v - mn)) / (mx - mn);
+  const step = (mx - mn) / 3; const grid = [1, 2].map((k) => mn + step * k);
+  return {
+    W, H, x0, x1,
+    path: pts.map((p, k) => `${k ? 'L' : 'M'}${X(p.i).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(' '),
+    dots: pts.map((p, k) => ({ x: X(p.i), y: Y(p.v), last: k === pts.length - 1, v: p.v })),
+    base: Y(pts[0].v),
+    grid: grid.map((g) => ({ y: Y(g), t: Math.round(g / 1e4).toLocaleString('ko-KR') })),
+    labels: t.months.map((m, i) => ({ x: X(i), t: m.label })).filter((_, i) => i % 2 === 0),
+  };
+});
+const manWon = (v: number) => `${Math.round(v / 1e4).toLocaleString('ko-KR')}`;
+const pctTx = (v: number | null) => (v == null ? '-' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`);
 // ===== 낙찰(운영 전용) — 시세예측 빌라에서 운영진만. 낙찰 자료(saleData)를 그 동만 골라 실거래와 호수로 잇는다 =====
 const authS = useAuthStore();
 const aucOn = computed(() => mkV.value && isAdminEmail(authS.email));
@@ -1684,6 +1737,35 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
     <Teleport to="body"><p v-if="addrTip" class="at-tip" :style="addrTip.style" role="tooltip" @click="addrTip = null">{{ addrTip.text }}</p></Teleport>
   </section>
   </Teleport>
+
+  <!-- 빌라 가격동향(시안 v7) — 시세분석 표 아래. 반경(또는 동 전체) 안 매매 실거래 평당가, 비교는 중개거래만 -->
+  <section v-if="trendOn && !fs" class="pa pa-card mk-trend" aria-label="빌라 가격동향">
+    <div class="mk-th"><span class="pa-tag">동향</span><h3>빌라 가격동향</h3><span class="mk-sub">{{ radius === DONG ? `${region?.dong ?? ''} 전체` : `반경 ${radText(radius)}` }} · 연립다세대 · 매매 실거래 평당가</span></div>
+    <div v-if="!trendData" class="mk-tw"><p class="mk-mini">2년치 실거래를 받는 중이거나, 거래가 없습니다.</p></div>
+    <div v-else class="mk-tw">
+      <div class="mk-tl">
+        <div class="mk-cap">최근 3개월 평당가 가운데값</div>
+        <div class="mk-hl"><span class="mk-v">{{ trendData.now.med ? manWon(trendData.now.med) : '-' }}<small>만</small></span><span class="mk-say">12개월 전 대비 {{ trendData.cmp[0].verdict || '거래 부족' }}</span></div>
+        <div class="mk-st3">
+          <div v-for="c in trendData.cmp" :key="c.k"><span class="k">{{ c.k }}개월 전 대비</span><b :class="c.pct == null ? '' : c.pct > 0 ? 'up' : 'dn'">{{ pctTx(c.pct) }}</b><span class="r">{{ c.lo == null ? `거래 ${c.nThen}건` : `${pctTx(c.lo)} ~ ${pctTx(c.hi)}` }}</span></div>
+        </div>
+        <div class="mk-mini">작은 글씨 = 비교 거래를 바꿔 다시 계산했을 때 가운데 80% 범위. 0을 넘나들면 판단어려움. 3개월 묶음에 중개거래가 3건 아래면 비교하지 않습니다.</div>
+        <div class="mk-line"><span class="lb">직거래</span>최근 1년 {{ trendData.direct.n.toLocaleString('ko-KR') }}건({{ trendData.direct.share.toFixed(1) }}%)<template v-if="trendData.direct.gap != null"> · 같은 기간 중개거래보다 평당가 {{ Math.abs(trendData.direct.gap).toFixed(1) }}% {{ trendData.direct.gap >= 0 ? '낮음' : '높음' }}</template></div>
+        <div class="mk-line"><span class="lb">매물 소화기간</span><template v-if="dmListings && dongMonthly">네이버 매물수 {{ dmListings.toLocaleString('ko-KR') }}건 ÷ 월평균 거래 {{ dongMonthly.toFixed(1) }}건 = {{ (dmListings / dongMonthly).toFixed(1) }}개월<template v-if="dmListings / dongMonthly >= 12">(약 {{ (dmListings / dongMonthly / 12).toFixed(1) }}년)</template></template><template v-else>수요분석에서 총 매물수를 넣으면 계산합니다</template></div>
+      </div>
+      <div class="mk-tr">
+        <svg v-if="trendSvg" :viewBox="`0 0 ${trendSvg.W} ${trendSvg.H}`" role="img" aria-label="월별 평당가 가운데값">
+          <g v-for="g in trendSvg.grid" :key="g.y"><line :x1="trendSvg.x0" :x2="trendSvg.x1" :y1="g.y" :y2="g.y" stroke="currentColor" stroke-opacity=".12" /><text :x="trendSvg.x0 - 8" :y="g.y + 4" font-size="12" fill="currentColor" fill-opacity=".55" text-anchor="end">{{ g.t }}</text></g>
+          <line :x1="trendSvg.x0" :x2="trendSvg.x1" :y1="trendSvg.base" :y2="trendSvg.base" stroke="currentColor" stroke-opacity=".3" stroke-dasharray="4 4" />
+          <path :d="trendSvg.path" fill="none" stroke="#2b6df3" stroke-width="2" />
+          <g v-for="(d, i) in trendSvg.dots" :key="i"><circle :cx="d.x" :cy="d.y" :r="d.last ? 5 : 3" fill="#2b6df3" /><text v-if="d.last" :x="d.x" :y="d.y - 10" font-size="13" font-weight="800" fill="#2b6df3" text-anchor="middle">{{ manWon(d.v) }}</text></g>
+          <text v-for="l in trendSvg.labels" :key="l.t" :x="l.x" :y="trendSvg.H - 10" font-size="12" fill="currentColor" fill-opacity=".6" text-anchor="middle">{{ l.t }}</text>
+        </svg>
+        <p v-else class="mk-mini">달마다 거래가 모자라 선을 그리지 않습니다.</p>
+        <div class="mk-mini">월별 평당가 가운데값(만) · 점선은 첫 달 · 3개월씩 묶어 비교 · 비교 거래 12개월 전 {{ trendData.cmp[0].nThen }}건 / 최근 {{ trendData.now.n }}건</div>
+      </div>
+    </div>
+  </section>
 
   <!-- 입력 — 호가는 따로 흰 상자(손품조사에서만 — 시장분석 물건분석엔 호가를 옮겨 그릴 물건상세가 없다). 손품조사의 네이버 매물조사(호가)를 여기로 옮겨 그린다(AuctionDetailPage 가 #sonAskSlot 으로 보낸다) -->
   <section v-if="sonAskReady" class="pa pa-card" aria-label="호가 입력">
