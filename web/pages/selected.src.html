@@ -1679,6 +1679,45 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .pa .list-tools { align-items: center !important; }
 .pa .list-tools::before { content: "근거"; order: -2; flex: none; font-size: 13px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border-radius: 5px; padding: 3px 8px; }
 .pa .list-tools::after { content: "유사물건"; order: -1; flex: none; margin-left: -2px; margin-right: 4px; font-size: 15px; font-weight: 800; color: var(--text); }
+.pa.mk-v .list-tools::after { content: "유사 실거래"; }
+/* 시세예측 빌라 지도(시안 v7) — 점만(지름 14), 고른 점 18 + 고리 깜빡임, 선정물건은 빨간 핀. 말풍선은 점 위 → 아래 → 옆, 꼬리 · X */
+.pa.mk-v .mv-pin.cmp-bub.mkd { width: 0; height: 0; cursor: pointer; }
+.pa.mk-v .mv-pin.cmp-bub.mkd .mk-dot { position: absolute; left: -7px; top: -7px; width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); }
+.pa.mk-v .mv-pin.cmp-bub.mkd.on .mk-dot { left: -9px; top: -9px; width: 18px; height: 18px; animation: mkRing 1.4s ease-out infinite; }
+.pa.mk-v .mv-pin.cmp-bub.mkd.off .mk-dot { background: #b8bfcc; }
+.pa.mk-v .mv-pin.cmp-bub.mkd.me .mk-me { position: absolute; left: -11px; top: -30px; width: 22px; height: 22px; box-sizing: border-box; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #e03131; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); }
+@keyframes mkRing { 0% { box-shadow: 0 0 0 0 rgba(43, 109, 243, .55), 0 1px 3px rgba(0, 0, 0, .3); } 70% { box-shadow: 0 0 0 8px rgba(43, 109, 243, 0), 0 1px 3px rgba(0, 0, 0, .3); } 100% { box-shadow: 0 0 0 0 rgba(43, 109, 243, 0), 0 1px 3px rgba(0, 0, 0, .3); } }
+.pa.mk-v .map .legend > span:first-child > i { border-radius: 50% 50% 50% 0; transform: rotate(-45deg); width: 11px; height: 11px; }
+.pa.mk-v .map .mk-pop { position: absolute; z-index: 1000; min-width: 0; padding: 8px 10px; border-radius: 8px; background: var(--surface); color: var(--text); box-shadow: 0 6px 20px rgba(0, 0, 0, .18); font-size: 12px; line-height: 1.35; }
+.pa.mk-v .map .mk-pop .t { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; font-size: 13px; font-weight: 800; white-space: nowrap; }
+.pa.mk-v .map .mk-pop .mk-x { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--muted); cursor: pointer; flex: none; }
+.pa.mk-v .map .mk-pop .mk-x:hover { background: rgba(0, 0, 0, .06); color: var(--text); }
+.pa.mk-v .map .mk-pop .sub { margin: -2px 0 3px; color: var(--muted); }
+.pa.mk-v .map .mk-pop dl { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; margin: 0; }
+.pa.mk-v .map .mk-pop dt { color: var(--muted); }
+.pa.mk-v .map .mk-pop dd { margin: 0; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pa.mk-v .map .mk-pop dd.big { color: #2b6df3; font-weight: 800; }
+.pa.mk-v .map .mk-pop::after { content: ""; position: absolute; width: 0; height: 0; border: 7px solid transparent; }
+.pa.mk-v .map .mk-pop.above::after { top: 100%; left: calc(var(--tx) - 7px); border-top-color: var(--surface); }
+.pa.mk-v .map .mk-pop.below::after { bottom: 100%; left: calc(var(--tx) - 7px); border-bottom-color: var(--surface); }
+.pa.mk-v .map .mk-pop.right::after { right: 100%; top: calc(var(--ty) - 7px); border-right-color: var(--surface); }
+.pa.mk-v .map .mk-pop.left::after { left: 100%; top: calc(var(--ty) - 7px); border-left-color: var(--surface); }
+:root[data-theme="dark"] .pa.mk-v .map .mk-pop .mk-x:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+:root[data-theme="dark"] .pa.mk-v .map .mk-pop dd.big { color: #8fa1ea; }   /* 시세예측 빌라 — 유사 실거래(2026-11-29 시안 v7) */
+/* 시세예측 빌라 표(시안 v7, 2026-11-29) — 머리글 · 내용 가운데, ▼는 글 바로 오른쪽(모든 칸 같은 높이), 두 줄 머리는 같은 크기,
+   금액 칸(실거래가 · 평당가 · 공시가 · 전세 / 갭)은 일의 자리 세로 맞춤 — 칸 안 오른쪽 여백(--nb4~7)은 화면이 숫자 폭을 재서 넣는다 */
+.pa table.mk-v thead th { text-align: center !important; vertical-align: middle !important; }
+.pa table.mk-v thead th .hk { position: relative; display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; }
+.pa table.mk-v thead th .hk .sdir { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 3px; }
+.pa table.mk-v thead th .hk-sub { display: block; font-size: inherit !important; font-weight: inherit !important; color: inherit !important; margin: 0 !important; }
+.pa table.mk-v tbody td:not(.l):not(.acts-td):not(.ck-td) { text-align: center !important; }
+.pa table.mk-v tbody td small { display: block; width: fit-content; margin: 0 auto; }
+.pa table.mk-v tbody td:is(:nth-child(4), :nth-child(5), :nth-child(6), :nth-child(7)) { text-align: right !important; font-variant-numeric: tabular-nums; }
+.pa table.mk-v tbody td:is(:nth-child(4), :nth-child(5), :nth-child(6), :nth-child(7)) small { margin: 0 0 0 auto; }
+.pa table.mk-v tbody td:nth-child(4) { padding-right: var(--nb4, 8px) !important; }
+.pa table.mk-v tbody td:nth-child(5) { padding-right: var(--nb5, 8px) !important; }
+.pa table.mk-v tbody td:nth-child(6) { padding-right: var(--nb6, 8px) !important; }
+.pa table.mk-v tbody td:nth-child(7) { padding-right: var(--nb7, 8px) !important; }
 .pa .list-tools .lt-count { flex: none; margin-right: 8px; font-size: 14px; font-weight: 700; color: var(--blue); }   /* '근거 유사물건' 옆 — 표의 몇 곳 · 몇 건(2026-11-07) */
 /* 표 머리 거르기 — 거른 칸은 파란 네모 대신 파란 체크(✓)만. 위 '필터 적용 중 … 모두 지우기' 줄은 뺀다(푸는 건 ✓ 눌러 '전체 선택') */
 /* 공시지가 알림 — 노란 상자를 빼고 '유사물건'과 같은 줄, 표 오른쪽 끝에 맞춰 글로만 */

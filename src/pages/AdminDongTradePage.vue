@@ -22,6 +22,7 @@ import InfoTip from '../components/InfoTip.vue';
 import AdminRegionDemandPage from './AdminRegionDemandPage.vue';
 import TradeStatsPage from './TradeStatsPage.vue';
 import SonpumPricePage from './SonpumPricePage.vue';
+import { lookupAddress } from '../services/addressLookup';
 import { PERIODS as PRICE_PERIODS, periodText } from '../services/priceAnalysis';
 import type { AuctionDetail } from '../types/auction';
 import DotStackChart, { type DotView } from '../components/DotStackChart.vue';
@@ -143,6 +144,44 @@ const onUiPrefs = () => {
 onMounted(() => window.addEventListener('ui-prefs:loaded', onUiPrefs));
 onBeforeUnmount(() => window.removeEventListener('ui-prefs:loaded', onUiPrefs));
 const priceAuction = computed(() => (priceQ.value ? ({ id: `market-price:${priceQ.value.kind}:${priceQ.value.address}:${priceQ.value.months ?? 12}:${priceQ.value.at ?? 0}`, address: priceQ.value.address } as AuctionDetail) : null));
+// ===== 시세예측 — 물건으로(주소 검색) · 지역으로(시 · 도 / 시 · 군 · 구 / 읍 · 면 · 동), 2026-11-29 시안 v7(docs/시세예측-v7-대조표.md) =====
+const SON_PICK_KEY = 'son.market.mode';
+const sonPick = ref<'item' | 'region'>((() => { try { return localStorage.getItem(SON_PICK_KEY) === 'item' ? 'item' : 'region'; } catch { return 'region'; } })());   // 처음엔 지역으로
+watch(sonPick, (v) => { try { localStorage.setItem(SON_PICK_KEY, v); } catch { /* 그만 */ } });
+/** 지역으로 시세분석 — 고른 동 전체(기준 물건 없음). 마지막 조회는 이 브라우저에 */
+const REGION_Q_KEY = 'son.market.regionQ';
+const regionQ = ref<{ address: string; kind: Kind; months: number; at: number; dong: string } | null>((() => { try { return JSON.parse(localStorage.getItem(REGION_Q_KEY) || 'null'); } catch { return null; } })());
+const regionAuction = computed(() => (regionQ.value ? ({ id: `market-dong:${regionQ.value.kind}:${regionQ.value.address}:${regionQ.value.months}:${regionQ.value.at}`, address: regionQ.value.address } as AuctionDetail) : null));
+/** 조회 줄 종류 · 기간 — 두 길이 같은 값을 쓴다(바꾸면 둘 다) */
+const uniKind = computed<Kind>({ get: () => (sonPick.value === 'item' ? priceKind.value : kind.value), set: (v) => { priceKind.value = v; kind.value = v; } });
+const uniMonths = computed<number>({ get: () => (sonPick.value === 'item' ? priceMonths.value : periodMonths.value), set: (m) => { priceMonths.value = m; applyPeriod(m); } });
+const uniBusy = ref(false);
+const uniDisabled = computed(() => (sonPick.value === 'item' ? !priceAddr.value.trim() : (loading.value || !district.value)));
+/** 조회 — 물건으로: 시세분석은 그 주소, 수요분석은 그 주소의 동. 지역으로: 고른 동(시세분석은 동 전체) */
+const runUni = async () => {
+  if (sonPick.value === 'item') {
+    runPrice();
+    if (listView.value === 'supply') {
+      uniBusy.value = true;
+      try {
+        const hit = await lookupAddress(priceAddr.value.trim(), { withPrice: false });
+        const r = hit.region;
+        if (r?.lawdCd5) {
+          const g = REGION_GROUPS.find((x) => x.districts.some((d) => d.lawdCode === r.lawdCd5));
+          if (g) { sido.value = g.sido; await nextTick(); districtCode.value = r.lawdCd5; await nextTick(); if (r.dong) dong.value = r.dong; }
+          await load();
+        }
+      } finally { uniBusy.value = false; }
+    }
+    return;
+  }
+  if (!district.value) return;
+  if (dong.value) {
+    regionQ.value = { address: [sido.value, district.value.label, dong.value].filter(Boolean).join(' '), kind: kind.value, months: periodMonths.value, at: Date.now(), dong: dong.value };
+    try { localStorage.setItem(REGION_Q_KEY, JSON.stringify(regionQ.value)); } catch { /* 그만 */ }
+  }
+  if (listView.value === 'supply' || !all.value.length) await load();
+};
 const listView = ref<'map' | 'top' | 'bld' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case'>(props.rankMode ? 'map' : props.sonMode ? 'supply' : 'table');
 // 웹 — 맨 앞 '지도' 탭(예전 시장분석 › 거래랭킹). 조회할 때마다 mapRun 이 늘어 지도도 같은 조건으로 받는다
 const mapRun = ref(0);
@@ -1079,27 +1118,54 @@ const downloadCsv = () => {
       <!-- 지역 -->
       <!-- 경매지번 탭에서는 이 줄 대신 경매지번의 주소 줄이 이 자리(admTopBarSlot)에 온다 -->
       <div id="admTopBarSlot" class="app-market adm-topbar-slot" data-k="case">
-        <div v-if="webEmbed && props.sonMode && listView === 'case'" class="adm-bar son-price-bar">
-          <label class="adm-f grow">
+        <div v-if="webEmbed && props.sonMode" class="adm-bar son-price-bar son-uni">
+          <span class="sx-mode son-mode" role="group" aria-label="조회 기준"><button type="button" :class="{ on: sonPick === 'item' }" :aria-pressed="sonPick === 'item'" @click="sonPick = 'item'">물건으로</button><button type="button" :class="{ on: sonPick === 'region' }" :aria-pressed="sonPick === 'region'" @click="sonPick = 'region'">지역으로</button></span>
+          <label v-if="sonPick === 'item'" class="adm-f grow">
             <small>주소 입력 <em>시·도부터 지번·호수까지</em></small>
-            <input v-model="priceAddr" class="adm-input wide" placeholder="예) 인천광역시 서구 검암동 670-4 203호" @keyup.enter="runPrice" />
+            <input v-model="priceAddr" class="adm-input wide" placeholder="예) 인천광역시 서구 검암동 670-4 203호" @keyup.enter="runUni" />
           </label>
-          <label class="adm-f">
+          <template v-else>
+            <label class="adm-f son-sel">
+              <small>시 · 도</small>
+              <select v-model="sido" :class="['adm-input', { ph: !sido }]">
+                <option value="">시도선택</option>
+                <option v-for="g in REGION_GROUPS" :key="g.sido" :value="g.sido">{{ g.sido }}</option>
+              </select>
+            </label>
+            <label class="adm-f son-sel">
+              <small>시 · 군 · 구</small>
+              <select v-model="districtCode" :class="['adm-input', { ph: !districtCode }]" :disabled="!sido">
+                <option value="">시군구 선택</option>
+                <option v-for="d in districts" :key="d.lawdCode" :value="d.lawdCode">{{ d.label }}</option>
+              </select>
+            </label>
+            <label class="adm-f son-sel">
+              <small>읍 · 면 · 동</small>
+              <select v-model="dong" :class="['adm-input', { ph: !dong }]" :disabled="dongOptions.length === 0">
+                <option value="">{{ dongPeeking ? '불러오는 중…' : '읍면동 선택' }}</option>
+                <option v-for="d in dongOptions" :key="d" :value="d">{{ d }}</option>
+              </select>
+            </label>
+          </template>
+          <label class="adm-f son-kind">
             <small>종류</small>
             <div class="adm-seg">
-              <button v-for="k in KINDS" :key="k.key" type="button" :class="['adm-seg-btn', { on: priceKind === k.key }]" @click="priceKind = k.key">{{ k.label }}</button>
+              <button v-for="k in KINDS" :key="k.key" type="button" :class="['adm-seg-btn', { on: uniKind === k.key }]" @click="uniKind = k.key">{{ k.label }}</button>
             </div>
           </label>
-          <label class="adm-f">
+          <label class="adm-f son-per">
             <small>기간</small>
             <div class="adm-seg">
-              <button v-for="m in PRICE_PERIODS" :key="m" type="button" :class="['adm-seg-btn', { on: priceMonths === m }]" @click="priceMonths = m">{{ periodText(m) }}</button>
+              <button v-for="m in PRICE_PERIODS" :key="m" type="button" :class="['adm-seg-btn', { on: uniMonths === m }]" @click="uniMonths = m">{{ periodText(m) }}</button>
             </div>
           </label>
-          <button type="button" class="adm-load" :disabled="!priceAddr.trim()" @click="runPrice">조회</button>
+          <button type="button" class="adm-load" :disabled="uniDisabled || uniBusy" @click="runUni">
+            <template v-if="(loading || uniBusy) && sonPick === 'region'">조회 중<span class="adm-dots" aria-hidden="true"><i /><i /><i /></span></template>
+            <template v-else>조회</template>
+          </button>
         </div>
       </div>
-      <div v-show="listView !== 'case'" ref="barEl" :class="['adm-bar', { 'no-dong': noDongPick }]">
+      <div v-show="listView !== 'case' && !props.sonMode" ref="barEl" :class="['adm-bar', { 'no-dong': noDongPick }]">
         <label class="adm-f">
           <small>시 · 도</small>
           <select v-model="sido" :class="['adm-input', 'narrow', { ph: !sido }]">
@@ -1185,7 +1251,8 @@ const downloadCsv = () => {
         @pick-dong="(d: string) => { dong = d; }"
       />
       <!-- 시세분석 — 선정물건 손품조사의 시세분석(지도 · 유사물건 · 예상 가격)을 위 주소 줄로 찾은 주소에. 선정물건에 없는 주소도 본다 -->
-      <div v-if="webEmbed && listView === 'case'" class="son-price"><SonpumPricePage v-if="priceAuction && priceQ" :key="priceAuction.id" :auction="priceAuction" :kind="priceQ.kind" :months="priceQ.months ?? 12" loose /><p v-else class="son-msg">위 칸에 전체 주소를 넣고 종류를 고른 뒤 조회를 누르세요.</p></div>
+      <div v-if="webEmbed && listView === 'case' && sonPick === 'region'" class="son-price"><SonpumPricePage v-if="regionAuction && regionQ && regionQ.kind === 'villa'" :key="regionAuction.id" :auction="regionAuction" kind="villa" :months="regionQ.months" loose dong-only /><p v-else class="son-msg">{{ kind !== 'villa' ? '지역으로(동 전체)는 연립다세대만 됩니다 — 물건으로에서 주소를 적어 주세요.' : '위 칸에서 시 · 도 / 시 · 군 · 구 / 읍 · 면 · 동을 고르고 조회를 눌러 주세요.' }}</p></div>
+      <div v-if="webEmbed && listView === 'case' && sonPick === 'item'" class="son-price"><SonpumPricePage v-if="priceAuction && priceQ" :key="priceAuction.id" :auction="priceAuction" :kind="priceQ.kind" :months="priceQ.months ?? 12" loose /><p v-else class="son-msg">위 칸에 전체 주소를 넣고 종류를 고른 뒤 조회를 누르세요.</p></div>
       <template v-if="all.length > 0 && listView !== 'map' && listView !== 'case'">
         <!-- 웹 — 위 요약 상자 틀은 하나. 읍면동을 고르면 안의 상자만 셋(총 거래건수 · 실거래가 평균 · 평당가 평균)으로 -->
         <section v-if="webEmbed && listView !== 'supply'" class="adm-gunav">
@@ -2014,6 +2081,13 @@ const downloadCsv = () => {
 .son-price-bar > .adm-f.grow { flex: 1 1 auto !important; min-width: 0; }
 .son-price-bar > .adm-f.grow > .adm-input { width: 100% !important; max-width: none !important; box-sizing: border-box; }
 .son-price-bar > .adm-f:not(.grow), .son-price-bar > .adm-load { flex: none !important; }
+/* 시세예측 조회 줄(2026-11-29 시안 v7) — 물건으로 · 지역으로 단추, 왼쪽 묶음(주소 칸 또는 시 · 도 / 시 · 군 · 구 / 읍 · 면 · 동 세 칸)이 남는 폭을 같이 쓰고,
+   종류 · 기간 · 조회는 두 길 · 세 탭 모두 오른쪽 끝 같은 자리 · 같은 크기 */
+.son-uni > .son-mode { flex: none; }
+.son-uni > .adm-f.son-sel { flex: 1 1 0 !important; min-width: 0 !important; width: auto !important; }
+.son-uni > .adm-f.son-sel > .adm-input { width: 100% !important; min-width: 0 !important; max-width: none !important; box-sizing: border-box; }
+.son-uni > .adm-f.son-kind { margin-left: auto; }
+.son-uni > .adm-load { width: 120px; }
 /* 시세예측 › 시세분석 — 아직 조회 전 안내 */
 .son-msg { margin: 0; padding: 40px 16px; text-align: center; font-size: 14px; color: #6b7280; background: var(--surface, #fff); border: 1px solid var(--card-line, #e5e7eb); border-radius: 12px; }
 </style>

@@ -14,6 +14,8 @@ export type SearchFilter = {
   range: string | number; months: number; kind: SearchKind; mode: 'sim' | 'range'; sim: number;
   /** 직접범위 칸 — 비우면 null(제한 없음). 유사도와 따로 움직인다 */
   area: [number | null, number | null]; year: [number | null, number | null]; floor: 'same' | null; elev: 'yes' | 'no' | null;
+  /** 층별(1~4층 · 5 = 5층이상) — lock.floorPick 일 때만. 비우면 전체 */
+  floorLv?: number | null;
 };
 
 const props = defineProps<{
@@ -47,6 +49,9 @@ const props = defineProps<{
   compact?: boolean;
   /** 뺄 항목 — '반경만 빼' 같은 요청 */
   hide?: SearchFilterKey[];
+  /** 기준 물건이 없을 때(시세예측 지역으로, 2026-11-29 시안 v7) — 메뉴는 그대로 두고 막는다.
+   *  range: 쓸 수 있는 반경 값만 · sim: 유사도 막기 · floorPick: '같은 층' 자리에 층별 드롭다운 */
+  lock?: { range?: Array<string | number>; sim?: boolean; floorPick?: boolean };
 }>();
 const emit = defineEmits<{ 'update:draft': [v: SearchFilter]; apply: []; reset: []; save: [] }>();
 const off = (k: SearchFilterKey) => !!props.hide?.includes(k);
@@ -105,6 +110,9 @@ const modeD = computed<'sim' | 'range'>({
   get: () => props.draft.mode,
   set: (m) => set(m === 'sim' ? { mode: m, ...props.simRange(props.draft.sim) } : { mode: m, ...(props.draft.area[0] == null && props.draft.area[1] == null ? props.simRange(props.draft.sim) : {}) }),
 });
+const LOCK_TIP = '기준 물건이 없어 쓸 수 없습니다(물건으로에서 씁니다)';
+const rangeLocked = (v: string | number) => !!props.lock?.range && !props.lock.range.includes(v);
+const FLOOR_LV = [[1, '1층'], [2, '2층'], [3, '3층'], [4, '4층'], [5, '5층이상']] as const;
 const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 3.305785).toFixed(1)}평`;
 
 </script>
@@ -113,18 +121,20 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
   <div ref="rootEl" :class="['sfb', { compact }]">
     <!-- 거르기 — 제목 · 검색기준 줄 바로 밑(2026-11-12 사용자). 단추는 고르기만, 조회하기를 눌러야 리스트 · 지도 · 칸 줄이 바뀌고 저장된다. (예전: 지도 밑 · 표 바로 위, 2026-11-11) 시세분석 조건 줄과 같은 단추 · 순서(범위 → 거래 → 기간 → 평형). 표 · 지도 · 위 칸 줄이 같이 바뀐다 -->
     <div class="cmp-conds">
-      <span v-if="!off('range')" class="pa-lab">반경<span class="pa-seg pa-out" role="radiogroup" aria-label="반경"><button v-for="[v, t] in rangeOptions" :key="String(v)" type="button" role="radio" :class="{ on: rangeD === v }" :aria-checked="rangeD === v" :data-t="t" @click="rangeD = v">{{ t }}</button></span></span>
+      <span v-if="!off('range')" class="pa-lab">반경<span class="pa-seg pa-out" role="radiogroup" aria-label="반경"><button v-for="[v, t] in rangeOptions" :key="String(v)" type="button" role="radio" :class="{ on: rangeD === v, 'lk': rangeLocked(v) }" :aria-checked="rangeD === v" :data-t="t" :disabled="rangeLocked(v)" :title="rangeLocked(v) ? LOCK_TIP : undefined" @click="rangeD = v">{{ t }}</button></span></span>
       <span v-if="!off('kind')" class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류"><button v-for="k in (kinds ?? ['매매', '전세'] as const)" :key="k" type="button" role="radio" :data-k="k" :class="{ on: kindD === k }" :aria-checked="kindD === k" @click="kindD = k">{{ k }} {{ kindCount(k) }}</button></span></span>
       <span v-if="!off('period')" class="pa-lab">기간<span class="pa-seg pa-out" role="radiogroup" aria-label="기간"><button v-for="[m, t] in periodOptions" :key="m" type="button" role="radio" :class="{ on: monthsD === m }" :aria-checked="monthsD === m" :data-t="t" @click="monthsD = m">{{ t }}</button></span></span>
       <span v-if="!off('elev')" class="pa-lab">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베"><button v-for="[v, t] in ([[null, '전체'], ['yes', '있음'], ['no', '없음']] as const)" :key="t" type="button" role="radio" :class="{ on: elevD === v }" :aria-checked="elevD === v" :data-t="t" @click="elevD = v">{{ t }}</button></span></span>
-      <span v-if="!off('floor')" class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층"><button type="button" role="radio" :class="{ on: floorD !== 'same' }" :aria-checked="floorD !== 'same'" data-t="전체" @click="floorD = null">전체</button><button type="button" role="radio" :class="{ on: floorD === 'same' }" :aria-checked="floorD === 'same'" data-t="같은 층" @click="floorD = 'same'">같은 층</button></span></span>
+      <span v-if="!off('floor') && !lock?.floorPick" class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층"><button type="button" role="radio" :class="{ on: floorD !== 'same' }" :aria-checked="floorD !== 'same'" data-t="전체" @click="floorD = null">전체</button><button type="button" role="radio" :class="{ on: floorD === 'same' }" :aria-checked="floorD === 'same'" data-t="같은 층" @click="floorD = 'same'">같은 층</button></span></span>
+      <!-- 기준 물건이 없을 때 — '같은 층' 자리에 층별 드롭다운(자리 · 높이는 같게, 2026-11-29 시안 v7) -->
+      <span v-if="!off('floor') && lock?.floorPick" class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층"><button type="button" role="radio" :class="{ on: !draft.floorLv }" :aria-checked="!draft.floorLv" data-t="전체" @click="set({ floorLv: null })">전체</button><select :class="['flsel', { on: !!draft.floorLv }]" aria-label="층별" :value="draft.floorLv ?? ''" @change="set({ floorLv: Number(($event.target as HTMLSelectElement).value) || null })"><option value="">층별</option><option v-for="[v, t] in FLOOR_LV" :key="v" :value="v">{{ t }}</option></select></span></span>
     </div>
     <!-- 면적 · 건축 막대 — 거르기 줄 밑 한 줄, 두 상자가 위 줄 폭에 맞게 반씩(2026-11-12 사용자) -->
     <!-- 면적 · 건축 상자(적는 칸), 조회하기 · 저장하기는 오른쪽 — 단추는 위 거르기까지 다 같이 쓴다(2026-11-12 사용자) -->
     <div class="cmp-bars-row">
     <!-- 기준 묶음 — 기준 · 유사도(또는 면적 · 건축)를 흰 상자 하나에, 안쪽은 얇은 선으로만 나눈다(2026-11-12 사용자 시안) -->
     <div class="cmp-bars joined">
-        <span v-if="!off('mode')" class="pa-lab cmp-mode">기준<span class="pa-seg pa-out" role="radiogroup" aria-label="유사 조건 방식"><button v-for="[v, t] in ([['sim', '유사도'], ['range', '직접범위']] as const)" :key="v" type="button" role="radio" :class="{ on: modeD === v }" :aria-checked="modeD === v" :data-t="t" @click="modeD = v">{{ t }}</button></span></span>
+        <span v-if="!off('mode')" class="pa-lab cmp-mode">기준<span class="pa-seg pa-out" role="radiogroup" aria-label="유사 조건 방식"><button v-for="[v, t] in ([['sim', '유사도'], ['range', '직접범위']] as const)" :key="v" type="button" role="radio" :class="{ on: modeD === v, 'lk': lock?.sim && v === 'sim' }" :aria-checked="modeD === v" :data-t="t" :disabled="lock?.sim && v === 'sim'" :title="lock?.sim && v === 'sim' ? LOCK_TIP : undefined" @click="modeD = v">{{ t }}</button></span></span>
         <span v-if="modeD === 'sim'" class="cmp-sim" @pointerdown="simGrab" :style="{ '--p': `${((simD - 60) / 35) * 100}%` }"><SimRangeBox :sim="simD" :text="simText" @update="(v) => (simD = v)" /></span>
         <RangeInputBox v-if="modeD === 'range' && !off('area')" label="면적 ㎡" :min="20" :max="areaMax" :lo="areaD[0]" :hi="areaD[1]" :base="baseArea" :lo-text="areaD[0] == null ? '' : String(areaD[0])" :base-text="String(Number((Math.floor(baseArea * 100 + 1e-6) / 100).toFixed(2)))" :hi-text="areaD[1] == null ? '' : String(areaD[1])" :sub="areaD[0] != null && areaD[1] != null ? pyTx(areaD[0], areaD[1]) : ''" allow-blank @update="(lo, hi) => (areaD = [lo, hi])" />
         <RangeInputBox v-if="modeD === 'range' && !off('year')" label="건축" :min="yearMin" :max="yearMax" :lo="yearD[0]" :hi="yearD[1]" :base="baseYear" :lo-text="yearD[0] == null ? '' : String(yearD[0])" :base-text="String(baseYear || '')" :hi-text="yearD[1] == null ? '' : String(yearD[1])" :sub="yearD[0] != null && yearD[1] != null ? `${yearMax - yearD[1] + 1}~${yearMax - yearD[0] + 1}년차` : ''" allow-blank @update="(lo, hi) => (yearD = [lo, hi])" />
@@ -263,4 +273,12 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
   .sfb.compact .cmp-conds .pa-seg button { padding: 0 3px !important; }
   .sfb.compact > .cmp-conds > .pa-lab:has([aria-label="엘베"]), .sfb.compact > .cmp-conds > .pa-lab:has([aria-label="층"]) { grid-column: 1 / -1; display: grid; grid-template-columns: var(--lab) minmax(0, 1fr); gap: 0; padding: 4px 10px; }
   .sfb.compact > .cmp-conds > .pa-lab:has([aria-label="엘베"]) > .pa-seg, .sfb.compact > .cmp-conds > .pa-lab:has([aria-label="층"]) > .pa-seg { display: flex; }
-}</style>
+}
+/* 기준 물건이 없을 때 막힌 단추 · 층별 드롭다운(2026-11-29 시안 v7) */
+.pa-seg button.lk, .pa-seg button:disabled.lk { opacity: .45; cursor: not-allowed; }
+.cmp-conds .pa-seg .flsel { flex: 1 1 0; min-width: 0; height: 26px; box-sizing: border-box; margin: 0; padding: 0 22px 0 10px; border: 0; border-radius: 5px; font: inherit; font-size: 14px; font-weight: 400; color: #6b7280; text-align: center; text-align-last: center; cursor: pointer; -webkit-appearance: none; appearance: none; background: transparent linear-gradient(45deg, transparent 50%, currentColor 50%) no-repeat calc(100% - 12px) 52% / 4px 4px; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 12px) 52%, calc(100% - 8px) 52%; background-size: 4px 4px, 4px 4px; background-repeat: no-repeat; }
+.cmp-conds .pa-seg .flsel.on { background-color: #fff; color: #2b6df3; font-weight: 700; box-shadow: inset 0 0 0 1px #2b6df3; }
+:root[data-theme="dark"] .cmp-conds .pa-seg .flsel { color: #9aa3b5; }
+:root[data-theme="dark"] .cmp-conds .pa-seg .flsel.on { background-color: transparent; color: #8fb0ff; box-shadow: inset 0 0 0 1px #5b8cff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp-conds .pa-seg .flsel { color: #9aa3b5; } :root:not([data-theme="light"]) .cmp-conds .pa-seg .flsel.on { background-color: transparent; color: #8fb0ff; box-shadow: inset 0 0 0 1px #5b8cff; } }
+</style>

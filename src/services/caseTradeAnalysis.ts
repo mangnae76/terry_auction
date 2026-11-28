@@ -200,6 +200,8 @@ export interface AnalyzeOverrides {
   lot?: string;
   /** 지번 대신 단지명으로 찾을 때 */
   name?: string;
+  /** 동 전체만(시세예측 지역으로 — 기준 물건 없이 그 동 거래만, 2026-11-29) */
+  dongOnly?: boolean;
 }
 
 /**
@@ -222,7 +224,7 @@ export const analyzeAddress = async (
   }
   const lot = overrides.lot ?? hit.parts.lot;
   const name = overrides.name ?? '';
-  if (!lot && !name) {
+  if (!lot && !name && !overrides.dongOnly) {
     return { ...empty, error: '주소에 지번이 없습니다 — 지번이나 단지명을 적어 주세요.' };
   }
   try {

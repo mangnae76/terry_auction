@@ -12,7 +12,7 @@ import type { AuctionDetail, MarketPickRow, MarketPicks, PriceView } from '../ty
 import { analyzeAddress, floorOfHo, pickCaseTrade, type CasePropertyType, type CaseTradeResult, type CaseTradeRow } from '../services/caseTradeAnalysis';
 import {
   PY, HUG_RATE, RADII, PERIODS, radText, periodText, simCond, simDefText, groupOf, floorNum, matchUnit, unitLabelOf, inRange,
-  estStats, jeonseEstimate, distM, visitOrder, areaIn, type PriceCond, type PriceRow,
+  estStats, jeonseEstimate, distM, visitOrder, areaIn, matchCond, type PriceCond, type PriceRow,
   type SonPriceOut,
 } from '../services/priceAnalysis';
 import { fetchApartUnits, type ApartUnit } from '../services/vworldApi';
@@ -38,7 +38,8 @@ import { useAuctionStore } from '../stores/auctionStore';
 /** months — 기간을 바깥 줄(시세예측 주소 줄)이 고를 때. 이 화면의 기간 · 조회는 감춘다 */
 /** app — 앱 물건상세 › 손품+현장 › 시세조사(2026-11-09 시안 price-mock). 내용은 웹과 같고(매도가 예상 · 제외 체크 · 저장 단추),
  *  폰 폭에 맞춰 지도는 접어 두고(한 줄 '지도 보기'), 거르기는 반경 · 거래 · 엘베 · 층 · 기준 → 바로 아래 면적 · 건축 막대 차례로 쌓는다. 전체화면은 없다 */
-const props = defineProps<{ auction: AuctionDetail; kind: CasePropertyType; loose?: boolean; months?: number; app?: boolean }>();
+/** dongOnly — 시세예측 지역으로(동까지만, 기준 물건 없음, 2026-11-29 시안 v7): 반경은 동전체 · 기준은 직접범위 · 층은 층별, 선정물건 줄 · 핀 없음, 결론은 '○○동 시세' */
+const props = defineProps<{ auction: AuctionDetail; kind: CasePropertyType; loose?: boolean; months?: number; app?: boolean; dongOnly?: boolean }>();
 // 칩 · 범례 — 선정물건 손품조사는 '선정물건', 시장분석 › 시세예측(주소로 조회)은 '조회물건'(2026-11-14 사용자 — '검색주소'는 알아보기 어려웠다)
 const meName = computed(() => (props.loose ? '조회물건' : '선정물건'));
 const store = useAuctionStore();
@@ -56,11 +57,11 @@ const saved = (): PriceView | undefined => store.auctions.find((x) => x.id === p
 const sv = saved();
 const months = ref<number>(props.months ?? (sv?.months && (PERIODS as readonly number[]).includes(sv.months) ? sv.months : 12));
 const loadedMonths = ref(months.value);
-const radius = ref<number>(sv?.radius ?? 500);
+const radius = ref<number>(props.dongOnly ? -1 : sv?.radius ?? 500);   // -1 = 동전체(아래 DONG)
 const kindF = ref<Kind>(sv?.kind ?? '매매');
-const simMode = ref<'sim' | 'range'>(sv?.simMode ?? 'sim');
+const simMode = ref<'sim' | 'range'>(props.dongOnly ? 'range' : sv?.simMode ?? 'sim');
 const sim = ref<number>(sv?.sim ?? 80);
-const rangeCond = ref<PriceCond>(sv?.cond ?? { mMin: 0, mMax: 0, yMin: 0, yMax: 0, floor: null });
+const rangeCond = ref<PriceCond>(props.dongOnly ? { mMin: 0, mMax: 0, yMin: 0, yMax: 0, floor: null } : sv?.cond ?? { mMin: 0, mMax: 0, yMin: 0, yMax: 0, floor: null });
 const typedPub = ref<number>(sv?.typedPub ?? 0);
 
 // ===== ⓪ 조회 — 시군구 실거래(국토부)를 기간만큼 받아 이 동만 쓴다 =====
@@ -79,17 +80,17 @@ const run = async () => {
     void geocodeAddress(addr).then((p) => { if (props.auction.address === addr && !mySpot.value && p) mySpot.value = p; }).catch(() => undefined);
   }
   try {
-    const out = await analyzeAddress({ address: props.auction.address, propertyType: props.kind, years: Math.ceil(months.value / 12) });
+    const out = await analyzeAddress({ address: props.auction.address, propertyType: props.kind, years: Math.ceil(months.value / 12) }, props.dongOnly ? { dongOnly: true } : undefined);
     if (id !== runId) return;
     if (out.error) errorMsg.value = out.error;
     res.value = out; loadedMonths.value = months.value; fetchedAt.value = Date.now();
     sameRaw2y.value = [];
     // 빌라 — 경매지번 매매가 자동 고르기: 고른 기간에 그 건물 매매가 없으면 2년까지(아파트는 사용자가 리스트에서 고른다)
-    if (!isAptKind && months.value < 24 && !(out.rows ?? []).some((r) => (r.kind === '매매' || r.kind === '직거래') && r.price > 0)) {
+    if (!isAptKind && !props.dongOnly && months.value < 24 && !(out.rows ?? []).some((r) => (r.kind === '매매' || r.kind === '직거래') && r.price > 0)) {
       void analyzeAddress({ address: props.auction.address, propertyType: props.kind, years: 2 }).then((o2) => { if (id === runId) sameRaw2y.value = o2.rows ?? []; }).catch(() => undefined);
     }
     // 층은 고른(저장한) 그대로 — 11-10 에 여기서 '전체'로 되돌리게 바꿔, 유사도에서 고른 '같은 층'이 새로고침하면 풀렸다(2026-11-11 사용자)
-    if (!rangeCond.value.mMax) rangeCond.value = { ...simCond(sim.value, me.value), floor: rangeCond.value.floor === 0 ? 0 : null };
+    if (!rangeCond.value.mMax && !props.dongOnly) rangeCond.value = { ...simCond(sim.value, me.value), floor: rangeCond.value.floor === 0 ? 0 : null };
     void enrich(id);
   } catch (err) {
     errorMsg.value = userMessage(err);
@@ -281,13 +282,17 @@ const cond = computed<PriceCond>(() => {
   // 층 단추는 '전체'(null) · '같은 층'(0) 둘뿐 — 직접범위에서 예전에 저장된 '±1층'(유사도에서 옮겨 온 값)은 '전체'로 본다.
   // 화면엔 '전체'로 보이는데 ±1층이 숨어 걸려, 23층 아파트에서 다른 단지(15층 이하)가 다 빠졌다(2026-11-10)
   const rangeFloor = rangeCond.value.floor === 0 ? 0 : null;
+  // 동만(기준 물건 없음) — 비운 칸은 제한 없음
+  if (props.dongOnly) { const rc = rangeCond.value; const b: PriceCond = { mMin: rc.mMin || 0, mMax: rc.mMax || 9999, yMin: rc.yMin || 0, yMax: rc.yMax || 9999, floor: null }; return elevPick.value ? { ...b, elev: elevPick.value } : b; }
   let base = simMode.value === 'sim' ? simCond(sim.value, me.value) : { ...rangeCond.value, floor: rangeFloor };
   // 웹 — 층은 위 줄에 있어 유사도에서도 고른다: 화면에 보이는 대로 '전체'면 모든 층, '같은 층'이면 같은 층만
   if (webEmbed && simMode.value === 'sim') base = { ...base, floor: rangeFloor };
   return elevPick.value ? { ...base, elev: elevPick.value } : base;
 });
 const candidates = computed(() => {
-  const raw = inRange(allRows.value, radius.value, cond.value, me.value.floor);
+  const raw = radius.value === DONG
+    ? allRows.value.filter((r) => r.same || matchCond(r, cond.value, me.value.floor)).sort((a, b) => (Number(b.same) - Number(a.same)) || ((a.dist ?? 0) - (b.dist ?? 0)) || b.contractDate.localeCompare(a.contractDate))
+    : inRange(allRows.value, radius.value, cond.value, me.value.floor);
   // 웹 — 같은 건물(같은 지번) 거래에도 면적 · 건축 조건을 건다. 아파트는 한 지번에 여러 평형이 있어, 면적을 좁혀도 같은 단지 다른 평형이 그대로 남았다(2026-11-11 사용자)
   const c = cond.value;
   // 엘베도 같은 건물에 건다(엘베 '없음'인데 같은 단지 거래가 남았다) — 엘베를 아직 모르는 건물은 거르지 않는다
@@ -297,8 +302,13 @@ const candidates = computed(() => {
   if (!webEmbed || rangeCond.value.floor !== 0 || !me.value.floor) return list;
   return list.filter((r) => !r.same || !r.floorNo || r.floorNo === me.value.floor);
 });
-const kindRows = computed(() => candidates.value.filter((r) => r.group === kindF.value));
-const kindCount = (k: Kind) => candidates.value.filter((r) => r.group === k).length;
+/** 층별(동만) — 1~4층 · 5 = 5층이상, 비우면 전체 */
+const floorLv = ref<number | null>(null);
+const candLv = computed(() => (props.dongOnly && floorLv.value ? candidates.value.filter((r) => (floorLv.value === 5 ? r.floorNo >= 5 : r.floorNo === floorLv.value)) : candidates.value));
+const kindRows = computed(() => candLv.value.filter((r) => r.group === kindF.value));
+const kindCount = (k: Kind) => candLv.value.filter((r) => r.group === k).length;
+/** 동만 — 매매 평균 평당가(제외한 줄은 빼고) */
+const dongPy = computed(() => { const xs = candLv.value.filter((r) => r.group === '매매' && !isOff(r) && r.perPy > 0).map((r) => r.perPy); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0; });
 
 // ===== 머리글 ▾ 값 거르기(지금 표들과 같은 창) · 머리글 글자 = 정렬 =====
 const gapText = (r: PriceRow) => (r.pub ? (r.price - r.pub * HUG_RATE < 0 ? '갭 마이너스' : '갭 있음') : '공시가 없음');
@@ -324,6 +334,8 @@ const colFilter = useColumnFilters<PriceRow>(kindRows, COLS);
 if (sv?.keep) colFilter.picked.value = { ...colFilter.picked.value, ...sv.keep };
 // 웹 — 머리글 ▾ 거르기 대신 줄마다 '제외' 체크(처음엔 비어 있다 · 체크하면 실거래가 예상 · 평균 · 건수에서 빠지고 표엔 흐리게 남는다) · 머리글은 오름 · 내림 정렬(2026-11-05). 앱은 그대로
 const webEmbed = inject<boolean>('webEmbed', false) || !!props.app;
+/** 시장분석 › 시세예측 빌라(웹) — 시안 v7(2026-11-29 사용자, docs/시세예측-v7-대조표.md). 손품조사 · 아파트 · 오피스텔 · 앱은 그대로 */
+const mkV = computed(() => !!props.loose && webEmbed && !props.app && props.kind === 'villa');
 const shownCols = COLS;
 /** 선정물건 호 — 주소의 '402호' */
 /** 선정물건 동 — 주소의 '101동 23층2301호'에서 101(동 이름에 한글 읍면동은 뺀다) */
@@ -380,7 +392,7 @@ const SORT_VAL: Record<string, (r: PriceRow) => number | string> = {
 };
 // 늘 높은 값이 위로, 다시 누르면 원래 순서
 /** 두 줄 머리 — 아파트 면적(공급(전용)) · 웹 공시가(매매가율) */
-const hk2 = (k: string) => (k === 'area' && isAptKind) || (k === 'pub' && webEmbed);
+const hk2 = (k: string) => (k === 'area' && isAptKind) || (k === 'pub' && webEmbed) || (k === 'year' && mkV.value);
 const sortBy = (k: string) => {
   // 웹 — 같은 머리글을 다시 누르면 내림 ↔ 오름
   if (webEmbed) { if (sortK.value === k) sortDir.value = sortDir.value === 'desc' ? 'asc' : 'desc'; else { sortK.value = k; sortDir.value = 'desc'; } return; }
@@ -471,7 +483,7 @@ const estFormula = computed(() => {
   const v = view.value; if (!v || !(v.avgPy > 0) || !(myPy.value > 0)) return '';
   const rs = kindF.value === '전세' ? jeonseRows.value : kindF.value === '월세' ? monthRows.value : saleRows.value;
   const allSame = rs.length > 0 && rs.every((r) => r.same);
-  const who = allSame ? '경매지번' : '유사물건';
+  const who = allSame ? '경매지번' : mkV.value ? '유사 실거래' : '유사물건';
   const per = kindF.value === '월세' ? '평당 월세' : '평당가';
   return `${who} ${kindF.value} ${v.n > 1 ? `평균 ${per}` : per} ${vPy(v.avgPy)} × ${myPy.value.toFixed(2)}평`;
 });
@@ -490,7 +502,7 @@ const pct = (a: number, b: number) => (a > 0 && b > 0 ? `${Math.round((a / b) * 
 const tolText = computed(() => (simMode.value === 'sim'
   ? `유사도 기준 ${sim.value}%(${webEmbed ? simDefText(sim.value).replace(/ · 층.*$/, '') : simDefText(sim.value)})`
   : `면적 ${cond.value.mMin}~${cond.value.mMax}㎡ · 건축 ${cond.value.yMin}~${cond.value.yMax}년${cond.value.floor === null ? '' : ' · 같은 층'}`));
-const condText = computed(() => `${region.value?.dong ?? ''} · 반경 ${radText(radius.value)} · ${tolText.value} · 최근 ${periodText(loadedMonths.value)}`);
+const condText = computed(() => `${region.value?.dong ?? ''} · ${radius.value === -1 ? '전체' : `반경 ${radText(radius.value)}`} · ${tolText.value} · 최근 ${periodText(loadedMonths.value)}`);
 
 // ===== 조건 줄 — 유사도 / 직접범위, 초기화(5초 되돌리기) =====
 const setSimMode = (m: 'sim' | 'range') => {
@@ -503,17 +515,22 @@ const setSimMode = (m: 'sim' | 'range') => {
  *  부품 값 ↔ 이 화면 값(반경 · 거래 · 유사도/직접범위 · 면적 · 건축 · 층 · 엘베) — 누르면 바로 적용(받아 둔 실거래 안에서 거른다) */
 const sfDraft = computed<SearchFilter>(() => ({
   range: radius.value, months: loadedMonths.value, kind: kindF.value, mode: simMode.value, sim: sim.value,
-  area: [rangeCond.value.mMin, rangeCond.value.mMax], year: [rangeCond.value.yMin, rangeCond.value.yMax],
-  floor: rangeCond.value.floor === 0 ? 'same' : null, elev: elevPick.value,
+  area: props.dongOnly ? [rangeCond.value.mMin || null, rangeCond.value.mMax || null] : [rangeCond.value.mMin, rangeCond.value.mMax],
+  year: props.dongOnly ? [rangeCond.value.yMin || null, rangeCond.value.yMax || null] : [rangeCond.value.yMin, rangeCond.value.yMax],
+  floor: rangeCond.value.floor === 0 ? 'same' : null, elev: elevPick.value, floorLv: floorLv.value,
 }));
 const sfSet = (v: SearchFilter) => {
   radius.value = Number(v.range); kindF.value = v.kind; sim.value = v.sim; elevPick.value = v.elev;
   const c = rangeCond.value;
+  if (props.dongOnly) { rangeCond.value = { mMin: v.area[0] ?? 0, mMax: v.area[1] ?? 0, yMin: v.year[0] ?? 0, yMax: v.year[1] ?? 0, floor: null }; floorLv.value = v.floorLv ?? null; radius.value = DONG; return; }
   rangeCond.value = { mMin: v.area[0] ?? c.mMin, mMax: v.area[1] ?? c.mMax, yMin: v.year[0] ?? c.yMin, yMax: v.year[1] ?? c.yMax, floor: v.floor === 'same' ? 0 : null };
   if (v.mode !== simMode.value) setSimMode(v.mode);   // 직접범위로 가면 유사도 범위에서 시작
 };
 const sfSimRange = (s: number) => { const c = simCond(s, me.value); return { area: [c.mMin, c.mMax] as [number, number], year: [c.yMin, c.yMax] as [number, number] }; };
-const sfRadii = RADII.map((r) => [r, radText(r)] as const);
+/** 반경 '동전체' — 받아 둔 이 동 거래 전부(거리로 거르지 않는다). 시세예측 빌라만 */
+const DONG = -1;
+const isDong = computed(() => radius.value === DONG);
+const sfRadii = computed(() => [...RADII.map((r) => [r, radText(r)] as const), ...(mkV.value ? [[DONG, '동전체'] as const] : [])]);
 const AREA_MIN = 20; const AREA_MAX = 150;
 const yearMax = new Date().getFullYear();
 const YEAR_MIN = 1980;
@@ -731,7 +748,7 @@ const drawMap = () => {
   mv.clear();
   const m = mySpot.value;
   if (!m) return;
-  mv.circle(m, radius.value, { color: '#2b4fd8', weight: 1.6, dash: true, fillOpacity: 0.06 });
+  if (radius.value !== DONG) mv.circle(m, radius.value, { color: '#2b4fd8', weight: 1.6, dash: true, fillOpacity: 0.06 });
   // 웹 — 읍면동 점선 경계 + 고른 건물(필지) 테두리. 처음엔 선정물건, 점을 누르면 그 건물(매매수요 지도와 같게, 2026-11-11 사용자)
   if (webEmbed) {
     const dk = `${m.lat.toFixed(5)},${m.lng.toFixed(5)}`;
@@ -739,9 +756,11 @@ const drawMap = () => {
     else if (!(`d:${dk}` in shapes.value)) { shapes.value = { ...shapes.value, [`d:${dk}`]: null }; void dongShapeOf(m.lat, m.lng).then((v) => { shapes.value = { ...shapes.value, [`d:${dk}`]: v }; if (v) drawMap(); }); }
     const g = focus.value ? mapGroups.value.find((x) => x.jibun === focus.value) : null;
     const p = g ? g.spot : m;
+    if (!g && props.dongOnly) { /* 동만 — 선정물건 필지 없음 */ } else {
     const pk = `p:${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
     if (shapes.value[pk]) mv.polygon(shapes.value[pk]!, { color: g ? '#2b4fd8' : '#e03e3e', weight: 2.4, fillOpacity: 0.08 });
     else if (!(pk in shapes.value)) { shapes.value = { ...shapes.value, [pk]: null }; void parcelShapeOf(p.lat, p.lng).then((v) => { shapes.value = { ...shapes.value, [pk]: v }; if (v) drawMap(); }); }
+    }
   }
   // 점과 이름표를 한 표식으로 — 줌할 때 이름표가 따로 미끄러져 날아오지 않고 점과 함께 움직인다
   // 웹 — 작은 점 + '주변' 시설 같은 흰 상자(맨 앞 번호). 꼴은 웹 공통(pin-dot · pin-box)으로 경매사례 지도와 같다
@@ -758,6 +777,11 @@ const drawMap = () => {
     const live = webEmbed && !off ? g.list.filter((r) => !isOff(r)) : g.list;
     const lp = live.map((r) => r.price); const lo = Math.min(...lp); const hi = Math.max(...lp);
     const range = lo === hi ? eok(lo) : `${n0(lo)}~${eok(hi)}`;
+    if (mkV.value) {
+      // 시세예측 빌라(시안 v7) — 평소엔 점만, 누르면 말풍선(꼬리 · X). 고른 점은 조금 커지고 고리가 깜빡인다
+      mv!.pin(g.spot, { className: `cmp-bub mkd${on ? ' on' : ''}${off ? ' off' : ''}`, html: `<i class="mk-dot" data-j="${esc(g.jibun)}"></i>`, onClick: () => { popFromMap = true; meOpen.value = false; focus.value = on ? '' : g.jibun; }, z: on ? 50 : 1 });
+      return;
+    }
     if (webEmbed) {
       // 웹 — 매매수요 지도와 같은 말풍선, 이름 · 평균 금액 · 거래 건수(등수는 시세분석엔 필요 없다, 2026-11-11 사용자). 건수는 누르지 않아도 처음부터(2026-11-12 사용자)
       const avg = lp.reduce((a, b) => a + b, 0) / (lp.length || 1);
@@ -778,6 +802,11 @@ const drawMap = () => {
     });
   });
   // 내 물건(빨간 점)도 눌렀을 때만 이름표
+  if (mkV.value) {
+    if (props.dongOnly) return;
+    mv.pin(m, { className: 'cmp-bub mkd me', html: '<i class="mk-me" data-j="__me"></i>', onClick: () => { popFromMap = true; focus.value = ''; meOpen.value = !meOpen.value; }, z: 1000 });
+    return;
+  }
   if (webEmbed) {
     const mp = shownRows.value.filter((r) => r.same && !isOff(r)).map((r) => r.price);
     const mAvg = mp.length ? mp.reduce((a, b) => a + b, 0) / mp.length : 0;
@@ -796,9 +825,60 @@ const drawMap = () => {
     z: 1000,
   });
 };
+// ===== 시세예측 빌라 — 지도 말풍선(점 위 → 아래 → 옆, 꼬리는 점을 가리키고 점은 가리지 않는다) =====
+const popEl = ref<HTMLElement | null>(null);
+const popPos = ref<{ left: number; top: number; side: string; tx: number; ty: number } | null>(null);
+const popHide = ref(false);
+/** 지도에서 눌러 연 말풍선만 — 가리면 화면을 옮긴다. 표 줄로 연 것은 화면을 옮기지 않는다(2026-11-28 사용자) */
+let popFromMap = false;
+const popData = computed(() => {
+  if (!mkV.value) return null;
+  if (meOpen.value) {
+    const mp = shownRows.value.filter((r) => r.same && !isOff(r)).map((r) => r.price);
+    return { key: '__me', title: myLabel.value, sub: '', rows: mp.length ? [['실거래가', eok(mp.reduce((a, b) => a + b, 0) / mp.length)], ['건수', `${mp.length}건`]] : [['', meName.value]] };
+  }
+  const g = focus.value ? mapGroups.value.find((x) => x.jibun === focus.value) : null;
+  if (!g) return null;
+  const live = g.list.filter((r) => !isOff(r)); const lp = (live.length ? live : g.list).map((r) => r.price);
+  const ho = hosOf(g); const est = /중 추정/.test(ho);
+  return { key: g.jibun, title: [g.name, ho.replace(/\s*중 추정$/, '')].filter(Boolean).join(' '), sub: est ? '호수 중 추정' : '', rows: [['실거래가', eok(lp.reduce((a, b) => a + b, 0) / (lp.length || 1))], ['건수', `${lp.length}건`]] };
+});
+const closePop = () => { focus.value = ''; meOpen.value = false; };
+const placePop = () => {
+  popPos.value = null;
+  const d = popData.value; const box = mapEl.value?.parentElement; const pe = popEl.value;
+  if (!d || !box || !pe || !mapEl.value) return;
+  const dot = mapEl.value.querySelector(`[data-j="${CSS.escape(d.key)}"]`) as HTMLElement | null;
+  if (!dot) return;
+  const br = box.getBoundingClientRect(); const dr = dot.getBoundingClientRect();
+  const dx = dr.left + dr.width / 2 - br.left; const dy = (d.key === '__me' ? dr.top + dr.height : dr.top + dr.height / 2) - br.top;
+  const mw = box.clientWidth; const mh = box.clientHeight;
+  if (dx < 0 || dy < 0 || dx > mw || dy > mh) return;   // 점이 지도 밖이면 띄우지 않는다
+  const w = pe.offsetWidth; const h = pe.offsetHeight; const G = 16; const R0 = 64;
+  let left: number; let top: number; let side: string;
+  const topGap = d.key === '__me' ? 30 : G;
+  if (dy - h - topGap >= 8) { side = 'above'; top = dy - h - topGap; } else if (dy + G + h <= mh - 8) { side = 'below'; top = dy + G; } else { side = dx + G + w <= mw - R0 ? 'right' : 'left'; top = Math.max(8, Math.min(dy - h / 2, mh - h - 8)); }
+  if (side === 'above' || side === 'below') left = Math.max(8, Math.min(dx - w / 2, mw - w - R0)); else left = side === 'right' ? dx + G : dx - G - w;
+  popPos.value = { left, top, side, tx: Math.max(14, Math.min(dx - left, w - 14)), ty: Math.max(14, Math.min(dy - top, h - 14)) };
+  if (!fs.value && popFromMap) void nextTick(() => {
+    const pr = popEl.value?.getBoundingClientRect(); const ze = zoneEl.value?.getBoundingClientRect();
+    if (!pr) return; const sb = ze ? ze.bottom : 120;
+    if (pr.top < sb + 8) window.scrollBy({ top: pr.top - sb - 12, behavior: 'smooth' }); else if (pr.bottom > window.innerHeight - 8) window.scrollBy({ top: pr.bottom - window.innerHeight + 12, behavior: 'smooth' });
+  });
+};
+watch([popData, focus, meOpen], () => { void nextTick(() => window.setTimeout(placePop, 30)); });
+let popEvt = false;
+watch(kTools, (t) => {
+  if (!t || popEvt || !mkV.value) return; popEvt = true;
+  const k = t.k as { event?: { addListener: (m: unknown, ev: string, f: () => void) => void } }; const map = t.map;
+  k.event?.addListener(map, 'dragstart', () => { popHide.value = true; });
+  k.event?.addListener(map, 'zoom_start', () => { popHide.value = true; });
+  k.event?.addListener(map, 'idle', () => { popHide.value = false; placePop(); });
+  k.event?.addListener(map, 'click', () => { if (popData.value) closePop(); });
+});
 const fitMap = () => {
   const m = mySpot.value;
-  if (mv && m) mv.fitRadius(m, radius.value);
+  if (mv && m) mv.fitRadius(m, radius.value === DONG ? 1000 : radius.value);
 };
 const ensureMap = async () => {
   await nextTick();
@@ -866,7 +946,7 @@ const evenCols = () => {
     };
     const natOf = (pad: number) => ths.map((th) => {
       if (th.classList.contains('ck-th')) return 44;
-      if (th.classList.contains('acts-th')) return Math.max(0, ...[...t.querySelectorAll('td.acts-td .acts')].map((e) => (e as HTMLElement).scrollWidth)) + 16;
+      if (th.classList.contains('acts-th')) return Math.max(74, ...[...t.querySelectorAll('td.acts-td .acts')].map((e) => (e as HTMLElement).scrollWidth)) + 16;   // 잴 때 단추가 아직 안 그려져 0이면 N · P · 복사 세 단추 폭(2026-11-29 — 동 전체에서 16px로 줄어 넘쳤다)
       const key2 = th.dataset.k ?? '';
       const head = (th.querySelector('.hk') as HTMLElement | null)?.innerText ?? th.innerText;
       const headW = tw(head.split('\n')[0], fontOf(thCs)) + (key2 ? 16 : 0);   // 정렬 ▲▼ 자리
@@ -921,7 +1001,18 @@ let evenTimer = 0;
 watch([listRows, stats, curPub, enriching], () => { if (enriching.value) return; window.clearTimeout(evenTimer); evenTimer = window.setTimeout(evenCols, 60); });
 if (sonTab) watch(sonTab, (t) => { if (t === 'price') void nextTick(evenCols); });
 
-const onResize = () => { evenCols(); };
+/** 시세예측 빌라 — 금액 칸(4~7번째) 숫자 묶음을 칸 가운데에 두되 안은 오른쪽(일의 자리 세로 맞춤). 칸마다 가장 넓은 숫자를 재서 오른쪽 여백을 정한다 */
+const fitNb = () => {
+  const t = tableEl.value; if (!mkV.value || !t) return;
+  const rows = [...t.querySelectorAll('tbody tr')].filter((tr) => !tr.classList.contains('nohover'));
+  [4, 5, 6, 7].forEach((n) => {
+    let mw = 0; let cw = 0;
+    rows.forEach((tr) => { const td = tr.children[n - 1] as HTMLElement | undefined; if (!td) return; cw = td.clientWidth; const rg = document.createRange(); rg.selectNodeContents(td); [...rg.getClientRects()].forEach((b) => { mw = Math.max(mw, b.width); }); });
+    if (cw && mw) t.style.setProperty(`--nb${n}`, `${Math.max(6, Math.floor((cw - mw) / 2))}px`);
+  });
+};
+watch([listRows, colWidths, mkV], () => { void nextTick(() => window.setTimeout(fitNb, 80)); });
+const onResize = () => { evenCols(); window.setTimeout(fitNb, 80); };
 // 웹 — 저장 등으로 표를 새로 그리면 칸 폭(colgroup)이 사라져 표가 오른쪽으로 삐져나왔다 — 다시 그려질 때 칸 폭이 없으면 바로 다시 잰다(2026-11-11 사용자)
 onUpdated(() => { const t = tableEl.value; if (webEmbed && t && !colWidths.value.length) { colsKey = ''; evenCols(); } });
 onMounted(() => { window.addEventListener('resize', onResize); void run(); });
@@ -985,6 +1076,7 @@ const pickMine = () => { focus.value = ''; meOpen.value = !meOpen.value; };
 /** 고른 거래 한 줄 — 표는 그 줄만 칠한다(같은 지번 줄이 다 칠해졌다, 2026-11-11 사용자). 지도는 그 건물(지번)을 고른다 */
 const pickedRow = ref('');
 const pickRow = (r: PriceRow) => {
+  popFromMap = false;
   const k = rowKey(r); const again = pickedRow.value === k;
   if (simPickable(r)) simPick.value = simPick.value === k ? '' : k;
   if (casePickable(r)) casePick.value = casePick.value === k ? '' : k;
@@ -993,7 +1085,9 @@ const pickRow = (r: PriceRow) => {
   meOpen.value = false; focus.value = again ? '' : r.jibun;
 };
 watch([focus, meOpen], ([f, m]) => { if (!f && !m) pickedRow.value = ''; });
-const pickMineRow = () => { if (!webEmbed) { pickMine(); return; } const again = pickedRow.value === 'mine'; pickedRow.value = again ? '' : 'mine'; focus.value = ''; meOpen.value = !again; };   // 지도에서 고른 것을 풀면 줄도 푼다
+// 시세예측 빌라 — 지도 점을 누르면 표의 그 줄도 표시. 그 줄이 '더 보기' 뒤면 펼친다(2026-11-28 사용자)
+watch(focus, (f) => { if (!mkV.value || !f || showAll.value) return; const i = shownRows.value.findIndex((r) => r.jibun === f); if (i >= MORE_AT) showAll.value = true; });
+const pickMineRow = () => { popFromMap = false; if (!webEmbed) { pickMine(); return; } const again = pickedRow.value === 'mine'; pickedRow.value = again ? '' : 'mine'; focus.value = ''; meOpen.value = !again; };   // 지도에서 고른 것을 풀면 줄도 푼다
 const fsGo = (g: { jibun: string; spot: { lat: number; lng: number } }) => { meOpen.value = false; focus.value = focus.value === g.jibun ? '' : g.jibun; if (focus.value && mv) mv.focus(g.spot, 16); };
 const onFsKey = (e: KeyboardEvent) => { if (e.key === 'Escape') fs.value = false; };
 watch(fs, async (on) => {
@@ -1003,7 +1097,7 @@ watch(fs, async (on) => {
   if (on) window.addEventListener('keydown', onFsKey); else window.removeEventListener('keydown', onFsKey);
   await nextTick();
   // 칸 크기가 바뀌었으니 지도를 다시 재고, 반경이 다 보이게
-  [0, 120, 400].forEach((ms) => window.setTimeout(() => { mv?.relayout(); const m = mySpot.value; if (mv && m && !focus.value) mv.fitRadius(m, radius.value); }, ms));
+  [0, 120, 400].forEach((ms) => window.setTimeout(() => { mv?.relayout(); const m = mySpot.value; if (mv && m && !focus.value) mv.fitRadius(m, radius.value === DONG ? 1000 : radius.value); }, ms));
 }, { immediate: true });
 onBeforeUnmount(() => { window.removeEventListener('keydown', onFsKey); if (fs.value) document.documentElement.style.overflow = ''; });
 onBeforeUnmount(() => { window.removeEventListener('resize', onResize); runId += 1; mv?.destroy(); mv = null; window.clearTimeout(saveTimer); window.clearTimeout(undoTimer); });
@@ -1026,7 +1120,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 <template>
   <div :class="['pa-wrap', { app: props.app, phone: sonApp }]">
   <Teleport to="body" :disabled="!fs">
-  <section :class="['pa', 'pa-card', { fs, stick: webEmbed && !props.app, web: webEmbed && !props.app }]" aria-label="시세분석">
+  <section :class="['pa', 'pa-card', { fs, stick: webEmbed && !props.app, web: webEmbed && !props.app, 'mk-v': mkV }]" aria-label="시세분석">
     <!-- 전체화면 위 띠 — 닫기 · 사건 · 조회기간 · 조회 -->
     <div v-if="fs" class="fs-top">
       <button type="button" class="fs-x" @click="fs = false"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>전체화면 닫기</button>
@@ -1044,8 +1138,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
     <!-- 붙는 머리가 시세분석 상자 밖(호실 예상가 · 호가매물)까지 이어 붙을 때 — 빠진 자리를 같은 높이로 받친다 -->
     <div v-if="estFix" class="zone-ph" :style="{ height: `${estFix.h}px` }" aria-hidden="true" />
     <div ref="zoneEl" class="zone zone-est" :style="estFix ? estFix.style : undefined">
-      <div class="zone-h"><span class="pa-tag">결론</span><h3>{{ webEmbed ? '이 물건 매도가 예상' : '이 물건 실거래가 예상' }}</h3>
-        <span :class="['bar-desc', { hi: webEmbed }]"><svg v-if="webEmbed" class="flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ regionText || '지역 확인 중' }}{{ webEmbed ? ` · 반경 ${radText(radius)} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` : '' }} · {{ KIND_LABEL[kind] }} 실거래</span>
+      <div class="zone-h"><span class="pa-tag">결론</span><h3>{{ dongOnly ? `${region?.dong ?? ''} 시세` : webEmbed ? '이 물건 매도가 예상' : '이 물건 실거래가 예상' }}</h3>
+        <span :class="['bar-desc', { hi: webEmbed }]"><svg v-if="webEmbed" class="flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ regionText || '지역 확인 중' }}{{ dongOnly ? ` 전체 · ${periodText(loadedMonths)}` : webEmbed ? `${isDong ? ' 전체' : ` · 반경 ${radText(radius)}`} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` : '' }} · {{ KIND_LABEL[kind] }} 실거래</span>
         <span class="pa-load-r">
           <span v-if="progress.total && progress.done < progress.total" class="prog">위치 찾는 중 {{ progress.done }} / {{ progress.total }}</span>
           <!-- 앱 — 기간 단추 · 조회는 뺐다(저장된 기간 그대로, 2026-11-13 사용자) -->
@@ -1060,7 +1154,13 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <p v-if="errorMsg" class="pa-err">{{ errorMsg }}</p>
       <div class="est">
         <!-- 웹 — 중간값 · 최저 · 최고는 뺐다. 거래가를 내 평수로 바꿔 만든 값이라 실제로 거래된 값이 아니다(2026-11-11 사용자) -->
-        <div :class="['tiles', { four: !props.app }]">
+        <div v-if="dongOnly" class="tiles four">
+          <div class="tile key"><span class="k">① 평균 평당가(매매)</span><span class="v pa-num">{{ dongPy ? vPy(dongPy) : '-' }}</span><span class="s rad">{{ region?.dong ?? '' }} {{ KIND_LABEL[kind] }} 매매 실거래 평균</span></div>
+          <div class="tile"><span class="k">매매 거래</span><span class="v pa-num">{{ kindCount('매매').toLocaleString('ko-KR') }}건</span></div>
+          <div class="tile"><span class="k">전세 거래</span><span class="v pa-num">{{ kindCount('전세').toLocaleString('ko-KR') }}건</span></div>
+          <div class="tile"><span class="k">월세 거래</span><span class="v pa-num">{{ kindCount('월세').toLocaleString('ko-KR') }}건</span></div>
+        </div>
+        <div v-else :class="['tiles', { four: !props.app }]">
           <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? `① 매도가 예상(${kindF})` : `실거래가 예상(${kindF})` }}</InfoTip></span><span :class="['v', 'pa-num', { won: isAptKind && kindF !== '월세' }]">{{ view ? vEst(view.est) : '-' }}</span><!-- 웹 — 0건이 돼도 아래 두 줄 자리를 그대로(칸 높이가 줄면 아래 필터 · 표가 통째로 올라갔다 내려왔다, 2026-11-12 사용자 '엘베 누르면 흔들려') --><span v-if="webEmbed || view?.capped" class="cap" :style="{ visibility: view?.capped ? 'visible' : 'hidden' }">보증보험 한도 적용</span><span v-if="webEmbed || view" class="s rad">{{ webEmbed ? (estFormula || '\u00a0') : `반경 ${radText(radius)} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` }}</span></div>
           <div class="tile"><span class="k">{{ kindF === '월세' ? '평균 평당 월세' : '평균 평당가' }}</span><span class="v pa-num">{{ view ? vPy(view.avgPy) : '-' }}</span></div>
           <!-- 선정물건 정보 — 유사 거래를 찾는 가운데 기준(실제 범위는 아래 「계산 조건」 줄) -->
@@ -1102,7 +1202,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <KakaoMapTools v-if="kTools" :k="kTools.k" :map="kTools.map" :near="webEmbed ? mySpot : null" />
         <button v-if="webEmbed && !fs && !props.app" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="fs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
         <!-- 근거 제목은 지도 왼쪽 위에 — 따로 줄을 두지 않아 지도를 위로 더 보인다 -->
-        <div v-if="!props.app" class="map-title"><span class="pa-tag">근거</span><b>유사물건</b></div>
+        <div v-if="!props.app" class="map-title"><span class="pa-tag">근거</span><b>{{ mkV ? '유사 실거래' : '유사물건' }}</b></div>
         <div v-if="addOpen && !loose" class="add-pop" role="dialog" aria-label="임장경로에 비교 물건 넣기">
           <b>임장경로에 비교 물건 넣기</b>
           <small>이 물건의 임장경로 정류장에 「현장 기록」으로 붙습니다. 기본은 500m 안 가까운 5곳.</small>
@@ -1114,13 +1214,18 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <template v-if="savedCompare?.items.length && !addOpen">✓ 비교 임장경로 {{ savedCompare.items.length }}곳</template><template v-else>＋ 비교 임장경로에 추가</template>
         </button>
         <p v-if="addMsg" class="add-msg">{{ addMsg }}</p>
-        <div class="legend"><span><i style="background:#e03e3e" />{{ meName }}</span><span><i style="background:#2b4fd8" />유사물건</span></div>
+        <div v-if="mkV && popData" v-show="!popHide && popPos" ref="popEl" :class="['mk-pop', popPos?.side]" :style="popPos ? { left: `${popPos.left}px`, top: `${popPos.top}px`, '--tx': `${popPos.tx}px`, '--ty': `${popPos.ty}px` } : { left: '-9999px', top: '0' }" @click.stop>
+          <div class="t"><span class="tt">{{ popData.title }}</span><button type="button" class="mk-x" aria-label="닫기" title="닫기" @click="closePop"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button></div>
+          <div v-if="popData.sub" class="sub">{{ popData.sub }}</div>
+          <dl><template v-for="(r, i) in popData.rows" :key="i"><dt>{{ r[0] }}</dt><dd :class="{ big: r[0] === '실거래가' }">{{ r[1] }}</dd></template></dl>
+        </div>
+        <div class="legend"><span v-if="!dongOnly"><i style="background:#e03e3e" />{{ meName }}</span><span><i style="background:#2b4fd8" />{{ mkV ? '유사 실거래' : '유사물건' }}</span></div>
         <p v-if="!mySpot && !loading && res" class="map-msg">{{ meName }} 위치를 찾지 못했습니다</p>
       </div>
 
       <!-- 전체화면 오른쪽 칸 맨 아래 — 유사물건 목록(지도 번호 순). 누르면 그 핀으로 -->
       <div v-if="fs" class="fs-list">
-        <b class="fs-lh">유사물건 {{ fsList.length }}곳</b>
+        <b class="fs-lh">{{ mkV ? '유사 실거래' : '유사물건' }} {{ fsList.length }}곳</b>
         <button v-for="g in fsList" :key="g.jibun" type="button" :class="['fs-it', { on: focus === g.jibun, off: g.list.every((r) => isOff(r)) }]" @click="fsGo(g)">
           <i class="n">{{ orderOf[g.jibun] ?? '' }}</i>
           <span class="nm">{{ g.name }}<small v-if="hosOf(g)" class="ho">{{ hosOf(g) }}</small><small>{{ g.list.filter((r) => !isOff(r)).length || g.list.length }}건 · {{ Math.round(g.dist) }}m</small></span>
@@ -1130,7 +1235,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       </div>
       <!-- 웹 — 매매수요와 같은 필터 부품(1줄 반경 · 거래 · 엘베 · 층, 2줄 기준 묶음 · 초기화 · 저장). 기간은 위 조회기간. 전체화면은 좁은 꼴 -->
       <SearchFilterBar v-if="webEmbed && !props.app" :draft="sfDraft" :compact="fs || sonApp" :hide="loose ? ['period', 'save'] : ['period']" :range-options="sfRadii" :period-options="[]" :kinds="KINDS" :kind-count="(k) => kindCount(k).toLocaleString('ko-KR')"
-        :base-area="me.areaM2" :base-year="me.year" :area-max="AREA_MAX" :year-min="YEAR_MIN" :year-max="yearMax" :sim-range="sfSimRange"
+        :base-area="dongOnly ? 0 : me.areaM2" :base-year="dongOnly ? 0 : me.year" :lock="dongOnly ? { range: [DONG], sim: true, floorPick: true } : undefined" :area-max="AREA_MAX" :year-min="YEAR_MIN" :year-max="yearMax" :sim-range="sfSimRange"
         :is-default="false" :can-save="!loose" :saving="saving" :saved="!webDirty" :saved-day="savedAt ? new Date(savedAt).toLocaleDateString('sv-SE') : ''" @update:draft="sfSet" @reset="reset" @save="saveNow" />
       <div v-else-if="!props.app" :class="['conds', { web: webEmbed }]">
         <span class="pa-lab">반경<span class="pa-seg pa-out" role="radiogroup" aria-label="반경">
@@ -1211,7 +1316,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <div v-if="!props.app" class="list-tools">
         <span v-if="webEmbed" class="lt-count pa-num">지번 {{ listPlaces }}곳 · 거래 {{ shownRows.length }}건</span>
         <!-- 앱 — 공시가 · 전세가율 글은 뺐다(공시가 칸이 없다, 2026-11-13 사용자) -->
-        <div v-if="!props.app" class="warn-box" role="note">
+        <div v-if="!props.app && !dongOnly" class="warn-box" role="note">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4M12 17h.01" /></svg>
           <!-- 앱 — 짧게(2026-11-09) -->
           <template v-if="props.app">
@@ -1249,22 +1354,22 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <tr v-if="!listRows.length && res && !loading" class="nohover"><td colspan="5" class="pa-empty">반경 {{ radText(radius) }} 안에 조건에 맞는 거래가 없습니다.</td></tr>
           </tbody>
         </table></div>
-        <div v-else class="tbl-wrap"><table ref="tableEl" class="even">
+        <div v-else class="tbl-wrap"><table ref="tableEl" :class="['even', { 'mk-v': mkV }]">
           <colgroup v-if="webEmbed && colWidths.length"><col v-for="(w, i) in colWidths" :key="i" :style="{ width: `${w}px` }"></colgroup>
           <thead><tr>
             <th v-if="webEmbed" class="ck-th" title="체크하면 매도가 예상 · 평균 · 건수에서 빠집니다">제외</th>
             <th>구분</th>
             <th v-for="c in shownCols" :key="c.key" :data-k="c.key" :aria-sort="sortK === c.key ? (webEmbed && sortDir === 'asc' ? 'ascending' : 'descending') : undefined" :class="{ hl: ['won', 'perPy', 'pub', 'gap'].includes(c.key) }">
-              <span class="hk" :title="c.key === 'gap' ? '전세 = 공시가 × 126%(보증보험 한도)' : undefined" @click="sortBy(c.key)">{{ c.key === 'pub' ? (webEmbed ? '공시가' : '공시가 / 매매가율') : c.key === 'gap' ? '전세 / 갭' : c.key === 'area' && isAptKind ? '면적' : c.label }}<small v-if="c.key === 'area' && isAptKind" class="hk-sub">공급(전용)<i v-if="webEmbed" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><small v-if="c.key === 'pub' && webEmbed" class="hk-sub">매매가율<i :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small></span>
+              <span class="hk" :title="c.key === 'gap' ? '전세 = 공시가 × 126%(보증보험 한도)' : undefined" @click="sortBy(c.key)">{{ c.key === 'pub' ? (webEmbed ? '공시가' : '공시가 / 매매가율') : c.key === 'gap' ? '전세 / 갭' : c.key === 'area' && isAptKind ? '면적' : c.label }}<small v-if="c.key === 'area' && isAptKind" class="hk-sub">공급(전용)<i v-if="webEmbed" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><small v-if="c.key === 'pub' && webEmbed" class="hk-sub">매매가율<i :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><small v-if="c.key === 'year' && mkV" class="hk-sub">연차<i :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><i v-if="mkV && !hk2(c.key)" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></span>
               <!-- 두 줄 머리(공시가 / 매매가율 · 면적 / 공급(전용))는 ▼ 를 아랫줄 오른쪽에 붙인다(2026-11-15 사용자) -->
-              <i v-if="webEmbed && !hk2(c.key)" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true" @click="sortBy(c.key)">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i>
+              <i v-if="webEmbed && !hk2(c.key) && !mkV" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true" @click="sortBy(c.key)">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i>
               <button v-else-if="!webEmbed" type="button" :class="['fv', { act: colFilter.isActive(c.key) }]" :aria-label="`${c.label} 값 거르기`" @click.stop="colFilter.open(c.key, $event)">▾</button>
             </th>
             <th class="acts-th"><span class="sr">바로가기</span></th>
           </tr></thead>
           <tbody>
             <!-- 맨 위 고정 — 선정물건. 거래가 아니라 견줄 기준이라 실거래가 예상을 적는다 -->
-            <tr :class="['mine', { on: webEmbed ? pickedRow === 'mine' : meOpen }]" @click="pickMineRow">
+            <tr v-if="!dongOnly" :class="['mine', { on: webEmbed ? pickedRow === 'mine' : meOpen }]" @click="pickMineRow">
               <td v-if="webEmbed" class="ck-td" />
               <td><span class="kind me q">{{ meName }}</span></td>
               <td class="r"><span class="est-lab">{{ kindF }} 예상</span></td>
@@ -1279,7 +1384,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td v-if="isAptKind" class="r pa-num two">{{ areaLines(aptMyArea)[0] }}<small v-if="areaLines(aptMyArea)[1]">{{ areaLines(aptMyArea)[1] }}</small></td>
               <td v-else class="r pa-num two">{{ me.areaM2.toFixed(2) }}㎡<small>{{ myPy.toFixed(2) }}평</small></td>
               <td><span v-if="myElev === null" class="ev u">-</span><span v-else-if="myElev > 0" class="ev o two">{{ myElev }}대<br>있음</span><span v-else class="ev x">없음</span></td>
-              <td class="pa-num">{{ me.year || '-' }}</td>
+              <td :class="['pa-num', { two: mkV && me.year }]">{{ me.year || '-' }}<small v-if="mkV && me.year">{{ yearMax - me.year + 1 }}년차</small></td>
               <td class="r pa-num">0m</td>
               <td class="pa-num">{{ me.floor || '-' }}</td>
               <td class="l" :data-tip="webEmbed ? myAddr : undefined" data-tip-pos="right"><div class="pa-addr"><span class="addr">{{ myAddr }}</span><span class="chips"><span class="same">경매지번</span></span></div></td>
@@ -1289,7 +1394,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
                 <button type="button" :class="['ab', { ok: okKey === 'mineC' }]" title="주소 복사" aria-label="주소 복사" @click="copy(props.auction.address, 'mineC')"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg></button>
               </span></td>
             </tr>
-            <tr v-for="r in listRows" :key="r.id" :class="{ on: webEmbed ? pickedRow === rowKey(r) : (r.same ? meOpen : (focus && focus === r.jibun)), off: isOff(r) }" @click="pickRow(r)">
+            <tr v-for="r in listRows" :key="r.id" :class="{ on: webEmbed ? (pickedRow === rowKey(r) || (mkV && !pickedRow && !!focus && focus === r.jibun)) : (r.same ? meOpen : (focus && focus === r.jibun)), off: isOff(r) }" @click="pickRow(r)">
               <td v-if="webEmbed" class="ck-td" @click.stop><input type="checkbox" :checked="isOff(r)" :aria-label="`${r.contractDate} ${r.name || r.jibun} 평균에서 빼기`" @change="toggleDrop(r)" /></td>
               <td><span :class="['kind', r.group === '전세' ? 'j' : r.group === '월세' ? 'm' : '']">{{ r.group }}</span><span v-if="simPick && simPick === rowKey(r)" class="sim-pick" title="손품결론 '유사물건 실거래가'로 들어갑니다 — 다시 누르면 뺍니다">유사</span><span v-if="casePick && casePick === rowKey(r)" class="sim-pick" title="손품결론 '경매지번 실거래가'로 들어갑니다 — 다시 누르면 뺍니다">선택</span></td>
               <td class="pa-num">{{ r.contractDate }}</td>
@@ -1311,7 +1416,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td v-if="isAptKind" class="r pa-num two">{{ areaLines(aptRowArea(r.areaM2, !!r.same, r))[0] }}<small v-if="areaLines(aptRowArea(r.areaM2, !!r.same, r))[1]">{{ areaLines(aptRowArea(r.areaM2, !!r.same, r))[1] }}</small></td>
               <td v-else class="r pa-num two">{{ r.areaM2.toFixed(2) }}㎡<small>{{ (r.areaM2 / PY).toFixed(2) }}평</small></td>
               <td><span v-if="r.elev === undefined || r.elev === null" class="ev u" :title="r.elev === null ? '건축물대장을 찾지 못했습니다' : '조회 중'">-</span><span v-else-if="r.elev > 0" class="ev o two">{{ r.elev }}대<br>있음</span><span v-else class="ev x">없음</span></td>
-              <td class="pa-num">{{ r.buildYear || '-' }}</td>
+              <td :class="['pa-num', { two: mkV && r.buildYear }]">{{ r.buildYear || '-' }}<small v-if="mkV && r.buildYear">{{ yearMax - r.buildYear + 1 }}년차</small></td>
               <td class="r pa-num">{{ r.dist ?? '-' }}m</td>
               <td class="pa-num">{{ r.floorNo || '-' }}</td>
               <td class="l" :data-tip="webEmbed ? addrOf(r) : undefined" data-tip-pos="right"><div class="pa-addr"><span class="addr"><i v-if="orderOf[r.jibun]" class="no" :title="`임장 순서 ${orderOf[r.jibun]}번 — 지도 번호와 같다`">{{ orderOf[r.jibun] }}</i>{{ webEmbed ? addrShort(r) : addrOf(r) }}</span><span v-if="r.same" class="chips"><span class="same">경매지번</span><span v-if="Math.abs(r.areaM2 - me.areaM2) <= 0.05" class="same eq">같은면적</span></span><span v-else-if="fieldChips(r.jibun).length" class="chips"><span v-for="c in fieldChips(r.jibun)" :key="c.t" :class="['pa-fc', c.k]">{{ c.t }}</span></span></div></td>
@@ -1321,9 +1426,9 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
                 <button type="button" :class="['ab', { ok: okKey === `${r.id}C` }]" title="주소 복사" aria-label="주소 복사" @click="copy(fullAddr(r), `${r.id}C`)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg></button>
               </span></td>
             </tr>
-            <tr v-if="!listRows.length && res && !loading" class="nohover"><td :colspan="COLS.length + (webEmbed ? 3 : 2)" class="pa-empty">반경 {{ radText(radius) }} 안에 조건에 맞는 거래가 없습니다. 조건을 넓혀 보세요.
+            <tr v-if="!listRows.length && res && !loading" class="nohover"><td :colspan="COLS.length + (webEmbed ? 3 : 2)" class="pa-empty">{{ isDong ? `${region?.dong ?? ''} 전체에` : `반경 ${radText(radius)} 안에` }} 조건에 맞는 거래가 없습니다. 조건을 넓혀 보세요.
               <div class="btns">
-                <button v-if="radius < RADII[RADII.length - 1]" type="button" @click="widen('r')">반경 {{ radText(RADII.find((v) => v > radius) ?? 1000) }}로</button>
+                <button v-if="!isDong && radius < RADII[RADII.length - 1]" type="button" @click="widen('r')">반경 {{ radText(RADII.find((v) => v > radius) ?? 1000) }}로</button>
                 <button type="button" @click="widen('s')">유사도 낮추기</button>
                 <button v-if="loadedMonths < PERIODS[PERIODS.length - 1]" type="button" @click="widen('p')">기간 늘려 조회</button>
               </div>
