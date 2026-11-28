@@ -451,7 +451,7 @@ const aucCell = computed(() => {
     ['기준', '15% 이하 적합 · 15~30% 주의 · 30% 넘으면 위험'],
   ];
   // 이 동 낙찰 건수 — '15% 이하 적합' 밑에 작게. 센 기간(날짜)은 ⓘ 범위 줄에(2026-11-29 사용자)
-  const note = n === null ? '' : `낙찰 ${n.toLocaleString('ko-KR')}건 / 실거래 ${deals.toLocaleString('ko-KR')}건`;   // 두 숫자를 나란히 — 계산에 든 둘(2026-11-29 사용자)
+  const note = n === null ? '' : `낙찰 ${n.toLocaleString('ko-KR')}건`;   // 실거래 건수는 뺌 — 위 거래량 칸에 있다(2026-11-29 사용자)
   // 그 낙찰 가운데 낙찰 뒤 다시 매매된 것(2026-11-29 사용자)
   const so = aucSold.value;
   const sold = !so ? '' : so.wait ? '낙찰 후 매도 세는 중' : `낙찰 후 매도 ${so.n.toLocaleString('ko-KR')}건`;
