@@ -246,7 +246,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 실거래분석 › 수요공급'
-const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭킹', bld: '건물랭킹', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '시세분석', auc: '낙찰사례' };
+const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭킹', bld: '건물랭킹', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '시세분석', auc: '낙찰분석' };
 const tellTab = () => {
   if (!webEmbed) return;
   const label = TAB_LABEL[listView.value];
@@ -1255,7 +1255,7 @@ const downloadCsv = () => {
               <button v-if="props.sonMode" type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요분석</button>
               <!-- 경매지번 — 시장분석 › 경매지번 분석 화면을 그대로(주소 줄 · 종류 · 기간 · 내비 · 표 · 저장). 주소 줄은 위 고르는 줄 자리에 -->
               <button v-if="props.sonMode" type="button" role="tab" :aria-selected="listView === 'case'" :class="{ on: listView === 'case' }" @click="listView = 'case'">시세분석</button>
-              <button v-if="props.sonMode && isOps" type="button" role="tab" :aria-selected="listView === 'auc'" :class="{ on: listView === 'auc' }" @click="listView = 'auc'">낙찰사례<span class="adm-chip son-op">운영</span></button>
+              <button v-if="props.sonMode && isOps" type="button" role="tab" :aria-selected="listView === 'auc'" :class="{ on: listView === 'auc' }" @click="listView = 'auc'">낙찰분석<span class="adm-chip son-op">운영</span></button>
               <template v-if="!props.sonMode">
               <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">지역별분석</button>
               <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">유형분포<span class="adm-view-kind" :title="distChart === 'dots' ? '점 쌓기 — 한 번 더 누르면 막대' : distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 점 쌓기'" :aria-label="distChart === 'dots' ? '점 쌓기' : distChart === 'bar' ? '막대' : '도넛'">
@@ -1280,8 +1280,8 @@ const downloadCsv = () => {
       />
       <!-- 시세분석 — 선정물건 손품조사의 시세분석(지도 · 유사물건 · 예상 가격)을 위 주소 줄로 찾은 주소에. 선정물건에 없는 주소도 본다 -->
       <template v-if="webEmbed && listView === 'auc' && isOps">
-        <div v-if="sonPick === 'region'" class="son-price"><SonpumPricePage v-if="regionAuction && regionQ && regionQ.kind === 'villa'" :key="`auc:${regionAuction.id}`" :auction="regionAuction" kind="villa" :months="regionQ.months" loose dong-only auc-tab /><p v-else class="son-msg">{{ kind !== 'villa' ? '낙찰사례는 연립다세대만 됩니다.' : '위 칸에서 시 · 도 / 시 · 군 · 구 / 읍 · 면 · 동을 고르고 조회를 눌러 주세요.' }}</p></div>
-        <div v-else class="son-price"><SonpumPricePage v-if="priceAuction && priceQ && priceQ.kind === 'villa'" :key="`auc:${priceAuction.id}`" :auction="priceAuction" kind="villa" :months="priceQ.months ?? 12" loose auc-tab /><p v-else class="son-msg">{{ priceKind !== 'villa' ? '낙찰사례는 연립다세대만 됩니다.' : '위 칸에 주소를 적고 조회를 눌러 주세요.' }}</p></div>
+        <div v-if="sonPick === 'region'" class="son-price"><SonpumPricePage v-if="regionAuction && regionQ && regionQ.kind === 'villa'" :key="`auc:${regionAuction.id}`" :auction="regionAuction" kind="villa" :months="regionQ.months" loose dong-only auc-tab /><p v-else class="son-msg">{{ kind !== 'villa' ? '낙찰분석은 연립다세대만 됩니다.' : '위 칸에서 시 · 도 / 시 · 군 · 구 / 읍 · 면 · 동을 고르고 조회를 눌러 주세요.' }}</p></div>
+        <div v-else class="son-price"><SonpumPricePage v-if="priceAuction && priceQ && priceQ.kind === 'villa'" :key="`auc:${priceAuction.id}`" :auction="priceAuction" kind="villa" :months="priceQ.months ?? 12" loose auc-tab /><p v-else class="son-msg">{{ priceKind !== 'villa' ? '낙찰분석은 연립다세대만 됩니다.' : '위 칸에 주소를 적고 조회를 눌러 주세요.' }}</p></div>
       </template>
       <div v-if="webEmbed && listView === 'case' && sonPick === 'region'" class="son-price"><SonpumPricePage v-if="regionAuction && regionQ && regionQ.kind === 'villa'" :key="regionAuction.id" :auction="regionAuction" kind="villa" :months="regionQ.months" loose dong-only /><p v-else class="son-msg">{{ kind !== 'villa' ? '지역으로(동 전체)는 연립다세대만 됩니다 — 물건으로에서 주소를 적어 주세요.' : '위 칸에서 시 · 도 / 시 · 군 · 구 / 읍 · 면 · 동을 고르고 조회를 눌러 주세요.' }}</p></div>
       <div v-if="webEmbed && listView === 'case' && sonPick === 'item'" class="son-price"><SonpumPricePage v-if="priceAuction && priceQ" :key="priceAuction.id" :auction="priceAuction" :kind="priceQ.kind" :months="priceQ.months ?? 12" loose /><p v-else class="son-msg">위 칸에 전체 주소를 넣고 종류를 고른 뒤 조회를 누르세요.</p></div>

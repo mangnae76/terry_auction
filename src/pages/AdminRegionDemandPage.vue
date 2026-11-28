@@ -728,7 +728,7 @@ const downloadCsv = () => {
             <div class="dm-body"><b :class="{ wait: c.value === '받는 중' }"><UnitText :text="c.value" /><em class="nbar">|</em><span class="pass">{{ demandPassText(c.metric, kind === 'apt') }}</span></b></div>
           </div>
           <!-- 경매비중 — 운영진 · 빌라 · 동을 골랐을 때만. 누르면 낙찰사례 탭으로(대조표 6-1~6-3) -->
-          <div v-if="aucShareOn" class="dm-cell dm-auc" role="button" tabindex="0" title="낙찰사례 탭으로" @click="emit('goAuc')" @keydown.enter="emit('goAuc')">
+          <div v-if="aucShareOn" class="dm-cell dm-auc" role="button" tabindex="0" title="낙찰분석 탭으로" @click="emit('goAuc')" @keydown.enter="emit('goAuc')">
             <span class="adm-chip son-op dm-op">운영</span>
             <div class="dm-head"><InfoTip :rows="aucCell.tip" under="box" align="end">경매 물건 비중</InfoTip><em class="dm-plain">매물 중 경매 물건 비중</em></div>
             <div class="dm-body"><b :class="{ wait: aucCell.value === '받는 중' }"><UnitText :text="aucCell.value" /><em class="nbar">|</em><span class="pass-col"><span class="pass">15% 이하 적합</span><small v-if="aucCell.note" class="dm-note">{{ aucCell.note }}</small><small v-if="aucCell.sold" class="dm-note">{{ aucCell.sold }}</small></span></b></div>

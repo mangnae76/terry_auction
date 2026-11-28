@@ -1324,7 +1324,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
     <!-- 붙는 머리가 시세분석 상자 밖(호실 예상가 · 호가매물)까지 이어 붙을 때 — 빠진 자리를 같은 높이로 받친다 -->
     <div v-if="estFix" class="zone-ph" :style="{ height: `${estFix.h}px` }" aria-hidden="true" />
     <div ref="zoneEl" class="zone zone-est" :style="estFix ? estFix.style : undefined">
-      <div class="zone-h"><span class="pa-tag">결론</span><h3>{{ aucTab ? '낙찰사례' : dongOnly ? `${region?.dong ?? ''} 시세` : webEmbed ? '이 물건 매도가 예상' : '이 물건 실거래가 예상' }}</h3>
+      <div class="zone-h"><span class="pa-tag">결론</span><h3>{{ aucTab ? '낙찰분석' : dongOnly ? `${region?.dong ?? ''} 시세` : webEmbed ? '이 물건 매도가 예상' : '이 물건 실거래가 예상' }}</h3>
         <span :class="['bar-desc', { hi: webEmbed }]"><svg v-if="webEmbed" class="flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ regionText || '지역 확인 중' }}{{ aucTab ? `${isDong ? ` 전체 · 최근 ${periodText(aucPer)}` : ` · 반경 ${radText(radius)} · 최근 ${periodText(loadedMonths)}`} · ${aucStat.n.toLocaleString('ko-KR')}건` : dongOnly ? ` 전체 · ${periodText(loadedMonths)}` : webEmbed ? `${isDong ? ' 전체' : ` · 반경 ${radText(radius)}`} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` : '' }} · {{ KIND_LABEL[kind] }} {{ aucTab ? '낙찰' : '실거래' }}</span>
         <span class="pa-load-r">
           <span v-if="progress.total && progress.done < progress.total" class="prog">위치 찾는 중 {{ progress.done }} / {{ progress.total }}</span>
