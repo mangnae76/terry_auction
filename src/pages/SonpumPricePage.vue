@@ -45,6 +45,8 @@ import { auctionsOfDong, matchAfter, type AucRec } from '../services/auctionNear
 /** aucTab — 시세예측 › 낙찰사례(운영 전용, 2026-11-29 시안 v7): 같은 지도 · 필터 위에 결론 · 표만 낙찰로 */
 const props = defineProps<{ auction: AuctionDetail; kind: CasePropertyType; loose?: boolean; months?: number; app?: boolean; dongOnly?: boolean; aucTab?: boolean }>();
 // 칩 · 범례 — 선정물건 손품조사는 '선정물건', 시장분석 › 시세예측(주소로 조회)은 '조회물건'(2026-11-14 사용자 — '검색주소'는 알아보기 어려웠다)
+/** 시세예측 — 물건으로는 '유사 실거래', 지역으로(동 전체)는 그냥 '실거래'(2026-11-29 사용자) */
+const simWord = computed(() => (props.dongOnly ? '실거래' : '유사 실거래'));
 const meName = computed(() => (props.loose ? '조회물건' : '선정물건'));
 const store = useAuctionStore();
 
@@ -588,7 +590,7 @@ const estFormula = computed(() => {
   const v = view.value; if (!v || !(v.avgPy > 0) || !(myPy.value > 0)) return '';
   const rs = kindF.value === '전세' ? jeonseRows.value : kindF.value === '월세' ? monthRows.value : saleRows.value;
   const allSame = rs.length > 0 && rs.every((r) => r.same);
-  const who = allSame ? '경매지번' : mkV.value ? '유사 실거래' : '유사물건';
+  const who = allSame ? '경매지번' : mkV.value ? (props.dongOnly ? '실거래' : '유사 실거래') : '유사물건';   // 지역으로(동 전체)는 비교 대상이 아니라 그냥 실거래(2026-11-29 사용자)
   const per = kindF.value === '월세' ? '평당 월세' : '평당가';
   return `${who} ${kindF.value} ${v.n > 1 ? `평균 ${per}` : per} ${vPy(v.avgPy)} × ${myPy.value.toFixed(2)}평`;
 });
@@ -1304,7 +1306,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 <template>
   <div :class="['pa-wrap', { app: props.app, phone: sonApp }]">
   <Teleport to="body" :disabled="!fs">
-  <section :class="['pa', 'pa-card', { fs, stick: webEmbed && !props.app, web: webEmbed && !props.app, 'mk-v': mkV, 'mk-auc': aucTab }]" aria-label="시세분석">
+  <section :class="['pa', 'pa-card', { fs, stick: webEmbed && !props.app, web: webEmbed && !props.app, 'mk-v': mkV, 'mk-auc': aucTab, 'mk-dong': dongOnly && !aucTab }]" aria-label="시세분석">
     <!-- 전체화면 위 띠 — 닫기 · 사건 · 조회기간 · 조회 -->
     <div v-if="fs" class="fs-top">
       <button type="button" class="fs-x" @click="fs = false"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>전체화면 닫기</button>
@@ -1393,7 +1395,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <KakaoMapTools v-if="kTools" :k="kTools.k" :map="kTools.map" :near="webEmbed ? mySpot : null" />
         <button v-if="webEmbed && !fs && !props.app" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="fs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
         <!-- 근거 제목은 지도 왼쪽 위에 — 따로 줄을 두지 않아 지도를 위로 더 보인다 -->
-        <div v-if="!props.app" class="map-title"><span class="pa-tag">근거</span><b>{{ mkV ? '유사 실거래' : '유사물건' }}</b></div>
+        <div v-if="!props.app" class="map-title"><span class="pa-tag">근거</span><b>{{ mkV ? simWord : '유사물건' }}</b></div>
         <div v-if="addOpen && !loose" class="add-pop" role="dialog" aria-label="임장경로에 비교 물건 넣기">
           <b>임장경로에 비교 물건 넣기</b>
           <small>이 물건의 임장경로 정류장에 「현장 기록」으로 붙습니다. 기본은 500m 안 가까운 5곳.</small>
@@ -1411,13 +1413,13 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <dl><template v-for="(r, i) in popData.rows" :key="i"><dt>{{ r[0] }}</dt><dd :class="{ big: r[0] === '실거래가', big2: r[0] === '낙찰가' }">{{ r[1] }}<span v-if="r[2]" class="pct"> {{ r[2] }}</span></dd></template></dl>
           <template v-if="popData.sec"><div :class="['ph', popData.sec.c]">{{ popData.sec.t }}</div><dl><template v-for="(r, i) in popData.sec.rows" :key="i"><dt>{{ r[0] }}</dt><dd :class="{ big2: r[0] === '낙찰가' || r[0] === '매도가' }">{{ r[1] }}<span v-if="r[2]" class="pct"> {{ r[2] }}</span></dd></template></dl></template>
         </div>
-        <div class="legend"><span v-if="!dongOnly"><svg v-if="mkV" class="lg-me" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12Z" fill="#e03131" /><circle cx="12" cy="10" r="2.6" fill="#fff" /></svg><i v-else style="background:#e03e3e" />{{ meName }}</span><span v-if="!aucTab || aucRes === '실거래포함'"><i style="background:#2b4fd8" />{{ mkV ? `유사 실거래 ${mapDealN.toLocaleString('ko-KR')}` : '유사물건' }}</span><template v-if="aucOn && aucTab"><span :class="['lg-nk', { off: soldOff }]" title="눌러서 켜고 끄기" style="cursor:pointer" @click="soldOff = !soldOff"><i />낙찰 후 매도 {{ aucStat.sold }}</span><span :class="['lg-rent', { off: rentOff }]" title="눌러서 켜고 끄기" @click="rentOff = !rentOff"><i />낙찰 후 전세 {{ aucRows.filter((a) => aucAfter.get(a.i)?.k === 'rent').length }}</span><span :class="['lg-un', { off: unOff }]" title="눌러서 켜고 끄기" @click="unOff = !unOff"><i />낙찰 {{ aucRows.filter((a) => !aucAfter.get(a.i)).length }}</span></template><template v-else-if="aucOn"><span class="lg-nk"><i />낙찰 후 매도 {{ aucSoldN.toLocaleString('ko-KR') }}</span><span :class="['lg-rent', { off: rentOff }]" title="눌러서 켜고 끄기" @click="rentOff = !rentOff"><i />낙찰 후 전세 {{ aucUnsold.filter((a) => aucAfter.get(a.i)?.k === 'rent').length }}</span><span :class="['lg-un', { off: unOff }]" title="눌러서 켜고 끄기" @click="unOff = !unOff"><i />낙찰 {{ aucUnsold.filter((a) => aucAfter.get(a.i)?.k !== 'rent').length }}</span></template></div>
+        <div class="legend"><span v-if="!dongOnly"><svg v-if="mkV" class="lg-me" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12Z" fill="#e03131" /><circle cx="12" cy="10" r="2.6" fill="#fff" /></svg><i v-else style="background:#e03e3e" />{{ meName }}</span><span v-if="!aucTab || aucRes === '실거래포함'"><i style="background:#2b4fd8" />{{ mkV ? `${simWord} ${mapDealN.toLocaleString('ko-KR')}` : '유사물건' }}</span><template v-if="aucOn && aucTab"><span :class="['lg-nk', { off: soldOff }]" title="눌러서 켜고 끄기" style="cursor:pointer" @click="soldOff = !soldOff"><i />낙찰 후 매도 {{ aucStat.sold }}</span><span :class="['lg-rent', { off: rentOff }]" title="눌러서 켜고 끄기" @click="rentOff = !rentOff"><i />낙찰 후 전세 {{ aucRows.filter((a) => aucAfter.get(a.i)?.k === 'rent').length }}</span><span :class="['lg-un', { off: unOff }]" title="눌러서 켜고 끄기" @click="unOff = !unOff"><i />낙찰 {{ aucRows.filter((a) => !aucAfter.get(a.i)).length }}</span></template><template v-else-if="aucOn"><span class="lg-nk"><i />낙찰 후 매도 {{ aucSoldN.toLocaleString('ko-KR') }}</span><span :class="['lg-rent', { off: rentOff }]" title="눌러서 켜고 끄기" @click="rentOff = !rentOff"><i />낙찰 후 전세 {{ aucUnsold.filter((a) => aucAfter.get(a.i)?.k === 'rent').length }}</span><span :class="['lg-un', { off: unOff }]" title="눌러서 켜고 끄기" @click="unOff = !unOff"><i />낙찰 {{ aucUnsold.filter((a) => aucAfter.get(a.i)?.k !== 'rent').length }}</span></template></div>
         <p v-if="!mySpot && !loading && res" class="map-msg">{{ meName }} 위치를 찾지 못했습니다</p>
       </div>
 
       <!-- 전체화면 오른쪽 칸 맨 아래 — 유사물건 목록(지도 번호 순). 누르면 그 핀으로 -->
       <div v-if="fs" class="fs-list">
-        <b class="fs-lh">{{ mkV ? '유사 실거래' : '유사물건' }} {{ fsList.length }}곳</b>
+        <b class="fs-lh">{{ mkV ? simWord : '유사물건' }} {{ fsList.length }}곳</b>
         <button v-for="g in fsList" :key="g.jibun" type="button" :class="['fs-it', { on: focus === g.jibun, off: g.list.every((r) => isOff(r)) }]" @click="fsGo(g)">
           <i class="n">{{ orderOf[g.jibun] ?? '' }}</i>
           <span class="nm">{{ g.name }}<small v-if="hosOf(g)" class="ho">{{ hosOf(g) }}</small><small>{{ g.list.filter((r) => !isOff(r)).length || g.list.length }}건 · {{ Math.round(g.dist) }}m</small></span>
