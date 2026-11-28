@@ -310,7 +310,8 @@ const candidates = computed(() => {
 });
 /** 층별(동만) — 1~4층 · 5 = 5층이상, 비우면 전체 */
 const floorLv = ref<number | null>(null);
-const candLv = computed(() => (props.dongOnly && floorLv.value ? candidates.value.filter((r) => (floorLv.value === 5 ? r.floorNo >= 5 : r.floorNo === floorLv.value)) : candidates.value));
+// 층별 — 동 전체와 물건으로(시세예측 빌라) 모두(물건으로에서 층을 못 고르던 것, 2026-11-29 사용자)
+const candLv = computed(() => ((props.dongOnly || mkV.value) && floorLv.value ? candidates.value.filter((r) => (floorLv.value === 5 ? r.floorNo >= 5 : r.floorNo === floorLv.value)) : candidates.value));
 const kindRows = computed(() => candLv.value.filter((r) => r.group === kindF.value));
 const kindCount = (k: Kind) => candLv.value.filter((r) => r.group === k).length;
 /** 동만 — 매매 평균 평당가(제외한 줄은 빼고) */
@@ -417,7 +418,8 @@ const aucRows = computed(() => {
     if (a.area && !areaIn(a.area, c)) return false;
     if (a.year && (a.year < c.yMin || a.year > c.yMax)) return false;
     const ev = elevs.value[a.lot]; if (c.elev && ev != null && (c.elev === 'yes' ? !(ev > 0) : ev !== 0)) return false;
-    if (props.dongOnly) { if (floorLv.value && !(floorLv.value === 5 ? a.floor >= 5 : a.floor === floorLv.value)) return false; } else if (rangeCond.value.floor === 0 && me.value.floor && a.floor && a.floor !== me.value.floor) return false;
+    if (floorLv.value && !(floorLv.value === 5 ? a.floor >= 5 : a.floor === floorLv.value)) return false;
+    if (props.dongOnly) { /* 기준 물건 없음 */ } else if (rangeCond.value.floor === 0 && me.value.floor && a.floor && a.floor !== me.value.floor) return false;
     return true;
   });
 });
@@ -537,15 +539,15 @@ watch(() => (isAptKind ? [...new Set(listRows.value.filter((r) => !r.same && r.j
 }, { immediate: true });
 
 // ===== 결론 — 매매 · 전세(값 거르기까지 건 줄) =====
-const saleRows = computed(() => candidates.value.filter((r) => r.group === '매매' && passKeep(r)));
-const jeonseRows = computed(() => candidates.value.filter((r) => r.group === '전세' && passKeep(r)));
+const saleRows = computed(() => candLv.value.filter((r) => r.group === '매매' && passKeep(r)));
+const jeonseRows = computed(() => candLv.value.filter((r) => r.group === '전세' && passKeep(r)));
 const stats = computed(() => estStats(saleRows.value, myPy.value));
 /** 같은 건물 · 다른 건물 평균(① 매도가 예상과 같은 리스트를 둘로) */
 const splitAvg = computed(() => ({ c: estStats(saleRows.value.filter((r) => r.same), myPy.value), o: estStats(saleRows.value.filter((r) => !r.same), myPy.value) }));
 const jeonse = computed(() => jeonseEstimate(estStats(jeonseRows.value, myPy.value), curPub.value));
 const hug = computed(() => curPub.value * HUG_RATE);
 // 띠 · 표 맨 위 빨간 줄은 고른 거래(매매 · 전세 · 월세)를 따른다. 전세는 보증보험 한도까지, 월세는 평당 월세로 셈한다
-const monthRows = computed(() => candidates.value.filter((r) => r.group === '월세' && passKeep(r)));
+const monthRows = computed(() => candLv.value.filter((r) => r.group === '월세' && passKeep(r)));
 const view = computed(() => {
   if (kindF.value === '전세') {
     const raw = estStats(jeonseRows.value, myPy.value); const j = jeonse.value;
@@ -630,6 +632,7 @@ const sfSet = (v: SearchFilter) => {
   const c = rangeCond.value;
   if (props.dongOnly) { rangeCond.value = { mMin: v.area[0] ?? 0, mMax: v.area[1] ?? 0, yMin: v.year[0] ?? 0, yMax: v.year[1] ?? 0, floor: null }; floorLv.value = v.floorLv ?? null; radius.value = DONG; return; }
   rangeCond.value = { mMin: v.area[0] ?? c.mMin, mMax: v.area[1] ?? c.mMax, yMin: v.year[0] ?? c.yMin, yMax: v.year[1] ?? c.yMax, floor: v.floor === 'same' ? 0 : null };
+  if (mkV.value) floorLv.value = v.floorLv ?? null;
   if (v.mode !== simMode.value) setSimMode(v.mode);   // 직접범위로 가면 유사도 범위에서 시작
 };
 const sfSimRange = (s: number) => { const c = simCond(s, me.value); return { area: [c.mMin, c.mMax] as [number, number], year: [c.yMin, c.yMax] as [number, number] }; };
@@ -665,6 +668,9 @@ const reset = () => {
   if (undoSnap.value) { restore(undoSnap.value); undoSnap.value = null; return; }
   undoSnap.value = snapNow();
   radius.value = 500; kindF.value = '매매'; simMode.value = 'sim'; sim.value = 80; colFilter.clearAll(); dropped.value = []; elevPick.value = null; sortK.value = '';
+  floorLv.value = null; rangeCond.value = { ...rangeCond.value, floor: null };   // 층(같은 층 · 층별)도 전체로
+  // 동 전체(기준 물건 없음)는 반경 · 유사도가 없다 — 동전체 · 직접범위 빈 칸으로
+  if (props.dongOnly) { radius.value = DONG; simMode.value = 'range'; rangeCond.value = { mMin: 0, mMax: 0, yMin: 0, yMax: 0, floor: null }; }
   undoTimer = window.setTimeout(() => { undoSnap.value = null; }, 5000);
 };
 const widen = (w: 'r' | 's' | 'p') => {
@@ -1428,7 +1434,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       </div>
       <!-- 웹 — 매매수요와 같은 필터 부품(1줄 반경 · 거래 · 엘베 · 층, 2줄 기준 묶음 · 초기화 · 저장). 기간은 위 조회기간. 전체화면은 좁은 꼴 -->
       <SearchFilterBar v-if="webEmbed && !props.app" :draft="sfDraft" :compact="fs || sonApp" :hide="aucTab ? ['period', 'save', 'kind'] : loose ? ['period', 'save'] : ['period']" :extra="aucTab ? aucExtra : undefined" @extra="onExtra" :range-options="sfRadii" :period-options="[]" :kinds="KINDS" :kind-count="(k) => kindCount(k).toLocaleString('ko-KR')"
-        :base-area="dongOnly ? 0 : me.areaM2" :base-year="dongOnly ? 0 : me.year" :lock="dongOnly ? { range: [DONG], sim: true, floorPick: true } : undefined" :area-max="AREA_MAX" :year-min="YEAR_MIN" :year-max="yearMax" :sim-range="sfSimRange"
+        :base-area="dongOnly ? 0 : me.areaM2" :base-year="dongOnly ? 0 : me.year" :lock="dongOnly ? { range: [DONG], sim: true, floorPick: true } : mkV ? { floorPick: true, floorSame: true } : undefined" :area-max="AREA_MAX" :year-min="YEAR_MIN" :year-max="yearMax" :sim-range="sfSimRange"
         :is-default="false" :can-save="!loose" :saving="saving" :saved="!webDirty" :saved-day="savedAt ? new Date(savedAt).toLocaleDateString('sv-SE') : ''" @update:draft="sfSet" @reset="reset" @save="saveNow" />
       <div v-else-if="!props.app" :class="['conds', { web: webEmbed }]">
         <span class="pa-lab">반경<span class="pa-seg pa-out" role="radiogroup" aria-label="반경">

@@ -51,7 +51,7 @@ const props = defineProps<{
   hide?: SearchFilterKey[];
   /** 기준 물건이 없을 때(시세예측 지역으로, 2026-11-29 시안 v7) — 메뉴는 그대로 두고 막는다.
    *  range: 쓸 수 있는 반경 값만 · sim: 유사도 막기 · floorPick: '같은 층' 자리에 층별 드롭다운 */
-  lock?: { range?: Array<string | number>; sim?: boolean; floorPick?: boolean };
+  lock?: { range?: Array<string | number>; sim?: boolean; floorPick?: boolean; floorSame?: boolean };
   /** 덧붙이는 단추 묶음(첫 줄 끝) — 낙찰사례 '기간(연도)' · '결과' 같은 것(2026-11-29 시안 v7) */
   extra?: Array<{ key: string; label: string; opts: readonly string[]; value: string }>;
 }>();
@@ -79,6 +79,8 @@ const keepPlace = () => {
   requestAnimationFrame(() => { fix(); requestAnimationFrame(() => { fix(); setTimeout(fix, 120); }); });
 };
 const set = (patch: Partial<SearchFilter>) => { keepPlace(); emit('update:draft', { ...props.draft, ...patch }); emit('apply'); };
+/** 층 드롭다운 — 같은 층(기준 물건이 있을 때만) 또는 1~5층이상. 둘은 함께 걸지 않는다 */
+const pickFloor = (v: string) => (v === 'same' ? set({ floor: 'same', floorLv: null }) : set({ floorLv: Number(v) || null, floor: null }));
 // 유사도 막대는 끄는 동안 값이 계속 바뀐다 — 막대 · 글은 이 부품 안에서만 바로 따라가고(simLive), 화면에 알리기(값 바꾸기 · 다시 계산)는 손을 멈춘 뒤 한 번.
 // 예전엔 단계마다 화면 값을 바꿔 표 · 지도를 매번 다시 그려 막대가 무거웠다(2026-11-12 사용자 '슬라이드 바가 너무 무거워')
 const simLive = ref<number | null>(null);
@@ -129,7 +131,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
       <span v-if="!off('elev')" class="pa-lab">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베"><button v-for="[v, t] in ([[null, '전체'], ['yes', '있음'], ['no', '없음']] as const)" :key="t" type="button" role="radio" :class="{ on: elevD === v }" :aria-checked="elevD === v" :data-t="t" @click="elevD = v">{{ t }}</button></span></span>
       <span v-if="!off('floor') && !lock?.floorPick" class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층"><button type="button" role="radio" :class="{ on: floorD !== 'same' }" :aria-checked="floorD !== 'same'" data-t="전체" @click="floorD = null">전체</button><button type="button" role="radio" :class="{ on: floorD === 'same' }" :aria-checked="floorD === 'same'" data-t="같은 층" @click="floorD = 'same'">같은 층</button></span></span>
       <!-- 기준 물건이 없을 때 — '같은 층' 자리에 층별 드롭다운(자리 · 높이는 같게, 2026-11-29 시안 v7) -->
-      <span v-if="!off('floor') && lock?.floorPick" class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층"><button type="button" role="radio" :class="{ on: !draft.floorLv }" :aria-checked="!draft.floorLv" data-t="전체" @click="set({ floorLv: null })">전체</button><select :class="['flsel', { on: !!draft.floorLv }]" aria-label="층별" :value="draft.floorLv ?? ''" @change="set({ floorLv: Number(($event.target as HTMLSelectElement).value) || null })"><option value="">층별</option><option v-for="[v, t] in FLOOR_LV" :key="v" :value="v">{{ t }}</option></select></span></span>
+      <span v-if="!off('floor') && lock?.floorPick" class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층"><button type="button" role="radio" :class="{ on: !draft.floorLv && draft.floor !== 'same' }" :aria-checked="!draft.floorLv && draft.floor !== 'same'" data-t="전체" @click="set({ floorLv: null, floor: null })">전체</button><select :class="['flsel', { on: !!draft.floorLv || draft.floor === 'same' }]" aria-label="층별" :value="draft.floor === 'same' && lock?.floorSame ? 'same' : draft.floorLv ?? ''" @change="pickFloor(($event.target as HTMLSelectElement).value)"><option value="">층별</option><option v-if="lock?.floorSame" value="same">같은 층</option><option v-for="[v, t] in FLOOR_LV" :key="v" :value="v">{{ t }}</option></select></span></span>
       <span v-for="x in extra ?? []" :key="x.key" class="pa-lab">{{ x.label }}<span class="pa-seg pa-out" role="radiogroup" :aria-label="x.label"><button v-for="t in x.opts" :key="t" type="button" role="radio" :class="{ on: x.value === t }" :aria-checked="x.value === t" :data-t="t" @click="keepPlace(); emit('extra', x.key, t)">{{ t }}</button></span></span>
     </div>
     <!-- 면적 · 건축 막대 — 거르기 줄 밑 한 줄, 두 상자가 위 줄 폭에 맞게 반씩(2026-11-12 사용자) -->
