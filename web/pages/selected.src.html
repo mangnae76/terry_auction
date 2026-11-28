@@ -1706,10 +1706,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 낙찰 겹(운영) — 꽉 찬 빨강 = 낙찰 후 매도(실거래), 꽉 찬 초록 = 낙찰 후 전세, 빈 빨간 원 = 낙찰(매도 없음). 크기는 모두 같게 */
 .pa.mk-v .mv-pin.cmp-bub.mkd.nk .mk-dot { background: #e03131; }
 .pa.mk-v .mv-pin.cmp-bub.mkd.rent .mk-dot { background: #16a34a; }
-.pa.mk-v .mv-pin.cmp-bub.mkd.un .mk-dot { background: rgba(255, 255, 255, .7); border: 3px solid #e03131; }
+.pa.mk-v .mv-pin.cmp-bub.mkd.un .mk-dot { background: #e64980; }   /* 낙찰만(매도 없음) — 진한 분홍으로 꽉 채움. 반투명 흰 안 + 빨간 테두리는 뒤 점이 비쳤다(2026-11-29 사용자) */
 .pa.mk-v .map .legend > span.lg-nk > i { background: #e03131; }
 .pa.mk-v .map .legend > span.lg-rent > i { background: #16a34a; }
-.pa.mk-v .map .legend > span.lg-un > i { background: rgba(255, 255, 255, .7); border: 2.5px solid #e03131; box-sizing: border-box; }
+.pa.mk-v .map .legend > span.lg-un > i { background: #e64980; }
 .pa.mk-v .map .legend > span:is(.lg-rent, .lg-un) { cursor: pointer; }
 .pa.mk-v .map .legend > span.off { opacity: .45; text-decoration: line-through; }
 /* 시세예측 빌라 범례 — 흰 상자 대신 어두운 반투명(지도 위에서 더 잘 보이게, 2026-11-29 사용자) */
@@ -1719,7 +1719,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .pa.mk-v .map .mk-pop dd.big2 { color: #e03131; font-weight: 800; }
 .pa.mk-v .map .mk-pop dd .pct { margin-left: 6px; color: var(--muted); font-weight: 700; }   /* 값과 띄움 — 글 속 빈칸은 빌드에서 사라졌다(103,130,00064.5%) */
 .pa.mk-v .map .mk-pop .ph { margin: 5px 0 2px; padding-top: 4px; border-top: 1px solid var(--line); font-weight: 800; }
-.pa.mk-v .map .mk-pop .ph.sold, .pa.mk-v .map .mk-pop .ph.un { color: #e03131; }
+.pa.mk-v .map .mk-pop .ph.sold { color: #e03131; }
+.pa.mk-v .map .mk-pop .ph.un { color: #e64980; }   /* 낙찰만 — 점과 같은 진한 분홍 */
 .pa.mk-v .map .mk-pop .ph.rent { color: #16a34a; }
 .pa table.mk-v .kind.nak { display: block; width: fit-content; margin: 3px auto 0; background: #fdecec; color: #e03131; }
 .pa table.mk-v small.nakv { color: #e03131; font-weight: 700; }
