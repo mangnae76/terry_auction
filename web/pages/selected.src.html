@@ -1684,11 +1684,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .pa.mk-v .list-tools::after { content: "유사 실거래"; }
 /* 시세예측 빌라 지도(시안 v7) — 점만(지름 14), 고른 점 18 + 고리 깜빡임, 선정물건은 빨간 핀. 말풍선은 점 위 → 아래 → 옆, 꼬리 · X */
 .pa.mk-v .mv-pin.cmp-bub.mkd { width: 0; height: 0; cursor: pointer; }
-.pa.mk-v .mv-pin.cmp-bub.mkd .mk-dot { position: absolute; left: -7px; top: -7px; width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); }
-.pa.mk-v .mv-pin.cmp-bub.mkd.on .mk-dot { left: -9px; top: -9px; width: 18px; height: 18px; animation: mkRing 1.4s ease-out infinite; }
+.pa.mk-v .mv-pin.cmp-bub.mkd .mk-dot { position: absolute; left: -7px; top: -7px; width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; }   /* 그림자 · 깜빡임 없이 단순하게 — 점이 수백 개라 무거웠다(2026-11-29 사용자) */
+.pa.mk-v .mv-pin.cmp-bub.mkd.on .mk-dot { left: -9px; top: -9px; width: 18px; height: 18px; outline: 2px solid #111827; }   /* 고른 점 — 조금 크게 + 진한 테두리(움직임 없음) */
 .pa.mk-v .mv-pin.cmp-bub.mkd.off .mk-dot { background: #b8bfcc; }
 .pa.mk-v .mv-pin.cmp-bub.mkd.me .mk-me { position: absolute; left: -11px; top: -30px; width: 22px; height: 22px; box-sizing: border-box; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #e03131; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); }
-@keyframes mkRing { 0% { box-shadow: 0 0 0 0 rgba(43, 109, 243, .55), 0 1px 3px rgba(0, 0, 0, .3); } 70% { box-shadow: 0 0 0 8px rgba(43, 109, 243, 0), 0 1px 3px rgba(0, 0, 0, .3); } 100% { box-shadow: 0 0 0 0 rgba(43, 109, 243, 0), 0 1px 3px rgba(0, 0, 0, .3); } }
 .pa.mk-v .map .legend > span:first-child > i { border-radius: 50% 50% 50% 0; transform: rotate(-45deg); width: 11px; height: 11px; }
 .pa.mk-v .map .mk-pop { position: absolute; z-index: 1000; min-width: 0; padding: 8px 10px; border-radius: 8px; background: var(--surface); color: var(--text); box-shadow: 0 6px 20px rgba(0, 0, 0, .18); font-size: 12px; line-height: 1.35; }
 .pa.mk-v .map .mk-pop .t { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; font-size: 13px; font-weight: 800; white-space: nowrap; }
@@ -1710,10 +1709,6 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .pa.mk-v .mv-pin.cmp-bub.mkd.nk .mk-dot { background: #e03131; }
 .pa.mk-v .mv-pin.cmp-bub.mkd.rent .mk-dot { background: #16a34a; }
 .pa.mk-v .mv-pin.cmp-bub.mkd.un .mk-dot { background: rgba(255, 255, 255, .7); border: 3px solid #e03131; }
-.pa.mk-v .mv-pin.cmp-bub.mkd.nk.on .mk-dot, .pa.mk-v .mv-pin.cmp-bub.mkd.un.on .mk-dot { animation-name: mkRingR; }
-.pa.mk-v .mv-pin.cmp-bub.mkd.rent.on .mk-dot { animation-name: mkRingG; }
-@keyframes mkRingR { 0% { box-shadow: 0 0 0 0 rgba(224, 49, 49, .55); } 70% { box-shadow: 0 0 0 8px rgba(224, 49, 49, 0); } 100% { box-shadow: 0 0 0 0 rgba(224, 49, 49, 0); } }
-@keyframes mkRingG { 0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, .55); } 70% { box-shadow: 0 0 0 8px rgba(22, 163, 74, 0); } 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); } }
 .pa.mk-v .map .legend > span.lg-nk > i { background: #e03131; }
 .pa.mk-v .map .legend > span.lg-rent > i { background: #16a34a; }
 .pa.mk-v .map .legend > span.lg-un > i { background: rgba(255, 255, 255, .7); border: 2.5px solid #e03131; box-sizing: border-box; }

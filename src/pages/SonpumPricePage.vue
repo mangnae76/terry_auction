@@ -23,7 +23,7 @@ import { browserCacheGet, browserCachePut } from '../services/browserCache';
 import { geocodeAddress } from '../services/routeOptimizer';
 import { getBuildingFacts } from '../services/buildingFacts';
 import { tradeWindowOf } from '../services/publicDataApi';
-import { createMapView, type MapView } from '../services/mapView';
+import { createMapView, type MapView, type PinHandle } from '../services/mapView';
 import KakaoMapTools from '../components/KakaoMapTools.vue';
 import { openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { REGION_GROUPS } from '../services/regionCodes';
@@ -837,9 +837,33 @@ const fieldChips = (jibun: string) => {
 };
 const sameCount = computed(() => shownRows.value.filter((r) => r.same).length);
 const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+// ===== 시세예측 빌라 — 점을 눌러도 지도를 통째로 다시 그리지 않는다(점 수백 개라 느렸다, 2026-11-29 사용자). 고른 점 표시만 바꾼다 =====
+const pinH = new Map<string, { h: PinHandle; z: number; onZ: number }>();
+let onKey = '';
+const syncOn = () => {
+  const key = focusAuc.value != null ? `a:${focusAuc.value}` : focus.value;
+  if (key === onKey) return;
+  const was = pinH.get(onKey); if (was) { was.h.el()?.classList.remove('on'); was.h.setZ(was.z); }
+  const now = pinH.get(key); if (now) { now.h.el()?.classList.add('on'); now.h.setZ(now.onZ); }
+  onKey = key;
+};
+type KPoly = { setMap: (m: unknown) => void };
+let focPoly: KPoly | null = null;
+const drawFocusParcel = () => {
+  focPoly?.setMap(null); focPoly = null;
+  const t = kTools.value; if (!t || !webEmbed || !mkV.value) return;
+  const g = focus.value ? mapGroups.value.find((x) => x.jibun === focus.value) : null; if (!g) return;
+  const pk = `p:${g.spot.lat.toFixed(6)},${g.spot.lng.toFixed(6)}`; const pts = shapes.value[pk];
+  if (pts) {
+    const k = t.k as { LatLng: new (a: number, b: number) => unknown; Polygon: new (o: Record<string, unknown>) => KPoly };
+    focPoly = new k.Polygon({ path: pts.map((q) => new k.LatLng(q.lat, q.lng)), strokeWeight: 2.4, strokeColor: '#2b4fd8', strokeOpacity: 0.95, fillColor: '#2b4fd8', fillOpacity: 0.08 });
+    focPoly.setMap(t.map);
+  } else if (!(pk in shapes.value)) { shapes.value = { ...shapes.value, [pk]: null }; void parcelShapeOf(g.spot.lat, g.spot.lng).then((v) => { shapes.value = { ...shapes.value, [pk]: v }; if (v && focus.value === g.jibun) drawFocusParcel(); }); }
+};
+watch([focus, focusAuc], () => { if (mkV.value && mv) { syncOn(); drawFocusParcel(); } });
 const drawMap = () => {
   if (!mv) return;
-  mv.clear();
+  mv.clear(); pinH.clear();
   const m = mySpot.value;
   if (!m) return;
   if (radius.value !== DONG) mv.circle(m, radius.value, { color: '#2b4fd8', weight: 1.6, dash: true, fillOpacity: 0.06 });
@@ -848,7 +872,8 @@ const drawMap = () => {
     const dk = `${m.lat.toFixed(5)},${m.lng.toFixed(5)}`;
     if (shapes.value[`d:${dk}`]) mv.polygon(shapes.value[`d:${dk}`]!, { color: '#475569', weight: 2, dash: true, fillOpacity: 0.02 });
     else if (!(`d:${dk}` in shapes.value)) { shapes.value = { ...shapes.value, [`d:${dk}`]: null }; void dongShapeOf(m.lat, m.lng).then((v) => { shapes.value = { ...shapes.value, [`d:${dk}`]: v }; if (v) drawMap(); }); }
-    const g = focus.value ? mapGroups.value.find((x) => x.jibun === focus.value) : null;
+    // 시세예측 빌라 — 고른 건물 테두리는 drawFocusParcel 이 따로 그린다(누를 때 지도 전체를 다시 그리지 않게)
+    const g = focus.value && !mkV.value ? mapGroups.value.find((x) => x.jibun === focus.value) : null;
     const p = g ? g.spot : m;
     if (!g && props.dongOnly) { /* 동만 — 선정물건 필지 없음 */ } else {
     const pk = `p:${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
@@ -875,7 +900,7 @@ const drawMap = () => {
     if (mkV.value) {
       // 시세예측 빌라(시안 v7) — 평소엔 점만, 누르면 말풍선(꼬리 · X). 고른 점은 조금 커지고 고리가 깜빡인다
       const nk = aucOn.value && g.list.some((r) => resaleOf.value.has(rowKey(r)));
-      mv!.pin(g.spot, { className: `cmp-bub mkd${nk ? ' nk' : ''}${on ? ' on' : ''}${off ? ' off' : ''}`, html: `<i class="mk-dot" data-j="${esc(g.jibun)}"></i>`, onClick: () => { popFromMap = true; meOpen.value = false; focusAuc.value = null; focus.value = on ? '' : g.jibun; }, z: on ? 50 : 1 });
+      pinH.set(g.jibun, { h: mv!.pin(g.spot, { className: `cmp-bub mkd${nk ? ' nk' : ''}${off ? ' off' : ''}`, html: `<i class="mk-dot" data-j="${esc(g.jibun)}"></i>`, onClick: () => { popFromMap = true; meOpen.value = false; focusAuc.value = null; focus.value = focus.value === g.jibun ? '' : g.jibun; }, z: 1 }), z: 1, onZ: 50 });
       return;
     }
     if (webEmbed) {
@@ -902,11 +927,10 @@ const drawMap = () => {
     (props.aucTab ? aucRows.value.filter((a) => spots.value[a.lot]) : aucUnsold.value).forEach((a) => {
       const k = aucAfter.value.get(a.i)?.k; const rent = k === 'rent'; const sold = k === 'sell';
       if ((rent && rentOff.value) || (!rent && !sold && unOff.value) || (sold && soldOff.value)) return;
-      const on = focusAuc.value === a.i;
-      mv!.pin(spots.value[a.lot]!, { className: `cmp-bub mkd ${sold ? 'nk' : rent ? 'rent' : 'un'}${on ? ' on' : ''}`, html: `<i class="mk-dot" data-j="a:${a.i}"></i>`, onClick: () => { popFromMap = true; meOpen.value = false; focus.value = ''; focusAuc.value = on ? null : a.i; }, z: on ? 60 : 2 });
+      pinH.set(`a:${a.i}`, { h: mv!.pin(spots.value[a.lot]!, { className: `cmp-bub mkd ${sold ? 'nk' : rent ? 'rent' : 'un'}`, html: `<i class="mk-dot" data-j="a:${a.i}"></i>`, onClick: () => { popFromMap = true; meOpen.value = false; focus.value = ''; focusAuc.value = focusAuc.value === a.i ? null : a.i; }, z: 2 }), z: 2, onZ: 60 });
     });
-    if (props.dongOnly) return;
-    mv.pin(m, { className: 'cmp-bub mkd me', html: '<i class="mk-me" data-j="__me"></i>', onClick: () => { popFromMap = true; focus.value = ''; focusAuc.value = null; meOpen.value = !meOpen.value; }, z: 1000 });
+    if (!props.dongOnly) mv.pin(m, { className: 'cmp-bub mkd me', html: '<i class="mk-me" data-j="__me"></i>', onClick: () => { popFromMap = true; focus.value = ''; focusAuc.value = null; meOpen.value = !meOpen.value; }, z: 1000 });
+    onKey = ''; syncOn(); drawFocusParcel();
     return;
   }
   if (webEmbed) {
@@ -1009,7 +1033,7 @@ const ensureMap = async () => {
 watch(mySpot, () => { void ensureMap(); });
 watch(radius, fitMap);
 // 점 · 원이 실제로 바뀔 때만 다시 그린다 — 공시가 · 엘베가 들어올 때마다 지도를 통째로 다시 그리지 않게
-const mapKey = computed(() => `${dropped.value.join('~')}|${radius.value}|${focus.value}|${meOpen.value}|${sameCount.value}|${mySpot.value?.lat}|${mapGroups.value.map((g) => `${g.jibun}:${g.list.length}:${g.range}:${orderOf.value[g.jibun] ?? ''}:${hosOf(g)}`).join(',')}|${aucUnsold.value.map((a) => a.i).join(',')}|${focusAuc.value}|${unOff.value}|${rentOff.value}|${resaleOf.value.size}|${props.aucTab ? `${aucRows.value.map((a) => a.i).join(',')}|${aucRes.value}|${soldOff.value}` : ''}`);   // 호(호실 목록이 나중에 들어온다)도 — 들어오면 말풍선을 다시 그린다
+const mapKey = computed(() => `${dropped.value.join('~')}|${radius.value}|${mkV.value ? '' : `${focus.value}|${meOpen.value}`}|${sameCount.value}|${mySpot.value?.lat}|${mapGroups.value.map((g) => `${g.jibun}:${g.list.length}:${g.range}:${orderOf.value[g.jibun] ?? ''}:${hosOf(g)}`).join(',')}|${aucUnsold.value.map((a) => a.i).join(',')}|${mkV.value ? '' : focusAuc.value}|${unOff.value}|${rentOff.value}|${resaleOf.value.size}|${props.aucTab ? `${aucRows.value.map((a) => a.i).join(',')}|${aucRes.value}|${soldOff.value}` : ''}`);   // 호(호실 목록이 나중에 들어온다)도 — 들어오면 말풍선을 다시 그린다
 watch(mapKey, drawMap);
 // 숨은 탭에서 처음 그려지면 크기를 모른다 — 보일 때 다시 잰다
 const sonTab = inject<Ref<string> | null>('sonpumTab', null);

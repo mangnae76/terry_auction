@@ -400,6 +400,8 @@ watch(() => [aucShareOn.value, props.embed?.sido, dongFilter.value, period.value
   if (seq !== aucSeq) return;
   aucN.value = list.filter((a) => a.ymd >= from && a.ymd <= to).length;
 }, { immediate: true });
+/** 센 기간 'YY.MM.DD~YY.MM.DD' — 실거래 창(period)과 같다 */
+const aucSpan = computed(() => { const f = (x: string) => (x.length === 8 ? `${x.slice(2, 4)}.${x.slice(4, 6)}.${x.slice(6, 8)}` : ''); return `${f(period.value.from)}~${f(period.value.to)}`; });
 const aucCell = computed(() => {
   const deals = navStats.value.deals;
   const n = aucN.value;
@@ -412,10 +414,12 @@ const aucCell = computed(() => {
     ['뜻', '이 동 실거래에 견줘 경매로 풀린 물량이 얼마나 되나'],
     ['계산', calc],
     ['70%', '낙찰된 집 가운데 다시 매물로 나온다고 보는 몫. 정확한 출처 값이 아닌 임시 비율이라 예외로 둡니다'],
-    ['범위', '같은 동 · 같은 종류 · 위 조회 기간, 실거래는 계약해제 제외'],
+    ['범위', `같은 동 · 같은 종류 · ${aucSpan.value}(조회일 기준 ${months.value}개월, 실거래와 같은 기간) · 실거래는 계약해제 제외`],
     ['기준', '15% 이하 적합 · 15~30% 주의 · 30% 넘으면 위험'],
   ];
-  return { value, tip };
+  // 이 동 낙찰 건수 · 센 기간 — 값 밑에 작게(2026-11-29 사용자). 기간은 실거래와 같은 조회일 기준 창
+  const note = n === null ? '' : `낙찰 ${n.toLocaleString('ko-KR')}건 · ${aucSpan.value}`;
+  return { value, tip, note };
 });
 const areaText = (n: number) => (n > 0 ? dec1(n) : '-');
 /** 건축연수 — 햇수식 N년차(올해 − 평균 건축연도 + 1), 위 navStats.age 와 같은 셈 */
@@ -690,7 +694,7 @@ const downloadCsv = () => {
           <div v-if="aucShareOn" class="dm-cell dm-auc" role="button" tabindex="0" title="낙찰사례 탭으로" @click="emit('goAuc')" @keydown.enter="emit('goAuc')">
             <span class="adm-chip son-op dm-op">운영</span>
             <div class="dm-head"><InfoTip :rows="aucCell.tip" under="box" align="end">경매비중</InfoTip><em class="dm-plain">매물 중 경매 물건 비중</em></div>
-            <div class="dm-body"><b :class="{ wait: aucCell.value === '받는 중' }"><UnitText :text="aucCell.value" /><em class="nbar">|</em><span class="pass">15% 이하 적합</span></b></div>
+            <div :class="['dm-body', { 'has-note': aucCell.note }]"><b :class="{ wait: aucCell.value === '받는 중' }"><UnitText :text="aucCell.value" /><em class="nbar">|</em><span class="pass">15% 이하 적합</span></b><small v-if="aucCell.note" class="dm-note">{{ aucCell.note }}</small></div>
             <span class="dm-go">사례보기 ›</span>
           </div>
         </div>
@@ -888,6 +892,7 @@ const downloadCsv = () => {
 .dm-auc { cursor: pointer; }
 .dm-auc:hover { box-shadow: 0 0 0 2px rgba(43, 109, 243, .35); }
 .dm-auc .dm-op { position: absolute; top: 8px; right: 8px; z-index: 1; margin: 0; }
+.dm-auc .dm-body { padding-bottom: 20px; }   /* 사례보기 자리 — 낙찰 건수 줄과 겹치지 않게 */
 .dm-auc .dm-go { position: absolute; right: 8px; bottom: 3px; font-size: 12px; font-weight: 700; color: #2b6df3; line-height: 16px; }   /* 종합 칸은 뺐다(2026-11-02) — 지표 4칸 */
 /* 칸 — 앱 매매수요 칸처럼 위 이름 띠(회색) + 아래 값(흰색). 이어진 칸은 빨갛게(앱 .lit 와 같은 색) */
 .dm-cell { position: relative; min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; overflow: visible; transition: background .12s, border-color .12s; }
