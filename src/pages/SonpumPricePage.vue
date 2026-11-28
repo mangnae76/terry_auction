@@ -33,13 +33,17 @@ import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
 import InfoTip from '../components/InfoTip.vue';
 import type { TipRow } from '../services/tipRows';
 import { useAuctionStore } from '../stores/auctionStore';
+import { useAuthStore } from '../stores/authStore';
+import { isAdminEmail } from '../services/accessControl';
+import { auctionsOfDong, type AucRec } from '../services/auctionNear';
 
 /** loose — 시장분석 › 시세예측처럼 선정물건이 아닌 검색 주소로 볼 때. 적어 둘 물건이 없어 저장 · 임장경로 넣기는 감추고 '선정물건'은 '검색주소'로 */
 /** months — 기간을 바깥 줄(시세예측 주소 줄)이 고를 때. 이 화면의 기간 · 조회는 감춘다 */
 /** app — 앱 물건상세 › 손품+현장 › 시세조사(2026-11-09 시안 price-mock). 내용은 웹과 같고(매도가 예상 · 제외 체크 · 저장 단추),
  *  폰 폭에 맞춰 지도는 접어 두고(한 줄 '지도 보기'), 거르기는 반경 · 거래 · 엘베 · 층 · 기준 → 바로 아래 면적 · 건축 막대 차례로 쌓는다. 전체화면은 없다 */
 /** dongOnly — 시세예측 지역으로(동까지만, 기준 물건 없음, 2026-11-29 시안 v7): 반경은 동전체 · 기준은 직접범위 · 층은 층별, 선정물건 줄 · 핀 없음, 결론은 '○○동 시세' */
-const props = defineProps<{ auction: AuctionDetail; kind: CasePropertyType; loose?: boolean; months?: number; app?: boolean; dongOnly?: boolean }>();
+/** aucTab — 시세예측 › 낙찰사례(운영 전용, 2026-11-29 시안 v7): 같은 지도 · 필터 위에 결론 · 표만 낙찰로 */
+const props = defineProps<{ auction: AuctionDetail; kind: CasePropertyType; loose?: boolean; months?: number; app?: boolean; dongOnly?: boolean; aucTab?: boolean }>();
 // 칩 · 범례 — 선정물건 손품조사는 '선정물건', 시장분석 › 시세예측(주소로 조회)은 '조회물건'(2026-11-14 사용자 — '검색주소'는 알아보기 어려웠다)
 const meName = computed(() => (props.loose ? '조회물건' : '선정물건'));
 const store = useAuctionStore();
@@ -336,6 +340,96 @@ if (sv?.keep) colFilter.picked.value = { ...colFilter.picked.value, ...sv.keep }
 const webEmbed = inject<boolean>('webEmbed', false) || !!props.app;
 /** 시장분석 › 시세예측 빌라(웹) — 시안 v7(2026-11-29 사용자, docs/시세예측-v7-대조표.md). 손품조사 · 아파트 · 오피스텔 · 앱은 그대로 */
 const mkV = computed(() => !!props.loose && webEmbed && !props.app && props.kind === 'villa');
+// ===== 낙찰(운영 전용) — 시세예측 빌라에서 운영진만. 낙찰 자료(saleData)를 그 동만 골라 실거래와 호수로 잇는다 =====
+const authS = useAuthStore();
+const aucOn = computed(() => mkV.value && isAdminEmail(authS.email));
+const aucRaw = shallowRef<AucRec[]>([]);
+const aucSido = computed(() => { const r = region.value; if (!r) return ''; return REGION_GROUPS.find((g) => g.districts.some((d) => d.lawdCode === r.lawdCd5))?.sido ?? r.sido ?? ''; });
+watch([aucOn, () => region.value?.dong], async ([on, d]) => {
+  if (!on || !d) { aucRaw.value = []; return; }
+  const list = await auctionsOfDong(aucSido.value, d as string).catch(() => [] as AucRec[]);
+  if (region.value?.dong !== d) return;
+  aucRaw.value = list;
+  // 낙찰 지번 — 위치(지도) · 호실 목록(호수 잇기) · 엘베(표)를 실거래와 같은 길로 받는다
+  const r = region.value; const id = runId;
+  const lots = [...new Set(list.map((a) => a.lot).filter(Boolean))];
+  await limit(lots, 6, async (j) => {
+    const [p, u, e] = await Promise.all([
+      j in spots.value ? Promise.resolve(undefined) : geocodeAddress(lotAddr(d as string, j), { quick: true }).catch(() => null),
+      j in units.value || !r?.bCode10 ? Promise.resolve(undefined) : fetchApartUnits(r.bCode10, j).catch(() => [] as ApartUnit[]),
+      j in elevs.value ? Promise.resolve(undefined) : getBuildingFacts(lotAddr(d as string, j)).then((f) => (f ? f.elevator : null)).catch(() => null),
+    ]);
+    if (p !== undefined) spots.value = { ...spots.value, [j]: p ? { lat: p.lat, lng: p.lng } : null };
+    if (u !== undefined) units.value = { ...units.value, [j]: u };
+    if (e !== undefined) elevs.value = { ...elevs.value, [j]: e };
+  }, id);
+}, { immediate: true });
+/** 낙찰 뒤 거래 — 같은 지번 · 낙찰일 뒤 실거래(매매 먼저, 없으면 전세) 가운데 호수가 낙찰 호수와 같은 것. 실거래 호수는 공동주택가격 호실 목록으로(같은 층 · 같은 전용) */
+type AucAfter = { k: 'sell' | 'rent'; r: PriceRow; est: boolean; cand: string };
+const hoHit = (text: string, ho: string) => !!ho && new RegExp(`(^|[^\\d])${ho}(?!\\d)`).test(text.replace(/[0-9A-Za-z]+동\s/g, ' '));
+const aucAfter = computed(() => {
+  const out = new Map<number, AucAfter>();
+  aucRaw.value.forEach((a) => {
+    if (!a.lot || !a.ho) return;
+    const later = allRows.value.filter((r) => r.jibun === a.lot && (r.group === '매매' || r.group === '전세') && r.contractDate.replace(/\D/g, '') > a.ymd)
+      .sort((x, y) => x.contractDate.localeCompare(y.contractDate));
+    for (const k of ['매매', '전세'] as const) {
+      const hit = later.filter((r) => r.group === k).map((r) => ({ r, u: unitOfRow(r) })).find((x) => x.u.text && hoHit(x.u.text, a.ho));
+      if (hit) { out.set(a.i, { k: k === '매매' ? 'sell' : 'rent', r: hit.r, est: hit.u.est, cand: hit.u.est ? hit.u.text : '' }); return; }
+    }
+  });
+  return out;
+});
+/** 실거래 줄 → 그 집 낙찰(낙찰 후 매도인 매매 줄만) */
+const resaleOf = computed(() => { const m = new Map<string, AucRec>(); aucRaw.value.forEach((a) => { const x = aucAfter.value.get(a.i); if (x?.k === 'sell') m.set(rowKey(x.r), a); }); return m; });
+/** 지도 · 범례 — 고른 기간 · 반경 안 낙찰 중 매도가 안 된 것(전세 · 거래 없음) */
+const aucUnsold = computed(() => {
+  if (!aucOn.value) return [] as AucRec[];
+  const w = tradeWindowOf(Date.now(), loadedMonths.value); const from = `${w.start.getFullYear()}${String(w.start.getMonth() + 1).padStart(2, '0')}${String(w.start.getDate()).padStart(2, '0')}`;
+  const m = mySpot.value;
+  return aucRaw.value.filter((a) => a.ymd >= from && aucAfter.value.get(a.i)?.k !== 'sell' && spots.value[a.lot] && (radius.value === -1 || !m || distM(m, spots.value[a.lot]!) <= radius.value));
+});
+// ===== 낙찰사례 탭 — 고른 범위 · 기간 · 필터의 낙찰 =====
+const aucRes = ref<'낙찰결과' | '실거래포함'>('낙찰결과');
+const aucYears = computed(() => [...new Set(aucRaw.value.map((a) => a.ymd.slice(0, 4)))].sort().slice(-3).map((y) => `${y}년`));
+const aucYear = ref('');
+watch([isDongA, aucYears], () => { if (!aucYears.value.includes(aucYear.value)) aucYear.value = aucYears.value[aucYears.value.length - 1] ?? ''; }, { immediate: true });
+function isDongA() { return radius.value === -1; }
+const fromOf = (mo: number) => { const w = tradeWindowOf(Date.now(), mo); return `${w.start.getFullYear()}${String(w.start.getMonth() + 1).padStart(2, '0')}${String(w.start.getDate()).padStart(2, '0')}`; };
+const aucRows = computed(() => {
+  if (!props.aucTab || !aucOn.value) return [] as AucRec[];
+  const m = mySpot.value; const c = cond.value; const dongAll = radius.value === -1; const from = fromOf(loadedMonths.value);
+  return aucRaw.value.filter((a) => {
+    if (dongAll ? (aucYear.value && !a.ymd.startsWith(aucYear.value.slice(0, 4))) : a.ymd < from) return false;
+    if (!dongAll) { const p = spots.value[a.lot]; if (!p || !m || distM(m, p) > radius.value) return false; }
+    if (a.area && !areaIn(a.area, c)) return false;
+    if (a.year && (a.year < c.yMin || a.year > c.yMax)) return false;
+    const ev = elevs.value[a.lot]; if (c.elev && ev != null && (c.elev === 'yes' ? !(ev > 0) : ev !== 0)) return false;
+    if (props.dongOnly) { if (floorLv.value && !(floorLv.value === 5 ? a.floor >= 5 : a.floor === floorLv.value)) return false; } else if (rangeCond.value.floor === 0 && me.value.floor && a.floor && a.floor !== me.value.floor) return false;
+    return true;
+  });
+});
+const monthsBetween = (ymd: string, date: string) => { const a = new Date(`${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`); const d = date.replace(/\D/g, ''); const b = new Date(`${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`); return Math.max(0, Math.round((b.getTime() - a.getTime()) / 2.63e9)); };
+const aucStat = computed(() => {
+  const rs = aucRows.value; const rates = rs.map((a) => a.rate).filter((x) => x > 0).sort((a, b) => a - b);
+  const sold = rs.map((a) => ({ a, x: aucAfter.value.get(a.i) })).filter((z) => z.x?.k === 'sell') as Array<{ a: AucRec; x: AucAfter }>;
+  const mid = rates.length ? (rates.length % 2 ? rates[(rates.length - 1) / 2] : (rates[rates.length / 2 - 1] + rates[rates.length / 2]) / 2) : 0;
+  return {
+    n: rs.length, avg: rates.length ? rates.reduce((a, b) => a + b, 0) / rates.length : 0, mid,
+    bids: rs.length ? rs.reduce((a, b) => a + b.bids, 0) / rs.length : 0, fail: rs.filter((a) => a.fails > 0).length,
+    sold: sold.length, soldMo: sold.length ? sold.reduce((t, z) => t + monthsBetween(z.a.ymd, z.x.r.contractDate), 0) / sold.length : 0,
+    soldGain: sold.length ? sold.reduce((t, z) => t + (z.x.r.price / z.a.pr - 1) * 100, 0) / sold.length : 0,
+  };
+});
+const aucMore = ref(false);
+const aucList = computed(() => (aucMore.value ? aucRows.value : aucRows.value.slice(0, MORE_AT)));
+const aucExtra = computed(() => [...(radius.value === -1 ? [{ key: 'year', label: '기간', opts: aucYears.value, value: aucYear.value }] : []), { key: 'res', label: '결과', opts: ['낙찰결과', '실거래포함'] as const, value: aucRes.value }]);
+const onExtra = (k: string, v: string) => { if (k === 'year') aucYear.value = v; else if (k === 'res') aucRes.value = v as '낙찰결과' | '실거래포함'; };
+const pickAuc = (a: AucRec) => { popFromMap = false; focus.value = ''; meOpen.value = false; focusAuc.value = focusAuc.value === a.i ? null : a.i; };
+const unOff = ref(false);
+const soldOff = ref(false);
+const rentOff = ref(false);
+const focusAuc = ref<number | null>(null);
 const shownCols = COLS;
 /** 선정물건 호 — 주소의 '402호' */
 /** 선정물건 동 — 주소의 '101동 23층2301호'에서 101(동 이름에 한글 읍면동은 뺀다) */
@@ -392,7 +486,7 @@ const SORT_VAL: Record<string, (r: PriceRow) => number | string> = {
 };
 // 늘 높은 값이 위로, 다시 누르면 원래 순서
 /** 두 줄 머리 — 아파트 면적(공급(전용)) · 웹 공시가(매매가율) */
-const hk2 = (k: string) => (k === 'area' && isAptKind) || (k === 'pub' && webEmbed) || (k === 'year' && mkV.value);
+const hk2 = (k: string) => (k === 'area' && isAptKind) || (k === 'pub' && webEmbed) || (k === 'year' && mkV.value) || (k === 'won' && aucOn.value);
 const sortBy = (k: string) => {
   // 웹 — 같은 머리글을 다시 누르면 내림 ↔ 오름
   if (webEmbed) { if (sortK.value === k) sortDir.value = sortDir.value === 'desc' ? 'asc' : 'desc'; else { sortK.value = k; sortDir.value = 'desc'; } return; }
@@ -777,9 +871,11 @@ const drawMap = () => {
     const live = webEmbed && !off ? g.list.filter((r) => !isOff(r)) : g.list;
     const lp = live.map((r) => r.price); const lo = Math.min(...lp); const hi = Math.max(...lp);
     const range = lo === hi ? eok(lo) : `${n0(lo)}~${eok(hi)}`;
+    if (mkV.value && props.aucTab && aucRes.value !== '실거래포함') return;
     if (mkV.value) {
       // 시세예측 빌라(시안 v7) — 평소엔 점만, 누르면 말풍선(꼬리 · X). 고른 점은 조금 커지고 고리가 깜빡인다
-      mv!.pin(g.spot, { className: `cmp-bub mkd${on ? ' on' : ''}${off ? ' off' : ''}`, html: `<i class="mk-dot" data-j="${esc(g.jibun)}"></i>`, onClick: () => { popFromMap = true; meOpen.value = false; focus.value = on ? '' : g.jibun; }, z: on ? 50 : 1 });
+      const nk = aucOn.value && g.list.some((r) => resaleOf.value.has(rowKey(r)));
+      mv!.pin(g.spot, { className: `cmp-bub mkd${nk ? ' nk' : ''}${on ? ' on' : ''}${off ? ' off' : ''}`, html: `<i class="mk-dot" data-j="${esc(g.jibun)}"></i>`, onClick: () => { popFromMap = true; meOpen.value = false; focusAuc.value = null; focus.value = on ? '' : g.jibun; }, z: on ? 50 : 1 });
       return;
     }
     if (webEmbed) {
@@ -803,8 +899,14 @@ const drawMap = () => {
   });
   // 내 물건(빨간 점)도 눌렀을 때만 이름표
   if (mkV.value) {
+    (props.aucTab ? aucRows.value.filter((a) => spots.value[a.lot]) : aucUnsold.value).forEach((a) => {
+      const k = aucAfter.value.get(a.i)?.k; const rent = k === 'rent'; const sold = k === 'sell';
+      if ((rent && rentOff.value) || (!rent && !sold && unOff.value) || (sold && soldOff.value)) return;
+      const on = focusAuc.value === a.i;
+      mv!.pin(spots.value[a.lot]!, { className: `cmp-bub mkd ${sold ? 'nk' : rent ? 'rent' : 'un'}${on ? ' on' : ''}`, html: `<i class="mk-dot" data-j="a:${a.i}"></i>`, onClick: () => { popFromMap = true; meOpen.value = false; focus.value = ''; focusAuc.value = on ? null : a.i; }, z: on ? 60 : 2 });
+    });
     if (props.dongOnly) return;
-    mv.pin(m, { className: 'cmp-bub mkd me', html: '<i class="mk-me" data-j="__me"></i>', onClick: () => { popFromMap = true; focus.value = ''; meOpen.value = !meOpen.value; }, z: 1000 });
+    mv.pin(m, { className: 'cmp-bub mkd me', html: '<i class="mk-me" data-j="__me"></i>', onClick: () => { popFromMap = true; focus.value = ''; focusAuc.value = null; meOpen.value = !meOpen.value; }, z: 1000 });
     return;
   }
   if (webEmbed) {
@@ -833,6 +935,17 @@ const popHide = ref(false);
 let popFromMap = false;
 const popData = computed(() => {
   if (!mkV.value) return null;
+  if (focusAuc.value != null) {
+    const a = aucRaw.value.find((x) => x.i === focusAuc.value); if (!a) return null;
+    const x = aucAfter.value.get(a.i); const ev = elevs.value[a.lot];
+    const mo = Math.max(0, Math.floor((Date.now() - new Date(`${a.ymd.slice(0, 4)}-${a.ymd.slice(4, 6)}-${a.ymd.slice(6, 8)}`).getTime()) / 2.63e9));
+    return {
+      key: `a:${a.i}`, title: [a.name, a.ho ? `${a.ho}호` : ''].filter(Boolean).join(' '), sub: `${a.cs} · ${a.date} 매각`,
+      rows: [['감정가', n0(a.ap)], ['낙찰가', n0(a.pr), `${a.rate.toFixed(1)}%`], ['차수 · 응찰', `${a.fails + 1}차 · ${a.bids}명`], ['전용 · 건축', `${a.area}㎡ · ${a.year || '-'}년 · 엘베 ${ev == null ? '-' : ev > 0 ? '있음' : '없음'}`]],
+      sec: x?.k === 'sell' ? { t: `낙찰 후 매도${x.est ? ` · ${x.cand}` : ''}`, c: 'sold', rows: [['매도가', n0(x.r.price), `+${((x.r.price / a.pr - 1) * 100).toFixed(1)}%`], ['매도일 · 매도기간', `${x.r.contractDate} · ${monthsBetween(a.ymd, x.r.contractDate)}개월`]] }
+        : x?.k === 'rent' ? { t: '낙찰 후 전세', c: 'rent', rows: [['계약일 · 보증금', `${x.r.contractDate} · ${n0(x.r.price)}`]] } : { t: '낙찰', c: 'un', rows: [['지난 기간', `${mo}개월째 매도 없음`]] },
+    };
+  }
   if (meOpen.value) {
     const mp = shownRows.value.filter((r) => r.same && !isOff(r)).map((r) => r.price);
     return { key: '__me', title: myLabel.value, sub: '', rows: mp.length ? [['실거래가', eok(mp.reduce((a, b) => a + b, 0) / mp.length)], ['건수', `${mp.length}건`]] : [['', meName.value]] };
@@ -841,9 +954,10 @@ const popData = computed(() => {
   if (!g) return null;
   const live = g.list.filter((r) => !isOff(r)); const lp = (live.length ? live : g.list).map((r) => r.price);
   const ho = hosOf(g); const est = /중 추정/.test(ho);
-  return { key: g.jibun, title: [g.name, ho.replace(/\s*중 추정$/, '')].filter(Boolean).join(' '), sub: est ? '호수 중 추정' : '', rows: [['실거래가', eok(lp.reduce((a, b) => a + b, 0) / (lp.length || 1))], ['건수', `${lp.length}건`]] };
+  const na = aucOn.value ? g.list.map((r) => resaleOf.value.get(rowKey(r))).find(Boolean) : undefined;
+  return { key: g.jibun, title: [g.name, ho.replace(/\s*중 추정$/, '')].filter(Boolean).join(' '), sub: est ? '호수 중 추정' : '', rows: [['실거래가', eok(lp.reduce((a, b) => a + b, 0) / (lp.length || 1))], ['건수', `${lp.length}건`]], sec: na ? { t: '낙찰 후 매도', c: 'sold', rows: [['낙찰가', `${n0(na.pr)}원`]] } : undefined };
 });
-const closePop = () => { focus.value = ''; meOpen.value = false; };
+const closePop = () => { focus.value = ''; meOpen.value = false; focusAuc.value = null; };
 const placePop = () => {
   popPos.value = null;
   const d = popData.value; const box = mapEl.value?.parentElement; const pe = popEl.value;
@@ -866,7 +980,7 @@ const placePop = () => {
     if (pr.top < sb + 8) window.scrollBy({ top: pr.top - sb - 12, behavior: 'smooth' }); else if (pr.bottom > window.innerHeight - 8) window.scrollBy({ top: pr.bottom - window.innerHeight + 12, behavior: 'smooth' });
   });
 };
-watch([popData, focus, meOpen], () => { void nextTick(() => window.setTimeout(placePop, 30)); });
+watch([popData, focus, meOpen, focusAuc], () => { void nextTick(() => window.setTimeout(placePop, 30)); });
 let popEvt = false;
 watch(kTools, (t) => {
   if (!t || popEvt || !mkV.value) return; popEvt = true;
@@ -892,7 +1006,7 @@ const ensureMap = async () => {
 watch(mySpot, () => { void ensureMap(); });
 watch(radius, fitMap);
 // 점 · 원이 실제로 바뀔 때만 다시 그린다 — 공시가 · 엘베가 들어올 때마다 지도를 통째로 다시 그리지 않게
-const mapKey = computed(() => `${dropped.value.join('~')}|${radius.value}|${focus.value}|${meOpen.value}|${sameCount.value}|${mySpot.value?.lat}|${mapGroups.value.map((g) => `${g.jibun}:${g.list.length}:${g.range}:${orderOf.value[g.jibun] ?? ''}:${hosOf(g)}`).join(',')}`);   // 호(호실 목록이 나중에 들어온다)도 — 들어오면 말풍선을 다시 그린다
+const mapKey = computed(() => `${dropped.value.join('~')}|${radius.value}|${focus.value}|${meOpen.value}|${sameCount.value}|${mySpot.value?.lat}|${mapGroups.value.map((g) => `${g.jibun}:${g.list.length}:${g.range}:${orderOf.value[g.jibun] ?? ''}:${hosOf(g)}`).join(',')}|${aucUnsold.value.map((a) => a.i).join(',')}|${focusAuc.value}|${unOff.value}|${rentOff.value}|${resaleOf.value.size}|${props.aucTab ? `${aucRows.value.map((a) => a.i).join(',')}|${aucRes.value}|${soldOff.value}` : ''}`);   // 호(호실 목록이 나중에 들어온다)도 — 들어오면 말풍선을 다시 그린다
 watch(mapKey, drawMap);
 // 숨은 탭에서 처음 그려지면 크기를 모른다 — 보일 때 다시 잰다
 const sonTab = inject<Ref<string> | null>('sonpumTab', null);
@@ -1076,7 +1190,7 @@ const pickMine = () => { focus.value = ''; meOpen.value = !meOpen.value; };
 /** 고른 거래 한 줄 — 표는 그 줄만 칠한다(같은 지번 줄이 다 칠해졌다, 2026-11-11 사용자). 지도는 그 건물(지번)을 고른다 */
 const pickedRow = ref('');
 const pickRow = (r: PriceRow) => {
-  popFromMap = false;
+  popFromMap = false; focusAuc.value = null;
   const k = rowKey(r); const again = pickedRow.value === k;
   if (simPickable(r)) simPick.value = simPick.value === k ? '' : k;
   if (casePickable(r)) casePick.value = casePick.value === k ? '' : k;
@@ -1120,7 +1234,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 <template>
   <div :class="['pa-wrap', { app: props.app, phone: sonApp }]">
   <Teleport to="body" :disabled="!fs">
-  <section :class="['pa', 'pa-card', { fs, stick: webEmbed && !props.app, web: webEmbed && !props.app, 'mk-v': mkV }]" aria-label="시세분석">
+  <section :class="['pa', 'pa-card', { fs, stick: webEmbed && !props.app, web: webEmbed && !props.app, 'mk-v': mkV, 'mk-auc': aucTab }]" aria-label="시세분석">
     <!-- 전체화면 위 띠 — 닫기 · 사건 · 조회기간 · 조회 -->
     <div v-if="fs" class="fs-top">
       <button type="button" class="fs-x" @click="fs = false"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>전체화면 닫기</button>
@@ -1138,8 +1252,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
     <!-- 붙는 머리가 시세분석 상자 밖(호실 예상가 · 호가매물)까지 이어 붙을 때 — 빠진 자리를 같은 높이로 받친다 -->
     <div v-if="estFix" class="zone-ph" :style="{ height: `${estFix.h}px` }" aria-hidden="true" />
     <div ref="zoneEl" class="zone zone-est" :style="estFix ? estFix.style : undefined">
-      <div class="zone-h"><span class="pa-tag">결론</span><h3>{{ dongOnly ? `${region?.dong ?? ''} 시세` : webEmbed ? '이 물건 매도가 예상' : '이 물건 실거래가 예상' }}</h3>
-        <span :class="['bar-desc', { hi: webEmbed }]"><svg v-if="webEmbed" class="flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ regionText || '지역 확인 중' }}{{ dongOnly ? ` 전체 · ${periodText(loadedMonths)}` : webEmbed ? `${isDong ? ' 전체' : ` · 반경 ${radText(radius)}`} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` : '' }} · {{ KIND_LABEL[kind] }} 실거래</span>
+      <div class="zone-h"><span class="pa-tag">결론</span><h3>{{ aucTab ? '낙찰사례' : dongOnly ? `${region?.dong ?? ''} 시세` : webEmbed ? '이 물건 매도가 예상' : '이 물건 실거래가 예상' }}</h3>
+        <span :class="['bar-desc', { hi: webEmbed }]"><svg v-if="webEmbed" class="flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ regionText || '지역 확인 중' }}{{ aucTab ? `${isDong ? ` 전체 · ${aucYear}` : ` · 반경 ${radText(radius)} · 최근 ${periodText(loadedMonths)}`} · ${aucStat.n.toLocaleString('ko-KR')}건` : dongOnly ? ` 전체 · ${periodText(loadedMonths)}` : webEmbed ? `${isDong ? ' 전체' : ` · 반경 ${radText(radius)}`} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` : '' }} · {{ KIND_LABEL[kind] }} {{ aucTab ? '낙찰' : '실거래' }}</span>
         <span class="pa-load-r">
           <span v-if="progress.total && progress.done < progress.total" class="prog">위치 찾는 중 {{ progress.done }} / {{ progress.total }}</span>
           <!-- 앱 — 기간 단추 · 조회는 뺐다(저장된 기간 그대로, 2026-11-13 사용자) -->
@@ -1154,7 +1268,13 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <p v-if="errorMsg" class="pa-err">{{ errorMsg }}</p>
       <div class="est">
         <!-- 웹 — 중간값 · 최저 · 최고는 뺐다. 거래가를 내 평수로 바꿔 만든 값이라 실제로 거래된 값이 아니다(2026-11-11 사용자) -->
-        <div v-if="dongOnly" class="tiles four">
+        <div v-if="aucTab" class="tiles four">
+          <div class="tile key"><span class="k">① 평균 낙찰가율</span><span class="v pa-num">{{ aucStat.n ? `${aucStat.avg.toFixed(1)}%` : '-' }}</span><span class="s rad">가운데값 {{ aucStat.mid.toFixed(1) }}% · 낙찰 {{ aucStat.n.toLocaleString('ko-KR') }}건</span></div>
+          <div class="tile"><span class="k">평균 응찰</span><span class="v pa-num">{{ aucStat.n ? `${aucStat.bids.toFixed(1)}명` : '-' }}</span></div>
+          <div class="tile"><span class="k">유찰 뒤 낙찰</span><span class="v pa-num">{{ aucStat.fail.toLocaleString('ko-KR') }}건</span></div>
+          <div class="tile"><span class="k">낙찰 후 매도</span><span class="v pa-num">{{ aucStat.sold.toLocaleString('ko-KR') }}건</span><span class="s rad">{{ aucStat.sold ? `평균 ${aucStat.soldMo.toFixed(1)}개월 뒤 · 낙찰가보다 ${aucStat.soldGain >= 0 ? '+' : ''}${aucStat.soldGain.toFixed(1)}%` : '되판 거래 없음' }}</span></div>
+        </div>
+        <div v-else-if="dongOnly" class="tiles four">
           <div class="tile key"><span class="k">① 평균 평당가(매매)</span><span class="v pa-num">{{ dongPy ? vPy(dongPy) : '-' }}</span><span class="s rad">{{ region?.dong ?? '' }} {{ KIND_LABEL[kind] }} 매매 실거래 평균</span></div>
           <div class="tile"><span class="k">매매 거래</span><span class="v pa-num">{{ kindCount('매매').toLocaleString('ko-KR') }}건</span></div>
           <div class="tile"><span class="k">전세 거래</span><span class="v pa-num">{{ kindCount('전세').toLocaleString('ko-KR') }}건</span></div>
@@ -1217,9 +1337,10 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <div v-if="mkV && popData" v-show="!popHide && popPos" ref="popEl" :class="['mk-pop', popPos?.side]" :style="popPos ? { left: `${popPos.left}px`, top: `${popPos.top}px`, '--tx': `${popPos.tx}px`, '--ty': `${popPos.ty}px` } : { left: '-9999px', top: '0' }" @click.stop>
           <div class="t"><span class="tt">{{ popData.title }}</span><button type="button" class="mk-x" aria-label="닫기" title="닫기" @click="closePop"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button></div>
           <div v-if="popData.sub" class="sub">{{ popData.sub }}</div>
-          <dl><template v-for="(r, i) in popData.rows" :key="i"><dt>{{ r[0] }}</dt><dd :class="{ big: r[0] === '실거래가' }">{{ r[1] }}</dd></template></dl>
+          <dl><template v-for="(r, i) in popData.rows" :key="i"><dt>{{ r[0] }}</dt><dd :class="{ big: r[0] === '실거래가', big2: r[0] === '낙찰가' }">{{ r[1] }}<span v-if="r[2]" class="pct"> {{ r[2] }}</span></dd></template></dl>
+          <template v-if="popData.sec"><div :class="['ph', popData.sec.c]">{{ popData.sec.t }}</div><dl><template v-for="(r, i) in popData.sec.rows" :key="i"><dt>{{ r[0] }}</dt><dd :class="{ big2: r[0] === '낙찰가' || r[0] === '매도가' }">{{ r[1] }}<span v-if="r[2]" class="pct"> {{ r[2] }}</span></dd></template></dl></template>
         </div>
-        <div class="legend"><span v-if="!dongOnly"><i style="background:#e03e3e" />{{ meName }}</span><span><i style="background:#2b4fd8" />{{ mkV ? '유사 실거래' : '유사물건' }}</span></div>
+        <div class="legend"><span v-if="!dongOnly"><i style="background:#e03e3e" />{{ meName }}</span><span v-if="!aucTab || aucRes === '실거래포함'"><i style="background:#2b4fd8" />{{ mkV ? '유사 실거래' : '유사물건' }}</span><template v-if="aucOn && aucTab"><span :class="['lg-nk', { off: soldOff }]" title="눌러서 켜고 끄기" style="cursor:pointer" @click="soldOff = !soldOff"><i />낙찰 후 매도 {{ aucStat.sold }}</span><span :class="['lg-rent', { off: rentOff }]" title="눌러서 켜고 끄기" @click="rentOff = !rentOff"><i />낙찰 후 전세 {{ aucRows.filter((a) => aucAfter.get(a.i)?.k === 'rent').length }}</span><span :class="['lg-un', { off: unOff }]" title="눌러서 켜고 끄기" @click="unOff = !unOff"><i />낙찰 {{ aucRows.filter((a) => !aucAfter.get(a.i)).length }}</span></template><template v-else-if="aucOn"><span class="lg-nk"><i />낙찰 후 매도</span><span :class="['lg-rent', { off: rentOff }]" title="눌러서 켜고 끄기" @click="rentOff = !rentOff"><i />낙찰 후 전세 {{ aucUnsold.filter((a) => aucAfter.get(a.i)?.k === 'rent').length }}</span><span :class="['lg-un', { off: unOff }]" title="눌러서 켜고 끄기" @click="unOff = !unOff"><i />낙찰 {{ aucUnsold.filter((a) => aucAfter.get(a.i)?.k !== 'rent').length }}</span></template></div>
         <p v-if="!mySpot && !loading && res" class="map-msg">{{ meName }} 위치를 찾지 못했습니다</p>
       </div>
 
@@ -1234,7 +1355,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <p v-if="!fsList.length" class="none">지도에 유사물건이 없습니다.</p>
       </div>
       <!-- 웹 — 매매수요와 같은 필터 부품(1줄 반경 · 거래 · 엘베 · 층, 2줄 기준 묶음 · 초기화 · 저장). 기간은 위 조회기간. 전체화면은 좁은 꼴 -->
-      <SearchFilterBar v-if="webEmbed && !props.app" :draft="sfDraft" :compact="fs || sonApp" :hide="loose ? ['period', 'save'] : ['period']" :range-options="sfRadii" :period-options="[]" :kinds="KINDS" :kind-count="(k) => kindCount(k).toLocaleString('ko-KR')"
+      <SearchFilterBar v-if="webEmbed && !props.app" :draft="sfDraft" :compact="fs || sonApp" :hide="aucTab ? ['period', 'save', 'kind'] : loose ? ['period', 'save'] : ['period']" :extra="aucTab ? aucExtra : undefined" @extra="onExtra" :range-options="sfRadii" :period-options="[]" :kinds="KINDS" :kind-count="(k) => kindCount(k).toLocaleString('ko-KR')"
         :base-area="dongOnly ? 0 : me.areaM2" :base-year="dongOnly ? 0 : me.year" :lock="dongOnly ? { range: [DONG], sim: true, floorPick: true } : undefined" :area-max="AREA_MAX" :year-min="YEAR_MIN" :year-max="yearMax" :sim-range="sfSimRange"
         :is-default="false" :can-save="!loose" :saving="saving" :saved="!webDirty" :saved-day="savedAt ? new Date(savedAt).toLocaleDateString('sv-SE') : ''" @update:draft="sfSet" @reset="reset" @save="saveNow" />
       <div v-else-if="!props.app" :class="['conds', { web: webEmbed }]">
@@ -1314,9 +1435,10 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 
       <!-- 앱 — 지번 · 거래 수는 위 '유사물건' 옆으로 옮겼다(2026-11-13 사용자) -->
       <div v-if="!props.app" class="list-tools">
-        <span v-if="webEmbed" class="lt-count pa-num">지번 {{ listPlaces }}곳 · 거래 {{ shownRows.length }}건</span>
+        <span v-if="webEmbed && aucTab" class="lt-count pa-num">낙찰 {{ aucStat.n.toLocaleString('ko-KR') }}건</span>
+        <span v-else-if="webEmbed" class="lt-count pa-num">지번 {{ listPlaces }}곳 · 거래 {{ shownRows.length }}건</span>
         <!-- 앱 — 공시가 · 전세가율 글은 뺐다(공시가 칸이 없다, 2026-11-13 사용자) -->
-        <div v-if="!props.app && !dongOnly" class="warn-box" role="note">
+        <div v-if="!props.app && !dongOnly && !aucTab" class="warn-box" role="note">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4M12 17h.01" /></svg>
           <!-- 앱 — 짧게(2026-11-09) -->
           <template v-if="props.app">
@@ -1329,7 +1451,37 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <button v-if="keptNames.length && !props.app" type="button" class="pa-fchip" @click="colFilter.clearAll()">필터 적용 중: {{ keptNames.join(' · ') }} &nbsp;✕ 모두 지우기</button>
       </div>
 
-      <div class="pa-list">
+      <div v-if="aucTab" class="pa-list">
+        <div class="tbl-wrap"><table class="even mk-v mk-auc">
+          <colgroup><col style="width: 84px"><col style="width: 112px"><col style="width: 44px"><col style="width: 100px"><col style="width: 104px"><col style="width: 48px"><col style="width: 140px"><col style="width: 74px"><col style="width: 52px"><col style="width: 56px"><col style="width: 56px"><col><col style="width: 90px"></colgroup>
+          <thead><tr><th>매각일</th><th>사건번호</th><th>차수</th><th><span class="hk">감정가<small class="hk-sub">최저가</small></span></th><th><span class="hk">낙찰가<small class="hk-sub">낙찰가율</small></span></th><th>응찰</th><th>낙찰 후 거래</th><th>전용</th><th>엘베</th><th><span class="hk">건축<small class="hk-sub">연차</small></span></th><th>거리</th><th>주소</th><th class="acts-th"><span class="sr">바로가기</span></th></tr></thead>
+          <tbody>
+            <tr v-for="a in aucList" :key="a.i" :class="{ on: focusAuc === a.i }" @click="pickAuc(a)">
+              <td class="pa-num">{{ a.date }}</td>
+              <td>{{ a.cs }}</td>
+              <td class="pa-num">{{ a.fails + 1 }}차</td>
+              <td class="r pa-num two">{{ n0(a.ap) }}<small>{{ a.low ? n0(a.low) : '-' }}</small></td>
+              <td class="r pa-num two"><span class="nakp">{{ n0(a.pr) }}</span><small><b>{{ a.rate.toFixed(1) }}%</b></small></td>
+              <td class="pa-num">{{ a.bids }}명</td>
+              <td class="aft"><template v-if="aucAfter.get(a.i)?.k === 'sell'"><span class="ab-b sold">매도</span> {{ aucAfter.get(a.i)!.r.contractDate }}<small>{{ n0(aucAfter.get(a.i)!.r.price) }} · {{ monthsBetween(a.ymd, aucAfter.get(a.i)!.r.contractDate) }}개월 뒤</small><small v-if="aucAfter.get(a.i)!.est" class="est">{{ aucAfter.get(a.i)!.cand }}</small></template><template v-else-if="aucAfter.get(a.i)?.k === 'rent'"><span class="ab-b rent">전세</span> {{ aucAfter.get(a.i)!.r.contractDate }}<small>{{ n0(aucAfter.get(a.i)!.r.price) }}</small></template><span v-else class="none">거래 없음</span></td>
+              <td class="pa-num two">{{ a.area ? `${a.area.toFixed(2)}㎡` : '-' }}<small v-if="a.area">{{ (a.area / PY).toFixed(2) }}평</small></td>
+              <td><span v-if="elevs[a.lot] === undefined || elevs[a.lot] === null" class="ev u">-</span><span v-else-if="(elevs[a.lot] ?? 0) > 0" class="ev o">있음</span><span v-else class="ev x">없음</span></td>
+              <td class="pa-num two">{{ a.year || '-' }}<small v-if="a.year">{{ yearMax - a.year + 1 }}년차</small></td>
+              <td class="pa-num">{{ spots[a.lot] && mySpot && !dongOnly ? `${Math.round(distM(mySpot, spots[a.lot]!)).toLocaleString('ko-KR')}m` : '-' }}</td>
+              <td class="l" :data-tip="a.addr" data-tip-pos="right"><div class="pa-addr"><span class="addr">{{ [region?.dong, a.lot, a.name, a.ho ? `${a.ho}호` : ''].filter(Boolean).join(' ') }}</span></div></td>
+              <td class="acts-td" @click.stop><span class="acts">
+                <button type="button" class="ab n" title="네이버 부동산에서 보기" aria-label="네이버 부동산에서 보기" @click="goNaver(a.addr)">N</button>
+                <button type="button" :class="['ab p', { ok: okKey === `a${a.i}P` }]" title="부동산플래닛에서 보기" aria-label="부동산플래닛에서 보기" @click="goPlanet(`${region?.dong ?? ''} ${a.lot}`, `a${a.i}P`)">P</button>
+                <button type="button" :class="['ab', { ok: okKey === `a${a.i}C` }]" title="주소 복사" aria-label="주소 복사" @click="copy(a.addr, `a${a.i}C`)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg></button>
+              </span></td>
+            </tr>
+            <tr v-if="!aucRows.length" class="nohover"><td colspan="13" class="pa-empty">{{ aucRaw.length ? '고른 범위 · 조건에 낙찰사례가 없습니다.' : '낙찰 자료를 불러오는 중이거나 이 동의 낙찰 자료가 없습니다.' }}</td></tr>
+          </tbody>
+        </table></div>
+        <button v-if="aucRows.length > MORE_AT" type="button" class="more" @click="aucMore = !aucMore">{{ aucMore ? '접기' : `더 보기 (${aucRows.length - MORE_AT}건)` }}</button>
+        <p class="list-foot">※ 낙찰은 매각된 사건만 넣습니다(유찰 · 취하 · 변경은 뺍니다). 낙찰가율은 낙찰가 ÷ 감정가로 계산합니다.<br>※ 낙찰 후 거래는 낙찰일 뒤의 실거래(매매 · 전세) 중 호수가 낙찰 호수와 같은 것입니다. 실거래 호수는 공동주택가격 호실 목록에서 같은 층 · 같은 전용 호실로 찾고, 그런 호실이 둘 이상이면 '○○·○○호 중 추정'으로 적습니다. 호수를 못 찾은 거래는 잇지 않습니다.<br>※ 거래 없음은 아직 안 판 것인지 못 판 것인지 가르지 못합니다.<br>※ 운영 표시는 지금 자료가 운영진만 보는 자료라는 뜻입니다.</p>
+      </div>
+      <div v-else class="pa-list">
         <!-- 앱 — 유사물건 표는 다섯 칸(주소 · 실거래가 · 연식 · 전용 · 엘베), 옆으로 밀지 않는다. 주소는 잘리면 … · 누르면 말풍선(2026-11-13 사용자) -->
         <div v-if="props.app" class="tbl-wrap app-tbl"><table>
           <colgroup><col style="width: 34%"><col style="width: 25%"><col style="width: 12%"><col style="width: 16%"><col style="width: 13%"></colgroup>
@@ -1360,7 +1512,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <th v-if="webEmbed" class="ck-th" title="체크하면 매도가 예상 · 평균 · 건수에서 빠집니다">제외</th>
             <th>구분</th>
             <th v-for="c in shownCols" :key="c.key" :data-k="c.key" :aria-sort="sortK === c.key ? (webEmbed && sortDir === 'asc' ? 'ascending' : 'descending') : undefined" :class="{ hl: ['won', 'perPy', 'pub', 'gap'].includes(c.key) }">
-              <span class="hk" :title="c.key === 'gap' ? '전세 = 공시가 × 126%(보증보험 한도)' : undefined" @click="sortBy(c.key)">{{ c.key === 'pub' ? (webEmbed ? '공시가' : '공시가 / 매매가율') : c.key === 'gap' ? '전세 / 갭' : c.key === 'area' && isAptKind ? '면적' : c.label }}<small v-if="c.key === 'area' && isAptKind" class="hk-sub">공급(전용)<i v-if="webEmbed" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><small v-if="c.key === 'pub' && webEmbed" class="hk-sub">매매가율<i :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><small v-if="c.key === 'year' && mkV" class="hk-sub">연차<i :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><i v-if="mkV && !hk2(c.key)" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></span>
+              <span class="hk" :title="c.key === 'gap' ? '전세 = 공시가 × 126%(보증보험 한도)' : undefined" @click="sortBy(c.key)">{{ c.key === 'pub' ? (webEmbed ? '공시가' : '공시가 / 매매가율') : c.key === 'gap' ? '전세 / 갭' : c.key === 'area' && isAptKind ? '면적' : c.label }}<small v-if="c.key === 'area' && isAptKind" class="hk-sub">공급(전용)<i v-if="webEmbed" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><small v-if="c.key === 'pub' && webEmbed" class="hk-sub">매매가율<i :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><small v-if="c.key === 'won' && aucOn" class="hk-sub">낙찰가</small><small v-if="c.key === 'year' && mkV" class="hk-sub">연차<i :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><i v-if="mkV && !hk2(c.key)" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></span>
               <!-- 두 줄 머리(공시가 / 매매가율 · 면적 / 공급(전용))는 ▼ 를 아랫줄 오른쪽에 붙인다(2026-11-15 사용자) -->
               <i v-if="webEmbed && !hk2(c.key) && !mkV" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true" @click="sortBy(c.key)">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i>
               <button v-else-if="!webEmbed" type="button" :class="['fv', { act: colFilter.isActive(c.key) }]" :aria-label="`${c.label} 값 거르기`" @click.stop="colFilter.open(c.key, $event)">▾</button>
@@ -1396,7 +1548,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             </tr>
             <tr v-for="r in listRows" :key="r.id" :class="{ on: webEmbed ? (pickedRow === rowKey(r) || (mkV && !pickedRow && !!focus && focus === r.jibun)) : (r.same ? meOpen : (focus && focus === r.jibun)), off: isOff(r) }" @click="pickRow(r)">
               <td v-if="webEmbed" class="ck-td" @click.stop><input type="checkbox" :checked="isOff(r)" :aria-label="`${r.contractDate} ${r.name || r.jibun} 평균에서 빼기`" @change="toggleDrop(r)" /></td>
-              <td><span :class="['kind', r.group === '전세' ? 'j' : r.group === '월세' ? 'm' : '']">{{ r.group }}</span><span v-if="simPick && simPick === rowKey(r)" class="sim-pick" title="손품결론 '유사물건 실거래가'로 들어갑니다 — 다시 누르면 뺍니다">유사</span><span v-if="casePick && casePick === rowKey(r)" class="sim-pick" title="손품결론 '경매지번 실거래가'로 들어갑니다 — 다시 누르면 뺍니다">선택</span></td>
+              <td><span :class="['kind', r.group === '전세' ? 'j' : r.group === '월세' ? 'm' : '']">{{ r.group }}</span><span v-if="aucOn && resaleOf.has(rowKey(r))" class="kind nak" title="이 호수가 경매로 낙찰된 뒤 팔린 거래(운영)">낙찰</span><span v-if="simPick && simPick === rowKey(r)" class="sim-pick" title="손품결론 '유사물건 실거래가'로 들어갑니다 — 다시 누르면 뺍니다">유사</span><span v-if="casePick && casePick === rowKey(r)" class="sim-pick" title="손품결론 '경매지번 실거래가'로 들어갑니다 — 다시 누르면 뺍니다">선택</span></td>
               <td class="pa-num">{{ r.contractDate }}</td>
               <template v-if="r.group === '월세'">
                 <td class="r pa-num two">{{ n0(r.price) }}<small>월 {{ Math.round((r.monthly ?? 0) / 1e4) }}만</small></td>
@@ -1405,7 +1557,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
                 <td class="r two">-</td>
               </template>
               <template v-else>
-                <td class="r pa-num">{{ n0(r.price) }}</td>
+                <td :class="['r', 'pa-num', { two: aucOn && resaleOf.has(rowKey(r)) }]">{{ n0(r.price) }}<small v-if="aucOn && resaleOf.has(rowKey(r))" class="nakv">{{ n0(resaleOf.get(rowKey(r))!.pr) }}</small></td>
                 <td class="r pa-num">{{ n0(r.perPy) }}</td>
                 <td v-if="!r.pub" class="r"><span class="ph2">{{ units[r.jibun] ? '공시가 없음' : '조회 중' }}</span></td>
                 <td v-else class="r pa-num two">{{ n0(r.pub) }}<small>{{ pct(r.price, r.pub) }}</small></td>
@@ -1439,7 +1591,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       </div>
       <!-- 앱 — 제외 · 공시가 칸이 없어 그 설명은 뺀다 -->
       <p v-if="props.app" class="list-foot">※ 맨 위 빨간 줄은 {{ meName }}입니다(비교 기준이라 계산에 넣지 않습니다).<br>※ 위치를 찾은 거래만 나옵니다. 주소 앞 번호는 비교 임장 순서입니다.</p>
-      <p v-else class="list-foot">※ 맨 위 빨간 줄은 {{ meName }}입니다(비교 기준이라 계산에 넣지 않습니다).<br>※ 공시가는 공동주택가격입니다. 매매가율 = 실거래가 ÷ 공시가, 전세 = 공시가 × 126%(보증보험 한도, 지역 · 평형 보정 없음), 갭 = 실거래가 − 전세.<br>※ 위치를 찾은 거래만 나옵니다. 주소 앞 번호는 비교 임장 순서입니다.<br>※ <template v-if="webEmbed">제외 칸에 체크한 거래는 실거래가 예상 · 평균 · 건수에서 빠집니다(체크는 물건에 남습니다).</template><template v-else>머리글 ▾로 값을 빼면 그 거래는 표 · 지도 · 실거래가 예상에서 빠집니다(물건에 남습니다).</template></p>
+      <p v-else-if="!aucTab" class="list-foot">※ 맨 위 빨간 줄은 {{ meName }}입니다(비교 기준이라 계산에 넣지 않습니다).<br>※ 공시가는 공동주택가격입니다. 매매가율 = 실거래가 ÷ 공시가, 전세 = 공시가 × 126%(보증보험 한도, 지역 · 평형 보정 없음), 갭 = 실거래가 − 전세.<br>※ 위치를 찾은 거래만 나옵니다. 주소 앞 번호는 비교 임장 순서입니다.<br>※ <template v-if="webEmbed">제외 칸에 체크한 거래는 실거래가 예상 · 평균 · 건수에서 빠집니다(체크는 물건에 남습니다).</template><template v-else>머리글 ▾로 값을 빼면 그 거래는 표 · 지도 · 실거래가 예상에서 빠집니다(물건에 남습니다).</template></p>
     </div>
 
     <ColumnFilterPanel :ctl="colFilter" />

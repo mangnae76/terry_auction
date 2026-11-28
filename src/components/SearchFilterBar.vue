@@ -52,8 +52,10 @@ const props = defineProps<{
   /** 기준 물건이 없을 때(시세예측 지역으로, 2026-11-29 시안 v7) — 메뉴는 그대로 두고 막는다.
    *  range: 쓸 수 있는 반경 값만 · sim: 유사도 막기 · floorPick: '같은 층' 자리에 층별 드롭다운 */
   lock?: { range?: Array<string | number>; sim?: boolean; floorPick?: boolean };
+  /** 덧붙이는 단추 묶음(첫 줄 끝) — 낙찰사례 '기간(연도)' · '결과' 같은 것(2026-11-29 시안 v7) */
+  extra?: Array<{ key: string; label: string; opts: readonly string[]; value: string }>;
 }>();
-const emit = defineEmits<{ 'update:draft': [v: SearchFilter]; apply: []; reset: []; save: [] }>();
+const emit = defineEmits<{ 'update:draft': [v: SearchFilter]; apply: []; reset: []; save: []; extra: [key: string, value: string] }>();
 const off = (k: SearchFilterKey) => !!props.hide?.includes(k);
 // 고르면 바로 적용 — 받아 둔 실거래 1년치에서 거르기만 해서 조회하기가 필요 없다(전체화면과 같게, 2026-11-12 사용자)
 // 보던 자리 지키기 — 필터를 바꾸면 위쪽 칸(예상가 · 지표 등) 높이가 바뀌어 화면이 밀렸다. 바꾸기 전 이 필터의 화면 위치를 재 두고, 다시 그려진 뒤 그만큼 스크롤을 되돌린다(2026-11-12 사용자)
@@ -128,6 +130,7 @@ const pyTx = (lo: number, hi: number) => `${(lo / 3.305785).toFixed(1)}~${(hi / 
       <span v-if="!off('floor') && !lock?.floorPick" class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층"><button type="button" role="radio" :class="{ on: floorD !== 'same' }" :aria-checked="floorD !== 'same'" data-t="전체" @click="floorD = null">전체</button><button type="button" role="radio" :class="{ on: floorD === 'same' }" :aria-checked="floorD === 'same'" data-t="같은 층" @click="floorD = 'same'">같은 층</button></span></span>
       <!-- 기준 물건이 없을 때 — '같은 층' 자리에 층별 드롭다운(자리 · 높이는 같게, 2026-11-29 시안 v7) -->
       <span v-if="!off('floor') && lock?.floorPick" class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층"><button type="button" role="radio" :class="{ on: !draft.floorLv }" :aria-checked="!draft.floorLv" data-t="전체" @click="set({ floorLv: null })">전체</button><select :class="['flsel', { on: !!draft.floorLv }]" aria-label="층별" :value="draft.floorLv ?? ''" @change="set({ floorLv: Number(($event.target as HTMLSelectElement).value) || null })"><option value="">층별</option><option v-for="[v, t] in FLOOR_LV" :key="v" :value="v">{{ t }}</option></select></span></span>
+      <span v-for="x in extra ?? []" :key="x.key" class="pa-lab">{{ x.label }}<span class="pa-seg pa-out" role="radiogroup" :aria-label="x.label"><button v-for="t in x.opts" :key="t" type="button" role="radio" :class="{ on: x.value === t }" :aria-checked="x.value === t" :data-t="t" @click="keepPlace(); emit('extra', x.key, t)">{{ t }}</button></span></span>
     </div>
     <!-- 면적 · 건축 막대 — 거르기 줄 밑 한 줄, 두 상자가 위 줄 폭에 맞게 반씩(2026-11-12 사용자) -->
     <!-- 면적 · 건축 상자(적는 칸), 조회하기 · 저장하기는 오른쪽 — 단추는 위 거르기까지 다 같이 쓴다(2026-11-12 사용자) -->
