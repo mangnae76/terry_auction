@@ -109,7 +109,8 @@ const box = (o: PinOpts) => {
   return el;
 };
 /** 가벼운 점 — 색 · 지름(px) · 고른 점 테두리. HTML 상자가 아니라 지도 기본 표식이라 수백 개여도 가볍다(2026-11-29 시세예측) */
-export type DotStyle = { color: string; size: number; ring?: string };
+/** hollow — 흰 안 + color 테두리(속 빈 원). 아니면 color 로 채우고 흰 테두리. ring — 고른 점 바깥 테두리 */
+export type DotStyle = { color: string; size: number; ring?: string; hollow?: boolean };
 export type DotOpts = DotStyle & { z?: number; onClick?: () => void };
 export interface DotHandle {
   set(s: DotStyle): void;
@@ -149,11 +150,13 @@ const kakaoView = (k: KakaoMaps, el: HTMLElement, opts: MapOpts): MapView => {
   // 점 그림 — 같은 색 · 크기는 한 번만 만든다
   const dotImgs = new Map<string, unknown>();
   const dotImage = (st: DotStyle) => {
-    const key = `${st.color}|${st.size}|${st.ring ?? ''}`;
+    const key = `${st.color}|${st.size}|${st.ring ?? ''}|${st.hollow ? 1 : 0}`;
     let im = dotImgs.get(key);
     if (!im) {
       const rw = st.ring ? 2 : 0; const S = st.size + rw * 2; const c = S / 2;
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}"><circle cx="${c}" cy="${c}" r="${st.size / 2}" fill="${st.color}"${st.ring ? ` stroke="${st.ring}" stroke-width="${rw * 2}" paint-order="stroke"` : ''}/></svg>`;
+      const ew = st.hollow ? 2.2 : 1.5;   // 테두리 굵기 — 흰 테두리 / 속 빈 원의 색 테두리
+      const ring = st.ring ? `<circle cx="${c}" cy="${c}" r="${st.size / 2 + rw / 2}" fill="none" stroke="${st.ring}" stroke-width="${rw}"/>` : '';
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}">${ring}<circle cx="${c}" cy="${c}" r="${st.size / 2 - ew / 2}" fill="${st.hollow ? '#fff' : st.color}" stroke="${st.hollow ? st.color : '#fff'}" stroke-width="${ew}"/></svg>`;
       im = new k.MarkerImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, new k.Size(S, S), { offset: new k.Point(c, c) });
       dotImgs.set(key, im);
     }
@@ -289,7 +292,7 @@ const leafletView = (el: HTMLElement, opts: MapOpts): MapView => {
       return { el: () => mk.getElement() ?? null, setHtml: (h) => { mk.setIcon(iconOf(h)); }, setZ: (z) => { mk.setZIndexOffset(z); } };
     },
     dot(p, o) {
-      const styleOf = (st: DotStyle) => ({ radius: st.size / 2, fillColor: st.color, fillOpacity: 1, stroke: !!st.ring, color: st.ring ?? st.color, weight: 2 });
+      const styleOf = (st: DotStyle) => ({ radius: st.size / 2, fillColor: st.hollow ? '#fff' : st.color, fillOpacity: 1, stroke: true, color: st.ring ?? (st.hollow ? st.color : '#fff'), weight: st.ring ? 2 : 1.5 });
       const mk = L.circleMarker(ll(p), { ...styleOf(o), interactive: !!o.onClick });
       if (o.onClick) mk.on('click', o.onClick);
       mk.addTo(layer);

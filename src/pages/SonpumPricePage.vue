@@ -850,19 +850,34 @@ const sameCount = computed(() => shownRows.value.filter((r) => r.same).length);
 const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 // ===== 시세예측 빌라 — 점을 눌러도 지도를 통째로 다시 그리지 않는다(점 수백 개라 느렸다, 2026-11-29 사용자). 고른 점 표시만 바꾼다 =====
 // 점은 지도 기본 표식(mv.dot) — HTML 상자는 붙일 때마다 카카오가 크기를 재서 374개에 2초 멈췄다(2026-11-29 잼)
-const DOT = { blue: '#2b6df3', off: '#b8bfcc', sold: '#e03131', rent: '#16a34a', un: '#ff922b' };   // 낙찰만 — 주황(분홍은 어색, 2026-11-29 사용자)
-const DOT_SIZE = 12; const DOT_ON = 16; const DOT_RING = '#111827';
+// 점 — 색으로 채우고 흰 테두리. 낙찰만(매도 없음)은 흰 안 + 빨간 테두리(주황은 어색, 2026-11-29 사용자). 테두리는 점 그림 안이라 무게가 늘지 않는다
+const UN = '#e03131|hollow';
+const DOT = { blue: '#2b6df3', off: '#b8bfcc', sold: '#e03131', rent: '#16a34a', un: UN };
+const DOT_SIZE = 10; const DOT_ON = 14; const DOT_RING = '#111827';
+const dotStyle = (color: string, size: number, ring?: string): DotStyle => (color === UN ? { color: '#e03131', hollow: true, size, ring } : { color, size, ring });
 const pinH = new Map<string, { h: DotHandle; at: LatLng; color: string; z: number; onZ: number }>();
 let onKey = '';
 const addDot = (key: string, at: LatLng, color: string, z: number, onZ: number, onClick: () => void) => {
-  pinH.set(key, { h: mv!.dot(at, { color, size: DOT_SIZE, z, onClick }), at, color, z, onZ });
+  pinH.set(key, { h: mv!.dot(at, { ...dotStyle(color, DOT_SIZE), z, onClick }), at, color, z, onZ });
 };
 const syncOn = () => {
   const key = focusAuc.value != null ? `a:${focusAuc.value}` : focus.value;
   if (key === onKey) return;
-  const was = pinH.get(onKey); if (was) { was.h.set({ color: was.color, size: DOT_SIZE }); was.h.setZ(was.z); }
-  const now = pinH.get(key); if (now) { now.h.set({ color: now.color, size: DOT_ON, ring: DOT_RING } as DotStyle); now.h.setZ(now.onZ); }
+  const was = pinH.get(onKey); if (was) { was.h.set(dotStyle(was.color, DOT_SIZE)); was.h.setZ(was.z); }
+  const now = pinH.get(key); if (now) { now.h.set(dotStyle(now.color, DOT_ON, DOT_RING)); now.h.setZ(now.onZ); }
   onKey = key;
+  pulseAt(now ? now.at : null, now ? (now.color === UN ? '#e03131' : now.color) : '');
+};
+// 고른 점 깜빡이는 고리 — 점은 그림이라 움직임을 못 줘서, 고른 점 하나에만 고리 표식 하나를 겹친다(2026-11-29 사용자 '가벼워졌으니 넣어도 된다')
+type KOverlay = { setMap: (m: unknown) => void; setPosition: (p: unknown) => void };
+let pulse: KOverlay | null = null; let pulseEl: HTMLElement | null = null;
+const pulseAt = (at: LatLng | null, color: string) => {
+  const t = kTools.value;
+  if (!at || !t) { pulse?.setMap(null); return; }
+  const k = t.k as { LatLng: new (a: number, b: number) => unknown; CustomOverlay: new (o: Record<string, unknown>) => KOverlay };
+  if (!pulse || !pulseEl) { pulseEl = document.createElement('i'); pulseEl.className = 'mk-pulse'; pulse = new k.CustomOverlay({ position: new k.LatLng(at.lat, at.lng), content: pulseEl, xAnchor: 0.5, yAnchor: 0.5, zIndex: 0, clickable: false }); }
+  pulseEl.style.setProperty('--pc', color);
+  pulse.setPosition(new k.LatLng(at.lat, at.lng)); pulse.setMap(t.map);
 };
 type KPoly = { setMap: (m: unknown) => void };
 let focPoly: KPoly | null = null;
@@ -946,7 +961,7 @@ const drawMap = () => {
       if ((rent && rentOff.value) || (!rent && !sold && unOff.value) || (sold && soldOff.value)) return;
       addDot(`a:${a.i}`, spots.value[a.lot]!, sold ? DOT.sold : rent ? DOT.rent : DOT.un, 2, 60, () => { popFromMap = true; meOpen.value = false; focus.value = ''; focusAuc.value = focusAuc.value === a.i ? null : a.i; });
     });
-    if (!props.dongOnly) mv.pin(m, { className: 'cmp-bub mkd me', html: '<svg class="mk-me" data-j="__me" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12Z" fill="#e03131" stroke="#fff" stroke-width="1.5"/><circle cx="12" cy="10" r="2.6" fill="#fff"/></svg>', onClick: () => { popFromMap = true; focus.value = ''; focusAuc.value = null; meOpen.value = !meOpen.value; }, z: 1000 });
+    if (!props.dongOnly) mv.pin(m, { className: 'cmp-bub mkd me', html: '<svg class="mk-me" data-j="__me" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12Z" fill="#e03131" stroke="#fff" stroke-width="1.5"/><circle cx="12" cy="10" r="2.6" fill="#fff"/></svg>', onClick: () => { popFromMap = true; focus.value = ''; focusAuc.value = null; meOpen.value = !meOpen.value; }, z: 1000 });
     onKey = ''; syncOn(); drawFocusParcel();
     return;
   }
@@ -1022,7 +1037,7 @@ const placePop = () => {
   pe.style.left = keepL;
   if (!w || !h) return;
   let left: number; let top: number; let side: string;
-  const topGap = d.key === '__me' ? 22 : G;   // 조회물건 핀(18px) 위
+  const topGap = d.key === '__me' ? 28 : G;   // 조회물건 핀(24px) 위
   if (dy - h - topGap >= 8) { side = 'above'; top = dy - h - topGap; } else if (dy + G + h <= mh - 8) { side = 'below'; top = dy + G; } else { side = dx + G + w <= mw - R0 ? 'right' : 'left'; top = Math.max(8, Math.min(dy - h / 2, mh - h - 8)); }
   if (side === 'above' || side === 'below') left = Math.max(8, Math.min(dx - w / 2, mw - w - R0)); else left = side === 'right' ? dx + G : dx - G - w;
   popPos.value = { left, top, side, tx: Math.max(14, Math.min(dx - left, w - 14)), ty: Math.max(14, Math.min(dy - top, h - 14)) };
@@ -1569,8 +1584,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <th v-if="webEmbed" class="ck-th" title="체크하면 매도가 예상 · 평균 · 건수에서 빠집니다">제외</th>
             <th>구분</th>
             <th v-for="c in shownCols" :key="c.key" :data-k="c.key" :aria-sort="sortK === c.key ? (webEmbed && sortDir === 'asc' ? 'ascending' : 'descending') : undefined" :class="{ hl: ['won', 'perPy', 'pub', 'gap'].includes(c.key) }">
-              <span class="hk" :title="c.key === 'gap' ? '전세 = 공시가 × 126%(보증보험 한도)' : undefined" @click="sortBy(c.key)">{{ c.key === 'pub' ? (webEmbed ? '공시가' : '공시가 / 매매가율') : c.key === 'gap' ? '전세 / 갭' : c.key === 'area' && isAptKind ? '면적' : c.label }}<small v-if="c.key === 'area' && isAptKind" class="hk-sub">공급(전용)<i v-if="webEmbed" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><small v-if="c.key === 'pub' && webEmbed" class="hk-sub">매매가율<i :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><small v-if="c.key === 'won' && aucOn" class="hk-sub">낙찰가</small><small v-if="c.key === 'year' && mkV" class="hk-sub">연차<i :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><i v-if="mkV && !hk2(c.key)" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></span>
-              <!-- 두 줄 머리(공시가 / 매매가율 · 면적 / 공급(전용))는 ▼ 를 아랫줄 오른쪽에 붙인다(2026-11-15 사용자) -->
+              <span class="hk" :title="c.key === 'gap' ? '전세 = 공시가 × 126%(보증보험 한도)' : undefined" @click="sortBy(c.key)">{{ c.key === 'pub' ? (webEmbed ? '공시가' : '공시가 / 매매가율') : c.key === 'gap' ? '전세 / 갭' : c.key === 'area' && isAptKind ? '면적' : c.label }}<small v-if="c.key === 'area' && isAptKind" class="hk-sub">공급(전용)<i v-if="webEmbed" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><small v-if="c.key === 'pub' && webEmbed" class="hk-sub">매매가율<i v-if="!mkV" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></small><small v-if="c.key === 'won' && aucOn" class="hk-sub">낙찰가</small><small v-if="c.key === 'year' && mkV" class="hk-sub">연차</small><i v-if="mkV && c.key !== 'won'" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i></span>
+              <!-- 두 줄 머리(공시가 / 매매가율 · 면적 / 공급(전용))는 ▼ 를 아랫줄 오른쪽에 붙인다(2026-11-15 사용자). 시세예측은 두 줄 머리도 ▼ 를 글 밖 오른쪽 — 아랫줄 안에 두면 그 줄만 밀려 가운데가 어긋났다(2026-11-29 사용자) -->
               <i v-if="webEmbed && !hk2(c.key) && !mkV" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true" @click="sortBy(c.key)">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i>
               <button v-else-if="!webEmbed" type="button" :class="['fv', { act: colFilter.isActive(c.key) }]" :aria-label="`${c.label} 값 거르기`" @click.stop="colFilter.open(c.key, $event)">▾</button>
             </th>
