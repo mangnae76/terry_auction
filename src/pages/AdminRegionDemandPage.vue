@@ -386,7 +386,7 @@ const dmResults = computed(() => {
     { id: 'turn' as DmId, metric: 'turnover' as const, label: '거래 회전율', value: unitsPct(v.turnover, false), grade: v.grades.turnover, tip: demandTip('turnover', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.turnover },
     { id: 'burden' as DmId, metric: 'burden' as const, label: '매물율', value: unitsPct(v.burden, true), grade: v.grades.burden, tip: demandTip('burden', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.burden },
     { id: 'absorb' as DmId, metric: 'absorb' as const, label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.absorb },
-    { id: 'clear' as DmId, metric: 'clear' as const, label: '매물 소화기간', value: v.clearMonths > 0 ? `${dec1(v.clearMonths)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.clear },
+    { id: 'clear' as DmId, metric: 'clear' as const, label: '매물 소화기간', value: v.clearMonths > 0 ? `${dec1(v.clearMonths)}개월` : '-', note: v.clearMonths >= 12 ? `약 ${dec1(v.clearMonths / 12)}년` : '',   /* 1년이 넘으면 몇 년인지 기준 밑에 작게(2026-11-29 사용자) */ grade: v.grades.clear, tip: demandTip('clear', tipScope.value, kind.value === 'apt'), plain: DEMAND_PLAIN.clear },
   ];
 });
 // ===== 경매비중(운영 전용) — 임시 계산식: 낙찰 건수 × 70% ÷ 실거래 건수(예외, 2026-11-28 사용자 · 대조표 6-2) =====
@@ -733,7 +733,7 @@ const downloadCsv = () => {
         <div :class="['dm-row', aucShareOn ? 'c5' : 'c4']">
           <div v-for="c in dmResults" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
             <div class="dm-head"><InfoTip :rows="c.tip" under="box">{{ c.label }}</InfoTip><em class="dm-plain">{{ c.plain }}</em></div>
-            <div class="dm-body"><b :class="{ wait: c.value === '받는 중' }"><UnitText :text="c.value" /><em class="nbar">|</em><span class="pass">{{ demandPassText(c.metric, kind === 'apt') }}</span></b></div>
+            <div class="dm-body"><b :class="{ wait: c.value === '받는 중' }"><UnitText :text="c.value" /><em class="nbar">|</em><span class="pass-col"><span class="pass">{{ demandPassText(c.metric, kind === 'apt') }}</span><small v-if="'note' in c && c.note" class="dm-note">{{ c.note }}</small></span></b></div>
           </div>
           <!-- 경매비중 — 운영진 · 빌라 · 동을 골랐을 때만. 누르면 낙찰사례 탭으로(대조표 6-1~6-3) -->
           <div v-if="aucShareOn" class="dm-cell dm-auc" role="button" tabindex="0" title="낙찰분석 탭으로" @click="emit('goAuc')" @keydown.enter="emit('goAuc')">
@@ -935,8 +935,8 @@ const downloadCsv = () => {
 .dm-row.c5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }   /* 시세예측 수요분석 운영진 — 경매비중 칸까지 다섯 칸 */
 .dm-auc { cursor: pointer; }
 .dm-auc:hover { box-shadow: 0 0 0 2px rgba(43, 109, 243, .35); }
-.dm-auc .pass-col { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; }
-.dm-auc .pass-col .dm-note { line-height: 1.2; }
+.dm-cell .pass-col { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+.dm-cell .pass-col .dm-note { line-height: 1.2; }
 .dm-auc .dm-op { position: absolute; top: 8px; right: 8px; z-index: 1; margin: 0; }
 /* 칸 — 앱 매매수요 칸처럼 위 이름 띠(회색) + 아래 값(흰색). 이어진 칸은 빨갛게(앱 .lit 와 같은 색) */
 .dm-cell { position: relative; min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; overflow: visible; transition: background .12s, border-color .12s; }
