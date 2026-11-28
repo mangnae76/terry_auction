@@ -20,10 +20,13 @@ import SnapChip from '../components/SnapChip.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import UnitText from '../components/UnitText.vue';
 import YmCount from '../components/YmCount.vue';
-import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, inject, nextTick, onMounted, ref, shallowRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
-import { auctionsOfDong } from '../services/auctionNear';
+import { auctionsOfDong, matchAfter, type AucRec } from '../services/auctionNear';
+import { lookupAddress } from '../services/addressLookup';
+import { fetchApartUnits, type ApartUnit } from '../services/vworldApi';
+import { unitLabelOf } from '../services/priceAnalysis';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
 import { dongStatsFromRows, fetchDongTradeStats, tradeWindowOf, ymd8Of, type DongTradeDetailRow, type DongTradeStat } from '../services/publicDataApi';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
@@ -391,15 +394,45 @@ const AUC_RESALE = 0.7;
 const aucShareOn = computed(() => !!props.aucShare && kind.value === 'villa' && !!dongFilter.value);
 /** 같은 동 · 위 조회 기간 안 낙찰 건수 — null 은 받는 중 */
 const aucN = ref<number | null>(null);
+/** 그 낙찰 — 낙찰 뒤 매도(같은 지번 · 낙찰일 뒤 매매 가운데 호수가 같은 것) 세기에 쓴다 */
+const aucList = shallowRef<AucRec[]>([]);
+/** 지번별 호실 목록(공동주택가격) — 실거래 호수 맞추기. 낙찰사례 탭과 같은 길 */
+const aucUnits = shallowRef<Record<string, ApartUnit[]>>({});
 let aucSeq = 0;
 watch(() => [aucShareOn.value, props.embed?.sido, dongFilter.value, period.value.from, period.value.to] as const, async ([on, sd, d, from, to]) => {
   const seq = ++aucSeq;
-  aucN.value = null;
+  aucN.value = null; aucList.value = [];
   if (!on || !d || !from || !to) return;
-  const list = await auctionsOfDong(sd ?? '', d).catch(() => []);
+  const list = await auctionsOfDong(sd ?? '', d).catch(() => [] as AucRec[]);
   if (seq !== aucSeq) return;
-  aucN.value = list.filter((a) => a.ymd >= from && a.ymd <= to).length;
+  const inWin = list.filter((a) => a.ymd >= from && a.ymd <= to);
+  aucN.value = inWin.length; aucList.value = inWin;
+  // 낙찰 뒤 매매가 있는 지번만 호실 목록을 받는다(요청을 줄이려고)
+  const lots = [...new Set(inWin.filter((a) => a.lot && a.ho && laterSales(a).length).map((a) => a.lot))].filter((j) => !(j in aucUnits.value));
+  if (!lots.length) return;
+  const b10 = (await lookupAddress(inWin[0].addr, { withPrice: false }).catch(() => null))?.region?.bCode10;
+  if (!b10 || seq !== aucSeq) return;
+  await runLimited(lots, 6, async (j) => {
+    const u = await fetchApartUnits(b10, j).catch(() => [] as ApartUnit[]);
+    if (seq === aucSeq) aucUnits.value = { ...aucUnits.value, [j]: u };
+  }, () => seq !== aucSeq);
 }, { immediate: true });
+/** 그 낙찰 지번에서 낙찰일 뒤 매매(계약해제 제외) — 수요분석이 받아 둔 기간 안 거래에서 */
+const laterSales = (a: AucRec) => (props.embed?.rows ?? []).filter((r) => r.umdNm === dongFilter.value && r.jibun === a.lot && r.kind !== '계약해제' && r.contractDate.replace(/\D/g, '') > a.ymd);
+/** 낙찰 뒤 매도 — 건수 · 그중 호수 추정. 매매로 조회했을 때만(전세 거래로는 셀 수 없다) */
+const aucSold = computed(() => {
+  if (dealKind.value !== 'sale' || aucN.value === null) return null;
+  let n = 0; let est = 0; let wait = 0;
+  aucList.value.forEach((a) => {
+    if (!a.lot || !a.ho) return;
+    const later = laterSales(a); if (!later.length) return;
+    const us = aucUnits.value[a.lot]; if (!us) { wait += 1; return; }
+    // 맞추는 셈은 낙찰사례 탭과 같은 함수(auctionNear.matchAfter)
+    const hit = matchAfter(a, later, (r) => unitLabelOf(us, r.areaM2, r.floorNum));
+    if (hit) { n += 1; if (hit.est) est += 1; }
+  });
+  return { n, est, wait };
+});
 /** 센 기간 'YY.MM.DD~YY.MM.DD' — 실거래 창(period)과 같다 */
 const aucSpan = computed(() => { const f = (x: string) => (x.length === 8 ? `${x.slice(2, 4)}.${x.slice(4, 6)}.${x.slice(6, 8)}` : ''); return `${f(period.value.from)}~${f(period.value.to)}`; });
 const aucCell = computed(() => {
@@ -418,8 +451,12 @@ const aucCell = computed(() => {
     ['기준', '15% 이하 적합 · 15~30% 주의 · 30% 넘으면 위험'],
   ];
   // 이 동 낙찰 건수 — '15% 이하 적합' 밑에 작게. 센 기간(날짜)은 ⓘ 범위 줄에(2026-11-29 사용자)
-  const note = n === null ? '' : `낙찰 ${n.toLocaleString('ko-KR')}건`;
-  return { value, tip, note };
+  const note = n === null ? '' : `낙찰 ${n.toLocaleString('ko-KR')}건 / 실거래 ${deals.toLocaleString('ko-KR')}건`;   // 두 숫자를 나란히 — 계산에 든 둘(2026-11-29 사용자)
+  // 그 낙찰 가운데 낙찰 뒤 다시 매매된 것(2026-11-29 사용자)
+  const so = aucSold.value;
+  const sold = !so ? '' : so.wait ? '낙찰 후 매도 세는 중' : `낙찰 후 매도 ${so.n.toLocaleString('ko-KR')}건`;
+  if (so && !so.wait) tip.splice(2, 0, ['매도', `낙찰 ${(n ?? 0).toLocaleString('ko-KR')}건 가운데 낙찰 뒤 같은 집(같은 지번 · 같은 호)이 매매된 것 ${so.n.toLocaleString('ko-KR')}건${so.est ? `(호수 추정 ${so.est}건 포함)` : ''}. 실거래 ${deals.toLocaleString('ko-KR')}건 안에 든 거래`]);
+  return { value, tip, note, sold };
 });
 const areaText = (n: number) => (n > 0 ? dec1(n) : '-');
 /** 건축연수 — 햇수식 N년차(올해 − 평균 건축연도 + 1), 위 navStats.age 와 같은 셈 */
@@ -694,7 +731,7 @@ const downloadCsv = () => {
           <div v-if="aucShareOn" class="dm-cell dm-auc" role="button" tabindex="0" title="낙찰사례 탭으로" @click="emit('goAuc')" @keydown.enter="emit('goAuc')">
             <span class="adm-chip son-op dm-op">운영</span>
             <div class="dm-head"><InfoTip :rows="aucCell.tip" under="box" align="end">경매 물건 비중</InfoTip><em class="dm-plain">매물 중 경매 물건 비중</em></div>
-            <div class="dm-body"><b :class="{ wait: aucCell.value === '받는 중' }"><UnitText :text="aucCell.value" /><em class="nbar">|</em><span class="pass-col"><span class="pass">15% 이하 적합</span><small v-if="aucCell.note" class="dm-note">{{ aucCell.note }}</small></span></b></div>
+            <div class="dm-body"><b :class="{ wait: aucCell.value === '받는 중' }"><UnitText :text="aucCell.value" /><em class="nbar">|</em><span class="pass-col"><span class="pass">15% 이하 적합</span><small v-if="aucCell.note" class="dm-note">{{ aucCell.note }}</small><small v-if="aucCell.sold" class="dm-note">{{ aucCell.sold }}</small></span></b></div>
           </div>
         </div>
               <!-- 종합 의견 — 등급 대신 매물율 × 회전율 네 칸 한 줄(2026-11-10). 매물수를 넣어야 나온다 -->

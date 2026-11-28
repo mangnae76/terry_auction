@@ -65,3 +65,16 @@ export const auctionsOfDong = async (sido: string, dong: string): Promise<AucRec
   });
   return out.sort((a, b) => b.ymd.localeCompare(a.ymd));
 };
+
+/** 실거래 호 글('101동 201호' · '201호 중 추정' 등)에 낙찰 호가 드나 — 동 이름 숫자와 헷갈리지 않게 'N동 '은 빼고 본다 */
+export const hoHit = (text: string, ho: string) => !!ho && new RegExp(`(^|[^\\d])${ho}(?!\\d)`).test(text.replace(/[0-9A-Za-z]+동\s/g, ' '));
+
+/** 낙찰 뒤 거래 맞추기 — 같은 지번 · 낙찰일 뒤 거래 가운데 호수가 낙찰 호수와 같은 첫 거래(계약일 순).
+ *  낙찰사례 탭(낙찰 후 매도 · 전세)과 시세예측 수요분석(경매 물건 비중 칸)이 같이 쓴다 — 셈이 한 곳(2026-11-29 사용자).
+ *  rows 는 부르는 쪽이 종류(매매 · 전세)를 골라 넘긴다. unitOf 는 그 거래의 호 글(공동주택가격 호실 목록으로 짝지은 것) */
+export const matchAfter = <R extends { jibun: string; contractDate: string }>(a: AucRec, rows: R[], unitOf: (r: R) => { text: string; est: boolean }): { r: R; est: boolean; text: string } | null => {
+  if (!a.lot || !a.ho) return null;
+  const later = rows.filter((r) => r.jibun === a.lot && r.contractDate.replace(/\D/g, '') > a.ymd).sort((x, y) => x.contractDate.localeCompare(y.contractDate));
+  for (const r of later) { const u = unitOf(r); if (u.text && hoHit(u.text, a.ho)) return { r, est: u.est, text: u.text }; }
+  return null;
+};

@@ -1682,8 +1682,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .pa.mk-v .list-tools::after { content: "유사 실거래"; }
 /* 시세예측 빌라 지도(시안 v7) — 점만(지름 14), 고른 점 18 + 고리 깜빡임, 선정물건은 빨간 핀. 말풍선은 점 위 → 아래 → 옆, 꼬리 · X */
 .pa.mk-v .mv-pin.cmp-bub.mkd { width: 0; height: 0; cursor: pointer; }
-.pa.mk-v .mv-pin.cmp-bub.mkd .mk-dot { position: absolute; left: -7px; top: -7px; width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; background: #2b6df3; border: 2px solid #fff; }   /* 그림자 · 깜빡임 없이 단순하게 — 점이 수백 개라 무거웠다(2026-11-29 사용자) */
-.pa.mk-v .mv-pin.cmp-bub.mkd.on .mk-dot { left: -9px; top: -9px; width: 18px; height: 18px; outline: 2px solid #111827; }   /* 고른 점 — 조금 크게 + 진한 테두리(움직임 없음) */
+.pa.mk-v .mv-pin.cmp-bub.mkd .mk-dot { position: absolute; left: -6px; top: -6px; width: 12px; height: 12px; box-sizing: border-box; border-radius: 50%; background: #2b6df3; }   /* 흰 테두리 · 그림자 · 깜빡임 없이 단순하게 — 점이 수백 개라 무거웠다(2026-11-29 사용자) */
+.pa.mk-v .mv-pin.cmp-bub.mkd.on .mk-dot { left: -8px; top: -8px; width: 16px; height: 16px; outline: 2px solid #111827; }   /* 고른 점 — 조금 크게 + 진한 테두리(움직임 없음) */
 .pa.mk-v .mv-pin.cmp-bub.mkd.off .mk-dot { background: #b8bfcc; }
 .pa.mk-v .mv-pin.cmp-bub.mkd.me .mk-me { position: absolute; left: -11px; top: -30px; width: 22px; height: 22px; box-sizing: border-box; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #e03131; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); }
 .pa.mk-v .map .legend > span:first-child > i { border-radius: 50% 50% 50% 0; transform: rotate(-45deg); width: 11px; height: 11px; }
@@ -1712,6 +1712,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .pa.mk-v .map .legend > span.lg-un > i { background: rgba(255, 255, 255, .7); border: 2.5px solid #e03131; box-sizing: border-box; }
 .pa.mk-v .map .legend > span:is(.lg-rent, .lg-un) { cursor: pointer; }
 .pa.mk-v .map .legend > span.off { opacity: .45; text-decoration: line-through; }
+/* 시세예측 빌라 범례 — 흰 상자 대신 어두운 반투명(지도 위에서 더 잘 보이게, 2026-11-29 사용자) */
+.pa.mk-v .map .legend { background: rgba(17, 24, 39, .72); color: #fff; }
+:root[data-theme="dark"] .pa.mk-v .map :is(.legend, .legend span) { color: #fff !important; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pa.mk-v .map :is(.legend, .legend span) { color: #fff !important; } }
 .pa.mk-v .map .mk-pop dd.big2 { color: #e03131; font-weight: 800; }
 .pa.mk-v .map .mk-pop dd .pct { margin-left: 6px; color: var(--muted); font-weight: 700; }   /* 값과 띄움 — 글 속 빈칸은 빌드에서 사라졌다(103,130,00064.5%) */
 .pa.mk-v .map .mk-pop .ph { margin: 5px 0 2px; padding-top: 4px; border-top: 1px solid var(--line); font-weight: 800; }

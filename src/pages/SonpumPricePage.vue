@@ -35,7 +35,7 @@ import type { TipRow } from '../services/tipRows';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { isAdminEmail } from '../services/accessControl';
-import { auctionsOfDong, type AucRec } from '../services/auctionNear';
+import { auctionsOfDong, matchAfter, type AucRec } from '../services/auctionNear';
 
 /** loose — 시장분석 › 시세예측처럼 선정물건이 아닌 검색 주소로 볼 때. 적어 둘 물건이 없어 저장 · 임장경로 넣기는 감추고 '선정물건'은 '검색주소'로 */
 /** months — 기간을 바깥 줄(시세예측 주소 줄)이 고를 때. 이 화면의 기간 · 조회는 감춘다 */
@@ -366,16 +366,14 @@ watch([aucOn, () => region.value?.dong], async ([on, d]) => {
 }, { immediate: true });
 /** 낙찰 뒤 거래 — 같은 지번 · 낙찰일 뒤 실거래(매매 먼저, 없으면 전세) 가운데 호수가 낙찰 호수와 같은 것. 실거래 호수는 공동주택가격 호실 목록으로(같은 층 · 같은 전용) */
 type AucAfter = { k: 'sell' | 'rent'; r: PriceRow; est: boolean; cand: string };
-const hoHit = (text: string, ho: string) => !!ho && new RegExp(`(^|[^\\d])${ho}(?!\\d)`).test(text.replace(/[0-9A-Za-z]+동\s/g, ' '));
 const aucAfter = computed(() => {
   const out = new Map<number, AucAfter>();
+  const pool = allRows.value.filter((r) => r.group === '매매' || r.group === '전세');
   aucRaw.value.forEach((a) => {
-    if (!a.lot || !a.ho) return;
-    const later = allRows.value.filter((r) => r.jibun === a.lot && (r.group === '매매' || r.group === '전세') && r.contractDate.replace(/\D/g, '') > a.ymd)
-      .sort((x, y) => x.contractDate.localeCompare(y.contractDate));
+    // 매매 먼저, 없으면 전세 — 맞추는 셈은 공통(auctionNear.matchAfter, 수요분석 경매 물건 비중과 같은 셈)
     for (const k of ['매매', '전세'] as const) {
-      const hit = later.filter((r) => r.group === k).map((r) => ({ r, u: unitOfRow(r) })).find((x) => x.u.text && hoHit(x.u.text, a.ho));
-      if (hit) { out.set(a.i, { k: k === '매매' ? 'sell' : 'rent', r: hit.r, est: hit.u.est, cand: hit.u.est ? hit.u.text : '' }); return; }
+      const hit = matchAfter(a, pool.filter((r) => r.group === k), unitOfRow);
+      if (hit) { out.set(a.i, { k: k === '매매' ? 'sell' : 'rent', r: hit.r, est: hit.est, cand: hit.est ? hit.text : '' }); return; }
     }
   });
   return out;
@@ -389,6 +387,14 @@ const aucUnsold = computed(() => {
   const m = mySpot.value;
   return aucRaw.value.filter((a) => a.ymd >= from && aucAfter.value.get(a.i)?.k !== 'sell' && spots.value[a.lot] && (radius.value === -1 || !m || distM(m, spots.value[a.lot]!) <= radius.value));
 });
+/** 지도 범례 숫자(2026-11-29 사용자) — 낙찰 후 매도: 고른 기간 · 반경 안 낙찰 중 매도된 것. 유사 실거래: 지도에 찍힌 거래 수 */
+const aucSoldN = computed(() => {
+  if (!aucOn.value) return 0;
+  const w = tradeWindowOf(Date.now(), loadedMonths.value); const from = `${w.start.getFullYear()}${String(w.start.getMonth() + 1).padStart(2, '0')}${String(w.start.getDate()).padStart(2, '0')}`;
+  const m = mySpot.value;
+  return aucRaw.value.filter((a) => a.ymd >= from && aucAfter.value.get(a.i)?.k === 'sell' && (radius.value === -1 || !m || (spots.value[a.lot] && distM(m, spots.value[a.lot]!) <= radius.value))).length;
+});
+const mapDealN = computed(() => mapGroups.value.reduce((n, g) => n + g.list.length, 0));
 // ===== 낙찰사례 탭 — 고른 범위 · 기간 · 필터의 낙찰 =====
 const aucRes = ref<'낙찰결과' | '실거래포함'>('낙찰결과');
 const aucYears = computed(() => [...new Set(aucRaw.value.map((a) => a.ymd.slice(0, 4)))].sort().slice(-3).map((y) => `${y}년`));
@@ -1367,7 +1373,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <dl><template v-for="(r, i) in popData.rows" :key="i"><dt>{{ r[0] }}</dt><dd :class="{ big: r[0] === '실거래가', big2: r[0] === '낙찰가' }">{{ r[1] }}<span v-if="r[2]" class="pct"> {{ r[2] }}</span></dd></template></dl>
           <template v-if="popData.sec"><div :class="['ph', popData.sec.c]">{{ popData.sec.t }}</div><dl><template v-for="(r, i) in popData.sec.rows" :key="i"><dt>{{ r[0] }}</dt><dd :class="{ big2: r[0] === '낙찰가' || r[0] === '매도가' }">{{ r[1] }}<span v-if="r[2]" class="pct"> {{ r[2] }}</span></dd></template></dl></template>
         </div>
-        <div class="legend"><span v-if="!dongOnly"><i style="background:#e03e3e" />{{ meName }}</span><span v-if="!aucTab || aucRes === '실거래포함'"><i style="background:#2b4fd8" />{{ mkV ? '유사 실거래' : '유사물건' }}</span><template v-if="aucOn && aucTab"><span :class="['lg-nk', { off: soldOff }]" title="눌러서 켜고 끄기" style="cursor:pointer" @click="soldOff = !soldOff"><i />낙찰 후 매도 {{ aucStat.sold }}</span><span :class="['lg-rent', { off: rentOff }]" title="눌러서 켜고 끄기" @click="rentOff = !rentOff"><i />낙찰 후 전세 {{ aucRows.filter((a) => aucAfter.get(a.i)?.k === 'rent').length }}</span><span :class="['lg-un', { off: unOff }]" title="눌러서 켜고 끄기" @click="unOff = !unOff"><i />낙찰 {{ aucRows.filter((a) => !aucAfter.get(a.i)).length }}</span></template><template v-else-if="aucOn"><span class="lg-nk"><i />낙찰 후 매도</span><span :class="['lg-rent', { off: rentOff }]" title="눌러서 켜고 끄기" @click="rentOff = !rentOff"><i />낙찰 후 전세 {{ aucUnsold.filter((a) => aucAfter.get(a.i)?.k === 'rent').length }}</span><span :class="['lg-un', { off: unOff }]" title="눌러서 켜고 끄기" @click="unOff = !unOff"><i />낙찰 {{ aucUnsold.filter((a) => aucAfter.get(a.i)?.k !== 'rent').length }}</span></template></div>
+        <div class="legend"><span v-if="!dongOnly"><i style="background:#e03e3e" />{{ meName }}</span><span v-if="!aucTab || aucRes === '실거래포함'"><i style="background:#2b4fd8" />{{ mkV ? `유사 실거래 ${mapDealN.toLocaleString('ko-KR')}` : '유사물건' }}</span><template v-if="aucOn && aucTab"><span :class="['lg-nk', { off: soldOff }]" title="눌러서 켜고 끄기" style="cursor:pointer" @click="soldOff = !soldOff"><i />낙찰 후 매도 {{ aucStat.sold }}</span><span :class="['lg-rent', { off: rentOff }]" title="눌러서 켜고 끄기" @click="rentOff = !rentOff"><i />낙찰 후 전세 {{ aucRows.filter((a) => aucAfter.get(a.i)?.k === 'rent').length }}</span><span :class="['lg-un', { off: unOff }]" title="눌러서 켜고 끄기" @click="unOff = !unOff"><i />낙찰 {{ aucRows.filter((a) => !aucAfter.get(a.i)).length }}</span></template><template v-else-if="aucOn"><span class="lg-nk"><i />낙찰 후 매도 {{ aucSoldN.toLocaleString('ko-KR') }}</span><span :class="['lg-rent', { off: rentOff }]" title="눌러서 켜고 끄기" @click="rentOff = !rentOff"><i />낙찰 후 전세 {{ aucUnsold.filter((a) => aucAfter.get(a.i)?.k === 'rent').length }}</span><span :class="['lg-un', { off: unOff }]" title="눌러서 켜고 끄기" @click="unOff = !unOff"><i />낙찰 {{ aucUnsold.filter((a) => aucAfter.get(a.i)?.k !== 'rent').length }}</span></template></div>
         <p v-if="!mySpot && !loading && res" class="map-msg">{{ meName }} 위치를 찾지 못했습니다</p>
       </div>
 
