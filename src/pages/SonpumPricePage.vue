@@ -959,16 +959,19 @@ const popData = computed(() => {
 });
 const closePop = () => { focus.value = ''; meOpen.value = false; focusAuc.value = null; };
 const placePop = () => {
-  popPos.value = null;
   const d = popData.value; const box = mapEl.value?.parentElement; const pe = popEl.value;
   if (!d || !box || !pe || !mapEl.value) return;
   const dot = mapEl.value.querySelector(`[data-j="${CSS.escape(d.key)}"]`) as HTMLElement | null;
-  if (!dot) return;
+  if (!dot) { popPos.value = null; return; }
   const br = box.getBoundingClientRect(); const dr = dot.getBoundingClientRect();
   const dx = dr.left + dr.width / 2 - br.left; const dy = (d.key === '__me' ? dr.top + dr.height : dr.top + dr.height / 2) - br.top;
   const mw = box.clientWidth; const mh = box.clientHeight;
-  if (dx < 0 || dy < 0 || dx > mw || dy > mh) return;   // 점이 지도 밖이면 띄우지 않는다
+  if (dx < 0 || dy < 0 || dx > mw || dy > mh) { popPos.value = null; return; }   // 점이 지도 밖이면 띄우지 않는다
+  // 크기는 보이는 그대로 잰다 — 숨김(display 없음)으로 재면 0이 나와 점 위에 겹쳐 떴다(2026-11-29). 지도 왼쪽 끝에 놓고 재서 오른쪽 끝에서 줄이 꺾이지 않게
+  const keepL = pe.style.left; pe.style.left = '0px';
   const w = pe.offsetWidth; const h = pe.offsetHeight; const G = 16; const R0 = 64;
+  pe.style.left = keepL;
+  if (!w || !h) return;
   let left: number; let top: number; let side: string;
   const topGap = d.key === '__me' ? 30 : G;
   if (dy - h - topGap >= 8) { side = 'above'; top = dy - h - topGap; } else if (dy + G + h <= mh - 8) { side = 'below'; top = dy + G; } else { side = dx + G + w <= mw - R0 ? 'right' : 'left'; top = Math.max(8, Math.min(dy - h / 2, mh - h - 8)); }
@@ -980,7 +983,7 @@ const placePop = () => {
     if (pr.top < sb + 8) window.scrollBy({ top: pr.top - sb - 12, behavior: 'smooth' }); else if (pr.bottom > window.innerHeight - 8) window.scrollBy({ top: pr.bottom - window.innerHeight + 12, behavior: 'smooth' });
   });
 };
-watch([popData, focus, meOpen, focusAuc], () => { void nextTick(() => window.setTimeout(placePop, 30)); });
+watch([popData, focus, meOpen, focusAuc], () => { popPos.value = null; void nextTick(() => window.setTimeout(placePop, 30)); });   // 새 점이면 앞 자리에 잠깐 뜨지 않게 숨겨 두고 잰다
 let popEvt = false;
 watch(kTools, (t) => {
   if (!t || popEvt || !mkV.value) return; popEvt = true;
@@ -1334,7 +1337,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <template v-if="savedCompare?.items.length && !addOpen">✓ 비교 임장경로 {{ savedCompare.items.length }}곳</template><template v-else>＋ 비교 임장경로에 추가</template>
         </button>
         <p v-if="addMsg" class="add-msg">{{ addMsg }}</p>
-        <div v-if="mkV && popData" v-show="!popHide && popPos" ref="popEl" :class="['mk-pop', popPos?.side]" :style="popPos ? { left: `${popPos.left}px`, top: `${popPos.top}px`, '--tx': `${popPos.tx}px`, '--ty': `${popPos.ty}px` } : { left: '-9999px', top: '0' }" @click.stop>
+        <div v-if="mkV && popData" ref="popEl" :class="['mk-pop', popPos?.side]" :style="[popPos ? { left: `${popPos.left}px`, top: `${popPos.top}px`, '--tx': `${popPos.tx}px`, '--ty': `${popPos.ty}px` } : { left: '-9999px', top: '0' }, popHide || !popPos ? { visibility: 'hidden' } : {}]" @click.stop>
           <div class="t"><span class="tt">{{ popData.title }}</span><button type="button" class="mk-x" aria-label="닫기" title="닫기" @click="closePop"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button></div>
           <div v-if="popData.sub" class="sub">{{ popData.sub }}</div>
           <dl><template v-for="(r, i) in popData.rows" :key="i"><dt>{{ r[0] }}</dt><dd :class="{ big: r[0] === '실거래가', big2: r[0] === '낙찰가' }">{{ r[1] }}<span v-if="r[2]" class="pct"> {{ r[2] }}</span></dd></template></dl>
