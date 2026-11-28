@@ -154,13 +154,15 @@ const REGION_Q_KEY = 'son.market.regionQ';
 const regionQ = ref<{ address: string; kind: Kind; months: number; at: number; dong: string } | null>((() => { try { return JSON.parse(localStorage.getItem(REGION_Q_KEY) || 'null'); } catch { return null; } })());
 const regionAuction = computed(() => (regionQ.value ? ({ id: `market-dong:${regionQ.value.kind}:${regionQ.value.address}:${regionQ.value.months}:${regionQ.value.at}`, address: regionQ.value.address } as AuctionDetail) : null));
 /** 조회 줄 종류 · 기간 — 두 길이 같은 값을 쓴다(바꾸면 둘 다) */
-const uniKind = computed<Kind>({ get: () => (sonPick.value === 'item' ? priceKind.value : kind.value), set: (v) => { priceKind.value = v; kind.value = v; } });
-const uniMonths = computed<number>({ get: () => (sonPick.value === 'item' ? priceMonths.value : periodMonths.value), set: (m) => { priceMonths.value = m; applyPeriod(m); } });
+/** 수요분석은 늘 시 · 도 / 시 · 군 · 구 / 읍 · 면 · 동(동 단위라 물건으로 · 지역으로가 필요 없다, 2026-11-29 사용자) */
+const barRegion = computed(() => listView.value === 'supply' || sonPick.value === 'region');
+const uniKind = computed<Kind>({ get: () => (!barRegion.value ? priceKind.value : kind.value), set: (v) => { priceKind.value = v; kind.value = v; } });
+const uniMonths = computed<number>({ get: () => (!barRegion.value ? priceMonths.value : periodMonths.value), set: (m) => { priceMonths.value = m; applyPeriod(m); } });
 const uniBusy = ref(false);
-const uniDisabled = computed(() => (sonPick.value === 'item' ? !priceAddr.value.trim() : (loading.value || !district.value)));
+const uniDisabled = computed(() => (!barRegion.value ? !priceAddr.value.trim() : (loading.value || !district.value)));
 /** 조회 — 물건으로: 시세분석은 그 주소, 수요분석은 그 주소의 동. 지역으로: 고른 동(시세분석은 동 전체) */
 const runUni = async () => {
-  if (sonPick.value === 'item') {
+  if (!barRegion.value) {
     runPrice();
     if (listView.value === 'supply') {
       uniBusy.value = true;
@@ -1122,8 +1124,8 @@ const downloadCsv = () => {
       <!-- 경매지번 탭에서는 이 줄 대신 경매지번의 주소 줄이 이 자리(admTopBarSlot)에 온다 -->
       <div id="admTopBarSlot" class="app-market adm-topbar-slot" data-k="case">
         <div v-if="webEmbed && props.sonMode" class="adm-bar son-price-bar son-uni">
-          <span class="sx-mode son-mode" role="group" aria-label="조회 기준"><button type="button" :class="{ on: sonPick === 'item' }" :aria-pressed="sonPick === 'item'" @click="sonPick = 'item'">물건으로</button><button type="button" :class="{ on: sonPick === 'region' }" :aria-pressed="sonPick === 'region'" @click="sonPick = 'region'">지역으로</button></span>
-          <label v-if="sonPick === 'item'" class="adm-f grow">
+          <span v-if="listView !== 'supply'" class="sx-mode son-mode" role="group" aria-label="조회 기준"><button type="button" :class="{ on: sonPick === 'item' }" :aria-pressed="sonPick === 'item'" @click="sonPick = 'item'">물건으로</button><button type="button" :class="{ on: sonPick === 'region' }" :aria-pressed="sonPick === 'region'" @click="sonPick = 'region'">지역으로</button></span>
+          <label v-if="!barRegion" class="adm-f grow">
             <small>주소 입력 <em>시·도부터 지번·호수까지</em></small>
             <input v-model="priceAddr" class="adm-input wide" placeholder="예) 인천광역시 서구 검암동 670-4 203호" @keyup.enter="runUni" />
           </label>
@@ -1170,7 +1172,7 @@ const downloadCsv = () => {
             </div>
           </label>
           <button type="button" class="adm-load" :disabled="uniDisabled || uniBusy" @click="runUni">
-            <template v-if="(loading || uniBusy) && sonPick === 'region'">조회 중<span class="adm-dots" aria-hidden="true"><i /><i /><i /></span></template>
+            <template v-if="(loading || uniBusy) && barRegion">조회 중<span class="adm-dots" aria-hidden="true"><i /><i /><i /></span></template>
             <template v-else>조회</template>
           </button>
         </div>
