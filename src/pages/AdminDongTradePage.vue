@@ -1150,6 +1150,13 @@ const downloadCsv = () => {
               </select>
             </label>
           </template>
+          <!-- 수요분석 — 거래(매매 · 전세)는 원래대로 이 탭에만(종류 · 기간 · 조회 자리는 그대로) -->
+          <label v-if="listView === 'supply'" class="adm-f son-deal">
+            <small>거래</small>
+            <div class="adm-seg">
+              <button v-for="k in DEAL_KINDS" :key="k.key" type="button" :class="['adm-seg-btn', { on: dealKind === k.key }]" @click="dealKind = k.key">{{ k.label }}</button>
+            </div>
+          </label>
           <label class="adm-f son-kind">
             <small>종류</small>
             <div class="adm-seg">
@@ -2095,6 +2102,8 @@ const downloadCsv = () => {
 .son-uni > .adm-f.son-sel { flex: 1 1 0 !important; min-width: 0 !important; width: auto !important; }
 .son-uni > .adm-f.son-sel > .adm-input { width: 100% !important; min-width: 0 !important; max-width: none !important; box-sizing: border-box; }
 .son-uni > .adm-f.son-kind { margin-left: auto; }
+.son-uni > .adm-f.son-deal { flex: none; margin-left: auto; }
+.son-uni > .adm-f.son-deal + .adm-f.son-kind { margin-left: 0; }
 .son-uni > .adm-load { width: 120px; }
 /* 시세예측 › 시세분석 — 아직 조회 전 안내 */
 .son-msg { margin: 0; padding: 40px 16px; text-align: center; font-size: 14px; color: #6b7280; background: var(--surface, #fff); border: 1px solid var(--card-line, #e5e7eb); border-radius: 12px; }
