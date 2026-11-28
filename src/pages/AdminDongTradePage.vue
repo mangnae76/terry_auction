@@ -187,6 +187,11 @@ const runUni = async () => {
 };
 /** 낙찰사례 탭(운영 전용, 2026-11-29 시안 v7) — 운영진만 */
 const isOps = computed(() => isAdminEmail(auth.email));
+/** 수요분석 거래(매매 · 전세) — 누르면 바로 다시 조회. 조회 전엔 단추만 바뀌고 숫자는 앞 거래 그대로라 매매인데 전세 건수가 보였다(2026-11-29) */
+const pickDeal = (k: 'sale' | 'jeonse') => {
+  dealKind.value = k;
+  if (district.value && !loading.value && k !== loadedDeal.value) void runUni();
+};
 /** 수요분석 경매비중 칸을 누르면 — 같은 동 낙찰사례 탭으로(지역으로, 대조표 6-3) */
 const goAuc = () => {
   sonPick.value = 'region';
@@ -1166,7 +1171,7 @@ const downloadCsv = () => {
           <label v-if="listView === 'supply'" class="adm-f son-deal">
             <small>거래</small>
             <div class="adm-seg">
-              <button v-for="k in DEAL_KINDS" :key="k.key" type="button" :class="['adm-seg-btn', { on: dealKind === k.key }]" @click="dealKind = k.key">{{ k.label }}</button>
+              <button v-for="k in DEAL_KINDS" :key="k.key" type="button" :class="['adm-seg-btn', { on: dealKind === k.key }]" @click="pickDeal(k.key)">{{ k.label }}</button>
             </div>
           </label>
           <label class="adm-f son-kind">
