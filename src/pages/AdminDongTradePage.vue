@@ -187,6 +187,16 @@ const runUni = async () => {
 };
 /** 낙찰사례 탭(운영 전용, 2026-11-29 시안 v7) — 운영진만 */
 const isOps = computed(() => isAdminEmail(auth.email));
+/** 수요분석 경매비중 칸을 누르면 — 같은 동 낙찰사례 탭으로(지역으로, 대조표 6-3) */
+const goAuc = () => {
+  sonPick.value = 'region';
+  if (district.value && dong.value && regionQ.value?.dong !== dong.value) {
+    regionQ.value = { address: [sido.value, district.value.label, dong.value].filter(Boolean).join(' '), kind: kind.value, months: periodMonths.value, at: Date.now(), dong: dong.value };
+    try { localStorage.setItem(REGION_Q_KEY, JSON.stringify(regionQ.value)); } catch { /* 그만 */ }
+  }
+  listView.value = 'auc';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 const listView = ref<'map' | 'top' | 'bld' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case' | 'auc'>(props.rankMode ? 'map' : props.sonMode ? 'supply' : 'table');
 // 웹 — 맨 앞 '지도' 탭(예전 시장분석 › 거래랭킹). 조회할 때마다 mapRun 이 늘어 지도도 같은 조건으로 받는다
 const mapRun = ref(0);
@@ -1373,7 +1383,7 @@ const downloadCsv = () => {
         <!-- 수요공급은 한 번 띄우면 계속 들고 있다(v-show) — 탭을 오갈 때마다 새로 띄우면 비었다가 차며 깜빡였다 -->
         <!-- 흰 카드(.dm-card) 안에 수요분석 상자 — 손품분석 수요조사와 같은 짜임(웹 CSS 가 같은 규칙을 씌운다) -->
         <div v-if="webEmbed && supplySeen" v-show="listView === 'supply'" class="dm-card">
-          <AdminRegionDemandPage :embed="supplyEmbed" :chip="snapChip" class="adm-supply" />
+          <AdminRegionDemandPage :embed="supplyEmbed" :chip="snapChip" :auc-share="!!props.sonMode && isOps" class="adm-supply" @go-auc="goAuc" />
         </div>
         <template v-if="webEmbed && listView === 'supply'" />
         <!-- 랭킹분석 › 건물랭킹 — 많이 팔린 건물 순위(막대 · 건수 · 평균가 · 평당가 · 최근 거래) -->
