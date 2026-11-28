@@ -1353,7 +1353,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <div class="est">
         <!-- 웹 — 중간값 · 최저 · 최고는 뺐다. 거래가를 내 평수로 바꿔 만든 값이라 실제로 거래된 값이 아니다(2026-11-11 사용자) -->
         <div v-if="aucTab" class="tiles four">
-          <div class="tile key"><span class="k">① 평균 낙찰가율</span><span class="v pa-num">{{ aucStat.n ? `${aucStat.avg.toFixed(1)}%` : '-' }}</span><span class="s rad">가운데값 {{ aucStat.mid.toFixed(1) }}% · 낙찰 {{ aucStat.n.toLocaleString('ko-KR') }}건</span></div>
+          <div class="tile key"><span class="k">① 중앙값 낙찰가율</span><span class="v pa-num">{{ aucStat.n ? `${aucStat.mid.toFixed(1)}%` : '-' }}</span><span class="s rad">평균 {{ aucStat.avg.toFixed(1) }}% · 낙찰 {{ aucStat.n.toLocaleString('ko-KR') }}건</span></div>
           <div class="tile"><span class="k">평균 응찰</span><span class="v pa-num">{{ aucStat.n ? `${aucStat.bids.toFixed(1)}명` : '-' }}</span></div>
           <div class="tile"><span class="k">유찰 뒤 낙찰</span><span class="v pa-num">{{ aucStat.fail.toLocaleString('ko-KR') }}건</span></div>
           <div class="tile"><span class="k">낙찰 후 매도</span><span class="v pa-num">{{ aucStat.sold.toLocaleString('ko-KR') }}건</span><span class="s rad">{{ aucStat.sold ? `평균 ${aucStat.soldMo.toFixed(1)}개월 뒤 · 낙찰가보다 ${aucStat.soldGain >= 0 ? '+' : ''}${aucStat.soldGain.toFixed(1)}%` : '되판 거래 없음' }}</span></div>
