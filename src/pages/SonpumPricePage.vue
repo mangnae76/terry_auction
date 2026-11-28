@@ -23,7 +23,7 @@ import { browserCacheGet, browserCachePut } from '../services/browserCache';
 import { geocodeAddress } from '../services/routeOptimizer';
 import { getBuildingFacts } from '../services/buildingFacts';
 import { tradeWindowOf } from '../services/publicDataApi';
-import { createMapView, type MapView, type PinHandle } from '../services/mapView';
+import { createMapView, type DotHandle, type DotStyle, type LatLng, type MapView } from '../services/mapView';
 import KakaoMapTools from '../components/KakaoMapTools.vue';
 import { openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { REGION_GROUPS } from '../services/regionCodes';
@@ -844,13 +844,19 @@ const fieldChips = (jibun: string) => {
 const sameCount = computed(() => shownRows.value.filter((r) => r.same).length);
 const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 // ===== 시세예측 빌라 — 점을 눌러도 지도를 통째로 다시 그리지 않는다(점 수백 개라 느렸다, 2026-11-29 사용자). 고른 점 표시만 바꾼다 =====
-const pinH = new Map<string, { h: PinHandle; z: number; onZ: number }>();
+// 점은 지도 기본 표식(mv.dot) — HTML 상자는 붙일 때마다 카카오가 크기를 재서 374개에 2초 멈췄다(2026-11-29 잼)
+const DOT = { blue: '#2b6df3', off: '#b8bfcc', sold: '#e03131', rent: '#16a34a', un: '#ff922b' };   // 낙찰만 — 주황(분홍은 어색, 2026-11-29 사용자)
+const DOT_SIZE = 12; const DOT_ON = 16; const DOT_RING = '#111827';
+const pinH = new Map<string, { h: DotHandle; at: LatLng; color: string; z: number; onZ: number }>();
 let onKey = '';
+const addDot = (key: string, at: LatLng, color: string, z: number, onZ: number, onClick: () => void) => {
+  pinH.set(key, { h: mv!.dot(at, { color, size: DOT_SIZE, z, onClick }), at, color, z, onZ });
+};
 const syncOn = () => {
   const key = focusAuc.value != null ? `a:${focusAuc.value}` : focus.value;
   if (key === onKey) return;
-  const was = pinH.get(onKey); if (was) { was.h.el()?.classList.remove('on'); was.h.setZ(was.z); }
-  const now = pinH.get(key); if (now) { now.h.el()?.classList.add('on'); now.h.setZ(now.onZ); }
+  const was = pinH.get(onKey); if (was) { was.h.set({ color: was.color, size: DOT_SIZE }); was.h.setZ(was.z); }
+  const now = pinH.get(key); if (now) { now.h.set({ color: now.color, size: DOT_ON, ring: DOT_RING } as DotStyle); now.h.setZ(now.onZ); }
   onKey = key;
 };
 type KPoly = { setMap: (m: unknown) => void };
@@ -906,7 +912,7 @@ const drawMap = () => {
     if (mkV.value) {
       // 시세예측 빌라(시안 v7) — 평소엔 점만, 누르면 말풍선(꼬리 · X). 고른 점은 조금 커지고 고리가 깜빡인다
       const nk = aucOn.value && g.list.some((r) => resaleOf.value.has(rowKey(r)));
-      pinH.set(g.jibun, { h: mv!.pin(g.spot, { className: `cmp-bub mkd${nk ? ' nk' : ''}${off ? ' off' : ''}`, html: `<i class="mk-dot" data-j="${esc(g.jibun)}"></i>`, onClick: () => { popFromMap = true; meOpen.value = false; focusAuc.value = null; focus.value = focus.value === g.jibun ? '' : g.jibun; }, z: 1 }), z: 1, onZ: 50 });
+      addDot(g.jibun, g.spot, off ? DOT.off : nk ? DOT.sold : DOT.blue, 1, 50, () => { popFromMap = true; meOpen.value = false; focusAuc.value = null; focus.value = focus.value === g.jibun ? '' : g.jibun; });
       return;
     }
     if (webEmbed) {
@@ -933,7 +939,7 @@ const drawMap = () => {
     (props.aucTab ? aucRows.value.filter((a) => spots.value[a.lot]) : aucUnsold.value).forEach((a) => {
       const k = aucAfter.value.get(a.i)?.k; const rent = k === 'rent'; const sold = k === 'sell';
       if ((rent && rentOff.value) || (!rent && !sold && unOff.value) || (sold && soldOff.value)) return;
-      pinH.set(`a:${a.i}`, { h: mv!.pin(spots.value[a.lot]!, { className: `cmp-bub mkd ${sold ? 'nk' : rent ? 'rent' : 'un'}`, html: `<i class="mk-dot" data-j="a:${a.i}"></i>`, onClick: () => { popFromMap = true; meOpen.value = false; focus.value = ''; focusAuc.value = focusAuc.value === a.i ? null : a.i; }, z: 2 }), z: 2, onZ: 60 });
+      addDot(`a:${a.i}`, spots.value[a.lot]!, sold ? DOT.sold : rent ? DOT.rent : DOT.un, 2, 60, () => { popFromMap = true; meOpen.value = false; focus.value = ''; focusAuc.value = focusAuc.value === a.i ? null : a.i; });
     });
     if (!props.dongOnly) mv.pin(m, { className: 'cmp-bub mkd me', html: '<i class="mk-me" data-j="__me"></i>', onClick: () => { popFromMap = true; focus.value = ''; focusAuc.value = null; meOpen.value = !meOpen.value; }, z: 1000 });
     onKey = ''; syncOn(); drawFocusParcel();
@@ -991,10 +997,18 @@ const closePop = () => { focus.value = ''; meOpen.value = false; focusAuc.value 
 const placePop = () => {
   const d = popData.value; const box = mapEl.value?.parentElement; const pe = popEl.value;
   if (!d || !box || !pe || !mapEl.value) return;
-  const dot = mapEl.value.querySelector(`[data-j="${CSS.escape(d.key)}"]`) as HTMLElement | null;
-  if (!dot) { popPos.value = null; return; }
-  const br = box.getBoundingClientRect(); const dr = dot.getBoundingClientRect();
-  const dx = dr.left + dr.width / 2 - br.left; const dy = (d.key === '__me' ? dr.top + dr.height : dr.top + dr.height / 2) - br.top;
+  const br = box.getBoundingClientRect();
+  let dx: number; let dy: number;
+  const ph = pinH.get(d.key); const pt = ph && mv ? mv.toPoint(ph.at) : null;
+  if (pt) {
+    // 지도 표식 점 — 좌표로 자리를 잡는다(점이 화면 요소가 아니다)
+    const mr = mapEl.value.getBoundingClientRect(); dx = pt.x + mr.left - br.left; dy = pt.y + mr.top - br.top;
+  } else {
+    const dot = mapEl.value.querySelector(`[data-j="${CSS.escape(d.key)}"]`) as HTMLElement | null;
+    if (!dot) { popPos.value = null; return; }
+    const dr = dot.getBoundingClientRect();
+    dx = dr.left + dr.width / 2 - br.left; dy = (d.key === '__me' ? dr.top + dr.height : dr.top + dr.height / 2) - br.top;
+  }
   const mw = box.clientWidth; const mh = box.clientHeight;
   if (dx < 0 || dy < 0 || dx > mw || dy > mh) { popPos.value = null; return; }   // 점이 지도 밖이면 띄우지 않는다
   // 크기는 보이는 그대로 잰다 — 숨김(display 없음)으로 재면 0이 나와 점 위에 겹쳐 떴다(2026-11-29). 지도 왼쪽 끝에 놓고 재서 오른쪽 끝에서 줄이 꺾이지 않게

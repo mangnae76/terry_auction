@@ -47,6 +47,10 @@ export interface MapView {
   /** 다각형 테두리 · 옅은 칠(단지 경계 등) */
   polygon(points: LatLng[], s: CircleStyle): void;
   pin(p: LatLng, o: PinOpts): PinHandle;
+  /** 점 하나 — 많이 찍을 때(수백 개) pin 대신. 카카오는 표식 그림이라 붙일 때마다 크기를 재지 않는다 */
+  dot(p: LatLng, o: DotOpts): DotHandle;
+  /** 그 좌표가 지도 칸 안 어디(px)인가 — 말풍선 자리 잡기 */
+  toPoint(p: LatLng): { x: number; y: number } | null;
   clear(): void;
   /** true — 한 손가락 끌기 · 휠 확대를 막는다(두 손가락 · 두 번 눌러 확대는 그대로) */
   setLocked(locked: boolean): void;
@@ -104,6 +108,13 @@ const box = (o: PinOpts) => {
   if (o.interactive === false) el.style.pointerEvents = 'none';
   return el;
 };
+/** 가벼운 점 — 색 · 지름(px) · 고른 점 테두리. HTML 상자가 아니라 지도 기본 표식이라 수백 개여도 가볍다(2026-11-29 시세예측) */
+export type DotStyle = { color: string; size: number; ring?: string };
+export type DotOpts = DotStyle & { z?: number; onClick?: () => void };
+export interface DotHandle {
+  set(s: DotStyle): void;
+  setZ(z: number): void;
+}
 const spanOf = (c: LatLng, meters: number) => {
   const dLat = meters / 111000;
   const dLng = meters / (111000 * Math.cos((c.lat * Math.PI) / 180));
@@ -135,6 +146,19 @@ const kakaoView = (k: KakaoMaps, el: HTMLElement, opts: MapOpts): MapView => {
   map.setCopyrightPosition(k.CopyrightPosition.BOTTOMRIGHT, true);
   let items: Array<{ setMap: (m: unknown) => void }> = [];
   let pop: { setMap: (m: unknown) => void } | null = null;
+  // 점 그림 — 같은 색 · 크기는 한 번만 만든다
+  const dotImgs = new Map<string, unknown>();
+  const dotImage = (st: DotStyle) => {
+    const key = `${st.color}|${st.size}|${st.ring ?? ''}`;
+    let im = dotImgs.get(key);
+    if (!im) {
+      const rw = st.ring ? 2 : 0; const S = st.size + rw * 2; const c = S / 2;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}"><circle cx="${c}" cy="${c}" r="${st.size / 2}" fill="${st.color}"${st.ring ? ` stroke="${st.ring}" stroke-width="${rw * 2}" paint-order="stroke"` : ''}/></svg>`;
+      im = new k.MarkerImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, new k.Size(S, S), { offset: new k.Point(c, c) });
+      dotImgs.set(key, im);
+    }
+    return im;
+  };
   const closePop = () => { pop?.setMap(null); pop = null; };
   k.event.addListener(map, 'click', closePop);
   const bounds = (points: LatLng[]) => { const b = new k.LatLngBounds(); points.forEach((p) => b.extend(new k.LatLng(p.lat, p.lng))); return b; };
@@ -206,6 +230,13 @@ const kakaoView = (k: KakaoMaps, el: HTMLElement, opts: MapOpts): MapView => {
       ov.setMap(map); items.push(ov);
       return { el: () => content, setHtml: (h) => { content.innerHTML = h; }, setZ: (z) => ov.setZIndex(z) };
     },
+    dot(p, o) {
+      const mk = new k.Marker({ position: new k.LatLng(p.lat, p.lng), image: dotImage(o), zIndex: o.z ?? 1, clickable: !!o.onClick });
+      if (o.onClick) k.event.addListener(mk, 'click', o.onClick);
+      mk.setMap(map); items.push(mk);
+      return { set: (st) => mk.setImage(dotImage(st)), setZ: (z) => mk.setZIndex(z) };
+    },
+    toPoint(p) { const pt = map.getProjection().containerPointFromCoords(new k.LatLng(p.lat, p.lng)); return pt ? { x: pt.x, y: pt.y } : null; },
     clear() { closePop(); items.forEach((x) => x.setMap(null)); items = []; },
     setLocked(locked) { map.setDraggable(!locked); map.setZoomable(!locked); },
     onClick(fn) { k.event.addListener(map, 'click', fn); },
@@ -257,6 +288,14 @@ const leafletView = (el: HTMLElement, opts: MapOpts): MapView => {
       mk.addTo(layer);
       return { el: () => mk.getElement() ?? null, setHtml: (h) => { mk.setIcon(iconOf(h)); }, setZ: (z) => { mk.setZIndexOffset(z); } };
     },
+    dot(p, o) {
+      const styleOf = (st: DotStyle) => ({ radius: st.size / 2, fillColor: st.color, fillOpacity: 1, stroke: !!st.ring, color: st.ring ?? st.color, weight: 2 });
+      const mk = L.circleMarker(ll(p), { ...styleOf(o), interactive: !!o.onClick });
+      if (o.onClick) mk.on('click', o.onClick);
+      mk.addTo(layer);
+      return { set: (st) => { mk.setStyle(styleOf(st)); mk.setRadius(st.size / 2); }, setZ: (z) => { if (z > 1) mk.bringToFront(); } };
+    },
+    toPoint(p) { const pt = map.latLngToContainerPoint(ll(p)); return { x: pt.x, y: pt.y }; },
     clear() { layer.clearLayers(); },
     setLocked(locked) {
       if (locked) { map.dragging.disable(); map.scrollWheelZoom.disable(); } else { map.dragging.enable(); map.scrollWheelZoom.enable(); }
