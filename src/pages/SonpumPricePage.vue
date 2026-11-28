@@ -312,7 +312,13 @@ const candLv = computed(() => (props.dongOnly && floorLv.value ? candidates.valu
 const kindRows = computed(() => candLv.value.filter((r) => r.group === kindF.value));
 const kindCount = (k: Kind) => candLv.value.filter((r) => r.group === k).length;
 /** 동만 — 매매 평균 평당가(제외한 줄은 빼고) */
-const dongPy = computed(() => { const xs = candLv.value.filter((r) => r.group === '매매' && !isOff(r) && r.perPy > 0).map((r) => r.perPy); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0; });
+/** 동 전체 위 칸 — 고른 거래 종류 · 필터 안 거래의 평균(제외한 줄 빼고) */
+const dongStat = computed(() => {
+  const xs = candLv.value.filter((r) => r.group === kindF.value && !isOff(r));
+  const avg = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+  const ys = xs.map((r) => r.buildYear ?? 0).filter((y) => y > 1900);
+  return { n: xs.length, price: avg(xs.map((r) => r.price).filter((v) => v > 0)), py: avg(xs.map((r) => r.perPy).filter((v) => v > 0)), area: avg(xs.map((r) => r.areaM2).filter((v) => v > 0)) / PY, year: ys.length ? Math.round(avg(ys)) : 0 };
+});
 
 // ===== 머리글 ▾ 값 거르기(지금 표들과 같은 창) · 머리글 글자 = 정렬 =====
 const gapText = (r: PriceRow) => (r.pub ? (r.price - r.pub * HUG_RATE < 0 ? '갭 마이너스' : '갭 있음') : '공시가 없음');
@@ -397,16 +403,15 @@ const aucSoldN = computed(() => {
 const mapDealN = computed(() => mapGroups.value.reduce((n, g) => n + g.list.length, 0));
 // ===== 낙찰사례 탭 — 고른 범위 · 기간 · 필터의 낙찰 =====
 const aucRes = ref<'낙찰결과' | '실거래포함'>('낙찰결과');
-const aucYears = computed(() => [...new Set(aucRaw.value.map((a) => a.ymd.slice(0, 4)))].sort().slice(-3).map((y) => `${y}년`));
-const aucYear = ref('');
-watch([isDongA, aucYears], () => { if (!aucYears.value.includes(aucYear.value)) aucYear.value = aucYears.value[aucYears.value.length - 1] ?? ''; }, { immediate: true });
-function isDongA() { return radius.value === -1; }
+/** 동 전체 낙찰사례 기간 — 연도 대신 오늘부터 거꾸로 범위(6개월 · 1년 · 2년, 2026-11-29 사용자). 처음엔 위 조회 기간(없으면 1년) */
+const AUC_PERS = [6, 12, 24] as const;
+const aucPer = ref<number>(AUC_PERS.includes(props.months as 6 | 12 | 24) ? props.months! : 12);
 const fromOf = (mo: number) => { const w = tradeWindowOf(Date.now(), mo); return `${w.start.getFullYear()}${String(w.start.getMonth() + 1).padStart(2, '0')}${String(w.start.getDate()).padStart(2, '0')}`; };
 const aucRows = computed(() => {
   if (!props.aucTab || !aucOn.value) return [] as AucRec[];
   const m = mySpot.value; const c = cond.value; const dongAll = radius.value === -1; const from = fromOf(loadedMonths.value);
   return aucRaw.value.filter((a) => {
-    if (dongAll ? (aucYear.value && !a.ymd.startsWith(aucYear.value.slice(0, 4))) : a.ymd < from) return false;
+    if (a.ymd < (dongAll ? fromOf(aucPer.value) : from)) return false;
     if (!dongAll) { const p = spots.value[a.lot]; if (!p || !m || distM(m, p) > radius.value) return false; }
     if (a.area && !areaIn(a.area, c)) return false;
     if (a.year && (a.year < c.yMin || a.year > c.yMax)) return false;
@@ -429,8 +434,8 @@ const aucStat = computed(() => {
 });
 const aucMore = ref(false);
 const aucList = computed(() => (aucMore.value ? aucRows.value : aucRows.value.slice(0, MORE_AT)));
-const aucExtra = computed(() => [...(radius.value === -1 ? [{ key: 'year', label: '기간', opts: aucYears.value, value: aucYear.value }] : []), { key: 'res', label: '결과', opts: ['낙찰결과', '실거래포함'] as const, value: aucRes.value }]);
-const onExtra = (k: string, v: string) => { if (k === 'year') aucYear.value = v; else if (k === 'res') aucRes.value = v as '낙찰결과' | '실거래포함'; };
+const aucExtra = computed(() => [...(radius.value === -1 ? [{ key: 'per', label: '기간', opts: AUC_PERS.map(periodText), value: periodText(aucPer.value) }] : []), { key: 'res', label: '결과', opts: ['낙찰결과', '실거래포함'] as const, value: aucRes.value }]);
+const onExtra = (k: string, v: string) => { if (k === 'per') aucPer.value = AUC_PERS.find((m) => periodText(m) === v) ?? 12; else if (k === 'res') aucRes.value = v as '낙찰결과' | '실거래포함'; };
 const pickAuc = (a: AucRec) => { popFromMap = false; focus.value = ''; meOpen.value = false; focusAuc.value = focusAuc.value === a.i ? null : a.i; };
 const unOff = ref(false);
 const soldOff = ref(false);
@@ -941,7 +946,7 @@ const drawMap = () => {
       if ((rent && rentOff.value) || (!rent && !sold && unOff.value) || (sold && soldOff.value)) return;
       addDot(`a:${a.i}`, spots.value[a.lot]!, sold ? DOT.sold : rent ? DOT.rent : DOT.un, 2, 60, () => { popFromMap = true; meOpen.value = false; focus.value = ''; focusAuc.value = focusAuc.value === a.i ? null : a.i; });
     });
-    if (!props.dongOnly) mv.pin(m, { className: 'cmp-bub mkd me', html: '<i class="mk-me" data-j="__me"></i>', onClick: () => { popFromMap = true; focus.value = ''; focusAuc.value = null; meOpen.value = !meOpen.value; }, z: 1000 });
+    if (!props.dongOnly) mv.pin(m, { className: 'cmp-bub mkd me', html: '<svg class="mk-me" data-j="__me" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12Z" fill="#e03131" stroke="#fff" stroke-width="1.5"/><circle cx="12" cy="10" r="2.6" fill="#fff"/></svg>', onClick: () => { popFromMap = true; focus.value = ''; focusAuc.value = null; meOpen.value = !meOpen.value; }, z: 1000 });
     onKey = ''; syncOn(); drawFocusParcel();
     return;
   }
@@ -1017,7 +1022,7 @@ const placePop = () => {
   pe.style.left = keepL;
   if (!w || !h) return;
   let left: number; let top: number; let side: string;
-  const topGap = d.key === '__me' ? 30 : G;
+  const topGap = d.key === '__me' ? 22 : G;   // 조회물건 핀(18px) 위
   if (dy - h - topGap >= 8) { side = 'above'; top = dy - h - topGap; } else if (dy + G + h <= mh - 8) { side = 'below'; top = dy + G; } else { side = dx + G + w <= mw - R0 ? 'right' : 'left'; top = Math.max(8, Math.min(dy - h / 2, mh - h - 8)); }
   if (side === 'above' || side === 'below') left = Math.max(8, Math.min(dx - w / 2, mw - w - R0)); else left = side === 'right' ? dx + G : dx - G - w;
   popPos.value = { left, top, side, tx: Math.max(14, Math.min(dx - left, w - 14)), ty: Math.max(14, Math.min(dy - top, h - 14)) };
@@ -1083,7 +1088,7 @@ const evenCols = () => {
     // 웹 — 칸 폭은 지금 줄의 값이 아니라 칸마다 정해 둔 '가장 긴 글'(머리말 · 값)로 잰다 → 거래 종류(매매 · 전세 · 월세)와 창 폭이 같으면 줄이 바뀌어도 칸이 한 픽셀도 안 움직인다(2026-11-12 사용자 '표 흔들리지 않게 내용과 말머리 정확하게').
     // 남는 폭은 모든 칸에 똑같이 더하고, 모자라면 칸 안 여백을 줄인 뒤 주소 칸만 줄인다(… 으로 잘리고 말풍선으로 전체)
     const cw = t.parentElement.clientWidth;
-    const key = `even|${cw}|${isAptKind}`;   // 거래 종류(매매 · 전세 · 월세)는 열쇠에서 뺐다 — 탭을 바꿔도 칸이 그대로(2026-11-12 사용자)
+    const key = `even|${cw}|${isAptKind}|${mkV.value}|${props.dongOnly}`;   // 거래 종류(매매 · 전세 · 월세)는 열쇠에서 뺐다 — 탭을 바꿔도 칸이 그대로(2026-11-12 사용자)
     if (colsKey === key && colWidths.value.length) return;
     colsKey = key;
     const ths = [...t.querySelectorAll('thead th')] as HTMLElement[];
@@ -1111,16 +1116,19 @@ const evenCols = () => {
       const key2 = th.dataset.k ?? '';
       const head = (th.querySelector('.hk') as HTMLElement | null)?.innerText ?? th.innerText;
       const headW = tw(head.split('\n')[0], fontOf(thCs)) + (key2 ? 16 : 0);   // 정렬 ▲▼ 자리
-      const vals = key2 === 'name' ? [] : key2 ? (SAMPLE[key2] ?? []) : ['선정물건'];
+      // 구분 — 동 전체(기준 물건 없음)엔 '선정물건' 줄이 없어 매매 · 낙찰 칩 폭이면 된다(넓게 남았다, 2026-11-29 사용자)
+      const vals = key2 === 'name' ? [] : key2 ? (SAMPLE[key2] ?? []) : [props.dongOnly ? '매매' : '선정물건'];
       const chip = !key2 || key2 === 'elev';   // 구분 · 엘베는 칩(안쪽 여백 · 굵은 글) — 칩 폭까지 잡아야 '2대있음'이 두 줄로 꺾이지 않는다
       const valW = Math.max(0, ...vals.map((v) => tw(v, fontOf(tdCs, chip ? '700' : undefined, chip ? '12px' : undefined)) + (chip ? 16 : 0)));
       return Math.ceil(Math.max(headW, valW) + pad);
     });
     const ai = ths.findIndex((th) => th.dataset.k === 'name');
     const ADDR_MIN = 170;
-    let nat = natOf(10); t.classList.remove('tight', 'tighter');   // 칸 안 여백 24 → 10 — 그만큼 주소가 넓어진다(보떼하우스 '401·402호 중'까지 보이게, 2026-11-14 사용자)
+    // 시세예측 빌라 — 칸 안 여백을 넉넉히(좌우 12씩). 금액 · 평당가 · 전세 칸이 옆 칸과 붙어 보였다(2026-11-29 사용자). 남는 폭은 주소
+    const PADV = mkV.value ? 24 : 10;
+    let nat = natOf(PADV); t.classList.remove('tight', 'tighter');   // 칸 안 여백 24 → 10 — 그만큼 주소가 넓어진다(보떼하우스 '401·402호 중'까지 보이게, 2026-11-14 사용자)
     const others = () => nat.reduce((a, w, i) => (i === ai ? a : a + w), 0);
-    if (cw - others() < ADDR_MIN) { t.classList.add('tight'); nat = natOf(10); }   // 좁으면 칸 안 여백을 줄인다
+    if (cw - others() < ADDR_MIN) { t.classList.add('tight'); nat = natOf(10); }   // 좁으면 시세예측도 10으로   // 좁으면 칸 안 여백을 줄인다
     if (cw - others() < 100) { t.classList.add('tighter'); nat = natOf(4); }   // 더 좁으면 한 번 더(창이 좁을 때 표가 상자 밖으로 넘치지 않게)
     // 남는 폭은 모두 주소 칸에(2026-11-14 사용자 — 호 칸을 빼고 남은 자리를 주소가 쓰게). 예전엔 모든 칸에 똑같이 나눠 더했다
     const gap = 0;
@@ -1300,7 +1308,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
     <div v-if="estFix" class="zone-ph" :style="{ height: `${estFix.h}px` }" aria-hidden="true" />
     <div ref="zoneEl" class="zone zone-est" :style="estFix ? estFix.style : undefined">
       <div class="zone-h"><span class="pa-tag">결론</span><h3>{{ aucTab ? '낙찰사례' : dongOnly ? `${region?.dong ?? ''} 시세` : webEmbed ? '이 물건 매도가 예상' : '이 물건 실거래가 예상' }}</h3>
-        <span :class="['bar-desc', { hi: webEmbed }]"><svg v-if="webEmbed" class="flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ regionText || '지역 확인 중' }}{{ aucTab ? `${isDong ? ` 전체 · ${aucYear}` : ` · 반경 ${radText(radius)} · 최근 ${periodText(loadedMonths)}`} · ${aucStat.n.toLocaleString('ko-KR')}건` : dongOnly ? ` 전체 · ${periodText(loadedMonths)}` : webEmbed ? `${isDong ? ' 전체' : ` · 반경 ${radText(radius)}`} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` : '' }} · {{ KIND_LABEL[kind] }} {{ aucTab ? '낙찰' : '실거래' }}</span>
+        <span :class="['bar-desc', { hi: webEmbed }]"><svg v-if="webEmbed" class="flt" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></svg>{{ regionText || '지역 확인 중' }}{{ aucTab ? `${isDong ? ` 전체 · 최근 ${periodText(aucPer)}` : ` · 반경 ${radText(radius)} · 최근 ${periodText(loadedMonths)}`} · ${aucStat.n.toLocaleString('ko-KR')}건` : dongOnly ? ` 전체 · ${periodText(loadedMonths)}` : webEmbed ? `${isDong ? ' 전체' : ` · 반경 ${radText(radius)}`} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` : '' }} · {{ KIND_LABEL[kind] }} {{ aucTab ? '낙찰' : '실거래' }}</span>
         <span class="pa-load-r">
           <span v-if="progress.total && progress.done < progress.total" class="prog">위치 찾는 중 {{ progress.done }} / {{ progress.total }}</span>
           <!-- 앱 — 기간 단추 · 조회는 뺐다(저장된 기간 그대로, 2026-11-13 사용자) -->
@@ -1322,10 +1330,11 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <div class="tile"><span class="k">낙찰 후 매도</span><span class="v pa-num">{{ aucStat.sold.toLocaleString('ko-KR') }}건</span><span class="s rad">{{ aucStat.sold ? `평균 ${aucStat.soldMo.toFixed(1)}개월 뒤 · 낙찰가보다 ${aucStat.soldGain >= 0 ? '+' : ''}${aucStat.soldGain.toFixed(1)}%` : '되판 거래 없음' }}</span></div>
         </div>
         <div v-else-if="dongOnly" class="tiles four">
-          <div class="tile key"><span class="k">① 평균 평당가(매매)</span><span class="v pa-num">{{ dongPy ? vPy(dongPy) : '-' }}</span><span class="s rad">{{ region?.dong ?? '' }} {{ KIND_LABEL[kind] }} 매매 실거래 평균</span></div>
-          <div class="tile"><span class="k">매매 거래</span><span class="v pa-num">{{ kindCount('매매').toLocaleString('ko-KR') }}건</span></div>
-          <div class="tile"><span class="k">전세 거래</span><span class="v pa-num">{{ kindCount('전세').toLocaleString('ko-KR') }}건</span></div>
-          <div class="tile"><span class="k">월세 거래</span><span class="v pa-num">{{ kindCount('월세').toLocaleString('ko-KR') }}건</span></div>
+          <!-- 동 전체 — 거래 건수(매매 · 전세 · 월세)는 필터 단추에 있어 칸에선 빼고, 물건으로처럼 가격 · 평당가 · 전용/연식 · 거래건수(2026-11-29 사용자). 거래 종류 · 필터를 따른다 -->
+          <div class="tile key"><span class="k">① 평균 실거래가({{ kindF }})</span><span class="v pa-num">{{ dongStat.n ? `${n0(dongStat.price)}원` : '-' }}</span><span class="s rad">{{ region?.dong ?? '' }} {{ KIND_LABEL[kind] }} {{ kindF }} 실거래 평균</span></div>
+          <div class="tile"><span class="k">{{ kindF === '월세' ? '평균 평당 월세' : '평균 평당가' }}</span><span class="v pa-num">{{ dongStat.py ? vPy(dongStat.py) : '-' }}</span></div>
+          <div class="tile"><span class="k">평균 전용 / 연식</span><span class="v pa-num sm">{{ dongStat.area ? `${dongStat.area.toFixed(2)}평` : '-' }} / {{ dongStat.year ? `${dongStat.year}년식` : '-' }}</span></div>
+          <div class="tile"><span class="k">거래건수</span><span class="v pa-num">{{ dongStat.n.toLocaleString('ko-KR') }}건</span></div>
         </div>
         <div v-else :class="['tiles', { four: !props.app }]">
           <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? `① 매도가 예상(${kindF})` : `실거래가 예상(${kindF})` }}</InfoTip></span><span :class="['v', 'pa-num', { won: isAptKind && kindF !== '월세' }]">{{ view ? vEst(view.est) : '-' }}</span><!-- 웹 — 0건이 돼도 아래 두 줄 자리를 그대로(칸 높이가 줄면 아래 필터 · 표가 통째로 올라갔다 내려왔다, 2026-11-12 사용자 '엘베 누르면 흔들려') --><span v-if="webEmbed || view?.capped" class="cap" :style="{ visibility: view?.capped ? 'visible' : 'hidden' }">보증보험 한도 적용</span><span v-if="webEmbed || view" class="s rad">{{ webEmbed ? (estFormula || '\u00a0') : `반경 ${radText(radius)} · ${periodText(loadedMonths)} · ${(view?.n ?? 0).toLocaleString('ko-KR')}건` }}</span></div>
@@ -1387,7 +1396,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <dl><template v-for="(r, i) in popData.rows" :key="i"><dt>{{ r[0] }}</dt><dd :class="{ big: r[0] === '실거래가', big2: r[0] === '낙찰가' }">{{ r[1] }}<span v-if="r[2]" class="pct"> {{ r[2] }}</span></dd></template></dl>
           <template v-if="popData.sec"><div :class="['ph', popData.sec.c]">{{ popData.sec.t }}</div><dl><template v-for="(r, i) in popData.sec.rows" :key="i"><dt>{{ r[0] }}</dt><dd :class="{ big2: r[0] === '낙찰가' || r[0] === '매도가' }">{{ r[1] }}<span v-if="r[2]" class="pct"> {{ r[2] }}</span></dd></template></dl></template>
         </div>
-        <div class="legend"><span v-if="!dongOnly"><i style="background:#e03e3e" />{{ meName }}</span><span v-if="!aucTab || aucRes === '실거래포함'"><i style="background:#2b4fd8" />{{ mkV ? `유사 실거래 ${mapDealN.toLocaleString('ko-KR')}` : '유사물건' }}</span><template v-if="aucOn && aucTab"><span :class="['lg-nk', { off: soldOff }]" title="눌러서 켜고 끄기" style="cursor:pointer" @click="soldOff = !soldOff"><i />낙찰 후 매도 {{ aucStat.sold }}</span><span :class="['lg-rent', { off: rentOff }]" title="눌러서 켜고 끄기" @click="rentOff = !rentOff"><i />낙찰 후 전세 {{ aucRows.filter((a) => aucAfter.get(a.i)?.k === 'rent').length }}</span><span :class="['lg-un', { off: unOff }]" title="눌러서 켜고 끄기" @click="unOff = !unOff"><i />낙찰 {{ aucRows.filter((a) => !aucAfter.get(a.i)).length }}</span></template><template v-else-if="aucOn"><span class="lg-nk"><i />낙찰 후 매도 {{ aucSoldN.toLocaleString('ko-KR') }}</span><span :class="['lg-rent', { off: rentOff }]" title="눌러서 켜고 끄기" @click="rentOff = !rentOff"><i />낙찰 후 전세 {{ aucUnsold.filter((a) => aucAfter.get(a.i)?.k === 'rent').length }}</span><span :class="['lg-un', { off: unOff }]" title="눌러서 켜고 끄기" @click="unOff = !unOff"><i />낙찰 {{ aucUnsold.filter((a) => aucAfter.get(a.i)?.k !== 'rent').length }}</span></template></div>
+        <div class="legend"><span v-if="!dongOnly"><svg v-if="mkV" class="lg-me" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12Z" fill="#e03131" /><circle cx="12" cy="10" r="2.6" fill="#fff" /></svg><i v-else style="background:#e03e3e" />{{ meName }}</span><span v-if="!aucTab || aucRes === '실거래포함'"><i style="background:#2b4fd8" />{{ mkV ? `유사 실거래 ${mapDealN.toLocaleString('ko-KR')}` : '유사물건' }}</span><template v-if="aucOn && aucTab"><span :class="['lg-nk', { off: soldOff }]" title="눌러서 켜고 끄기" style="cursor:pointer" @click="soldOff = !soldOff"><i />낙찰 후 매도 {{ aucStat.sold }}</span><span :class="['lg-rent', { off: rentOff }]" title="눌러서 켜고 끄기" @click="rentOff = !rentOff"><i />낙찰 후 전세 {{ aucRows.filter((a) => aucAfter.get(a.i)?.k === 'rent').length }}</span><span :class="['lg-un', { off: unOff }]" title="눌러서 켜고 끄기" @click="unOff = !unOff"><i />낙찰 {{ aucRows.filter((a) => !aucAfter.get(a.i)).length }}</span></template><template v-else-if="aucOn"><span class="lg-nk"><i />낙찰 후 매도 {{ aucSoldN.toLocaleString('ko-KR') }}</span><span :class="['lg-rent', { off: rentOff }]" title="눌러서 켜고 끄기" @click="rentOff = !rentOff"><i />낙찰 후 전세 {{ aucUnsold.filter((a) => aucAfter.get(a.i)?.k === 'rent').length }}</span><span :class="['lg-un', { off: unOff }]" title="눌러서 켜고 끄기" @click="unOff = !unOff"><i />낙찰 {{ aucUnsold.filter((a) => aucAfter.get(a.i)?.k !== 'rent').length }}</span></template></div>
         <p v-if="!mySpot && !loading && res" class="map-msg">{{ meName }} 위치를 찾지 못했습니다</p>
       </div>
 
