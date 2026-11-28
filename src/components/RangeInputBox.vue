@@ -17,6 +17,8 @@ const props = defineProps<{
   base: number;
   loText: string;
   baseText: string;
+  /** 기준값이 없어도(동 전체 — 기준 물건 없음) 가운데 칸 자리를 이 글 폭만큼 두고 물결(~)을 넣는다. 물건으로와 입력 칸 자리가 같게(2026-11-29 사용자) */
+  keepBase?: string;
   hiText: string;
 }>();
 const emit = defineEmits<{ update: [lo: number | null, hi: number | null] }>();
@@ -46,6 +48,7 @@ const typeIn = (el: HTMLInputElement, moved: 'lo' | 'hi') => {
     <span class="vals">
       <input class="in" :value="loText" placeholder="입력" inputmode="decimal" :aria-label="`${label} 최소`" @change="typeIn($event.target as HTMLInputElement, 'lo')" @keydown.enter="($event.target as HTMLInputElement).blur()">
       <i v-if="base" class="me" :title="`기준 — 내 물건 ${baseText}`">{{ baseText }}</i>
+      <i v-else-if="keepBase" class="me tilde" aria-hidden="true"><span class="gh">{{ keepBase }}</span><b>~</b></i>
       <input class="in" :value="hiText" placeholder="입력" inputmode="decimal" :aria-label="`${label} 최대`" @change="typeIn($event.target as HTMLInputElement, 'hi')" @keydown.enter="($event.target as HTMLInputElement).blur()">
     </span>
   </span>
@@ -57,6 +60,9 @@ const typeIn = (el: HTMLInputElement, moved: 'lo' | 'hi') => {
 .dn { display: grid; gap: 1px; font-size: 14px; font-weight: 700; line-height: 1.15; color: #6b7280; white-space: nowrap; }
 .dn small { font-size: 12px; font-weight: 400; color: #6b7280; }
 .vals { display: inline-flex; align-items: center; gap: 8px; background: #f3f5f9; border-radius: 6px; padding: 3px; }
+.me.tilde { position: relative; }   /* 기준 물건 없음(지역으로) — 내 값 자리에 물결만(2026-11-29 사용자) */
+.me.tilde .gh { visibility: hidden; }
+.me.tilde b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 400; color: #9ca3af; }
 .me { font-style: normal; font-size: 14px; font-weight: 800; color: #e03e3e; font-variant-numeric: tabular-nums; padding: 0 2px; }
 /* 적는 칸 — 웹 .app-detail 입력칸 16px !important 를 이긴다(선택자를 좁게) */
 .rib .vals input.in.in { width: 64px; height: 26px !important; min-height: 0 !important; padding: 0 6px !important; box-sizing: border-box; border: 1px solid #2b6df3; border-radius: 5px; background: #fff; text-align: center; font-family: inherit; font-size: 14px !important; font-weight: 700; color: #2b6df3; font-variant-numeric: tabular-nums; box-shadow: none !important; }
