@@ -1726,27 +1726,30 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .pa table.mk-v small.nakv { color: #e03131; font-weight: 700; }
 :root[data-theme="dark"] .pa table.mk-v .kind.nak { background: rgba(224, 62, 62, .14); color: #ff8a8a; }
 :root[data-theme="dark"] .pa table.mk-v small.nakv, :root[data-theme="dark"] .pa.mk-v .map .mk-pop dd.big2 { color: #ff8a8a; }
-/* 낙찰사례 탭(운영, 시안 v7) — 표 제목 '낙찰사례', 칸은 가운데 · 금액은 오른쪽, 낙찰 후 거래 칩 */
+/* 낙찰사례 탭(운영, 시안 v7) — 표 제목 '낙찰사례'. 칸 폭 고정(어떤 글이 와도 상자를 넘지 않게), 머리글 · 내용 가운데, 금액은 오른쪽.
+   낙찰 후 거래는 칸 없이 주소 아래 작게(2026-11-29 사용자) */
 .pa.mk-auc .list-tools::after { content: "낙찰사례"; }
-.pa table.mk-auc { table-layout: fixed; width: 100%; }
+.pa table.mk-auc { table-layout: fixed !important; width: 100% !important; }
 .pa.mk-auc .sfb .cmp-conds > .pa-lab { padding: 4px 8px !important; gap: 6px !important; min-width: 0; }
 .pa.mk-auc .sfb .cmp-conds > .pa-lab > .pa-seg > button { padding: 0 6px !important; }
 .pa.mk-auc .sfb, .pa.mk-auc .map, .pa.mk-auc .pa-list { max-width: 100%; min-width: 0; }
-.pa table.mk-auc tbody td.l { overflow: hidden; }
-.pa table.mk-auc tbody td:is(:nth-child(6), :nth-child(7)) { padding-right: 8px !important; }
-.pa table.mk-auc tbody td:nth-child(6) { text-align: center !important; }
-.pa table.mk-auc tbody td.aft { text-align: left !important; white-space: nowrap; font-size: 13px; }
-.pa table.mk-auc tbody td.aft small { display: block; margin: 0; color: var(--muted); }
-.pa table.mk-auc tbody td.aft small.est { color: #e03131; }
-.pa table.mk-auc tbody td.aft .none { color: var(--muted); }
-.pa table.mk-auc .ab-b { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 4px; padding: 0 6px; line-height: 18px; margin-right: 4px; }
+.pa table.mk-auc thead th { text-align: center !important; vertical-align: middle !important; }
+.pa table.mk-auc thead th .hk { display: inline-flex; flex-direction: column; align-items: center; }
+.pa table.mk-auc thead th .hk-sub { display: block; font-size: inherit !important; font-weight: inherit !important; color: inherit !important; margin: 0 !important; }
+.pa table.mk-auc tbody td { text-align: center !important; }
+.pa table.mk-auc tbody td small { display: block; }
+.pa table.mk-auc tbody td:is(:nth-child(4), :nth-child(5)) { text-align: right !important; font-variant-numeric: tabular-nums; padding-right: 10px !important; }
+.pa table.mk-auc tbody td.l { text-align: left !important; overflow: hidden; }
+.pa table.mk-auc td.l .pa-addr { display: block; min-width: 0; }
+.pa table.mk-auc td.l .addr { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pa table.mk-auc td.l .aft-s { display: block; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--muted); }
+.pa table.mk-auc .ab-b { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 4px; padding: 0 5px; line-height: 17px; margin-right: 4px; }
 .pa table.mk-auc .ab-b.sold { background: #fdecec; color: #e03131; }
 .pa table.mk-auc .ab-b.rent { background: #e7f6ee; color: #16794a; }
 .pa table.mk-auc .nakp { color: #e03131; font-weight: 700; }
-.pa table.mk-auc td.l .addr { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
 :root[data-theme="dark"] .pa table.mk-auc .ab-b.sold { background: rgba(224, 62, 62, .14); color: #ff8a8a; }
 :root[data-theme="dark"] .pa table.mk-auc .ab-b.rent { background: rgba(22, 163, 74, .16); color: #4ade80; }
-:root[data-theme="dark"] .pa table.mk-auc .nakp, :root[data-theme="dark"] .pa table.mk-auc tbody td.aft small.est { color: #ff8a8a; }   /* 시세예측 빌라 — 유사 실거래(2026-11-29 시안 v7) */
+:root[data-theme="dark"] .pa table.mk-auc .nakp { color: #ff8a8a; }
 /* 시세예측 빌라 표(시안 v7, 2026-11-29) — 머리글 · 내용 가운데, ▼는 글 바로 오른쪽(모든 칸 같은 높이), 두 줄 머리는 같은 크기,
    금액 칸(실거래가 · 평당가 · 공시가 · 전세 / 갭)은 일의 자리 세로 맞춤 — 칸 안 오른쪽 여백(--nb4~7)은 화면이 숫자 폭을 재서 넣는다 */
 .pa table.mk-v thead th { text-align: center !important; vertical-align: middle !important; }

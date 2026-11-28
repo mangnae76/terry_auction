@@ -1452,9 +1452,9 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       </div>
 
       <div v-if="aucTab" class="pa-list">
-        <div class="tbl-wrap"><table class="even mk-v mk-auc">
-          <colgroup><col style="width: 84px"><col style="width: 112px"><col style="width: 44px"><col style="width: 100px"><col style="width: 104px"><col style="width: 48px"><col style="width: 140px"><col style="width: 74px"><col style="width: 52px"><col style="width: 56px"><col style="width: 56px"><col><col style="width: 90px"></colgroup>
-          <thead><tr><th>매각일</th><th>사건번호</th><th>차수</th><th><span class="hk">감정가<small class="hk-sub">최저가</small></span></th><th><span class="hk">낙찰가<small class="hk-sub">낙찰가율</small></span></th><th>응찰</th><th>낙찰 후 거래</th><th>전용</th><th>엘베</th><th><span class="hk">건축<small class="hk-sub">연차</small></span></th><th>거리</th><th>주소</th><th class="acts-th"><span class="sr">바로가기</span></th></tr></thead>
+        <div class="tbl-wrap"><table class="even mk-auc">
+          <colgroup><col style="width: 84px"><col style="width: 112px"><col style="width: 44px"><col style="width: 100px"><col style="width: 104px"><col style="width: 48px"><col style="width: 74px"><col style="width: 52px"><col style="width: 56px"><col style="width: 56px"><col><col style="width: 90px"></colgroup>
+          <thead><tr><th>매각일</th><th>사건번호</th><th>차수</th><th><span class="hk">감정가<small class="hk-sub">최저가</small></span></th><th><span class="hk">낙찰가<small class="hk-sub">낙찰가율</small></span></th><th>응찰</th><th>전용</th><th>엘베</th><th><span class="hk">건축<small class="hk-sub">연차</small></span></th><th>거리</th><th>주소</th><th class="acts-th"><span class="sr">바로가기</span></th></tr></thead>
           <tbody>
             <tr v-for="a in aucList" :key="a.i" :class="{ on: focusAuc === a.i }" @click="pickAuc(a)">
               <td class="pa-num">{{ a.date }}</td>
@@ -1463,19 +1463,20 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <td class="r pa-num two">{{ n0(a.ap) }}<small>{{ a.low ? n0(a.low) : '-' }}</small></td>
               <td class="r pa-num two"><span class="nakp">{{ n0(a.pr) }}</span><small><b>{{ a.rate.toFixed(1) }}%</b></small></td>
               <td class="pa-num">{{ a.bids }}명</td>
-              <td class="aft"><template v-if="aucAfter.get(a.i)?.k === 'sell'"><span class="ab-b sold">매도</span> {{ aucAfter.get(a.i)!.r.contractDate }}<small>{{ n0(aucAfter.get(a.i)!.r.price) }} · {{ monthsBetween(a.ymd, aucAfter.get(a.i)!.r.contractDate) }}개월 뒤</small><small v-if="aucAfter.get(a.i)!.est" class="est">{{ aucAfter.get(a.i)!.cand }}</small></template><template v-else-if="aucAfter.get(a.i)?.k === 'rent'"><span class="ab-b rent">전세</span> {{ aucAfter.get(a.i)!.r.contractDate }}<small>{{ n0(aucAfter.get(a.i)!.r.price) }}</small></template><span v-else class="none">거래 없음</span></td>
               <td class="pa-num two">{{ a.area ? `${a.area.toFixed(2)}㎡` : '-' }}<small v-if="a.area">{{ (a.area / PY).toFixed(2) }}평</small></td>
               <td><span v-if="elevs[a.lot] === undefined || elevs[a.lot] === null" class="ev u">-</span><span v-else-if="(elevs[a.lot] ?? 0) > 0" class="ev o">있음</span><span v-else class="ev x">없음</span></td>
               <td class="pa-num two">{{ a.year || '-' }}<small v-if="a.year">{{ yearMax - a.year + 1 }}년차</small></td>
               <td class="pa-num">{{ spots[a.lot] && mySpot && !dongOnly ? `${Math.round(distM(mySpot, spots[a.lot]!)).toLocaleString('ko-KR')}m` : '-' }}</td>
-              <td class="l" :data-tip="a.addr" data-tip-pos="right"><div class="pa-addr"><span class="addr">{{ [region?.dong, a.lot, a.name, a.ho ? `${a.ho}호` : ''].filter(Boolean).join(' ') }}</span></div></td>
+              <td class="l" :data-tip="a.addr" data-tip-pos="right"><div class="pa-addr"><span class="addr">{{ [region?.dong, a.lot, a.name, a.ho ? `${a.ho}호` : ''].filter(Boolean).join(' ') }}</span>
+                <!-- 낙찰 후 거래 — 칸을 따로 두지 않고 주소 아래 작게(표가 넓어지지 않게, 2026-11-29 사용자) -->
+                <span v-if="aucAfter.get(a.i)" class="aft-s" :title="aucAfter.get(a.i)!.est ? aucAfter.get(a.i)!.cand : undefined"><span :class="['ab-b', aucAfter.get(a.i)!.k === 'sell' ? 'sold' : 'rent']">{{ aucAfter.get(a.i)!.k === 'sell' ? '매도' : '전세' }}</span>{{ aucAfter.get(a.i)!.r.contractDate }} · {{ n0(aucAfter.get(a.i)!.r.price) }}<template v-if="aucAfter.get(a.i)!.k === 'sell'"> · {{ monthsBetween(a.ymd, aucAfter.get(a.i)!.r.contractDate) }}개월 뒤</template><template v-if="aucAfter.get(a.i)!.est"> · 추정</template></span></div></td>
               <td class="acts-td" @click.stop><span class="acts">
                 <button type="button" class="ab n" title="네이버 부동산에서 보기" aria-label="네이버 부동산에서 보기" @click="goNaver(a.addr)">N</button>
                 <button type="button" :class="['ab p', { ok: okKey === `a${a.i}P` }]" title="부동산플래닛에서 보기" aria-label="부동산플래닛에서 보기" @click="goPlanet(`${region?.dong ?? ''} ${a.lot}`, `a${a.i}P`)">P</button>
                 <button type="button" :class="['ab', { ok: okKey === `a${a.i}C` }]" title="주소 복사" aria-label="주소 복사" @click="copy(a.addr, `a${a.i}C`)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg></button>
               </span></td>
             </tr>
-            <tr v-if="!aucRows.length" class="nohover"><td colspan="13" class="pa-empty">{{ aucRaw.length ? '고른 범위 · 조건에 낙찰사례가 없습니다.' : '낙찰 자료를 불러오는 중이거나 이 동의 낙찰 자료가 없습니다.' }}</td></tr>
+            <tr v-if="!aucRows.length" class="nohover"><td colspan="12" class="pa-empty">{{ aucRaw.length ? '고른 범위 · 조건에 낙찰사례가 없습니다.' : '낙찰 자료를 불러오는 중이거나 이 동의 낙찰 자료가 없습니다.' }}</td></tr>
           </tbody>
         </table></div>
         <button v-if="aucRows.length > MORE_AT" type="button" class="more" @click="aucMore = !aucMore">{{ aucMore ? '접기' : `더 보기 (${aucRows.length - MORE_AT}건)` }}</button>
