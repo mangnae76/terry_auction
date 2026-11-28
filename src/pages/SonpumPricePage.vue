@@ -395,12 +395,11 @@ const aucUnsold = computed(() => {
   const m = mySpot.value;
   return aucRaw.value.filter((a) => a.ymd >= from && aucAfter.value.get(a.i)?.k !== 'sell' && spots.value[a.lot] && (radius.value === -1 || !m || distM(m, spots.value[a.lot]!) <= radius.value));
 });
-/** 지도 범례 숫자(2026-11-29 사용자) — 낙찰 후 매도: 고른 기간 · 반경 안 낙찰 중 매도된 것. 유사 실거래: 지도에 찍힌 거래 수 */
+/** 지도 범례 숫자(2026-11-29 사용자) — 유사 실거래: 지도에 찍힌 거래 수. 낙찰 후 매도: 그 안에서 낙찰 뒤 매도된 거래 */
 const aucSoldN = computed(() => {
+  // 지도에 찍힌 실거래(유사도 · 필터를 거친 것) 가운데 낙찰 후 매도인 거래 — 유사 실거래 건수 안의 숫자(2026-11-29 사용자: 59건인데 66건이 나와 어긋났다)
   if (!aucOn.value) return 0;
-  const w = tradeWindowOf(Date.now(), loadedMonths.value); const from = `${w.start.getFullYear()}${String(w.start.getMonth() + 1).padStart(2, '0')}${String(w.start.getDate()).padStart(2, '0')}`;
-  const m = mySpot.value;
-  return aucRaw.value.filter((a) => a.ymd >= from && aucAfter.value.get(a.i)?.k === 'sell' && (radius.value === -1 || !m || (spots.value[a.lot] && distM(m, spots.value[a.lot]!) <= radius.value))).length;
+  return mapGroups.value.reduce((n, g) => n + g.list.filter((r) => resaleOf.value.has(rowKey(r))).length, 0);
 });
 const mapDealN = computed(() => mapGroups.value.reduce((n, g) => n + g.list.length, 0));
 // ===== 낙찰사례 탭 — 고른 범위 · 기간 · 필터의 낙찰 =====
