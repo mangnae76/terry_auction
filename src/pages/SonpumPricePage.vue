@@ -35,7 +35,7 @@ import type { TipRow } from '../services/tipRows';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { isAdminEmail } from '../services/accessControl';
-import { auctionsOfDong, matchAfter, type AucRec } from '../services/auctionNear';
+import { aucSoldShared, auctionsOfDong, matchAfter, soldKey, type AucRec } from '../services/auctionNear';
 
 /** loose — 시장분석 › 시세예측처럼 선정물건이 아닌 검색 주소로 볼 때. 적어 둘 물건이 없어 저장 · 임장경로 넣기는 감추고 '선정물건'은 '검색주소'로 */
 /** months — 기간을 바깥 줄(시세예측 주소 줄)이 고를 때. 이 화면의 기간 · 조회는 감춘다 */
@@ -386,6 +386,13 @@ const aucAfter = computed(() => {
     }
   });
   return out;
+});
+// 지역으로(동 전체) — 조회 기간 안 낙찰 중 매도된 건수를 수요분석에 넘긴다(그 칸이 따로 계산하지 않고 이 값을 쓴다)
+watch([aucAfter, aucRaw, loadedMonths], () => {
+  if (!props.dongOnly || !aucOn.value || !region.value?.dong || !aucRaw.value.length) return;
+  const from = fromOf(loadedMonths.value);
+  const n = aucRaw.value.filter((a) => a.ymd >= from && aucAfter.value.get(a.i)?.k === 'sell').length;
+  aucSoldShared.value = { ...aucSoldShared.value, [soldKey(region.value.dong, loadedMonths.value)]: n };
 });
 /** 실거래 줄 → 그 집 낙찰(낙찰 후 매도인 매매 줄만) */
 const resaleOf = computed(() => { const m = new Map<string, AucRec>(); aucRaw.value.forEach((a) => { const x = aucAfter.value.get(a.i); if (x?.k === 'sell') m.set(rowKey(x.r), a); }); return m; });

@@ -23,7 +23,7 @@ import YmCount from '../components/YmCount.vue';
 import { computed, inject, nextTick, onMounted, ref, shallowRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
-import { auctionsOfDong, matchAfter, type AucRec } from '../services/auctionNear';
+import { aucSoldShared, auctionsOfDong, matchAfter, soldKey, type AucRec } from '../services/auctionNear';
 import { lookupAddress } from '../services/addressLookup';
 import { fetchApartUnits, type ApartUnit } from '../services/vworldApi';
 import { unitLabelOf } from '../services/priceAnalysis';
@@ -410,8 +410,14 @@ watch(() => [aucShareOn.value, props.embed?.sido, dongFilter.value, period.value
   // 낙찰 뒤 매매가 있는 지번만 호실 목록을 받는다(요청을 줄이려고)
   const lots = [...new Set(inWin.filter((a) => a.lot && a.ho && laterSales(a).length).map((a) => a.lot))].filter((j) => !(j in aucUnits.value));
   if (!lots.length) return;
-  const b10 = (await lookupAddress(inWin[0].addr, { withPrice: false }).catch(() => null))?.region?.bCode10;
-  if (!b10 || seq !== aucSeq) return;
+  // 법정동 코드 — 낙찰 주소 몇 개로 차례로 찾는다. 끝내 못 찾으면 호실 목록 없이(맞춘 매도 0) 끝낸다 — '계산 중'에서 멈추지 않게(2026-11-29 사용자)
+  let b10 = '';
+  for (const a of inWin.slice(0, 3)) {
+    b10 = (await lookupAddress(a.addr, { withPrice: false }).catch(() => null))?.region?.bCode10 ?? '';
+    if (b10 || seq !== aucSeq) break;
+  }
+  if (seq !== aucSeq) return;
+  if (!b10) { aucUnits.value = { ...aucUnits.value, ...Object.fromEntries(lots.map((j) => [j, [] as ApartUnit[]])) }; return; }
   await runLimited(lots, 6, async (j) => {
     const u = await fetchApartUnits(b10, j).catch(() => [] as ApartUnit[]);
     if (seq === aucSeq) aucUnits.value = { ...aucUnits.value, [j]: u };
@@ -422,6 +428,9 @@ const laterSales = (a: AucRec) => (props.embed?.rows ?? []).filter((r) => r.umdN
 /** 낙찰 뒤 매도 — 건수 · 그중 호수 추정. 매매로 조회했을 때만(전세 거래로는 셀 수 없다) */
 const aucSold = computed(() => {
   if (dealKind.value !== 'sale' || aucN.value === null) return null;
+  // 낙찰분석이 맞춰 둔 값이 있으면 그대로(두 화면 같은 숫자). 아직 그 탭을 안 열었으면 아래에서 같은 함수로 계산
+  const shared = aucSoldShared.value[soldKey(dongFilter.value, months.value)];
+  if (shared != null) return { n: shared, est: 0, wait: 0 };
   let n = 0; let est = 0; let wait = 0;
   aucList.value.forEach((a) => {
     if (!a.lot || !a.ho) return;
@@ -451,12 +460,11 @@ const aucCell = computed(() => {
     ['기준', '15% 이하 적합 · 15~30% 주의 · 30% 넘으면 위험'],
   ];
   // 이 동 낙찰 건수 — '15% 이하 적합' 밑에 작게. 센 기간(날짜)은 ⓘ 범위 줄에(2026-11-29 사용자)
-  const note = n === null ? '' : `낙찰 ${n.toLocaleString('ko-KR')}건`;   // 실거래 건수는 뺌 — 위 거래량 칸에 있다(2026-11-29 사용자)
-  // 그 낙찰 가운데 낙찰 뒤 다시 매매된 것(2026-11-29 사용자)
+  // 낙찰 건수 / 그중 낙찰 뒤 매도 — 한 줄(2026-11-29 사용자). 실거래 건수는 위 거래량 칸에 있어 뺌
   const so = aucSold.value;
-  const sold = !so ? '' : so.wait ? '낙찰 후 매도 세는 중' : `낙찰 후 매도 ${so.n.toLocaleString('ko-KR')}건`;
+  const note = n === null ? '' : `낙찰 ${n.toLocaleString('ko-KR')}건${so ? ` / 매도 ${so.wait ? '계산 중' : `${so.n.toLocaleString('ko-KR')}건`}` : ''}`;
   if (so && !so.wait) tip.splice(2, 0, ['매도', `낙찰 ${(n ?? 0).toLocaleString('ko-KR')}건 가운데 낙찰 뒤 같은 집(같은 지번 · 같은 호)이 매매된 것 ${so.n.toLocaleString('ko-KR')}건${so.est ? `(호수 추정 ${so.est}건 포함)` : ''}. 실거래 ${deals.toLocaleString('ko-KR')}건 안에 든 거래`]);
-  return { value, tip, note, sold };
+  return { value, tip, note };
 });
 const areaText = (n: number) => (n > 0 ? dec1(n) : '-');
 /** 건축연수 — 햇수식 N년차(올해 − 평균 건축연도 + 1), 위 navStats.age 와 같은 셈 */
@@ -731,7 +739,7 @@ const downloadCsv = () => {
           <div v-if="aucShareOn" class="dm-cell dm-auc" role="button" tabindex="0" title="낙찰분석 탭으로" @click="emit('goAuc')" @keydown.enter="emit('goAuc')">
             <span class="adm-chip son-op dm-op">운영</span>
             <div class="dm-head"><InfoTip :rows="aucCell.tip" under="box" align="end">경매 물건 비중</InfoTip><em class="dm-plain">매물 중 경매 물건 비중</em></div>
-            <div class="dm-body"><b :class="{ wait: aucCell.value === '받는 중' }"><UnitText :text="aucCell.value" /><em class="nbar">|</em><span class="pass-col"><span class="pass">15% 이하 적합</span><small v-if="aucCell.note" class="dm-note">{{ aucCell.note }}</small><small v-if="aucCell.sold" class="dm-note">{{ aucCell.sold }}</small></span></b></div>
+            <div class="dm-body"><b :class="{ wait: aucCell.value === '받는 중' }"><UnitText :text="aucCell.value" /><em class="nbar">|</em><span class="pass-col"><span class="pass">15% 이하 적합</span><small v-if="aucCell.note" class="dm-note">{{ aucCell.note }}</small></span></b></div>
           </div>
         </div>
               <!-- 종합 의견 — 등급 대신 매물율 × 회전율 네 칸 한 줄(2026-11-10). 매물수를 넣어야 나온다 -->

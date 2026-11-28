@@ -1,5 +1,6 @@
 // 시세예측 빌라 — 낙찰 자료(saleData/main, 운영 전용)를 동 단위로 골라 쓴다(2026-11-29 시안 v7, docs/시세예측-v7-대조표.md).
 // 읽기만 한다. 좌표는 없어서 화면이 지번으로 찾는다(실거래와 같은 길).
+import { shallowRef } from 'vue';
 import { loadAgentDataset, type SaleRecord } from './agentRemote';
 import { buildingName } from './saleAnalysis';
 
@@ -78,3 +79,8 @@ export const matchAfter = <R extends { jibun: string; contractDate: string }>(a:
   for (const r of later) { const u = unitOf(r); if (u.text && hoHit(u.text, a.ho)) return { r, est: u.est, text: u.text }; }
   return null;
 };
+
+/** 낙찰분석(시세예측 지역으로)이 맞춰 둔 '그 기간 낙찰 중 매도된 건수' — 수요분석 경매 물건 비중 칸이 그대로 가져다 쓴다(두 화면 숫자를 하나로, 2026-11-29 사용자).
+ *  열쇠 soldKey(동, 개월, 오늘) */
+export const aucSoldShared = shallowRef<Record<string, number>>({});
+export const soldKey = (dong: string, months: number) => `${dong}|${months}|${new Date().toISOString().slice(0, 10)}`;
