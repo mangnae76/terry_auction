@@ -417,8 +417,8 @@ const aucCell = computed(() => {
     ['범위', `같은 동 · 같은 종류 · ${aucSpan.value}(조회일 기준 ${months.value}개월, 실거래와 같은 기간) · 실거래는 계약해제 제외`],
     ['기준', '15% 이하 적합 · 15~30% 주의 · 30% 넘으면 위험'],
   ];
-  // 이 동 낙찰 건수 · 센 기간 — 값 밑에 작게(2026-11-29 사용자). 기간은 실거래와 같은 조회일 기준 창
-  const note = n === null ? '' : `낙찰 ${n.toLocaleString('ko-KR')}건 · ${aucSpan.value}`;
+  // 이 동 낙찰 건수 — '15% 이하 적합' 밑에 작게. 센 기간(날짜)은 ⓘ 범위 줄에(2026-11-29 사용자)
+  const note = n === null ? '' : `낙찰 ${n.toLocaleString('ko-KR')}건`;
   return { value, tip, note };
 });
 const areaText = (n: number) => (n > 0 ? dec1(n) : '-');
@@ -693,9 +693,8 @@ const downloadCsv = () => {
           <!-- 경매비중 — 운영진 · 빌라 · 동을 골랐을 때만. 누르면 낙찰사례 탭으로(대조표 6-1~6-3) -->
           <div v-if="aucShareOn" class="dm-cell dm-auc" role="button" tabindex="0" title="낙찰사례 탭으로" @click="emit('goAuc')" @keydown.enter="emit('goAuc')">
             <span class="adm-chip son-op dm-op">운영</span>
-            <div class="dm-head"><InfoTip :rows="aucCell.tip" under="box" align="end">경매비중</InfoTip><em class="dm-plain">매물 중 경매 물건 비중</em></div>
-            <div :class="['dm-body', { 'has-note': aucCell.note }]"><b :class="{ wait: aucCell.value === '받는 중' }"><UnitText :text="aucCell.value" /><em class="nbar">|</em><span class="pass">15% 이하 적합</span></b><small v-if="aucCell.note" class="dm-note">{{ aucCell.note }}</small></div>
-            <span class="dm-go">사례보기 ›</span>
+            <div class="dm-head"><InfoTip :rows="aucCell.tip" under="box" align="end">경매 물건 비중</InfoTip><em class="dm-plain">매물 중 경매 물건 비중</em></div>
+            <div class="dm-body"><b :class="{ wait: aucCell.value === '받는 중' }"><UnitText :text="aucCell.value" /><em class="nbar">|</em><span class="pass-col"><span class="pass">15% 이하 적합</span><small v-if="aucCell.note" class="dm-note">{{ aucCell.note }}</small></span></b></div>
           </div>
         </div>
               <!-- 종합 의견 — 등급 대신 매물율 × 회전율 네 칸 한 줄(2026-11-10). 매물수를 넣어야 나온다 -->
@@ -891,9 +890,9 @@ const downloadCsv = () => {
 .dm-row.c5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }   /* 시세예측 수요분석 운영진 — 경매비중 칸까지 다섯 칸 */
 .dm-auc { cursor: pointer; }
 .dm-auc:hover { box-shadow: 0 0 0 2px rgba(43, 109, 243, .35); }
+.dm-auc .pass-col { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+.dm-auc .pass-col .dm-note { line-height: 1.2; }
 .dm-auc .dm-op { position: absolute; top: 8px; right: 8px; z-index: 1; margin: 0; }
-.dm-auc .dm-body { padding-bottom: 20px; }   /* 사례보기 자리 — 낙찰 건수 줄과 겹치지 않게 */
-.dm-auc .dm-go { position: absolute; right: 8px; bottom: 3px; font-size: 12px; font-weight: 700; color: #2b6df3; line-height: 16px; }   /* 종합 칸은 뺐다(2026-11-02) — 지표 4칸 */
 /* 칸 — 앱 매매수요 칸처럼 위 이름 띠(회색) + 아래 값(흰색). 이어진 칸은 빨갛게(앱 .lit 와 같은 색) */
 .dm-cell { position: relative; min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; overflow: visible; transition: background .12s, border-color .12s; }
 .dm-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; padding: 8px 6px; border-bottom: 1px solid #e3e8f0; border-radius: 8px 8px 0 0; background: #f3f6fb; font-size: 14px; color: #6b7280; white-space: nowrap; }
